@@ -4,6 +4,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './modules/health/health.module';
+import { StorageModule } from './modules/storage/storage.module';
 
 @Module({
   imports: [
@@ -17,7 +18,8 @@ import { HealthModule } from './modules/health/health.module';
     }]),
     ScheduleModule.forRoot(),
     PrismaModule,
-    HealthModule
+    HealthModule,
+    StorageModule
   ]
 })
 export class AppModule {}

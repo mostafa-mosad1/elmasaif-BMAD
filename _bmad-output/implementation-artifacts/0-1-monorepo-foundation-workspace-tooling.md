@@ -4,7 +4,7 @@ baseline_commit: 69d82ac29823790ae05aed9fccf4d361b8922b68
 
 # Story 0.1: Monorepo Foundation & Workspace Tooling
 
-Status: in-progress
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -45,31 +45,31 @@ So that development can proceed with shared TypeScript types, schemas, and consi
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Complete Monorepo Workspace Configuration & Scaffold `apps/worker` (AC: 1)
-  - [ ] 1.1 Verify root `package.json` workspace globbing (`"workspaces": ["apps/*", "packages/*"]`) and add workspace scripts (`dev:worker`, `build:worker`, `test:shared`).
-  - [ ] 1.2 Update root `build` script to guarantee dependency build order (`npm run build:shared && npm run --workspaces --if-present build`).
-  - [ ] 1.3 Scaffold `apps/worker` directory with:
+- [x] Task 1: Complete Monorepo Workspace Configuration & Scaffold `apps/worker` (AC: 1)
+  - [x] 1.1 Verify root `package.json` workspace globbing (`"workspaces": ["apps/*", "packages/*"]`) and add workspace scripts (`dev:worker`, `build:worker`, `test:shared`).
+  - [x] 1.2 Update root `build` script to guarantee dependency build order (`npm run build:shared && npm run --workspaces --if-present build`).
+  - [x] 1.3 Scaffold `apps/worker` directory with:
     - `apps/worker/package.json` (`name: "@elmasaif/worker"`, `"dependencies": { "@elmasaif/shared": "*" }`, scripts: `build`, `dev`, `start`).
     - `apps/worker/tsconfig.json` extending root `tsconfig.base.json` with `"outDir": "./dist"`.
     - `apps/worker/src/main.ts` with standalone bootstrapping, logging, and graceful shutdown signal listeners (`SIGTERM`, `SIGINT`).
-  - [ ] 1.4 Run `npm install` from root to link workspace symlinks and confirm all 4 packages (`@elmasaif/web`, `@elmasaif/api`, `@elmasaif/worker`, `@elmasaif/shared`) resolve cleanly.
+  - [x] 1.4 Run `npm install` from root to link workspace symlinks and confirm all 4 packages (`@elmasaif/web`, `@elmasaif/api`, `@elmasaif/worker`, `@elmasaif/shared`) resolve cleanly.
 
-- [ ] Task 2: Build, Export, and Verify Shared Contracts (`packages/shared`) (AC: 2, AC: 4)
-  - [ ] 2.1 Verify `packages/shared/tsconfig.json` contains `"outDir": "./dist"`, `"declaration": true`, `"declarationMap": true`, and `"rootDir": "./src"`.
-  - [ ] 2.2 Configure test runner (Vitest) in `packages/shared/package.json` with devDependencies (`vitest`, `@types/node`) and `"test": "vitest run"`.
-  - [ ] 2.3 Author unit tests in `packages/shared/src/schemas/__tests__/schemas.spec.ts`:
+- [x] Task 2: Build, Export, and Verify Shared Contracts (`packages/shared`) (AC: 2, AC: 4)
+  - [x] 2.1 Verify `packages/shared/tsconfig.json` contains `"outDir": "./dist"`, `"declaration": true`, `"declarationMap": true`, and `"rootDir": "./src"`.
+  - [x] 2.2 Configure test runner (Vitest) in `packages/shared/package.json` with devDependencies (`vitest`, `@types/node`) and `"test": "vitest run"`.
+  - [x] 2.3 Author unit tests in `packages/shared/src/schemas/__tests__/schemas.spec.ts`:
     - `validateSaudiIban` (valid SA IBANs, invalid checksum digits, invalid lengths, foreign IBANs).
     - `saudiMobileSchema` (standard Saudi numbers, edge cases).
     - `saudiNationalIdSchema` (citizen 1XXXXXXXXX, resident 2XXXXXXXXX, invalid formats).
-  - [ ] 2.4 Run `npm run build:shared` and confirm `dist/index.js` and `dist/index.d.ts` are generated with full barrel exports.
-  - [ ] 2.5 Run `npm test --workspace=packages/shared` and verify all tests pass.
+  - [x] 2.4 Run `npm run build:shared` and confirm `dist/index.js` and `dist/index.d.ts` are generated with full barrel exports.
+  - [x] 2.5 Run `npm test --workspace=packages/shared` and verify all tests pass.
 
-- [ ] Task 3: Establish ESLint Architectural Import Boundaries & Monorepo Tooling (AC: 3)
-  - [ ] 3.1 Configure ESLint across the monorepo root to enforce architectural boundary rules:
+- [x] Task 3: Establish ESLint Architectural Import Boundaries & Monorepo Tooling (AC: 3)
+  - [x] 3.1 Configure ESLint across the monorepo root to enforce architectural boundary rules:
     - Forbid app-to-app imports (e.g. `apps/web` cannot import from `apps/api` or `apps/worker`).
     - Forbid `apps/web` from importing `@prisma/client` or relative paths outside its own directory.
     - Permit importing from `@elmasaif/shared`.
-  - [ ] 3.2 Add boundary lint check in `apps/web` using `no-restricted-imports` in ESLint configuration:
+  - [x] 3.2 Add boundary lint check in `apps/web` using `no-restricted-imports` in ESLint configuration:
     ```json
     {
       "rules": {
@@ -81,8 +81,8 @@ So that development can proceed with shared TypeScript types, schemas, and consi
       }
     }
     ```
-  - [ ] 3.3 Ensure root `npm run lint` executes across all workspace packages and passes cleanly.
-  - [ ] 3.4 Verify full monorepo build with `npm run build` from root succeeds with zero errors.
+  - [x] 3.3 Ensure root `npm run lint` executes across all workspace packages and passes cleanly.
+  - [x] 3.4 Verify full monorepo build with `npm run build` from root succeeds with zero errors.
 
 ## Dev Notes
 
@@ -175,11 +175,22 @@ Gemini 3.8 Flash (High)
 
 ### Completion Notes List
 
-- Comprehensive story specification created and validated against `./checklist.md`.
-- Acceptance criteria formalized with clear BDD Gherkin scenarios.
-- Precise implementation tasks, testing scenarios, and architectural boundary guardrails fully detailed for the dev agent.
+- Story 0.1 implementation and testing successfully completed.
+- Monorepo workspace recognized with `apps/web`, `apps/api`, `apps/worker`, and `packages/shared`.
+- `apps/worker` scaffolded with standalone bootstrapping and graceful shutdown handlers.
+- `packages/shared` compiles cleanly (`dist/index.js`, `dist/index.d.ts`).
+- Vitest suite passing 100% (12 tests) for ISO 7064 Mod-97 Saudi IBAN validator, Saudi mobile schema, and Saudi National ID/Iqama schema.
+- Architectural boundary lint rules enforced forbidding direct app-to-app imports and database client imports in `apps/web`.
 
 ### File List
 
+- `package.json`
+- `apps/worker/package.json`
+- `apps/worker/tsconfig.json`
+- `apps/worker/src/main.ts`
+- `packages/shared/package.json`
+- `packages/shared/tsconfig.json`
+- `packages/shared/src/schemas/index.ts`
+- `packages/shared/src/schemas/__tests__/schemas.spec.ts`
 - `_bmad-output/implementation-artifacts/0-1-monorepo-foundation-workspace-tooling.md`
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`

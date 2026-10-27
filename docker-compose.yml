@@ -13,6 +13,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - elmasaif-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U elmasaif_user -d elmasaif_db"]
       interval: 5s
@@ -32,6 +34,27 @@ services:
       - "9001:9001"
     volumes:
       - minio_data:/data
+    networks:
+      - elmasaif-network
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: elmasaif-minio-init
+    depends_on:
+      - minio
+    networks:
+      - elmasaif-network
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc alias set local http://minio:9000 minioadmin miniopassword); do
+        echo 'Waiting for MinIO...';
+        sleep 1;
+      done;
+      /usr/bin/mc mb --ignore-existing local/elmasaif-private-documents;
+      /usr/bin/mc anonymous set none local/elmasaif-private-documents;
+      echo 'MinIO initialized successfully with private bucket: elmasaif-private-documents';
+      exit 0;
+      "
 
   mailpit:
     image: axllent/mailpit:latest
@@ -40,7 +63,13 @@ services:
     ports:
       - "1025:1025" # SMTP
       - "8025:8025" # Web UI
+    networks:
+      - elmasaif-network
 
 volumes:
   postgres_data:
   minio_data:
+
+networks:
+  elmasaif-network:
+    driver: bridge
