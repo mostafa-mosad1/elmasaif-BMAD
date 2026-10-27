@@ -1,0 +1,20 @@
+{
+  "name": "@elmasaif/worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "El Masaif — Background Worker Service",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "start": "node dist/main.js",
+    "lint": "eslint \"src/**/*.ts\""
+  },
+  "dependencies": {
+    "@elmasaif/shared": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.5"
+  }
+}

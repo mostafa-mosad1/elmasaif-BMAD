@@ -1,0 +1,29 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["**/apps/**", "../apps/**"],
+            "message": "Violates AD-1: Cross-app imports and reaching across workspace packages are strictly prohibited."
+          }
+        ]
+      }
+    ]
+  },
+  "ignorePatterns": [
+    "dist",
+    "node_modules",
+    ".next",
+    "_bmad",
+    "_bmad-output"
+  ]
+}

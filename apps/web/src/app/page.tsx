@@ -6,12 +6,10 @@ import {
   MapPin,
   Search,
   CheckCircle2,
-  Clock,
   ArrowLeft,
   FileCheck,
   Banknote,
   Lock,
-  Layers,
   Sparkles,
   ChevronLeft
 } from 'lucide-react';

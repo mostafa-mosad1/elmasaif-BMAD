@@ -1,0 +1,22 @@
+{
+  "extends": "next/core-web-vitals",
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": [
+              "@elmasaif/api",
+              "@elmasaif/worker",
+              "@prisma/*",
+              "**/apps/api/**",
+              "**/apps/worker/**"
+            ],
+            "message": "Violates AD-1 / AD-2: Direct app-to-app imports and Prisma in web are prohibited."
+          }
+        ]
+      }
+    ]
+  }
+}

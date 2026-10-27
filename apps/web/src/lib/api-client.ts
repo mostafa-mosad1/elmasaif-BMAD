@@ -5,7 +5,7 @@ export class ApiError extends Error {
     public statusCode: number,
     public code: string,
     message: string,
-    public details?: any
+    public details?: unknown
   ) {
     super(message);
     this.name = 'ApiError';
@@ -35,9 +35,9 @@ export async function apiClient<T>(
   const response = await fetch(url, config);
 
   if (!response.ok) {
-    let errorData: any = {};
+    let errorData: { code?: string; message?: string; details?: unknown } = {};
     try {
-      errorData = await response.json();
+      errorData = (await response.json()) as { code?: string; message?: string; details?: unknown };
     } catch {
       errorData = { message: response.statusText };
     }
