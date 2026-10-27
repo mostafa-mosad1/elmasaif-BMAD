@@ -26,6 +26,7 @@ enum ProfileStatus {
   UNDER_REVIEW
   SUSPENDED
   COMPLIANCE_RESTRICTED
+  DELETION_PENDING
 }
 
 enum PropertyType {
@@ -57,7 +58,6 @@ enum OfferStatus {
   COUNTER_OFFERED
   ACCEPTED_BY_BUYER
   EXPIRED
-  WITHDRAWN
 }
 
 enum DealStatus {
@@ -102,77 +102,165 @@ enum DocumentVisibility {
   ADMIN_ONLY
 }
 
-model User {
-  id           String        @id @default(uuid())
-  username     String        @unique
-  fullName     String
-  mobileNumber String        @unique
-  nationalId   String        @unique
-  passwordHash String
-  status       ProfileStatus @default(ACTIVE)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+enum ScanStatus {
+  PENDING
+  CLEAN
+  INFECTED
+  SCAN_FAILED
+}
 
-  profiles     UserProfile[]
-  sessions     Session[]
+model User {
+  id                   String               @id @default(uuid())
+  username             String               @unique
+  fullName             String
+  mobileNumber         String               @unique
+  nationalId           String               @unique
+  passwordHash         String
+  status               ProfileStatus        @default(ACTIVE)
+  pendingEmail         String?
+  emailVerifiedAt      DateTime?
+  deletionRequestedAt  DateTime?
+  deletionDueAt        DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  profiles             UserProfile[]
+  sessions             Session[]
+  consentRecords       ConsentRecord[]
+  phoneChangeRequests  PhoneChangeRequest[]
+  authoredRatings      Rating[]             @relation("AuthoredRatings")
+  receivedRatings      Rating[]             @relation("ReceivedRatings")
 
   @@map("users")
 }
 
-model UserProfile {
-  id          String        @id @default(uuid())
-  userId      String
-  role        UserRole
-  status      ProfileStatus @default(ACTIVE)
-  payoutIban  String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+model ConsentRecord {
+  id               String   @id @default(uuid())
+  userId           String
+  termsVersion     String
+  privacyVersion   String
+  consentTimestamp DateTime
+  ipAddress        String
+  userAgent        String
+  source           String
+  createdAt        DateTime @default(now())
 
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  falLicense  FalLicense?
-  listings    Listing[]     @relation("ProfileListings")
-  buyerOffers Offer[]       @relation("BuyerOffers")
-  buyerDeals  Deal[]        @relation("BuyerDeals")
-  sellerDeals Deal[]        @relation("SellerDeals")
-  demands     Demand[]
-  contracts   OwnerContract[]
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("consent_records")
+}
+
+model PhoneChangeRequest {
+  id                String   @id @default(uuid())
+  userId            String
+  oldPhoneNumber    String
+  newPhoneNumber    String
+  oldPhoneOtp       String?
+  newPhoneOtp       String?
+  oldVerified       Boolean  @default(false)
+  newVerified       Boolean  @default(false)
+  isSupportAssisted Boolean  @default(false)
+  supportReason     String?
+  adminId           String?
+  expiresAt         DateTime
+  status            String   @default("PENDING")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("phone_change_requests")
+}
+
+model UserProfile {
+  id                   String                @id @default(uuid())
+  userId               String
+  role                 UserRole
+  status               ProfileStatus         @default(ACTIVE)
+  payoutIban           String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  falLicense           FalLicense?
+  listings             Listing[]             @relation("ProfileListings")
+  buyerOffers          Offer[]               @relation("BuyerOffers")
+  buyerDeals           Deal[]                @relation("BuyerDeals")
+  sellerDeals          Deal[]                @relation("SellerDeals")
+  demands              Demand[]
+  contracts            OwnerContract[]
+  ownerListingRequests OwnerListingRequest[]
 
   @@unique([userId, role])
   @@map("user_profiles")
 }
 
 model FalLicense {
-  id             String        @id @default(uuid())
-  profileId      String        @unique
-  licenseNumber  String        @unique
-  certificateUrl String
-  expiryDate     DateTime
-  commercialName String?
-  crNumber       String?
-  status         ProfileStatus @default(UNDER_REVIEW)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id              String        @id @default(uuid())
+  profileId       String        @unique
+  licenseNumber   String        @unique
+  certificateUrl  String
+  expiryDate      DateTime
+  commercialName  String?
+  crNumber        String?
+  status          ProfileStatus @default(UNDER_REVIEW)
+  lockedByAdminId String?
+  lockedAt        DateTime?
+  lockExpiresAt   DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  profile        UserProfile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile         UserProfile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
+  @@index([lockExpiresAt])
   @@map("fal_licenses")
 }
 
 model AdminUser {
-  id           String      @id @default(uuid())
-  username     String      @unique
-  email        String      @unique
+  id           String         @id @default(uuid())
+  username     String         @unique
+  email        String         @unique
   fullName     String
   passwordHash String
-  role         AdminRole   @default(MODERATOR)
-  isActive     Boolean     @default(true)
+  role         AdminRole      @default(MODERATOR)
+  isActive     Boolean        @default(true)
   lastLoginAt  DateTime?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
   sessions     AdminSession[]
 
   @@map("admin_users")
+}
+
+model City {
+  id        String     @id @default(uuid())
+  nameAr    String
+  nameEn    String
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+
+  districts District[]
+  listings  Listing[]
+
+  @@map("cities")
+}
+
+model District {
+  id        String    @id @default(uuid())
+  cityId    String
+  nameAr    String
+  nameEn    String
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+
+  city      City      @relation(fields: [cityId], references: [id])
+  listings  Listing[]
+
+  @@unique([id, cityId])
+  @@map("districts")
 }
 
 model Listing {
@@ -180,30 +268,35 @@ model Listing {
   title            String
   description      String
   propertyType     PropertyType
-  city             String
-  district         String
+  cityId           String
+  districtId       String
   streetName       String?
   latitude         Float
   longitude        Float
   askPrice         Decimal            @db.Decimal(12, 2)
   areaSquareMeters Float
   bedrooms         Int?
-  bathrooms        Int?
   yearBuilt        Int?
   status           ListingStatus      @default(DRAFT)
   sellerProfileId  String
   payoutIban       String
   version          Int                @default(1)
+  lockedByAdminId  String?
+  lockedAt         DateTime?
+  lockExpiresAt    DateTime?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
+  city             City               @relation(fields: [cityId], references: [id])
+  district         District           @relation(fields: [districtId, cityId], references: [id, cityId])
   sellerProfile    UserProfile        @relation("ProfileListings", fields: [sellerProfileId], references: [id])
   documents        PropertyDocument[]
   offers           Offer[]
   deals            Deal[]
   ownerContract    OwnerContract?
 
-  @@index([status, propertyType, city, district])
+  @@index([status, propertyType, cityId, districtId])
+  @@index([lockExpiresAt])
   @@map("listings")
 }
 
@@ -214,94 +307,220 @@ model PropertyDocument {
   fileUrl      String
   mimeType     String
   fileSize     Int
+  scanStatus   ScanStatus         @default(PENDING)
+  scannedAt    DateTime?
   visibility   DocumentVisibility @default(ADMIN_ONLY)
   createdAt    DateTime           @default(now())
 
   listing      Listing            @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
+  @@index([scanStatus])
   @@map("property_documents")
 }
 
-model Offer {
-  id             String         @id @default(uuid())
-  listingId      String
-  buyerProfileId String
-  offerPrice     Decimal        @db.Decimal(12, 2)
-  status         OfferStatus    @default(SUBMITTED)
-  version        Int            @default(1)
-  expiresAt      DateTime
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+model FileObject {
+  id         String     @id @default(uuid())
+  bucket     String
+  key        String     @unique
+  mimeType   String
+  fileSize   Int
+  scanStatus ScanStatus @default(PENDING)
+  scannedAt  DateTime?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 
-  listing        Listing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  buyerProfile   UserProfile    @relation("BuyerOffers", fields: [buyerProfileId], references: [id])
-  history        OfferHistory[]
+  @@index([scanStatus])
+  @@map("file_objects")
+}
+
+model Offer {
+  id              String         @id @default(uuid())
+  listingId       String
+  buyerProfileId  String
+  offerPrice      Decimal        @db.Decimal(12, 2)
+  status          OfferStatus    @default(SUBMITTED)
+  version         Int            @default(1)
+  lockedByAdminId String?
+  lockedAt        DateTime?
+  lockExpiresAt   DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  listing         Listing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyerProfile    UserProfile    @relation("BuyerOffers", fields: [buyerProfileId], references: [id])
+  history         OfferHistory[]
 
   @@index([listingId, status])
+  @@index([lockExpiresAt])
   @@map("offers")
 }
 
 model OfferHistory {
-  id            String      @id @default(uuid())
-  offerId       String
+  id             String      @id @default(uuid())
+  offerId        String
   actorProfileId String?
-  action        String
-  priceSnapshot Decimal?    @db.Decimal(12, 2)
-  notes         String?
-  createdAt     DateTime    @default(now())
+  action         String
+  priceSnapshot  Decimal?    @db.Decimal(12, 2)
+  notes          String?
+  createdAt      DateTime    @default(now())
 
-  offer         Offer       @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  offer          Offer       @relation(fields: [offerId], references: [id], onDelete: Cascade)
 
   @@map("offer_history")
 }
 
 model Deal {
-  id                 String         @id @default(uuid())
-  dealNumber         String         @unique
+  id                 String     @id @default(uuid())
+  dealNumber         String     @unique
   listingId          String
   buyerProfileId     String
   sellerProfileId    String
-  dealPrice          Decimal        @db.Decimal(12, 2)
-  platformCommission Decimal        @db.Decimal(12, 2)
-  totalAmount        Decimal        @db.Decimal(12, 2)
-  dealReferenceCode  String         @unique
-  status             DealStatus     @default(AWAITING_PAYMENT_PROOF)
+  dealPrice          Decimal    @db.Decimal(12, 2)
+  platformCommission Decimal    @db.Decimal(12, 2)
+  totalAmount        Decimal    @db.Decimal(12, 2)
+  dealReferenceCode  String     @unique
+  status             DealStatus @default(AWAITING_PAYMENT_PROOF)
   paymentDeadline    DateTime
   completedAt        DateTime?
-  version            Int            @default(1)
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  version            Int        @default(1)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 
-  listing            Listing        @relation(fields: [listingId], references: [id])
-  buyerProfile       UserProfile    @relation("BuyerDeals", fields: [buyerProfileId], references: [id])
-  sellerProfile      UserProfile    @relation("SellerDeals", fields: [sellerProfileId], references: [id])
-  paymentProofs      PaymentProof[]
+  listing            Listing    @relation(fields: [listingId], references: [id])
+  buyerProfile       UserProfile @relation("BuyerDeals", fields: [buyerProfileId], references: [id])
+  sellerProfile      UserProfile @relation("SellerDeals", fields: [sellerProfileId], references: [id])
+  payments           Payment[]
+  disputes           Dispute[]
+  rating             Rating?
 
   @@index([listingId, status])
   @@map("deals")
 }
 
-model PaymentProof {
-  id                String             @id @default(uuid())
-  dealId            String?
-  ownerContractId   String?
+model Payment {
+  id                String      @id @default(uuid())
+  dealId            String
   paymentType       PaymentType
-  fileUrl           String
-  bankReferenceCode String
-  amountPaid        Decimal            @db.Decimal(12, 2)
-  senderBankName    String
-  status            PaymentProofStatus @default(PENDING)
-  rejectionReason   String?
+  amount            Decimal     @db.Decimal(12, 2)
+  status            String      @default("PENDING")
+  proofFileUrl      String?
+  bankReferenceCode String?
+  senderBankName    String?
+  uploadedAt        DateTime?
   verifiedByAdminId String?
   verifiedAt        DateTime?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  rejectionReason   String?
+  lockedByAdminId   String?
+  lockedAt          DateTime?
+  lockExpiresAt     DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
-  deal              Deal?              @relation(fields: [dealId], references: [id], onDelete: Cascade)
-  ownerContract     OwnerContract?     @relation(fields: [ownerContractId], references: [id], onDelete: Cascade)
+  deal              Deal        @relation(fields: [dealId], references: [id], onDelete: Cascade)
 
   @@index([dealId, paymentType, status])
-  @@map("payment_proofs")
+  @@index([lockExpiresAt])
+  @@map("payments")
+}
+
+model OwnerListingRequest {
+  id              String       @id @default(uuid())
+  ownerProfileId  String
+  propertyType    PropertyType
+  cityId          String
+  districtId      String
+  titleDeedNumber String
+  status          String       @default("PENDING")
+  lockedByAdminId String?
+  lockedAt        DateTime?
+  lockExpiresAt   DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  ownerProfile    UserProfile  @relation(fields: [ownerProfileId], references: [id])
+
+  @@index([lockExpiresAt])
+  @@map("owner_listing_requests")
+}
+
+model ContractFeePayment {
+  id                String        @id @default(uuid())
+  ownerContractId   String
+  amount            Decimal       @db.Decimal(12, 2)
+  status            String        @default("PENDING")
+  proofFileUrl      String?
+  bankReferenceCode String?
+  senderBankName    String?
+  uploadedAt        DateTime?
+  verifiedByAdminId String?
+  verifiedAt        DateTime?
+  rejectionReason   String?
+  lockedByAdminId   String?
+  lockedAt          DateTime?
+  lockExpiresAt     DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  ownerContract     OwnerContract @relation(fields: [ownerContractId], references: [id], onDelete: Cascade)
+
+  @@index([lockExpiresAt])
+  @@map("contract_fee_payments")
+}
+
+model Conversation {
+  id              String    @id @default(uuid())
+  dealId          String?
+  buyerProfileId  String
+  sellerProfileId String
+  status          String    @default("ACTIVE")
+  lockedByAdminId String?
+  lockedAt        DateTime?
+  lockExpiresAt   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([lockExpiresAt])
+  @@map("conversations")
+}
+
+model Dispute {
+  id              String    @id @default(uuid())
+  dealId          String
+  initiatorId     String
+  reason          String
+  status          String    @default("OPEN")
+  lockedByAdminId String?
+  lockedAt        DateTime?
+  lockExpiresAt   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  deal            Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([lockExpiresAt])
+  @@map("disputes")
+}
+
+model Rating {
+  id              String    @id @default(uuid())
+  dealId          String    @unique
+  raterUserId     String
+  targetUserId    String
+  score           Int
+  comment         String?
+  isHidden        Boolean   @default(false)
+  hiddenByAdminId String?
+  hiddenAt        DateTime?
+  hiddenReason    String?
+  createdAt       DateTime  @default(now())
+
+  deal            Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  raterUser       User      @relation("AuthoredRatings", fields: [raterUserId], references: [id])
+  targetUser      User      @relation("ReceivedRatings", fields: [targetUserId], references: [id])
+
+  @@index([targetUserId, isHidden])
+  @@map("ratings")
 }
 
 model Demand {
@@ -327,24 +546,44 @@ model Demand {
 }
 
 model OwnerContract {
-  id             String              @id @default(uuid())
-  listingId      String              @unique
+  id             String                @id @default(uuid())
+  listingId      String                @unique
   ownerProfileId String
-  contractFee    Decimal             @default(1000.00) @db.Decimal(12, 2)
+  contractFee    Decimal               @default(1000.00) @db.Decimal(12, 2)
   contractTerms  String
   signatureData  String?
   signedAt       DateTime?
   otpCode        String?
-  status         OwnerContractStatus @default(DRAFT)
+  status         OwnerContractStatus   @default(DRAFT)
   expiresAt      DateTime
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
 
-  listing        Listing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  ownerProfile   UserProfile         @relation(fields: [ownerProfileId], references: [id])
-  paymentProofs  PaymentProof[]
+  listing        Listing               @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  ownerProfile   UserProfile           @relation(fields: [ownerProfileId], references: [id])
+  feePayments    ContractFeePayment[]
 
   @@map("owner_contracts")
+}
+
+model InvoiceRecord {
+  id                   String   @id @default(uuid())
+  invoiceNumber        String   @unique
+  dealId               String?
+  contractFeePaymentId String?
+  sellerId             String
+  buyerId              String?
+  subtotalAmount       Decimal  @db.Decimal(12, 2)
+  vatAmount            Decimal  @db.Decimal(12, 2)
+  vatRate              Decimal  @default(0.15) @db.Decimal(4, 2)
+  totalAmount          Decimal  @db.Decimal(12, 2)
+  vatTreatment         String
+  partyDetails         Json
+  createdAt            DateTime @default(now())
+
+  @@index([dealId])
+  @@index([invoiceNumber])
+  @@map("invoice_records")
 }
 
 model Session {

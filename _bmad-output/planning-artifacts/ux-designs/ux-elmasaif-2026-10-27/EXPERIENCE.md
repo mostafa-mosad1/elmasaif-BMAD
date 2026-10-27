@@ -1,6 +1,6 @@
 ---
 name: elmasaif
-status: final
+status: draft
 sources:
   - _bmad-output/planning-artifacts/prds/prd-elmasaif-2026-10-26/prd.md
   - _bmad-output/planning-artifacts/briefs/brief-elmasaif-2026-10-26/brief.md
@@ -12,10 +12,10 @@ updated: 2026-10-27
 
 ## Foundation
 
-**El Masaif** is a single-surface responsive web application engineered for desktop, tablet, and mobile browsers, built with **Next.js (App Router), React, TypeScript, and Tailwind CSS**. It pairs with an administrative back-office interface served by the same presentation layer and backed by a separate **NestJS REST API** and PostgreSQL.
+**El Masaif** is a single-surface responsive web application engineered for desktop, tablet, and mobile browsers, built with **Next.js (App Router), React, TypeScript, and Tailwind CSS**. It pairs with an administrative back-office interface served by the same presentation layer and backed by a separate **NestJS REST API**, standalone **Worker process (`apps/worker`)**, and PostgreSQL.
 
 - **Visual Reference:** [`DESIGN.md`](file:///c:/Users/mostafa/swoftwear/BMAD/elmasaif/_bmad-output/planning-artifacts/ux-designs/ux-elmasaif-2026-10-27/DESIGN.md) is the binding visual identity reference. This document specifies the behavioral, architectural, interaction, and state contracts.
-- **RTL-Native Environment:** The entire application renders with `dir="rtl"` and `lang="ar"` as the primary layout root. LTR is isolated to raw code inputs (IBANs, Reference codes, English numerals when required).
+- **RTL-Native Environment:** The entire application renders with `dir="rtl"` and `lang="ar"` as the primary layout root. Complete LTR layout rules apply when language is set to English (`dir="ltr"`).
 - **Multi-Role Single Identity:** A single registered Saudi user can hold multiple operational profiles (`Buyer`, `Marketer`, `Owner`) linked to a single verified mobile number and national identifier, switching effortlessly through a unified role-switcher without re-authenticating. Admin users operate under a distinct authentication realm, database table, and guard (`/admin`).
 
 ---
@@ -30,32 +30,43 @@ updated: 2026-10-27
 | **Search & Discovery** | `/properties` | Search bar / Nav link | Dual view: split interactive map + listing cards with instant filtering (City, District, Price bounds, Bedrooms, Area, Fal-licensed only). |
 | **Property Detail** | `/properties/:id` | Card click / Map pin | 16:9 photo carousel, single ask price, dynamic commission calculator, verified specs, amenities, seller broker badge (shielded phone), "Submit Offer" / "Inquire" actions. |
 | **Buyer Demands Portal** | `/demands` | Navigation bar | Public directory of active buyer demands matching properties. Marketers can browse and propose matched inventory. |
+| **Static Content & CMS** | `/pages/:slug` | Footer / Banners | Informational pages, FAQ, platform rules, terms, privacy policy (`FR-64`). |
 
 ### Authenticated User Workspaces (`/app/*`)
 
 | Surface | Path / Route | User Roles | Purpose & Key Features |
 |---|---|---|---|
-| **Buyer Dashboard** | `/app/buyer` | Buyer | Active offers in negotiation, saved favorite properties, deal pipeline shortcuts, active buying demands. |
-| **Offer Negotiation** | `/app/buyer/offers/:id` | Offers list / Notification | Real-time negotiation timeline, current ask vs offer vs counter-offer, admin mediation status pill, accept/counter/withdraw actions. |
+| **Buyer Dashboard** | `/app/buyer` | Buyer | Active offers in negotiation, saved favorite properties, deal pipeline shortcuts, active buying demands (`FR-59`). |
+| **Offer Negotiation** | `/app/buyer/offers/:id` | Offers list / Notification | Real-time negotiation timeline, current ask vs offer vs counter-offer, admin mediation status pill, accept/counter actions (`FR-55`). |
 | **Deal & Dual Payment** | `/app/buyer/deals/:id` | Deal notification | 48-hour deal countdown timer, dual payment cards (Platform commission to Platform IBAN with reference code `ELM-xxx-C`; Property price to Seller verified IBAN), dual receipt upload zones, bank transfer status tracking. |
-| **Buyer Demands Manager** | `/app/buyer/demands` | Buyer | Create and monitor structured property requests (30-day lifecycle) with budget and location tolerances. |
-| **Marketer Workspace** | `/app/marketer` | Marketer | Fal license onboarding & status tracker, listing management, active inventory, incoming buyer inquiries, deal commissions pipeline. |
+| **Buyer Demands Manager** | `/app/buyer/demands` | Buyer | Create, monitor, and cancel structured property requests (30-day lifecycle) with budget and location tolerances (`FR-58`). |
+| **Marketer Workspace** | `/app/marketer` | Marketer | Fal license onboarding & status tracker, listing management, active inventory, incoming buyer inquiries, deal commissions pipeline (`FR-59`). |
 | **Marketer New Listing** | `/app/marketer/listings/new` | Marketer workspace | Multi-step property wizard: basic info, specs, media uploads (up to 10 MB per photo), deed upload (`AdminOnly`), owner authorization certificate (`AdminOnly`), payout IBAN selection. |
-| **Owner Workspace** | `/app/owner` | Owner | Direct property listing requests, electronic contract status, payout account settings. |
+| **Owner Workspace** | `/app/owner` | Owner | Direct property listing requests, electronic contract status, payout account settings (`FR-59`). |
 | **Owner Contract Sign** | `/app/owner/contracts/:id` | Owner workspace / SMS | Electronic listing contract review, smooth canvas signature pad, 6-digit OTP verification stamp, listing fee transfer proof upload (SAR 1,000). |
-| **User Profile & Payout** | `/app/settings` | All users | Personal details, Saudi national ID verification, verified Saudi IBAN payout management (mod-97 validated). |
+| **User Profile & Verification** | `/app/settings/profile` | All users | Name and email editing (mandatory verification link for email changes per `FR-49`), commercial name mismatch warning (`FR-5`), Saudi IBAN payout management. |
+| **Security & Password** | `/app/settings/password` | All users | Change password requiring current password (failed attempts count toward lockout), revokes other sessions (`FR-47`). |
+| **Mobile Number Update** | `/app/settings/mobile` | All users | Dual-OTP phone change wizard (both verified within 15 min per `FR-48`) and support-assisted request path (`Users.PhoneChange`). |
+| **Preferences & Theme** | `/app/settings/preferences` | All users | Language selection (Arabic RTL / English LTR), dark mode toggle, and notification channel preferences (`FR-60`). |
+| **Account Deletion** | `/app/settings/delete-account` | All users | Password + OTP confirmed account deletion request, 14-day cooling-off period (`DeletionPending`), statutory retention warning (`FR-50`). |
 
 ### Admin Back-Office (`/admin/*`)
 
 | Surface | Path / Route | Permissions | Operational Purpose |
 |---|---|---|---|
-| **Operations Dashboard** | `/admin` | `Admin:Read` | Platform throughput KPIs, pending mediation count, active 48h deals, pending payment proofs tally, daily transaction volume. |
-| **Listing Moderation Queue** | `/admin/listings` | `Listings:Moderate` | Audit submitted listings, inspect title deeds and owner authorizations, approve to `Active` or reject with structured reason. |
-| **Fal Licensing Queue** | `/admin/licenses` | `Licensing:Verify` | Audit Marketer Fal license certificates against REGA registry, approve broker profiles. |
-| **Mediation Queue** | `/admin/negotiations` | `Deals:Mediate` | Review buyer offers and seller counter-offers, approve or reject terms before relaying, prevent bypass attempts. |
-| **Dual Payment Audit** | `/admin/deals/:id/payments` | `Payments:Audit` | Audit uploaded bank transfer receipts against verified bank references and IBANs, trigger atomic deal completion. |
-| **Owner Contracts Queue** | `/admin/contracts` | `Contracts:Manage` | Generate electronic listing contracts, set contract fees, verify fee transfer proofs. |
-| **Audit Log & Jobs** | `/admin/system` | `System:Audit` | Immutable append-only event log, background cron execution status, retry failed webhook/queue jobs. |
+| **Operations Dashboard** | `/admin` | `Admin:Read` | Platform throughput KPIs, pending mediation count, active 48h deals, pending payment proofs tally, daily transaction volume (`FR-66`). |
+| **Claimable Queues** | `/admin/queues` | `Tasks:Claim` | Unified queue for claimable items with explicit POST claim (`FR-51`), 15-min lease, 5-min heartbeat, and read-only inspection banner for other admins. |
+| **Listing Moderation** | `/admin/listings/:id` | `Listings:Moderate` | Audit submitted listings with 15-min exclusive lock, inspect title deeds and owner authorizations, approve to `Active`, reject with structured reason, or propose price revision (`FR-57`). |
+| **Fal Licensing Queue** | `/admin/licenses/:id` | `Licensing:Verify` | Audit Marketer Fal license certificates with 15-min exclusive lock against REGA registry, approve broker profiles. |
+| **Mediation Queue** | `/admin/negotiations/:id` | `Deals:Mediate` | Review buyer offers and seller counter-offers with 15-min exclusive lock, approve or reject terms before relaying, prevent bypass attempts. |
+| **Payment Verification** | `/admin/payments/:id` | `Payments:Audit` | Audit uploaded bank transfer receipts (each payment claimed separately, `FR-51`) against bank references and IBANs, trigger atomic deal completion. |
+| **Owner Contracts Queue** | `/admin/contracts/:id` | `Contracts:Manage` | Generate electronic listing contracts, manage templates (`FR-61`), verify fee transfer proofs with 15-min exclusive lock. |
+| **Review Moderation Queue** | `/admin/reviews` | `Reviews:Moderate` | Audit submitted ratings; hide abusive reviews with mandatory justification logged to `AuditLog`, or restore hidden reviews (`FR-52`). |
+| **Geographic Master Data** | `/admin/geo` | `Geo.Manage` | Manage Cities and Districts with `isActive` toggles, preventing free-text additions (`FR-53`). |
+| **Financial Reports & Invoices**| `/admin/finance` | `Finance:Audit` | View platform financial indicators, export transaction reports (`FR-63`), and review invoice records (`FR-68`). |
+| **Penalties & Fraud Log** | `/admin/fraud` | `Security:Manage` | Track policy violations, license suspensions, and fraud indicators (`FR-62`). |
+| **CMS & Templates** | `/admin/cms` | `CMS:Manage` | Manage static legal pages, banners, FAQ, and notification email templates (`FR-64`). |
+| **Audit Log & System Jobs** | `/admin/system` | `System:Audit` | Immutable event log, worker process scheduler status (`pg-boss`), force-unlock audit history (`Tasks.ForceUnlock`). |
 
 ---
 
@@ -70,8 +81,9 @@ El Masaif communicates with the legal precision of a certified notary and the cl
 | **Dual Wire Transfer Screen** | "يرجى تحويل سعي المنصة إلى حساب المنصة المعتمد، وقيمة العقار مباشرة إلى حساب البائع الموثق" | "سدد الرسوم والفلوس هنا" |
 | **Reference Code Copy** | "تم نسخ رمز مرجع التحويل بنجاح: استخدم هذا الرمز في وصف الحوالة البنكية" | "تم النسخ!" |
 | **Fal License Upload** | "التحقق من رخصة فال العقارية لضمان موثوقية المعلن ونظامية الوساطة" | "ارفع رخصتك عشان تتفعل" |
-| **48-Hour Deadline Warning** | "متبقي 12 ساعة: رفع إيصالات التحويل يمنحك مهلة تدقيق إدارية إضافية تلقائياً" | "الحق هيلغى حجزك!" |
+| **48-Hour Deadline Warning** | "رفع إيصال التحويل يوقف الإلغاء التلقائي أثناء المراجعة الإدارية، وتُمنح مهلة 12 ساعة للمعالجة دون إلغاء تلقائي." | "الحق هيلغى حجزك!" |
 | **Deal Completion Climax** | "تمت الصفقة بنجاح: تم فك حجب بيانات البائع المباشرة لبدء إجراءات الإفراغ العقاري" | "مبروك! اشتريت العقار 🎉" |
+| **Admin Queue Locked** | "قيد التدقيق بواسطة زميل آخر (متبقي 11:42). العرض متاح للقراءة فقط." | "ممنوع الدخول" |
 
 ---
 
@@ -82,13 +94,17 @@ El Masaif communicates with the legal precision of a certified notary and the cl
   - **Platform Commission Card:** Always positioned first (rightmost in RTL). Contains platform IBAN, generated Reference Code (`ELM-408-C`), and a dedicated file upload zone for the platform fee receipt.
   - **Seller Purchase Price Card:** Contains the seller's verified name and verified personal Saudi IBAN, alongside the property price receipt upload zone.
 - **Copy Mechanism:** Clicking the copy icon beside any IBAN or Reference code copies the raw unspaced string into the clipboard and flashes a green "تم النسخ" tooltip for 2 seconds.
-- **Upload Validation:** Client checks MIME type (PDF, PNG, JPG, WebP) and restricts file size to <= 10 MB. Once uploaded, a thumbnail preview with file name and size is displayed with a "Replace" or "Remove" option.
-- **Grace Period Guarantee:** If the user uploads both receipts within the 48-hour window, the countdown pauses and displays "قيد التدقيق المالي من قبل إدارة المنصة".
+- **Upload Validation:** Client checks MIME type (PDF, PNG, JPG, WebP) and restricts file size to <= 10 MB. Pre-persistence quarantine malware scanning hook (`NFR13`) validates payload; only files marked `Clean` are served. Once uploaded, a thumbnail preview with file name and size is displayed with a "Replace" or "Remove" option.
+- **Payment Timing & Grace Rule (OQ-07, FR-31, FR-33, BR-08):**
+  - Uploading bank transfer proof before `PaymentDeadline` pauses cancellation while status is `ProofUploaded` or `UnderReview`.
+  - If `PaymentDeadline` expires while review is pending, an automatic 12-hour administrative grace period begins.
+  - After 12 hours without an admin decision, the system dispatches a high-priority SLA alert to administrators; the deal is **NOT** auto-cancelled.
+  - Rejection during grace allows the buyer to re-upload corrected proof until the 12-hour grace window elapses.
 
 ### 2. Offer & Counter-Offer Negotiation Timeline
 - **Behavior:** Chronological vertical thread showing offer history.
   - Buyer offer SAR 2,950,000 -> Admin approved and dispatched -> Seller counter-offer SAR 3,000,000 -> Buyer pending acceptance.
-- **Action Tray:** Fixed sticky bottom bar on mobile with two primary options: "قبول العرض (SAR 3,000,000)" (Emerald button) or "تقديم عرض مقابل جديد" (Outlined button) or "سحب العرض" (Muted text link).
+- **Action Tray (UX-DR10):** Fixed sticky bottom bar on mobile with two primary options: "قبول العرض (SAR 3,000,000)" (Emerald button) or "تقديم عرض مقابل جديد" (Outlined button).
 - **Mediation Transparency:** A security badge reminds users: "كافة المفاوضات تتم تحت إشراف المنصة لحماية حقوق الطرفين وعدم كشف بيانات التواصل إلا بعد إتمام الصفقة".
 
 ### 3. Owner Electronic Signature & Mobile OTP Stamping
@@ -99,13 +115,37 @@ El Masaif communicates with the legal precision of a certified notary and the cl
 - **Behavior:** On desktop (`lg+`), the screen splits 50/50: sticky map on left, scrollable listing cards on right. On mobile, a floating pill button toggles between "عرض الخريطة 🗺️" and "عرض القائمة 📋".
 - **Map Interaction:** Panning or zooming the map recalculates the bounding box and fetches matching properties with a 300ms debounce. Hovering over a listing card highlights its corresponding map pin with a pulse animation and opens the mini-card popup.
 
+### 5. Admin Task-Claim Locking in Operational Queues (FR-51, UX-DR15, AR12)
+- **Claim Mechanism:** Task claim is strictly an explicit `POST /api/v1/admin/<queue>/<id>/claim`, never triggered by a `GET` request or page navigation.
+- **Atomic Lease:** An atomic conditional `UPDATE` assigns `lockedByAdminId`, `lockedAt`, and `lockExpiresAt` (+15 minutes) only if currently unlocked or expired.
+- **Heartbeat & Release:** A client-side heartbeat renews the lock every 5 minutes while active. The lock is released upon submitting a decision or navigating away.
+- **Concurrent Inspection:** Other admins viewing a locked item see an informative read-only banner ("قيد المعالجة حالياً بواسطة [اسم المسؤول]"), with all decision and mutation buttons disabled.
+- **Super Admin Override:** Users with `Tasks.ForceUnlock` permission can force-release any lock, requiring a mandatory justification reason logged directly to `AuditLog`.
+- **Optimistic Concurrency Preserved:** A task lock never replaces the optimistic concurrency version check (`If-Match`); stale concurrent decisions return HTTP 409 Conflict.
+- **Covered Entities:** Applies to 8 domain queues: `Listing`, `FalProfile`, `OwnerListingRequest`, `Payment` (each payment separately, NOT PaymentProof), `ContractFeePayment`, `Conversation`, `Dispute`, and `Offer`.
+
+### 6. Cascading City & District Master Selector (FR-53)
+- **Behavior:** Selection is strictly constrained to master Saudi geographic records (`City` and `District`). Selecting a City loads its corresponding active Districts dynamically. Unstructured free text input is rejected. Deactivated entities remain on historical listings but cannot be selected for new listings.
+
+### 7. Dual-Step Mobile Number Update Flow (FR-48)
+- **Step 1:** User initiates change on `/app/settings/mobile`. System sends 6-digit OTP to current registered phone.
+- **Step 2:** User inputs new Saudi mobile number (`+9665XXXXXXXX`). System validates uniqueness (returns `AUTH_PHONE_IN_USE` if already taken) and dispatches a second 6-digit OTP.
+- **Timeout & Restrictions:** Both OTPs must be successfully verified within 15 minutes, or the request expires. The old number receives an immediate security notification. The flow is strictly blocked if the user has an active Deal in `AwaitingPaymentProof`, `PaymentUnderReview`, or `Disputed`.
+- **Support-Assisted Path:** Users who have lost access to their old SIM can request an administrative change requiring official identity document verification, handled exclusively by support agents with `Users.PhoneChange` permission and logged to `AuditLog`.
+
+### 8. Self-Service Account Erasure / PDPL Deactivation Flow (FR-50)
+- **Confirmation:** Requires password and 6-digit OTP re-authentication.
+- **Integrity Validation:** Blocked while any Deal is non-terminal, any dispute is open, or any Owner contract is `SignedPendingFee` or `FeeUnderReview`.
+- **Zero Transaction History:** Transition to `DeletionPending` state. An automated 14-day cooling-off period [ASSUMPTION] begins. If the user does not log in during these 14 days, personal data is permanently erased and anonymized. Logging in during the cooling-off period automatically cancels the deletion request.
+- **Active / Historical Transactions:** If the user has transaction history, the account is deactivated and hidden (cannot log in, public profile removed, active listings closed), while legally required transaction, tax, and audit records are retained per retention schedules established by legal counsel.
+
 ---
 
 ## State Patterns
 
 ### Listing States
 - **Draft (`مسودة`):** Editable by creator (Marketer/Owner). Missing required documents are flagged with red helper indicators.
-- **Pending Review (`قيد التدقيق`):** Submitted to admin queue. Read-only for creator; admin can approve or reject with comments.
+- **Pending Review (`قيد التدقيق`):** Submitted to admin queue. Read-only for creator; admin can approve, reject with comments, or propose price revision (`FR-57`).
 - **Pending Fee (`بانتظار سداد رسوم العقد`):** Owner listings whose electronic contract is signed, awaiting the SAR 1,000 platform fee verification.
 - **Active (`نشط ومتاح`):** Publicly searchable on marketplace and map.
 - **Reserved (`محجوز لصفقة قائمة`):** An offer has reached final approval; Deal is in progress. Property is locked against other offers.
@@ -113,11 +153,18 @@ El Masaif communicates with the legal precision of a certified notary and the cl
 - **Compliance Restricted (`مقيد نظامياً`):** Automatically triggered if the marketer's Fal license expires.
 
 ### Deal & Dual Payment States
-- **Awaiting Payment Proof (`بانتظار إيداع الحوالات`):** Active 48-hour countdown. Both payment uploads are empty or partial.
-- **Under Admin Audit (`قيد المراجعة المالية`):** Both payment proofs uploaded. Countdown timer frozen; admin reviewing bank reference.
-- **Payment Rejected (`إيصال مرفوض - يتطلب تعديل`):** Admin notes why receipt was rejected (e.g. wrong IBAN or illegible slip); buyer must re-upload within remaining deadline.
-- **Completed (`صفقة مكتملة وموثقة`):** Both payments approved. Atomic transaction completes deal, marks listing sold, and releases seller direct phone number.
-- **Cancelled (`ملغاة لانتهاء المهلة`):** 48-hour deadline lapsed without proofs. Listing reverts to `Active`.
+- **Awaiting Payment Proof (`بانتظار إيداع الحوالات`):** Active 48-hour countdown (`ClockService.now() + 48h`). Both payment uploads are empty or partial.
+- **Proof Uploaded (`تم رفع الإيصال`):** Uploaded before deadline. Cancellation timer paused while under review.
+- **Under Admin Audit (`قيد المراجعة المالية`):** Proofs uploaded and claimed by financial auditor. If deadline arrives, 12-hour grace period activates; after 12 hours without decision, an SLA alert is dispatched to admins without auto-cancellation.
+- **Payment Rejected (`إيصال مرفوض - يتطلب تعديل`):** Admin notes why receipt was rejected; buyer can re-upload until deadline or grace period expires.
+- **Completed (`صفقة مكتملة وموثقة`):** Both payments approved. Atomic transaction completes deal, marks listing sold, records invoice data (`FR-68`), and releases seller direct phone number.
+- **Cancelled (`ملغاة لانتهاء المهلة`):** Deadline lapsed without proof uploaded. Listing reverts to `Active`.
+
+### Account States
+- **Active:** Normal operating account.
+- **Suspended:** Account restricted due to policy or compliance violation.
+- **DeletionPending:** 14-day cooling-off window in effect; logging in restores to `Active`.
+- **Deactivated:** Account deactivated with transaction records retained under statutory legal requirements.
 
 ---
 
@@ -147,7 +194,7 @@ El Masaif communicates with the legal precision of a certified notary and the cl
 
 ### Journey 1: Tariq Executes a Villa Purchase via Dual Wire Transfer
 - **Protagonist:** Tariq (38, Financial Analyst in Riyadh, buying a family home).
-- **Climax Beat:** Tariq holds the Deal #408 screen with a 48-hour ticking clock. He splits his transfer into two: SAR 75,000 platform commission to the platform bank with code `ELM-408-C`, and SAR 3,000,000 directly to the verified seller's IBAN. He uploads both PDF receipts. The countdown stops and displays "تم استلام الإيصالات بنجاح". Two hours later, Admin confirms both proofs: the screen bursts with executive gold status, releasing the verified seller's direct phone number with a direct button to schedule the notary title deed deed transfer (الإفراغ العقاري).
+- **Climax Beat:** Tariq holds the Deal #408 screen with a 48-hour ticking clock. He splits his transfer into two: SAR 75,000 platform commission to the platform bank with code `ELM-408-C`, and SAR 3,000,000 directly to the verified seller's IBAN. He uploads both PDF receipts. The countdown stops and displays "تم استلام الإيصالات بنجاح". Two hours later, Admin confirms both proofs: the screen bursts with executive gold status, releasing the verified seller's direct phone number with a direct button to schedule the notary title deed transfer (الإفراغ العقاري).
 
 ### Journey 2: Sara Onboards as a Fal-Certified Marketer and Publishes a Commercial Office
 - **Protagonist:** Sara (Licensed Broker in Jeddah).
@@ -164,3 +211,6 @@ El Masaif communicates with the legal precision of a certified notary and the cl
 - **Desktop (1024px+):** Side-by-side split map and listing grid, multi-column negotiation panels, full-width data tables for admin queues.
 - **Tablet (768px - 1023px):** Collapsible sidebar menu into icon drawer, 2-column property card grid, modal overlays for filters.
 - **Mobile (360px - 767px):** Single-column vertical stream, bottom sticky navigation bar with unread notification badges, bottom sheet drawers for complex filters, map-to-list toggle pill.
+- **English LTR Adaptation:** Complete geometric mirroring with `dir="ltr"` root, typography shifting to `Inter` / `Outfit`, and reversal of pagination and chevron directions.
+- **Dark Mode Support:** Automatic system detection or explicit toggle in user preferences (`FR-60`), applying sovereign dark tokens without altering contrast compliance.
+- **Empty States:** Structured empty-state cards for search zero-results, empty queues, and initial dashboards with institutional iconography and clear calls to action.

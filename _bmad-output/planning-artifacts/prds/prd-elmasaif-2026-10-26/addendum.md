@@ -29,6 +29,17 @@ This Addendum accompanies [`prd.md`](file:///c:/Users/mostafa/swoftwear/BMAD/elm
 - **Concurrency Control:** Version column (`version: Int`) with `If-Match` headers on Listing, Offer, and Deal updates; conflicting concurrent writes return HTTP 409 Conflict.
 - **Idempotency:** `Idempotency-Key` header enforced on proof uploads, final deal approvals, and payment confirmation decisions.
 
+### 1.3 Task Claim Locking SQL Specification
+Operational queue items are claimed using an atomic conditional SQL `UPDATE`:
+```sql
+UPDATE target_table
+SET locked_by_admin_id = $adminId,
+    locked_at = ClockService.now(),
+    lock_expires_at = ClockService.now() + INTERVAL '15 minutes'
+WHERE id = $id
+  AND (locked_by_admin_id IS NULL OR lock_expires_at < ClockService.now());
+```
+
 ---
 
 ## 2. State Machine Transition Tables
@@ -157,6 +168,14 @@ This Addendum accompanies [`prd.md`](file:///c:/Users/mostafa/swoftwear/BMAD/elm
 | `Bulk.Execute` | Execute batch operations across listings or queues | No | Yes |
 | `Notes.Manage` | Create and view internal administrative notes on entities | Yes | Yes |
 | `Audit.View` | Inspect immutable system audit logs | No | Yes |
+| `Reviews.Moderate` | Moderate buyer-seller ratings and reviews | Yes | Yes |
+| `Geo.Manage` | Manage administrative geographic master data: regions, cities, districts | No | Yes |
+| `Tasks.ForceUnlock` | Forcibly release active task claim leases with mandatory reason | No | Yes |
+| `Users.PhoneChange` | Administrative phone number re-binding with verified proof | No | Yes |
+| `Contracts.Manage` | Manage standard owner contract templates and legal clauses | No | Yes |
+| `Compliance.Manage` | Administer regulatory compliance, fraud logs, and numeric penalties | No | Yes |
+| `Finance.Export` | Export PDF and Excel financial reports and reconciliation data | No | Yes |
+| `CMS.Manage` | Author and publish public CMS content, TOS, privacy policy, and FAQ | No | Yes |
 
 ---
 
@@ -187,3 +206,36 @@ erDiagram
     DEMAND ||--o{ DEMAND_MATCH : matches
     DEMAND_MATCH ||--|| PROPOSAL : submits
 ```
+
+---
+
+## 6. Notification Event Catalog
+
+| Event Key | Channel | Recipient | Trigger / Payload Summary |
+|---|---|---|---|
+| `deal.created` | In-App, Email | Buyer, Seller | Deal created; payment instructions, frozen IBAN, and deadline dispatched |
+| `deal.payment_deadline_warning` | In-App, Email | Buyer | Approaching PaymentDeadline warnings (12h, 2h before deadline) |
+| `deal.payment_under_review` | In-App | Buyer, Seller | Buyer uploaded payment proof; review initiated |
+| `deal.proof_rejected` | In-App, Email | Buyer | Payment proof rejected with admin reason; re-upload instructions |
+| `deal.completed` | In-App, Email | Buyer, Seller | Both payments confirmed; counterparty contact details disclosed |
+| `deal.timeout_cancelled` | In-App, Email | Buyer, Seller | Deal cancelled due to expired payment deadline without on-time proof |
+| `deal.disputed` | In-App, Email | Buyer, Seller, Admin | Dispute initiated; automated cancellation suspended pending Super Admin review |
+| `payment.sla_alert_4h` | Internal In-App | Support Admins | Proof unreviewed 4 hours after upload; SLA tier 1 alert |
+| `payment.sla_escalation_12h` | Internal In-App | Super Admin | Proof unreviewed 12 hours after upload; SLA tier 2 escalation |
+| `payment.sla_mandatory_decision_24h` | Internal In-App | Super Admin | Proof unreviewed 24 hours after upload; mandatory Confirm/Reject decision required |
+| `listing.submitted` | In-App | Creator | Listing submitted and queued for moderation |
+| `listing.approved` | In-App | Creator | Listing approved to Active marketplace status |
+| `listing.rejected` | In-App | Creator | Listing rejected with admin modification notes |
+| `listing.major_edit_review` | In-App | Creator | Ask price, location, or type edit reverted listing to UnderReview |
+| `contract.ready_for_signature` | In-App, Email | Owner | Listing contract template assigned; signature canvas + OTP ready |
+| `contract.signed_pending_fee` | In-App | Owner | Contract signed; 7-day fee payment window active |
+| `contract.fee_confirmed` | In-App | Owner | Contract fee verified; listing published to Active |
+| `contract.fee_expired` | In-App | Owner | Contract fee payment deadline passed; contract expired |
+| `fal.expiry_warning` | In-App, Email | Marketer | Expiration warning dispatched at 30, 7, and 1 day(s) before Fal expiry |
+| `fal.expired_restricted` | In-App, Email | Marketer | License expired; profile restricted and active listings suspended |
+| `demand.matched` | In-App | Providers | New qualifying buyer demand matched to active provider inventory |
+| `demand.proposal_received` | In-App | Buyer | Provider proposal approved and ready for buyer review |
+| `support.ticket_sla_alert` | Internal In-App | Support Admins | Support ticket nearing first response (4h) or resolution (2d) SLA |
+| `auth.security_alert` | In-App, SMS | Account Owner | New device login, password reset, or OTP step-up failure |
+| `auth.policy_reconsent_required` | In-App | User | Blocking re-consent screen triggered on terms or privacy policy update |
+

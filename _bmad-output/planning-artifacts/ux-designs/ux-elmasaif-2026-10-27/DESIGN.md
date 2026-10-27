@@ -1,7 +1,7 @@
 ---
 name: elmasaif
 description: Institutional Real Estate Marketplace Design System (KSA) - Arabic RTL-First, Trust-Centered, Sovereign Luxury
-status: final
+status: draft
 updated: 2026-10-27
 colors:
   # Sovereign Green Primary Ramp
@@ -33,6 +33,19 @@ colors:
   ink-muted: '#94A3B8'
   ink-disabled: '#CBD5E1'
   ink-inverse: '#FFFFFF'
+
+  # Dark Mode Token Scale
+  dark-background: '#0B130E'
+  dark-surface-base: '#132018'
+  dark-surface-raised: '#1C2E24'
+  dark-surface-sunken: '#0E1712'
+  dark-surface-border: '#23382C'
+  dark-surface-border-strong: '#32503E'
+  dark-ink-primary: '#F1F5F9'
+  dark-ink-secondary: '#CBD5E1'
+  dark-ink-muted: '#64748B'
+  dark-ink-disabled: '#334155'
+  dark-ink-inverse: '#0F172A'
 
   # Status & Verification Badges
   status-verified: '#059669'
@@ -260,7 +273,7 @@ El Masaif avoids hyper-deep floating 3D drop shadows in favor of crisp, institut
 ### 1. Property Card (Marketplace)
 - **Image Aspect Ratio:** 16:9 carousel with photo counter pill (`1/12`) on top-left (RTL) and Fal-verified badge on top-right.
 - **Ask Price:** Prominently set in `{typography.heading-lg}`, followed by SAR currency label (`ر.س`).
-- **Specs Strip:** Micro-icons for Bedrooms, Bathrooms, and Area in square meters (`م²`), separated by hairline borders.
+- **Specs Strip:** Micro-icons for Bedrooms and Area in square meters (`م²`), separated by hairline borders (bathrooms omitted per data model).
 - **Location Tag:** City and District with pin icon (`الرياض، حي النرجس`).
 
 ### 2. Dual Payment Transfer Card (Deal Screen)
@@ -270,7 +283,10 @@ El Masaif avoids hyper-deep floating 3D drop shadows in favor of crisp, institut
 - **Proof Upload Area:** Drag-and-drop zone with PDF/image support, file size progress bar, and instant confirmation preview.
 
 ### 3. Deal 48-Hour Countdown Banner
-- **Visuals:** Gold accent banner (`{colors.accent-light}`) with countdown clock (`ساعة : دقيقة : ثانية`), visual progress bar, and clear administrative guarantee notice regarding automatic grace periods upon proof upload.
+- **Visuals:** Gold accent banner (`{colors.accent-light}`) with countdown clock (`ساعة : دقيقة : ثانية`), visual progress bar, and explicit administrative notice:
+  - Notice clearly states that uploading bank transfer proof before the deadline pauses cancellation while under administrative review (uploading pauses cancellation; it does not guarantee acceptance).
+  - If review remains pending after the 12-hour grace period, an SLA alert is dispatched to admins without auto-cancellation.
+  - In case of rejection during grace, the buyer may re-upload proof until the grace window expires.
 
 ### 4. Electronic Signature & OTP Pad (Owner Contract)
 - **Canvas:** Smooth canvas signature box with "Clear" and "Adopt" controls.
@@ -279,6 +295,97 @@ El Masaif avoids hyper-deep floating 3D drop shadows in favor of crisp, institut
 ### 5. Interactive Map Pin & Cluster
 - **Cluster:** Emerald green circle with item count in white.
 - **Price Pin:** White rounded-pill container with dark green border displaying price (`3.2 مليون`), transitions to solid emerald background when selected.
+
+### 6. Admin Operational Task-Lock Banner (FR-51, UX-DR15)
+- **Container:** High-visibility amber accent card (`{colors.status-pending-bg}`, border `{colors.status-pending-border}`) pinned at the top of moderation, audit, and conversation workspaces.
+- **Visuals:** Padlock icon + Arabic indicator ("قيد التدقيق بواسطة: [اسم المسؤول] - متبقي [دقائق : ثواني] لانتهاء الحجز").
+- **State Behavior:**
+  - Active Claimer: Editable controls, active decision buttons, and a heartbeat refresher every 5 minutes.
+  - Inspecting Admins: Muted read-only view with mutation buttons disabled and an informative banner ("هذه المهمة قيد المعالجة حالياً بواسطة [اسم المسؤول]").
+  - Super Admin Override: Shows a distinct "إلغاء القفل بالقوة" (Force Unlock) action triggering a modal requiring a mandatory audit reason.
+
+### 7. Cascading City & District Selector (FR-53)
+- **Container:** Dual search-enabled dropdown inputs with RTL chevron and live filtering.
+- **Visuals:** Surface base background (`#FFFFFF`), 1.5px border with primary emerald focus ring. Selecting a City dynamically populates and filters the corresponding Districts list. Free-text inputs are strictly prohibited.
+
+### 8. Security & Account Recovery Modals (FR-46 to FR-50)
+- **Layout:** Level 3 elevated modal window (`box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.12)`) with `backdrop-filter: blur(8px)`.
+- **OTP Segmented Field:** 6 individual numeric boxes with automatic cursor advance and 60-second countdown resend trigger.
+- **Dual-Verification Sequence:** In Mobile Number Updates, displays clear 2-step progress indicator: "الخطوة 1: التحقق من الرقم الحالي" -> "الخطوة 2: التحقق من الرقم الجديد".
+
+---
+
+## Dedicated UI Screens & Specifications
+
+### 1. Admin Operations & Workspaces
+- **Admin Claimable Queues (`/admin/queues`):**
+  - Unified table view for Listing moderation, Fal profiles, Owner listing requests, Payments, Contract fee payments, Conversations, Disputes, and Offers.
+  - Explicit action button: "استلام المهمة" (Claim Task) triggers `POST /api/v1/admin/<queue>/<id>/claim`, acquiring a 15-minute exclusive lock.
+- **Payment Proof Review Workspace (`/admin/payments/:id`):**
+  - Displays the active Task-Lock banner at top.
+  - Dual side-by-side verification pane: left pane displays submitted bank transfer slip (scanned receipt / PDF via 5-minute presigned URL), right pane displays expected transfer parameters (amount, bank reference, buyer name, target IBAN).
+  - Decision buttons: "اعتماد الحوالة" (Approve) and "رفض الحوالة" (Reject) with a mandatory rejection reason modal.
+- **Super Admin Force Unlock Modal (`Tasks.ForceUnlock`):**
+  - Emergency dialog accessible only to Super Admins on locked tasks.
+  - Requires entry of a mandatory justification logged immediately to immutable audit records before releasing the lock.
+- **Review Moderation Workspace (`/admin/reviews`, FR-52):**
+  - Lists user-submitted deal ratings (1-5 stars, comments up to 500 characters).
+  - Controls: "إخفاء التقييم" (Hide Review) requiring a moderation reason; "استعادة التقييم" (Restore Review).
+  - Visual badge indicating whether the rating is currently included or excluded from calculated public averages.
+- **Geographic Master Data Admin (`/admin/geo`, FR-53):**
+  - Hierarchical tree manager for Cities and Districts.
+  - Controls to add, edit, or toggle `isActive`. Deactivated cities/districts remain visible on historical listings but are disallowed for new listings and searches.
+
+### 2. User Security & Settings Screens (FR-46 to FR-50)
+- **Forgot Password Flow (`/auth/forgot-password`, FR-46):**
+  - Mobile number input form with identical timing and generic success feedback regardless of account existence (prevents phone enumeration).
+  - 6-digit OTP verification screen; locks reset attempts for 15 minutes upon 3 failed attempts.
+  - New password input validating that the new password differs from the current password; revokes all active sessions upon completion.
+- **Change Password Dialog (`/app/settings/password`, FR-47):**
+  - Requires current password (failed attempts count toward account lockout and trigger `AUTH_INVALID_CREDENTIALS`).
+  - Confirms new password, invalidates all other active user sessions, and sends security alert notifications.
+- **Change Mobile Number Wizard (`/app/settings/mobile`, FR-48):**
+  - Step 1: OTP sent to existing registered number.
+  - Step 2: OTP sent to new number (validated as unique, returning `AUTH_PHONE_IN_USE` if registered).
+  - Both steps must complete within 15 minutes. Operation blocked if any deal is in non-terminal payment stages.
+  - Support-assisted path for lost numbers requiring identity document upload and admin verification (`Users.PhoneChange`).
+- **Edit Profile & Email Verification (`/app/settings/profile`, FR-49):**
+  - Edit name and email address.
+  - Updating email displays a high-visibility pending verification banner until the user opens the mandatory verification link.
+  - Automatic commercial name mismatch warning per FR-5 if the user is a licensed marketer.
+- **Terms & Privacy Re-Consent Screen (`/auth/consent`):**
+  - Displayed immediately upon login when `termsVersion` or `privacyVersion` increments.
+  - Modal overlay with scrollable legal text viewer and explicit "أوافق على الشروط والسياسات المحدثة" acceptance action recording IP, user agent, and timestamp to `ConsentRecord`.
+- **Account Deletion Flow (`/app/settings/delete-account`, FR-50):**
+  - Password and OTP re-authentication required.
+  - Pre-validation check: strictly blocked if any active deals, disputes, or owner contracts are non-terminal.
+  - Confirmation dialogue detailing the 14-day cooling-off period (`DeletionPending` status) and explaining that logging in during this period cancels the deletion request.
+  - Prominent legal disclosure explaining that users with historical financial transactions will have accounts deactivated and hidden, with transaction records retained per statutory Saudi retention schedules.
+
+---
+
+## English LTR Support & Mirroring Rules
+
+While Arabic (RTL) is the sovereign default of El Masaif, complete English (LTR) layout rules ensure institutional readiness:
+- **Direction Attribute:** Setting locale to `en` toggles `dir="ltr"` on the root document.
+- **Typography:** English viewports utilize `Inter` / `Outfit` for display and body scales, preserving `JetBrains Mono` for monospace financial tables and Saudi IBAN strings.
+- **Spatial Mirroring:**
+  - Layout axes flip: margin-start becomes left, margin-end becomes right.
+  - Navigation bars, sidebars, and property photo carousels mirror horizontally.
+  - Progression arrows reverse: next step points right (`→`), back step points left (`←`).
+
+---
+
+## Empty States & Feedback Patterns
+
+Every data container, table, search results list, and queue specifies an institutional empty state:
+- **Visuals:** Level 1 sunken surface (`{colors.surface-sunken}`), centered minimalist emblem/icon, no cartoonish illustrations.
+- **Typography:** Header in `{typography.heading-md}`, explanation in `{typography.body-md}`, color `{colors.ink-secondary}`.
+- **Prescribed Empty Scenarios:**
+  - Marketplace Search: "لا توجد عقارات مطابقة لمعايير البحث الحالية — يمكنك تعديل نطاق السعر أو الحي أو حفظ طلبك العقاري."
+  - Offers Inbox: "لا توجد عروض واردة حالياً على هذا العقار."
+  - Moderation Queue: "جميع المهام في قائمة التدقيق مكتملة — لا توجد عناصر بانتظار المراجعة."
+  - My Demands: "لم تقم بإنشاء أي طلبات عقارية حتى الآن — يمكنك تحديد مواصفات عقارك المنشود ليقوم الوسطاء بمطابقته."
 
 ---
 
