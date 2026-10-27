@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: elmasaif-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: elmasaif_user
+      POSTGRES_PASSWORD: elmasaif_password
+      POSTGRES_DB: elmasaif_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U elmasaif_user -d elmasaif_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: elmasaif-minio
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: miniopassword
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: elmasaif-mailpit
+    restart: always
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
+
+volumes:
+  postgres_data:
+  minio_data:

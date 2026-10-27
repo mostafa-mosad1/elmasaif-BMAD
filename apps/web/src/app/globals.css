@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #1B4332;
+  --primary-hover: #143326;
+  --primary-light: #E8F3EE;
+  --accent: #C69C45;
+  --accent-hover: #B38A38;
+  --accent-light: #FAF4E8;
+  --background: #F8FAF9;
+  --surface-base: #FFFFFF;
+  --surface-sunken: #F0F4F2;
+  --surface-border: #E2E8F0;
+  --ink-primary: #0F172A;
+  --ink-secondary: #475569;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--ink-primary);
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  direction: rtl;
+  text-align: right;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Monospace numerals & IBAN styling */
+.font-mono-numbers {
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.05em;
+  direction: ltr;
+  display: inline-block;
+}
+
+/* Glassmorphism Navigation */
+.nav-blur {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Custom Card Hover */
+.luxury-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.luxury-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px -6px rgba(27, 67, 50, 0.08), 0 4px 8px -4px rgba(27, 67, 50, 0.04);
+}

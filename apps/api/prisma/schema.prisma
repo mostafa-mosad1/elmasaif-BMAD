@@ -1,0 +1,391 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  BUYER
+  MARKETER
+  OWNER
+  ADMIN
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  MODERATOR
+  FINANCIAL_AUDITOR
+  COMPLIANCE_OFFICER
+}
+
+enum ProfileStatus {
+  ACTIVE
+  UNDER_REVIEW
+  SUSPENDED
+  COMPLIANCE_RESTRICTED
+}
+
+enum PropertyType {
+  VILLA
+  LAND
+  APARTMENT
+  BUILDING
+  COMMERCIAL
+  FARM
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING_REVIEW
+  PENDING_FEE
+  ACTIVE
+  RESERVED
+  SOLD
+  REJECTED
+  UNDER_COMPLIANCE_REVIEW
+}
+
+enum OfferStatus {
+  SUBMITTED
+  IN_REVIEW
+  RELAYED_TO_SELLER
+  ACCEPTED_BY_SELLER
+  REJECTED_BY_SELLER
+  COUNTER_OFFERED
+  ACCEPTED_BY_BUYER
+  EXPIRED
+  WITHDRAWN
+}
+
+enum DealStatus {
+  AWAITING_PAYMENT_PROOF
+  UNDER_ADMIN_AUDIT
+  PAYMENT_REJECTED
+  COMPLETED
+  CANCELLED
+  TERMINATED
+}
+
+enum PaymentType {
+  PLATFORM_COMMISSION
+  SELLER_PURCHASE_PRICE
+  OWNER_CONTRACT_FEE
+}
+
+enum PaymentProofStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DemandStatus {
+  ACTIVE
+  MATCHED
+  EXPIRED
+  CLOSED
+}
+
+enum OwnerContractStatus {
+  DRAFT
+  PENDING_SIGNATURE
+  PENDING_FEE
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+enum DocumentVisibility {
+  PUBLIC
+  ADMIN_ONLY
+}
+
+model User {
+  id           String        @id @default(uuid())
+  username     String        @unique
+  fullName     String
+  mobileNumber String        @unique
+  nationalId   String        @unique
+  passwordHash String
+  status       ProfileStatus @default(ACTIVE)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  profiles     UserProfile[]
+  sessions     Session[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id          String        @id @default(uuid())
+  userId      String
+  role        UserRole
+  status      ProfileStatus @default(ACTIVE)
+  payoutIban  String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  falLicense  FalLicense?
+  listings    Listing[]     @relation("ProfileListings")
+  buyerOffers Offer[]       @relation("BuyerOffers")
+  buyerDeals  Deal[]        @relation("BuyerDeals")
+  sellerDeals Deal[]        @relation("SellerDeals")
+  demands     Demand[]
+  contracts   OwnerContract[]
+
+  @@unique([userId, role])
+  @@map("user_profiles")
+}
+
+model FalLicense {
+  id             String        @id @default(uuid())
+  profileId      String        @unique
+  licenseNumber  String        @unique
+  certificateUrl String
+  expiryDate     DateTime
+  commercialName String?
+  crNumber       String?
+  status         ProfileStatus @default(UNDER_REVIEW)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  profile        UserProfile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("fal_licenses")
+}
+
+model AdminUser {
+  id           String      @id @default(uuid())
+  username     String      @unique
+  email        String      @unique
+  fullName     String
+  passwordHash String
+  role         AdminRole   @default(MODERATOR)
+  isActive     Boolean     @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  sessions     AdminSession[]
+
+  @@map("admin_users")
+}
+
+model Listing {
+  id               String             @id @default(uuid())
+  title            String
+  description      String
+  propertyType     PropertyType
+  city             String
+  district         String
+  streetName       String?
+  latitude         Float
+  longitude        Float
+  askPrice         Decimal            @db.Decimal(12, 2)
+  areaSquareMeters Float
+  bedrooms         Int?
+  bathrooms        Int?
+  yearBuilt        Int?
+  status           ListingStatus      @default(DRAFT)
+  sellerProfileId  String
+  payoutIban       String
+  version          Int                @default(1)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  sellerProfile    UserProfile        @relation("ProfileListings", fields: [sellerProfileId], references: [id])
+  documents        PropertyDocument[]
+  offers           Offer[]
+  deals            Deal[]
+  ownerContract    OwnerContract?
+
+  @@index([status, propertyType, city, district])
+  @@map("listings")
+}
+
+model PropertyDocument {
+  id           String             @id @default(uuid())
+  listingId    String
+  documentType String
+  fileUrl      String
+  mimeType     String
+  fileSize     Int
+  visibility   DocumentVisibility @default(ADMIN_ONLY)
+  createdAt    DateTime           @default(now())
+
+  listing      Listing            @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@map("property_documents")
+}
+
+model Offer {
+  id             String         @id @default(uuid())
+  listingId      String
+  buyerProfileId String
+  offerPrice     Decimal        @db.Decimal(12, 2)
+  status         OfferStatus    @default(SUBMITTED)
+  version        Int            @default(1)
+  expiresAt      DateTime
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  listing        Listing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyerProfile   UserProfile    @relation("BuyerOffers", fields: [buyerProfileId], references: [id])
+  history        OfferHistory[]
+
+  @@index([listingId, status])
+  @@map("offers")
+}
+
+model OfferHistory {
+  id            String      @id @default(uuid())
+  offerId       String
+  actorProfileId String?
+  action        String
+  priceSnapshot Decimal?    @db.Decimal(12, 2)
+  notes         String?
+  createdAt     DateTime    @default(now())
+
+  offer         Offer       @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@map("offer_history")
+}
+
+model Deal {
+  id                 String         @id @default(uuid())
+  dealNumber         String         @unique
+  listingId          String
+  buyerProfileId     String
+  sellerProfileId    String
+  dealPrice          Decimal        @db.Decimal(12, 2)
+  platformCommission Decimal        @db.Decimal(12, 2)
+  totalAmount        Decimal        @db.Decimal(12, 2)
+  dealReferenceCode  String         @unique
+  status             DealStatus     @default(AWAITING_PAYMENT_PROOF)
+  paymentDeadline    DateTime
+  completedAt        DateTime?
+  version            Int            @default(1)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  listing            Listing        @relation(fields: [listingId], references: [id])
+  buyerProfile       UserProfile    @relation("BuyerDeals", fields: [buyerProfileId], references: [id])
+  sellerProfile      UserProfile    @relation("SellerDeals", fields: [sellerProfileId], references: [id])
+  paymentProofs      PaymentProof[]
+
+  @@index([listingId, status])
+  @@map("deals")
+}
+
+model PaymentProof {
+  id                String             @id @default(uuid())
+  dealId            String?
+  ownerContractId   String?
+  paymentType       PaymentType
+  fileUrl           String
+  bankReferenceCode String
+  amountPaid        Decimal            @db.Decimal(12, 2)
+  senderBankName    String
+  status            PaymentProofStatus @default(PENDING)
+  rejectionReason   String?
+  verifiedByAdminId String?
+  verifiedAt        DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  deal              Deal?              @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  ownerContract     OwnerContract?     @relation(fields: [ownerContractId], references: [id], onDelete: Cascade)
+
+  @@index([dealId, paymentType, status])
+  @@map("payment_proofs")
+}
+
+model Demand {
+  id             String       @id @default(uuid())
+  buyerProfileId String
+  propertyType   PropertyType
+  city           String
+  districts      Json
+  minBudget      Decimal      @db.Decimal(12, 2)
+  maxBudget      Decimal      @db.Decimal(12, 2)
+  minArea        Float
+  maxArea        Float
+  notes          String?
+  status         DemandStatus @default(ACTIVE)
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  buyerProfile   UserProfile  @relation(fields: [buyerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([status, city, propertyType])
+  @@map("demands")
+}
+
+model OwnerContract {
+  id             String              @id @default(uuid())
+  listingId      String              @unique
+  ownerProfileId String
+  contractFee    Decimal             @default(1000.00) @db.Decimal(12, 2)
+  contractTerms  String
+  signatureData  String?
+  signedAt       DateTime?
+  otpCode        String?
+  status         OwnerContractStatus @default(DRAFT)
+  expiresAt      DateTime
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  listing        Listing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  ownerProfile   UserProfile         @relation(fields: [ownerProfileId], references: [id])
+  paymentProofs  PaymentProof[]
+
+  @@map("owner_contracts")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  userAgent String?
+  ipAddress String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model AdminSession {
+  id        String    @id @default(uuid())
+  adminId   String
+  token     String    @unique
+  ipAddress String?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  admin     AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("admin_sessions")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String
+  actorType  String
+  action     String
+  entityType String
+  entityId   String
+  payload    Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}

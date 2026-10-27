@@ -1,0 +1,28 @@
+{
+  "name": "elmasaif-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "El Masaif — Institutional Real Estate Marketplace Platform (KSA)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "build": "npm run build --workspaces --if-present",
+    "build:shared": "npm run build --workspace=packages/shared",
+    "build:api": "npm run build --workspace=apps/api",
+    "build:web": "npm run build --workspace=apps/web",
+    "lint": "npm run lint --workspaces --if-present",
+    "prisma:generate": "npm run prisma:generate --workspace=apps/api",
+    "prisma:migrate": "npm run prisma:migrate --workspace=apps/api",
+    "prisma:studio": "npm run prisma:studio --workspace=apps/api",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}
