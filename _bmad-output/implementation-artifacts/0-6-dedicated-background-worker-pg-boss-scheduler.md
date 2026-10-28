@@ -4,7 +4,7 @@ baseline_commit: f7fc54d081c8daa934f4bd0a2a743c9c63c90ce9
 
 # Story 0.6: Dedicated Background Worker & pg-boss Scheduler
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

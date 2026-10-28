@@ -66,6 +66,19 @@ services:
     networks:
       - elmasaif-network
 
+  # Optional ClamAV daemon for local verification with real antivirus engine (NFR13)
+  # To run with ClamAV: docker compose --profile security up -d
+  clamav:
+    image: clamav/clamav:latest
+    container_name: elmasaif-clamav
+    restart: unless-stopped
+    profiles:
+      - security
+    ports:
+      - "3310:3310"
+    networks:
+      - elmasaif-network
+
 volumes:
   postgres_data:
   minio_data:

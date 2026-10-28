@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { StorageService } from '../storage.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { ScanStatus } from '@elmasaif/shared';
 import {
   S3Client,
   GetObjectCommand,
@@ -30,6 +32,7 @@ jest.mock('@aws-sdk/s3-request-presigner', () => ({
 describe('StorageService', () => {
   let service: StorageService;
   let configService: ConfigService;
+  let mockPrismaService: any;
   let mockS3ClientInstance: { send: jest.Mock };
 
   const mockConfigValues: Record<string, string> = {
@@ -44,6 +47,15 @@ describe('StorageService', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
 
+    mockPrismaService = {
+      fileObject: {
+        findUnique: jest.fn(),
+      },
+      propertyDocument: {
+        findUnique: jest.fn(),
+      },
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StorageService,
@@ -54,6 +66,10 @@ describe('StorageService', () => {
               return mockConfigValues[key] ?? defaultValue;
             }),
           },
+        },
+        {
+          provide: PrismaService,
+          useValue: mockPrismaService,
         },
       ],
     }).compile();
@@ -389,4 +405,137 @@ describe('StorageService', () => {
       expect(mockS3ClientInstance.send).toHaveBeenCalledWith(expect.any(CreateBucketCommand));
     });
   });
+
+  describe('getObjectBuffer and putObject', () => {
+    it('should putObject via PutObjectCommand', async () => {
+      mockS3ClientInstance.send.mockResolvedValueOnce({});
+      const buffer = Buffer.from('test buffer content');
+
+      await service.putObject('identity/user-1/doc.pdf', buffer, 'application/pdf');
+
+      expect(mockS3ClientInstance.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          input: expect.objectContaining({
+            Bucket: 'elmasaif-private-documents',
+            Key: 'identity/user-1/doc.pdf',
+            ContentType: 'application/pdf',
+          }),
+        }),
+      );
+    });
+
+    it('should getObjectBuffer via GetObjectCommand and transformToByteArray', async () => {
+      const mockByteArray = new Uint8Array([1, 2, 3, 4]);
+      mockS3ClientInstance.send.mockResolvedValueOnce({
+        Body: {
+          transformToByteArray: jest.fn().mockResolvedValue(mockByteArray),
+        },
+      });
+
+      const buffer = await service.getObjectBuffer('identity/user-1/doc.pdf');
+
+      expect(buffer).toEqual(Buffer.from(mockByteArray));
+      expect(mockS3ClientInstance.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          input: expect.objectContaining({
+            Bucket: 'elmasaif-private-documents',
+            Key: 'identity/user-1/doc.pdf',
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('getVerifiedDownloadUrl (AC: 6 - Fail-Closed Download Guard)', () => {
+    it('should generate signed URL for verified CLEAN file', async () => {
+      mockPrismaService.fileObject.findUnique.mockResolvedValueOnce({
+        id: 'fo-clean-1',
+        key: 'identity/user-1/clean.pdf',
+        scanStatus: ScanStatus.CLEAN,
+      });
+
+      (getSignedUrl as jest.Mock).mockResolvedValueOnce('http://localhost:9000/signed-clean');
+
+      const url = await service.getVerifiedDownloadUrl('fo-clean-1', 120);
+
+      expect(url).toBe('http://localhost:9000/signed-clean');
+      expect(getSignedUrl).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.any(GetObjectCommand),
+        { expiresIn: 120 },
+      );
+    });
+
+    it('should refuse PENDING files with ForbiddenException (403)', async () => {
+      mockPrismaService.fileObject.findUnique.mockResolvedValueOnce({
+        id: 'fo-pending-1',
+        key: 'quarantine/pending.pdf',
+        scanStatus: ScanStatus.PENDING,
+      });
+
+      await expect(service.getVerifiedDownloadUrl('fo-pending-1')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should refuse INFECTED files with ForbiddenException (403)', async () => {
+      mockPrismaService.fileObject.findUnique.mockResolvedValueOnce({
+        id: 'fo-infected-1',
+        key: 'quarantine/infected.pdf',
+        scanStatus: ScanStatus.INFECTED,
+      });
+
+      await expect(service.getVerifiedDownloadUrl('fo-infected-1')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should refuse SCAN_FAILED files with ForbiddenException (403)', async () => {
+      mockPrismaService.fileObject.findUnique.mockResolvedValueOnce({
+        id: 'fo-failed-1',
+        key: 'quarantine/failed.pdf',
+        scanStatus: ScanStatus.SCAN_FAILED,
+      });
+
+      await expect(service.getVerifiedDownloadUrl('fo-failed-1')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should refuse files whose key is still in quarantine/ with ForbiddenException', async () => {
+      mockPrismaService.fileObject.findUnique.mockResolvedValueOnce({
+        id: 'fo-quarantine-1',
+        key: 'quarantine/some-doc.pdf',
+        scanStatus: ScanStatus.CLEAN, // Even if somehow marked CLEAN, quarantine key is refused
+      });
+
+      await expect(service.getVerifiedDownloadUrl('fo-quarantine-1')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should throw NotFoundException if file does not exist', async () => {
+      mockPrismaService.fileObject.findUnique.mockResolvedValueOnce(null);
+      mockPrismaService.propertyDocument.findUnique.mockResolvedValueOnce(null);
+
+      await expect(service.getVerifiedDownloadUrl('non-existent')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should support verified download from PropertyDocument if FileObject not found', async () => {
+      mockPrismaService.fileObject.findUnique.mockResolvedValueOnce(null);
+      mockPrismaService.propertyDocument.findUnique.mockResolvedValueOnce({
+        id: 'prop-doc-1',
+        fileUrl: 'contracts/c-1/agreement.pdf',
+        scanStatus: ScanStatus.CLEAN,
+      });
+
+      (getSignedUrl as jest.Mock).mockResolvedValueOnce('http://localhost:9000/signed-prop-doc');
+
+      const url = await service.getVerifiedDownloadUrl('prop-doc-1');
+      expect(url).toBe('http://localhost:9000/signed-prop-doc');
+    });
+  });
 });
+

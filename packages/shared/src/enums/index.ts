@@ -92,3 +92,10 @@ export enum DocumentVisibility {
   PUBLIC = 'PUBLIC',
   ADMIN_ONLY = 'ADMIN_ONLY'
 }
+
+export enum ScanStatus {
+  PENDING = 'PENDING',
+  CLEAN = 'CLEAN',
+  INFECTED = 'INFECTED',
+  SCAN_FAILED = 'SCAN_FAILED'
+}

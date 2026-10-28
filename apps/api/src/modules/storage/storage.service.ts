@@ -1,4 +1,11 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import {
@@ -12,6 +19,8 @@ import {
   CreateBucketCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { PrismaService } from '../../prisma/prisma.service';
+import { ScanStatus } from '@elmasaif/shared';
 
 export type StoragePartition = 'quarantine' | 'identity' | 'payments' | 'contracts' | 'licenses';
 
@@ -26,6 +35,7 @@ export const ALLOWED_DOCUMENT_MIME_TYPES = [
   'application/pdf',
   'image/jpeg',
   'image/png',
+  'image/webp',
 ] as const;
 
 export type AllowedMimeType = typeof ALLOWED_DOCUMENT_MIME_TYPES[number];
@@ -42,7 +52,10 @@ export class StorageService {
   private readonly bucketName: string;
   private readonly forcePathStyle: boolean;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    @Optional() private readonly prisma?: PrismaService,
+  ) {
     this.endpoint =
       this.configService.get<string>('STORAGE_ENDPOINT') ??
       this.configService.get<string>('S3_ENDPOINT') ??
@@ -271,4 +284,86 @@ export class StorageService {
       }
     }
   }
+
+  /**
+   * Retrieves an object's binary buffer from the private S3 bucket.
+   */
+  async getObjectBuffer(key: string): Promise<Buffer> {
+    if (!key || !key.trim()) {
+      throw new BadRequestException('Object key is required');
+    }
+
+    const command = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: key.trim(),
+    });
+
+    const response = await this.s3Client.send(command);
+    if (!response.Body) {
+      throw new BadRequestException(`Object body is empty for key: ${key}`);
+    }
+
+    const byteArray = await (response.Body as any).transformToByteArray();
+    return Buffer.from(byteArray);
+  }
+
+  /**
+   * Puts an object buffer directly into the private S3 bucket.
+   */
+  async putObject(key: string, buffer: Buffer, contentType: string): Promise<void> {
+    if (!key || !key.trim()) {
+      throw new BadRequestException('Object key is required');
+    }
+
+    const command = new PutObjectCommand({
+      Bucket: this.bucketName,
+      Key: key.trim(),
+      Body: buffer,
+      ContentType: contentType,
+    });
+
+    await this.s3Client.send(command);
+  }
+
+  /**
+   * Generates a verified, short-lived presigned download URL for a scanned document or image.
+   * Strictly enforces that the file has scanStatus === ScanStatus.CLEAN.
+   * Fails closed with 403 Forbidden for PENDING, INFECTED, SCAN_FAILED, or quarantine-partitioned keys.
+   */
+  async getVerifiedDownloadUrl(fileObjectId: string, expiresInSeconds = MAX_EXPIRATION_SECONDS): Promise<string> {
+    if (!fileObjectId || !fileObjectId.trim()) {
+      throw new BadRequestException('File object ID is required');
+    }
+
+    if (!this.prisma) {
+      throw new Error('PrismaService is required for getVerifiedDownloadUrl');
+    }
+
+    // Check FileObject first
+    const fileObject = await this.prisma.fileObject.findUnique({
+      where: { id: fileObjectId.trim() },
+    });
+
+    if (fileObject) {
+      if (fileObject.scanStatus !== ScanStatus.CLEAN || fileObject.key.startsWith('quarantine/')) {
+        throw new ForbiddenException('File is quarantined or has not passed malware scan verification');
+      }
+      return this.getPresignedDownloadUrl(fileObject.key, expiresInSeconds);
+    }
+
+    // Check PropertyDocument if not found in FileObject
+    const propertyDoc = await this.prisma.propertyDocument.findUnique({
+      where: { id: fileObjectId.trim() },
+    });
+
+    if (propertyDoc) {
+      if (propertyDoc.scanStatus !== ScanStatus.CLEAN || propertyDoc.fileUrl.startsWith('quarantine/')) {
+        throw new ForbiddenException('File is quarantined or has not passed malware scan verification');
+      }
+      return this.getPresignedDownloadUrl(propertyDoc.fileUrl, expiresInSeconds);
+    }
+
+    throw new NotFoundException(`File record not found for ID '${fileObjectId}'`);
+  }
 }
+
