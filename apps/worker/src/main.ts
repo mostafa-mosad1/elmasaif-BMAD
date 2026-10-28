@@ -1,20 +1,44 @@
 import { CURRENCY_CODE_SAR } from '@elmasaif/shared';
 import { assertWorkerProductionSafety } from './startup-guard';
 import { workerClock } from './clock';
+import { getWorkerConfig } from './config';
+import { WorkerScheduler } from './scheduler';
 
 /**
  * El Masaif Dedicated Background Worker Service
  * Responsible for scheduled tasks, pg-boss job processing, and background workflows.
  */
-class WorkerApplication {
+export class WorkerApplication {
   private isShuttingDown = false;
   private heartbeatTimer: NodeJS.Timeout | null = null;
+  private scheduler: WorkerScheduler | null = null;
 
   public async bootstrap(): Promise<void> {
     assertWorkerProductionSafety();
 
+    const config = getWorkerConfig();
+
     console.log('[Worker] Bootstrapping El Masaif Background Worker...');
     console.log(`[Worker] Loaded shared contracts (Default Currency: ${CURRENCY_CODE_SAR})`);
+    console.log(`[Worker] Environment: ${config.nodeEnv}`);
+
+    this.scheduler = new WorkerScheduler({
+      databaseUrl: config.databaseUrl,
+      bossSchema: config.bossSchema,
+      gracefulShutdownTimeoutMs: config.gracefulShutdownTimeoutMs
+    });
+
+    try {
+      await this.scheduler.start();
+    } catch (error: any) {
+      if (config.nodeEnv === 'development' || config.nodeEnv === 'test') {
+        console.warn(
+          `[Worker] PostgreSQL/PgBoss unavailable during startup in ${config.nodeEnv} mode. Worker entering standby polling mode: ${error?.message || error}`
+        );
+      } else {
+        throw error;
+      }
+    }
 
     this.registerSignalHandlers();
 
@@ -23,7 +47,7 @@ class WorkerApplication {
       if (!this.isShuttingDown) {
         console.log(`[Worker Heartbeat] Active at ${workerClock.nowIso()}`);
       }
-    }, 60000);
+    }, config.heartbeatIntervalMs);
 
     // Keep event loop alive
     if (this.heartbeatTimer.unref) {
@@ -31,6 +55,10 @@ class WorkerApplication {
     }
 
     console.log('[Worker] Worker started successfully and listening for jobs.');
+  }
+
+  public getScheduler(): WorkerScheduler | null {
+    return this.scheduler;
   }
 
   private registerSignalHandlers(): void {
@@ -60,14 +88,19 @@ class WorkerApplication {
     process.on('SIGINT', () => handleShutdown('SIGINT'));
   }
 
-  private async cleanup(): Promise<void> {
-    // Teardown connections, flush queues, finish in-flight jobs
-    return new Promise((resolve) => setTimeout(resolve, 100));
+  public async cleanup(): Promise<void> {
+    if (this.scheduler) {
+      await this.scheduler.stop();
+      this.scheduler = null;
+    }
   }
 }
 
-const worker = new WorkerApplication();
-worker.bootstrap().catch((error) => {
-  console.error('[Worker] Fatal error during bootstrap:', error);
-  process.exit(1);
-});
+// Only auto-bootstrap when run directly, not when required by tests
+if (require.main === module || !process.env.VITEST) {
+  const worker = new WorkerApplication();
+  worker.bootstrap().catch((error) => {
+    console.error('[Worker] Fatal error during bootstrap:', error);
+    process.exit(1);
+  });
+}

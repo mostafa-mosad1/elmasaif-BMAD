@@ -4,7 +4,7 @@ baseline_commit: c77dfe4b5c9519d9cdcce1a91b2003c658e9b23d
 
 # Story 0.5: Deterministic ClockService & Hard Startup Guard
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

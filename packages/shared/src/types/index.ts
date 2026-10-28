@@ -72,4 +72,5 @@ export interface DealSummary {
 
 export * from './geo';
 export * from './clock';
+export * from './jobs';
 

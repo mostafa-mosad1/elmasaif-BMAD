@@ -12,7 +12,9 @@
     "lint": "eslint \"src/**/*.ts\""
   },
   "dependencies": {
-    "@elmasaif/shared": "*"
+    "@elmasaif/shared": "*",
+    "dotenv": "^16.4.5",
+    "pg-boss": "^10.4.2"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
