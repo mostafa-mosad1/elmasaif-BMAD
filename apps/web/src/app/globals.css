@@ -1,54 +1,128 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
+  /* Sovereign Emerald Primary Ramp */
   --primary: #1B4332;
   --primary-hover: #143326;
   --primary-light: #E8F3EE;
+  --primary-foreground: #FFFFFF;
+  --primary-dark: #2D6A4F;
+  --primary-dark-hover: #3D8565;
+
+  /* Desert Gold Financial Accent Ramp */
   --accent: #C69C45;
   --accent-hover: #B38A38;
   --accent-light: #FAF4E8;
+  --accent-foreground: #1A1208;
+  --accent-dark: #D4AF37;
+
+  /* Surfaces & Canvas (Light Mode) */
   --background: #F8FAF9;
   --surface-base: #FFFFFF;
+  --surface-raised: #FFFFFF;
   --surface-sunken: #F0F4F2;
   --surface-border: #E2E8F0;
+  --surface-border-strong: #CBD5E1;
+
+  /* Text & Ink Scales (Light Mode) */
   --ink-primary: #0F172A;
   --ink-secondary: #475569;
+  --ink-muted: #94A3B8;
+  --ink-disabled: #CBD5E1;
+  --ink-inverse: #FFFFFF;
+
+  /* Glassmorphism nav background */
+  --nav-bg: rgba(255, 255, 255, 0.88);
+}
+
+.dark {
+  /* Surfaces & Canvas (Dark Mode) */
+  --background: #0B130E;
+  --surface-base: #132018;
+  --surface-raised: #1C2E24;
+  --surface-sunken: #0E1712;
+  --surface-border: #23382C;
+  --surface-border-strong: #32503E;
+
+  /* Text & Ink Scales (Dark Mode) */
+  --ink-primary: #F1F5F9;
+  --ink-secondary: #CBD5E1;
+  --ink-muted: #64748B;
+  --ink-disabled: #334155;
+  --ink-inverse: #0F172A;
+
+  /* Glassmorphism nav background */
+  --nav-bg: rgba(19, 32, 24, 0.88);
 }
 
 body {
   background-color: var(--background);
   color: var(--ink-primary);
-  font-family: 'IBM Plex Sans Arabic', sans-serif;
-  direction: rtl;
-  text-align: right;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
-/* Monospace numerals & IBAN styling */
+/* Monospace numerals, codes & IBAN styling */
 .font-mono-numbers {
   font-family: 'JetBrains Mono', monospace;
   letter-spacing: 0.05em;
   direction: ltr;
   display: inline-block;
+  unicode-bidi: isolate;
 }
 
 /* Glassmorphism Navigation */
 .nav-blur {
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--nav-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
-/* Custom Card Hover */
+/* Sovereign Luxury Card Elevation Hover */
 .luxury-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
 }
 
 .luxury-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   box-shadow: 0 12px 24px -6px rgba(27, 67, 50, 0.08), 0 4px 8px -4px rgba(27, 67, 50, 0.04);
+}
+
+.dark .luxury-card:hover {
+  box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.35), 0 4px 8px -4px rgba(0, 0, 0, 0.2);
+}
+
+/* Selection Highlight */
+::selection {
+  background-color: #1B4332;
+  color: #FFFFFF;
+}
+
+.dark ::selection {
+  background-color: #2D6A4F;
+  color: #FFFFFF;
+}
+
+/* Sovereign Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface-sunken);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-border-strong);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
 }

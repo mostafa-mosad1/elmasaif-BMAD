@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { AppProviders } from '../components/providers';
 
 export const metadata: Metadata = {
   title: 'المصايف | منصة الصفقات العقارية المعتمدة في المملكة العربية السعودية',
@@ -19,9 +20,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ar" dir="rtl">
-      <body className="min-h-screen flex flex-col bg-surface-background text-ink-primary">
-        {children}
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
+      <body className="min-h-screen flex flex-col bg-surface-background dark:bg-dark-background text-ink-primary dark:text-dark-ink-primary font-sans antialiased transition-colors duration-200">
+        <AppProviders>
+          {children}
+        </AppProviders>
       </body>
     </html>
   );

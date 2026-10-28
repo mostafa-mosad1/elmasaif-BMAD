@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 10-27-2026 15:27
-last_updated: 10-28-2026 17:45
+last_updated: 10-28-2026 22:42
 project: elmasaif
 project_key: NOKEY
 tracking_system: file-system
@@ -42,8 +42,8 @@ development_status:
   0-4-master-geographic-tables-initial-prisma-schema: review
   0-5-deterministic-clockservice-hard-startup-guard: done
   0-6-dedicated-background-worker-pg-boss-scheduler: done
-  0-7-pre-persistence-quarantine-malware-scanning-hook: review
-  0-8-sovereign-design-system-foundation-rtl-layout-shell: backlog
+  0-7-pre-persistence-quarantine-malware-scanning-hook: done
+  0-8-sovereign-design-system-foundation-rtl-layout-shell: review
   epic-0-retrospective: optional
 
   epic-1: backlog
