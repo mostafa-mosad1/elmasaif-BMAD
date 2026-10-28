@@ -4,7 +4,7 @@ baseline_commit: 53e9c5b3ff273aca456b8cf18bbcac8a33cf13f5
 
 # Story 0.8: Sovereign Design System Foundation & RTL Layout Shell
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
