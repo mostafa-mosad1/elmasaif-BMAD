@@ -5,6 +5,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './modules/health/health.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { GeoModule } from './modules/geo/geo.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 
 @Module({
@@ -20,7 +21,8 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
     ScheduleModule.forRoot(),
     PrismaModule,
     HealthModule,
-    StorageModule
+    StorageModule,
+    GeoModule
   ]
 })
 export class AppModule implements NestModule {

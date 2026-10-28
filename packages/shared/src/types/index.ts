@@ -69,3 +69,6 @@ export interface DealSummary {
   platformFeeProofUploaded: boolean;
   sellerPriceProofUploaded: boolean;
 }
+
+export * from './geo';
+

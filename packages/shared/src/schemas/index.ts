@@ -67,12 +67,16 @@ export const otpVerifySchema = z.object({
   code: z.string().length(6, 'رمز التحقق يجب أن يتكون من 6 أرقام')
 });
 
+export * from './geo.schema';
+
 export const createListingSchema = z.object({
   title: z.string().min(5, 'عنوان العقار مطلوب').max(150),
   description: z.string().min(20, 'وصف العقار يجب أن يكون وافياً ومفصلاً'),
   propertyType: z.nativeEnum(PropertyType),
-  city: z.string().min(2, 'المدينة مطلوبة'),
-  district: z.string().min(2, 'الحي مطلوب'),
+  cityId: z.string().uuid('معرف المدينة يجب أن يكون بصيغة UUID صالحة'),
+  districtId: z.string().uuid('معرف الحي يجب أن يكون بصيغة UUID صالحة'),
+  city: z.string().min(2, 'المدينة مطلوبة').optional(),
+  district: z.string().min(2, 'الحي مطلوب').optional(),
   streetName: z.string().optional(),
   latitude: z.number().min(15).max(33),
   longitude: z.number().min(34).max(56),

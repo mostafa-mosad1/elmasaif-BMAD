@@ -4,7 +4,7 @@ baseline_commit: 5618a758a6ab8f4b3944dd560c1a6ffc6a449980
 
 # Story 0.3: Same-Origin API Proxy & HTTP Presentation Boundary
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

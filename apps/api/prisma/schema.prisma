@@ -527,6 +527,8 @@ model Demand {
   id             String       @id @default(uuid())
   buyerProfileId String
   propertyType   PropertyType
+  cityId         String?
+  districtId     String?
   city           String
   districts      Json
   minBudget      Decimal      @db.Decimal(12, 2)
@@ -542,6 +544,7 @@ model Demand {
   buyerProfile   UserProfile  @relation(fields: [buyerProfileId], references: [id], onDelete: Cascade)
 
   @@index([status, city, propertyType])
+  @@index([cityId, districtId])
   @@map("demands")
 }
 
