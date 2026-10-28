@@ -1,4 +1,6 @@
 import { CURRENCY_CODE_SAR } from '@elmasaif/shared';
+import { assertWorkerProductionSafety } from './startup-guard';
+import { workerClock } from './clock';
 
 /**
  * El Masaif Dedicated Background Worker Service
@@ -9,6 +11,8 @@ class WorkerApplication {
   private heartbeatTimer: NodeJS.Timeout | null = null;
 
   public async bootstrap(): Promise<void> {
+    assertWorkerProductionSafety();
+
     console.log('[Worker] Bootstrapping El Masaif Background Worker...');
     console.log(`[Worker] Loaded shared contracts (Default Currency: ${CURRENCY_CODE_SAR})`);
 
@@ -17,7 +21,7 @@ class WorkerApplication {
     // Start background worker heartbeat loop
     this.heartbeatTimer = setInterval(() => {
       if (!this.isShuttingDown) {
-        console.log(`[Worker Heartbeat] Active at ${new Date().toISOString()}`);
+        console.log(`[Worker Heartbeat] Active at ${workerClock.nowIso()}`);
       }
     }, 60000);
 

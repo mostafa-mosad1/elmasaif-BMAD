@@ -6,6 +6,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './modules/health/health.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { GeoModule } from './modules/geo/geo.module';
+import { ClockModule } from './common/clock/clock.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 
 @Module({
@@ -19,6 +20,7 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
       limit: 100
     }]),
     ScheduleModule.forRoot(),
+    ClockModule,
     PrismaModule,
     HealthModule,
     StorageModule,

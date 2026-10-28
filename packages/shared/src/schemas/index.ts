@@ -68,6 +68,7 @@ export const otpVerifySchema = z.object({
 });
 
 export * from './geo.schema';
+export * from './clock.schema';
 
 export const createListingSchema = z.object({
   title: z.string().min(5, 'عنوان العقار مطلوب').max(150),

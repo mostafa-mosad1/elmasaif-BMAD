@@ -4,7 +4,7 @@ baseline_commit: 217ea212f0fcb0b38dc9055832ecae5eb7c4789c
 
 # Story 0.4: Master Geographic Tables & Initial Prisma Schema
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -93,20 +93,20 @@ So that property listings and buyer demands can be strictly bound to validated g
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Verify & Refine Prisma Schema Models & Relations (AC: 1, AC: 2)
-  - [ ] 1.1 Inspect `apps/api/prisma/schema.prisma` to verify `City` and `District` models:
+- [x] Task 1: Verify & Refine Prisma Schema Models & Relations (AC: 1, AC: 2)
+  - [x] 1.1 Inspect `apps/api/prisma/schema.prisma` to verify `City` and `District` models:
     - Ensure fields: `id` (uuid), `nameAr`, `nameEn`, `isActive` (`Boolean @default(true)`), `createdAt`.
     - Ensure `District` declares `cityId String`, relation `city City @relation(fields: [cityId], references: [id])`, and composite unique constraint `@@unique([id, cityId])`.
     - Ensure table mappings `@@map("cities")` and `@@map("districts")`.
-  - [ ] 1.2 Verify `Listing` model relation to `District`:
+  - [x] 1.2 Verify `Listing` model relation to `District`:
     - Confirm composite foreign key `district District @relation(fields: [districtId, cityId], references: [id, cityId])` and `city City @relation(fields: [cityId], references: [id])`.
     - Confirm index `@@index([status, propertyType, cityId, districtId])`.
-  - [ ] 1.3 Verify `Demand` model geographic fields in `schema.prisma`:
+  - [x] 1.3 Verify `Demand` model geographic fields in `schema.prisma`:
     - Align `cityId` and optional `districtId` referencing master tables while preserving backward compatibility.
-  - [ ] 1.4 Validate Prisma schema syntax via `npx prisma validate --schema=apps/api/prisma/schema.prisma`.
+  - [x] 1.4 Validate Prisma schema syntax via `npx prisma validate --schema=apps/api/prisma/schema.prisma`.
 
-- [ ] Task 2: Implement Comprehensive Bilingual Saudi Geographic Seed Script (AC: 3)
-  - [ ] 2.1 Create `apps/api/prisma/seed.ts`:
+- [x] Task 2: Implement Comprehensive Bilingual Saudi Geographic Seed Script (AC: 3)
+  - [x] 2.1 Create `apps/api/prisma/seed.ts`:
     - Initialize Prisma client instance.
     - Define geographic dataset with 7 major Saudi cities:
       - Riyadh (الرياض)
@@ -117,57 +117,57 @@ So that property listings and buyer demands can be strictly bound to validated g
       - Taif (الطائف)
       - Khobar (الخبر)
     - Define official districts for each city (minimum 5-8 prominent districts per city with authentic Arabic and English transliterated names).
-  - [ ] 2.2 Implement idempotent seeding using `prisma.city.upsert` and `prisma.district.upsert` based on deterministic IDs or unique composite constraints.
-  - [ ] 2.3 Update `apps/api/package.json`:
+  - [x] 2.2 Implement idempotent seeding using `prisma.city.upsert` and `prisma.district.upsert` based on deterministic IDs or unique composite constraints.
+  - [x] 2.3 Update `apps/api/package.json`:
     - Add `"prisma": { "seed": "ts-node prisma/seed.ts" }`.
     - Add `"prisma:seed": "prisma db seed"`.
-  - [ ] 2.4 Update root `package.json`:
+  - [x] 2.4 Update root `package.json`:
     - Add `"prisma:seed": "npm run prisma:seed --workspace=apps/api"`.
 
-- [ ] Task 3: Define Shared Geographic Schemas & Types in `packages/shared` (AC: 5)
-  - [ ] 3.1 Create or update `packages/shared/src/schemas/geo.schema.ts` (or `packages/shared/src/schemas/index.ts`):
+- [x] Task 3: Define Shared Geographic Schemas & Types in `packages/shared` (AC: 5)
+  - [x] 3.1 Create or update `packages/shared/src/schemas/geo.schema.ts` (or `packages/shared/src/schemas/index.ts`):
     - `citySchema`: `id` (uuid), `nameAr`, `nameEn`, `isActive`.
     - `districtSchema`: `id` (uuid), `cityId` (uuid), `nameAr`, `nameEn`, `isActive`.
     - `geoTreeItemSchema`: city with `districts: z.array(districtSchema)`.
     - Update `createListingSchema` to require `cityId: z.string().uuid()` and `districtId: z.string().uuid()`.
-  - [ ] 3.2 Update `packages/shared/src/types/index.ts`:
+  - [x] 3.2 Update `packages/shared/src/types/index.ts`:
     - Export `City`, `District`, `CityWithDistricts`, `GeoTreeItem`.
-  - [ ] 3.3 Export all schemas and types from `packages/shared/src/index.ts`.
-  - [ ] 3.4 Build `packages/shared` via `npm run build:shared` and verify type definitions are emitted.
+  - [x] 3.3 Export all schemas and types from `packages/shared/src/index.ts`.
+  - [x] 3.4 Build `packages/shared` via `npm run build:shared` and verify type definitions are emitted.
 
-- [ ] Task 4: Implement `GeoModule` in `apps/api` (AC: 4)
-  - [ ] 4.1 Create `apps/api/src/modules/geo/geo.service.ts`:
+- [x] Task 4: Implement `GeoModule` in `apps/api` (AC: 4)
+  - [x] 4.1 Create `apps/api/src/modules/geo/geo.service.ts`:
     - Implement `getCities(includeInactive?: boolean)`: returns cities with `where: includeInactive ? undefined : { isActive: true }`, sorted by `nameAr ASC`.
     - Implement `getDistrictsByCity(cityId: string, includeInactive?: boolean)`: verifies city existence; if not found, throws `NotFoundException('المدينة المحددة غير موجودة')`; returns active districts sorted by `nameAr ASC`.
     - Implement `getGeoTree(includeInactive?: boolean)`: returns cities including their districts with nested `where: { isActive: true }`.
-  - [ ] 4.2 Create `apps/api/src/modules/geo/geo.controller.ts`:
+  - [x] 4.2 Create `apps/api/src/modules/geo/geo.controller.ts`:
     - Route prefix: `geo` (mapped under `/api/v1/geo`).
     - Endpoint `GET /api/v1/geo/cities`: supports optional `@Query('includeInactive')`.
     - Endpoint `GET /api/v1/geo/cities/:cityId/districts`: validates `:cityId` parameter.
     - Endpoint `GET /api/v1/geo/tree`: returns complete hierarchical tree.
     - Add Swagger annotations (`@ApiTags('Geography')`, `@ApiOperation`, `@ApiResponse`).
-  - [ ] 4.3 Create `apps/api/src/modules/geo/geo.module.ts`:
+  - [x] 4.3 Create `apps/api/src/modules/geo/geo.module.ts`:
     - Import `PrismaModule`.
     - Provide `GeoService`.
     - Declare `GeoController`.
     - Export `GeoService`.
-  - [ ] 4.4 Register `GeoModule` in `apps/api/src/app.module.ts`.
+  - [x] 4.4 Register `GeoModule` in `apps/api/src/app.module.ts`.
 
-- [ ] Task 5: Testing, Linting & Verification (AC: 6)
-  - [ ] 5.1 Create unit tests `apps/api/src/modules/geo/__tests__/geo.service.spec.ts`:
+- [x] Task 5: Testing, Linting & Verification (AC: 6)
+  - [x] 5.1 Create unit tests `apps/api/src/modules/geo/__tests__/geo.service.spec.ts`:
     - Mock `PrismaService`.
     - Test `getCities` filters active cities.
     - Test `getDistrictsByCity` returns districts for valid cityId.
     - Test `getDistrictsByCity` throws `NotFoundException` for invalid or unknown cityId.
     - Test `getGeoTree` returns hierarchical tree structure.
-  - [ ] 5.2 Create unit tests `apps/api/src/modules/geo/__tests__/geo.controller.spec.ts`:
+  - [x] 5.2 Create unit tests `apps/api/src/modules/geo/__tests__/geo.controller.spec.ts`:
     - Test controller delegates calls to `GeoService` and returns proper payloads.
-  - [ ] 5.3 Create unit tests `packages/shared/src/schemas/__tests__/geo.spec.ts`:
+  - [x] 5.3 Create unit tests `packages/shared/src/schemas/__tests__/geo.spec.ts`:
     - Test validation of valid and invalid city/district payloads.
     - Test `createListingSchema` with valid UUID `cityId` / `districtId`.
-  - [ ] 5.4 Run monorepo test suites: `npm test` (verify 100% pass across `apps/api`, `apps/web`, `packages/shared`).
-  - [ ] 5.5 Run monorepo lint: `npm run lint` across all workspaces.
-  - [ ] 5.6 Run monorepo build: `npm run build` across all workspaces.
+  - [x] 5.4 Run monorepo test suites: `npm test` (verify 100% pass across `apps/api`, `apps/web`, `packages/shared`).
+  - [x] 5.5 Run monorepo lint: `npm run lint` across all workspaces.
+  - [x] 5.6 Run monorepo build: `npm run build` across all workspaces.
 
 ## Dev Notes
 
@@ -315,16 +315,49 @@ Gemini 3.8 Flash (High)
 
 ### Debug Log References
 
-<!-- To be populated during development -->
+- Verified `schema.prisma` with `City` and `District` models, relational composite key `[districtId, cityId]` on `Listing`, and validated with `npx prisma validate`.
+- Aligned `Demand` model in `apps/api/prisma/schema.prisma` with `cityId String?` and `districtId String?` and added index `@@index([cityId, districtId])`.
+- Regenerated Prisma Client via `npm run prisma:generate`.
+- Authored idempotent seed script `apps/api/prisma/seed.ts` seeding 7 Saudi cities and 39 prominent districts with deterministic UUIDs.
+- Created shared Zod schemas (`citySchema`, `districtSchema`, `geoTreeItemSchema`, `geoTreeResponseSchema`) in `packages/shared/src/schemas/geo.schema.ts` and updated `createListingSchema` to enforce UUID format for `cityId` and `districtId`.
+- Created shared types (`City`, `District`, `CityWithDistricts`, `GeoTreeItem`) in `packages/shared/src/types/geo.ts`.
+- Verified RED phase: authored unit tests in `packages/shared` and `apps/api` and confirmed test execution.
+- Implemented `GeoService`, `GeoController`, and `GeoModule` in `apps/api/src/modules/geo/` providing `/api/v1/geo/cities`, `/api/v1/geo/cities/:cityId/districts`, and `/api/v1/geo/tree`.
+- Verified GREEN phase: 15/15 tests in `apps/api` geo suite, 24/24 tests in `packages/shared` suite passed.
+- Monorepo regression test run: 95/95 tests passing across all packages (`@elmasaif/api`, `@elmasaif/web`, `@elmasaif/shared`).
+- Monorepo linting passed cleanly with 0 errors across all workspaces.
+- Monorepo build passed cleanly with 0 errors across all workspaces.
 
 ### Completion Notes List
 
-<!-- To be populated during development -->
+- ✅ AC 1: Verified and refined `City` and `District` models with `isActive: Boolean`, `@@unique([id, cityId])`, and `Listing` composite foreign key `[districtId, cityId]`. Added `cityId` / `districtId` to `Demand` model with index.
+- ✅ AC 2: Migration baseline confirmed valid via `npx prisma validate`.
+- ✅ AC 3: Created `apps/api/prisma/seed.ts` with 7 major Saudi cities (الرياض, جدة, الدمام, مكة المكرمة, المدينة المنورة, الطائف, الخبر) and 39 official residential districts using deterministic UUIDs and idempotent upsert logic. Added `prisma:seed` script to `apps/api/package.json` and root `package.json`.
+- ✅ AC 4: Implemented `GeoModule`, `GeoService`, and `GeoController` in `apps/api` with endpoints `GET /api/v1/geo/cities`, `GET /api/v1/geo/cities/:cityId/districts`, and `GET /api/v1/geo/tree`, complying with OpenAPI Swagger annotations and standard error envelope `{ code: 'CITY_NOT_FOUND', ... }`.
+- ✅ AC 5: Added `citySchema`, `districtSchema`, `geoTreeResponseSchema`, and updated `createListingSchema` with `cityId` and `districtId` in `packages/shared`. Exported `City`, `District`, `CityWithDistricts`, `GeoTreeItem` types.
+- ✅ AC 6: Automated unit & integration verification passed 100% (54 tests in API, 24 tests in shared, 17 tests in web; full monorepo lint and build passing).
 
 ### File List
 
-<!-- To be populated during development -->
+- `apps/api/prisma/schema.prisma`
+- `apps/api/prisma/seed.ts`
+- `apps/api/package.json`
+- `package.json`
+- `packages/shared/src/schemas/geo.schema.ts`
+- `packages/shared/src/schemas/index.ts`
+- `packages/shared/src/schemas/__tests__/geo.spec.ts`
+- `packages/shared/src/types/geo.ts`
+- `packages/shared/src/types/index.ts`
+- `apps/api/src/modules/geo/geo.service.ts`
+- `apps/api/src/modules/geo/geo.controller.ts`
+- `apps/api/src/modules/geo/geo.module.ts`
+- `apps/api/src/modules/geo/__tests__/geo.service.spec.ts`
+- `apps/api/src/modules/geo/__tests__/geo.controller.spec.ts`
+- `apps/api/src/app.module.ts`
+- `_bmad-output/implementation-artifacts/0-4-master-geographic-tables-initial-prisma-schema.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
 
 ### Change Log
 
-<!-- To be populated during development -->
+- 10-28-2026: Implemented Story 0.4 Master Geographic Tables & Initial Prisma Schema, including Prisma schema refinements, idempotent bilingual geographic seed script, shared Zod schemas & TypeScript types, NestJS GeoModule REST endpoints with Swagger docs, and complete unit test suites with 100% monorepo pass.
+
