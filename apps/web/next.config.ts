@@ -16,6 +16,18 @@ const nextConfig: NextConfig = {
         hostname: 'localhost'
       }
     ]
+  },
+  async rewrites() {
+    const apiDestination =
+      process.env.INTERNAL_API_URL ||
+      process.env.API_URL ||
+      'http://localhost:4000';
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${apiDestination}/api/:path*`,
+      },
+    ];
   }
 };
 
