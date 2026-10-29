@@ -1,0 +1,115 @@
+import { describe, it, expect } from 'vitest';
+import React from 'react';
+import { renderToString } from 'react-dom/server';
+import { WorkspaceShell } from '../workspace-shell';
+import { AuthContext, AuthContextType } from '../../providers/auth-provider';
+import { DirectionProvider } from '../../providers/direction-provider';
+import { ThemeProvider } from '../../providers/theme-provider';
+import { UserRole, ProfileStatus } from '@elmasaif/shared';
+
+describe('WorkspaceShell Component (AC: 5, 7)', () => {
+  const createMockContext = (activeRole: UserRole): AuthContextType => ({
+    user: {
+      id: 'usr-1',
+      fullName: 'أحمد فهد',
+      mobileNumber: '+966501234567',
+      username: 'ahmed_f',
+      role: activeRole,
+      activeRole,
+      profiles: [
+        {
+          id: 'p-1',
+          role: activeRole,
+          status: ProfileStatus.ACTIVE
+        }
+      ]
+    },
+    activeRole,
+    profiles: [
+      {
+        id: 'p-1',
+        role: activeRole,
+        status: ProfileStatus.ACTIVE
+      }
+    ],
+    isLoading: false,
+    switchRole: async () => {},
+    attachOwnerRole: async () => {},
+    logout: async () => {},
+    refreshSession: async () => {}
+  });
+
+  const renderWithProviders = (contextValue: AuthContextType, children: React.ReactNode) => {
+    return renderToString(
+      React.createElement(
+        DirectionProvider,
+        null,
+        React.createElement(
+          ThemeProvider,
+          null,
+          React.createElement(
+            AuthContext.Provider,
+            { value: contextValue },
+            children
+          )
+        )
+      )
+    );
+  };
+
+  it('renders Buyer workspace sidebar navigation', () => {
+    const html = renderWithProviders(
+      createMockContext(UserRole.BUYER),
+      React.createElement(
+        WorkspaceShell,
+        null,
+        React.createElement('div', null, 'محتوى مساحة المشتري')
+      )
+    );
+
+    expect(html).toContain('المصايف');
+    expect(html).toContain('مساحة المشتري');
+    expect(html).toContain('لوحة التحكم');
+    expect(html).toContain('تصفح العقارات');
+    expect(html).toContain('عروضي النشطة');
+    expect(html).toContain('العقارات المفضلة');
+    expect(html).toContain('طلبات الشراء');
+    expect(html).toContain('محتوى مساحة المشتري');
+  });
+
+  it('renders Owner workspace sidebar navigation', () => {
+    const html = renderWithProviders(
+      createMockContext(UserRole.OWNER),
+      React.createElement(
+        WorkspaceShell,
+        null,
+        React.createElement('div', null, 'محتوى مساحة المالك')
+      )
+    );
+
+    expect(html).toContain('مساحة المالك');
+    expect(html).toContain('لوحة تحكم المالك');
+    expect(html).toContain('طلب عرض عقار مباشر');
+    expect(html).toContain('عقود الوساطة الإلكترونية');
+    expect(html).toContain('حسابات التحويل (IBAN)');
+    expect(html).toContain('محتوى مساحة المالك');
+  });
+
+  it('renders Marketer workspace sidebar navigation', () => {
+    const html = renderWithProviders(
+      createMockContext(UserRole.MARKETER),
+      React.createElement(
+        WorkspaceShell,
+        null,
+        React.createElement('div', null, 'محتوى مساحة الوسيط')
+      )
+    );
+
+    expect(html).toContain('مساحة الوسيط المعتمد');
+    expect(html).toContain('لوحة تحكم الوسيط');
+    expect(html).toContain('إدارة العقارات');
+    expect(html).toContain('إضافة عقار جديد');
+    expect(html).toContain('رخصة فال العقارية');
+    expect(html).toContain('محتوى مساحة الوسيط');
+  });
+});

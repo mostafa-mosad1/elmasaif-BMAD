@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { AUTH_CONSENT_REQUIRED, AUTH_INVALID_PHONE } from '../constants/auth';
+import { UserRole, ProfileStatus } from '../enums';
 
 export const saudiNationalIdSchema = z.string()
   .regex(/^[12][0-9]{9}$/, 'رقم الهوية الوطنية / الإقامة يجب أن يتكون من 10 أرقام ويبدأ بـ 1 أو 2');
@@ -78,10 +79,29 @@ export const verifyStepUpOtpSchema = z.object({
   deviceId: z.string().optional()
 });
 
+export const userProfileSummarySchema = z.object({
+  id: z.string(),
+  role: z.nativeEnum(UserRole),
+  status: z.nativeEnum(ProfileStatus),
+  payoutIban: z.string().nullable().optional(),
+  falLicenseNumber: z.string().nullable().optional(),
+  falStatus: z.nativeEnum(ProfileStatus).nullable().optional(),
+  createdAt: z.string().or(z.date()).optional()
+});
+
+export const switchRoleSchema = z.object({
+  role: z.nativeEnum(UserRole)
+});
+
 export const sessionUserSchema = z.object({
   id: z.string(),
   fullName: z.string(),
   mobileNumber: z.string(),
   username: z.string(),
-  role: z.string()
-});
+  role: z.string().optional(),
+  activeRole: z.nativeEnum(UserRole).default(UserRole.BUYER),
+  profiles: z.array(userProfileSummarySchema).default([])
+}).transform((data) => ({
+  ...data,
+  role: data.role || data.activeRole
+}));

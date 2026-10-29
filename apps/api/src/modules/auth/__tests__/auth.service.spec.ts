@@ -232,13 +232,16 @@ describe('AuthService (AC: 1, 4, 5)', () => {
 
       expect(mockOtpService.verifyOtp).toHaveBeenCalledWith('+966501234567', 'REGISTRATION', '123456');
       expect(mockOtpService.cleanupOtp).toHaveBeenCalledWith('otp-id-123');
-      expect(result.user).toEqual({
-        id: 'new-user-uuid',
-        fullName: 'خالد عبدالله',
-        mobileNumber: '+966501234567',
-        username: 'u_966501234567',
-        role: 'BUYER'
-      });
+      expect(result.user).toEqual(
+        expect.objectContaining({
+          id: 'new-user-uuid',
+          fullName: 'خالد عبدالله',
+          mobileNumber: '+966501234567',
+          username: 'u_966501234567',
+          role: 'BUYER',
+          activeRole: 'BUYER'
+        })
+      );
       expect(result.sessionToken).toBeDefined();
     });
   });

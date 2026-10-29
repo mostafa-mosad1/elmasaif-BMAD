@@ -25,7 +25,8 @@ import {
   AUTH_ACCOUNT_DEACTIVATED,
   AUTH_ACCOUNT_DISABLED,
   AUTH_STEP_UP_INVALID,
-  ProfileStatus
+  ProfileStatus,
+  UserRole
 } from '@elmasaif/shared';
 
 @Injectable()
@@ -161,7 +162,7 @@ export class AuthService {
       });
 
       // 2. Create UserProfile (BUYER role)
-      await tx.userProfile.create({
+      const profile = await tx.userProfile.create({
         data: {
           userId: user.id,
           role: 'BUYER',
@@ -193,7 +194,7 @@ export class AuthService {
         }
       });
 
-      return { user, session };
+      return { user, profile, session };
     });
 
     // 5. Clean up consumed OTP record
@@ -205,7 +206,19 @@ export class AuthService {
         fullName: created.user.fullName,
         mobileNumber: created.user.mobileNumber,
         username: created.user.username,
-        role: 'BUYER'
+        role: UserRole.BUYER,
+        activeRole: UserRole.BUYER,
+        profiles: [
+          {
+            id: created.profile.id,
+            role: UserRole.BUYER,
+            status: ProfileStatus.ACTIVE,
+            payoutIban: null,
+            falLicenseNumber: null,
+            falStatus: null,
+            createdAt: created.profile.createdAt
+          }
+        ]
       },
       sessionToken,
       sessionExpiresAt
@@ -242,7 +255,11 @@ export class AuthService {
       include: {
         user: {
           include: {
-            profiles: true
+            profiles: {
+              include: {
+                falLicense: true
+              }
+            }
           }
         }
       }
@@ -254,13 +271,7 @@ export class AuthService {
       return null;
     }
 
-    return {
-      id: session.user.id,
-      fullName: session.user.fullName,
-      mobileNumber: session.user.mobileNumber,
-      username: session.user.username,
-      role: session.user.profiles?.[0]?.role || 'BUYER'
-    };
+    return this.formatSessionUser(session.user, session.activeRole as UserRole);
   }
 
   async logout(token: string): Promise<void> {
@@ -374,7 +385,11 @@ export class AuthService {
         OR: [{ mobileNumber: identifier }, { username: identifier }]
       },
       include: {
-        profiles: true,
+        profiles: {
+          include: {
+            falLicense: true
+          }
+        },
         knownDevices: true
       }
     });
@@ -578,13 +593,7 @@ export class AuthService {
 
     return {
       stepUpRequired: false,
-      user: {
-        id: user.id,
-        fullName: user.fullName,
-        mobileNumber: user.mobileNumber,
-        username: user.username,
-        role: user.profiles?.[0]?.role || 'BUYER'
-      },
+      user: this.formatSessionUser(user, UserRole.BUYER),
       sessionToken,
       sessionExpiresAt,
       deviceId: effectiveDeviceId,
@@ -618,7 +627,13 @@ export class AuthService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: payload.userId },
-      include: { profiles: true }
+      include: {
+        profiles: {
+          include: {
+            falLicense: true
+          }
+        }
+      }
     });
 
     if (!user) {
@@ -675,16 +690,33 @@ export class AuthService {
     });
 
     return {
-      user: {
-        id: user.id,
-        fullName: user.fullName,
-        mobileNumber: user.mobileNumber,
-        username: user.username,
-        role: user.profiles?.[0]?.role || 'BUYER'
-      },
+      user: this.formatSessionUser(user, UserRole.BUYER),
       sessionToken,
       sessionExpiresAt,
       deviceId: effectiveDeviceId
+    };
+  }
+
+  private formatSessionUser(user: any, activeRole?: UserRole): SessionUser {
+    const role = activeRole || (user.profiles?.[0]?.role as UserRole) || UserRole.BUYER;
+    const profiles = (user.profiles || []).map((p: any) => ({
+      id: p.id,
+      role: p.role as UserRole,
+      status: p.status as ProfileStatus,
+      payoutIban: p.payoutIban || null,
+      falLicenseNumber: p.falLicense?.licenseNumber || null,
+      falStatus: (p.falLicense?.status as ProfileStatus) || null,
+      createdAt: p.createdAt
+    }));
+
+    return {
+      id: user.id,
+      fullName: user.fullName,
+      mobileNumber: user.mobileNumber,
+      username: user.username,
+      role,
+      activeRole: role,
+      profiles
     };
   }
 }

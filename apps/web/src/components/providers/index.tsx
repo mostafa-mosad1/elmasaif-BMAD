@@ -3,12 +3,15 @@
 import React from 'react';
 import { DirectionProvider } from './direction-provider';
 import { ThemeProvider } from './theme-provider';
+import { AuthProvider } from './auth-provider';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <DirectionProvider>
       <ThemeProvider>
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </ThemeProvider>
     </DirectionProvider>
   );
@@ -16,3 +19,4 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
 export * from './direction-provider';
 export * from './theme-provider';
+export * from './auth-provider';

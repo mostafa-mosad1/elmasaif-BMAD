@@ -1,7 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { ClockService } from '../../../common/clock/clock.service';
-import { SESSION_COOKIE_NAME } from '@elmasaif/shared';
+import { SESSION_COOKIE_NAME, UserRole } from '@elmasaif/shared';
 
 @Injectable()
 export class SessionAuthGuard implements CanActivate {
@@ -26,7 +26,11 @@ export class SessionAuthGuard implements CanActivate {
       include: {
         user: {
           include: {
-            profiles: true
+            profiles: {
+              include: {
+                falLicense: true
+              }
+            }
           }
         }
       }
@@ -41,19 +45,29 @@ export class SessionAuthGuard implements CanActivate {
       throw new UnauthorizedException('انتهت صلاحية جلسة المستخدم. يرجى إعادة تسجيل الدخول');
     }
 
-    const primaryRole = session.user.profiles?.[0]?.role || 'BUYER';
+    const activeRole = session.activeRole || session.user.profiles?.[0]?.role || UserRole.BUYER;
+
+    const profiles = (session.user.profiles || []).map((p: any) => ({
+      id: p.id,
+      role: p.role,
+      status: p.status,
+      payoutIban: p.payoutIban,
+      falLicenseNumber: p.falLicense?.licenseNumber || null,
+      falStatus: p.falLicense?.status || null,
+      createdAt: p.createdAt
+    }));
 
     request.user = {
       id: session.user.id,
       fullName: session.user.fullName,
       mobileNumber: session.user.mobileNumber,
       username: session.user.username,
-      role: primaryRole,
-      profiles: session.user.profiles,
+      role: activeRole,
+      activeRole,
+      profiles,
       sessionToken: session.token
     };
 
     return true;
   }
 }
-
