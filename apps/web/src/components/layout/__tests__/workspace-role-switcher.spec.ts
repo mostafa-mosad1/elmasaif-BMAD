@@ -3,7 +3,7 @@ import React from 'react';
 import { renderToString } from 'react-dom/server';
 import { WorkspaceRoleSwitcher } from '../workspace-role-switcher';
 import { AuthContext, AuthContextType } from '../../providers/auth-provider';
-import { UserRole, ProfileStatus } from '@elmasaif/shared';
+import { UserRole, ProfileStatus, VerificationStatus } from '@elmasaif/shared';
 
 describe('WorkspaceRoleSwitcher Component (AC: 5, 6)', () => {
   const mockAuthContext: AuthContextType = {
@@ -30,11 +30,21 @@ describe('WorkspaceRoleSwitcher Component (AC: 5, 6)', () => {
         status: ProfileStatus.ACTIVE
       }
     ],
+    identityStatus: null,
     isLoading: false,
     switchRole: async () => {},
     attachOwnerRole: async () => {},
     logout: async () => {},
-    refreshSession: async () => {}
+    refreshSession: async () => {},
+    refreshIdentityStatus: async () => ({
+      isUploaded: false,
+      status: VerificationStatus.NOT_UPLOADED,
+      documentType: null,
+      maskedIdNumber: null,
+      uploadedAt: null,
+      rejectionReason: null,
+      canUploadDealPaymentProof: false
+    })
   };
 
   it('renders current active role badge and trigger button', () => {

@@ -104,4 +104,16 @@ export enum ScanStatus {
   SCAN_FAILED = 'SCAN_FAILED'
 }
 
+export enum IdentityDocumentType {
+  NATIONAL_ID = 'NATIONAL_ID',
+  IQAMA = 'IQAMA'
+}
+
+export enum VerificationStatus {
+  NOT_UPLOADED = 'NOT_UPLOADED',
+  PENDING_REVIEW = 'PENDING_REVIEW',
+  VERIFIED = 'VERIFIED',
+  REJECTED = 'REJECTED'
+}
+
 export * from './ui';

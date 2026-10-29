@@ -4,7 +4,7 @@ import { Reflector } from '@nestjs/core';
 import { UsersController } from '../users.controller';
 import { UsersService } from '../users.service';
 import { ActiveRoleGuard } from '../guards/active-role.guard';
-import { ROLES_KEY, RequireRole } from '../decorators/require-role.decorator';
+import { ROLES_KEY } from '../decorators/require-role.decorator';
 import { SessionAuthGuard } from '../../auth/guards/session-auth.guard';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { ClockService } from '../../../common/clock/clock.service';
@@ -20,7 +20,6 @@ describe('UsersController & ActiveRoleGuard (AC: 1, 2, 3)', () => {
   let mockPrismaService: any;
   let mockClockService: any;
   let activeRoleGuard: ActiveRoleGuard;
-  let reflector: Reflector;
 
   beforeEach(async () => {
     mockUsersService = {
@@ -53,7 +52,6 @@ describe('UsersController & ActiveRoleGuard (AC: 1, 2, 3)', () => {
 
     controller = module.get<UsersController>(UsersController);
     activeRoleGuard = module.get<ActiveRoleGuard>(ActiveRoleGuard);
-    reflector = module.get<Reflector>(Reflector);
   });
 
   afterEach(() => {

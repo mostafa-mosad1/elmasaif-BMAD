@@ -1,13 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HttpException, HttpStatus, ForbiddenException } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import { UsersService } from '../users.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { ClockService } from '../../../common/clock/clock.service';
 import {
   UserRole,
   ProfileStatus,
-  AUTH_MARKETER_NOT_APPROVED,
-  AUTH_ROLE_NOT_AUTHORIZED
+  AUTH_MARKETER_NOT_APPROVED
 } from '@elmasaif/shared';
 
 describe('UsersService (AC: 1, 2)', () => {
@@ -29,6 +28,9 @@ describe('UsersService (AC: 1, 2)', () => {
       session: {
         findUnique: jest.fn(),
         update: jest.fn()
+      },
+      identityDocument: {
+        findFirst: jest.fn()
       }
     };
 
@@ -326,6 +328,32 @@ describe('UsersService (AC: 1, 2)', () => {
 
       expect(mockPrisma.userProfile.create).not.toHaveBeenCalled();
       expect(profile.id).toBe('p-owner-exist');
+    });
+  });
+
+  describe('verifyBuyerIdentityPrerequisite (AC: 4, BR-10)', () => {
+    it('returns true when a clean identity document exists in PENDING_REVIEW or VERIFIED status', async () => {
+      mockPrisma.identityDocument.findFirst.mockResolvedValue({ id: 'id-doc-1' });
+
+      const allowed = await service.verifyBuyerIdentityPrerequisite('user-1');
+
+      expect(allowed).toBe(true);
+      expect(mockPrisma.identityDocument.findFirst).toHaveBeenCalledWith({
+        where: {
+          userId: 'user-1',
+          status: { in: ['PENDING_REVIEW', 'VERIFIED'] },
+          fileObject: { scanStatus: 'CLEAN' }
+        },
+        select: { id: true }
+      });
+    });
+
+    it('returns false when no clean document exists or when rejected', async () => {
+      mockPrisma.identityDocument.findFirst.mockResolvedValue(null);
+
+      const allowed = await service.verifyBuyerIdentityPrerequisite('user-unverified');
+
+      expect(allowed).toBe(false);
     });
   });
 });

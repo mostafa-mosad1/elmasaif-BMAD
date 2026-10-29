@@ -50,14 +50,16 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
       { href: '/app/buyer/offers', label: 'عروضي النشطة', icon: HandCoins },
       { href: '/app/buyer/favorites', label: 'العقارات المفضلة', icon: Heart },
       { href: '/app/buyer/demands', label: 'طلبات الشراء', icon: FileQuestion },
-      { href: '/app/settings/profile', label: 'إعدادات الحساب', icon: User }
+      { href: '/app/settings/profile', label: 'إعدادات الحساب', icon: User },
+      { href: '/app/settings/identity', label: 'توثيق الهوية', icon: ShieldCheck }
     ],
     [UserRole.OWNER]: [
       { href: '/app/owner', label: 'لوحة تحكم المالك', icon: LayoutDashboard },
       { href: '/app/owner/direct-listing', label: 'طلب عرض عقار مباشر', icon: PlusCircle },
       { href: '/app/owner/contracts', label: 'عقود الوساطة الإلكترونية', icon: FileText },
       { href: '/app/settings/payout', label: 'حسابات التحويل (IBAN)', icon: CreditCard },
-      { href: '/app/settings/profile', label: 'إعدادات الحساب', icon: User }
+      { href: '/app/settings/profile', label: 'إعدادات الحساب', icon: User },
+      { href: '/app/settings/identity', label: 'توثيق الهوية', icon: ShieldCheck }
     ],
     [UserRole.MARKETER]: [
       { href: '/app/marketer', label: 'لوحة تحكم الوسيط', icon: LayoutDashboard },
@@ -65,7 +67,8 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
       { href: '/app/marketer/listings/new', label: 'إضافة عقار جديد', icon: PlusCircle },
       { href: '/app/marketer/fal-license', label: 'رخصة فال العقارية', icon: ShieldCheck },
       { href: '/app/settings/payout', label: 'السعي والعمولات', icon: Percent },
-      { href: '/app/settings/profile', label: 'إعدادات الحساب', icon: User }
+      { href: '/app/settings/profile', label: 'إعدادات الحساب', icon: User },
+      { href: '/app/settings/identity', label: 'توثيق الهوية', icon: ShieldCheck }
     ],
     [UserRole.ADMIN]: [
       { href: '/admin/dashboard', label: 'لوحة تحكم المشرف', icon: LayoutDashboard }

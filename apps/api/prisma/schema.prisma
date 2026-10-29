@@ -112,6 +112,18 @@ enum ScanStatus {
   SCAN_FAILED
 }
 
+enum IdentityDocumentType {
+  NATIONAL_ID
+  IQAMA
+}
+
+enum VerificationStatus {
+  NOT_UPLOADED
+  PENDING_REVIEW
+  VERIFIED
+  REJECTED
+}
+
 model User {
   id                   String               @id @default(uuid())
   username             String               @unique
@@ -136,6 +148,7 @@ model User {
   authoredRatings      Rating[]             @relation("AuthoredRatings")
   receivedRatings      Rating[]             @relation("ReceivedRatings")
   knownDevices         KnownDevice[]
+  identityDocuments    IdentityDocument[]
 
   @@map("users")
 }
@@ -334,9 +347,31 @@ model FileObject {
   scannedAt  DateTime?
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
+  identityDocument IdentityDocument?
 
   @@index([scanStatus])
   @@map("file_objects")
+}
+
+model IdentityDocument {
+  id                 String               @id @default(uuid())
+  userId             String               @map("user_id")
+  fileObjectId       String               @unique @map("file_object_id")
+  documentType       IdentityDocumentType @map("document_type")
+  idNumber           String               @map("id_number")
+  status             VerificationStatus   @default(PENDING_REVIEW)
+  verifiedAt         DateTime?            @map("verified_at")
+  verifiedByAdminId  String?              @map("verified_by_admin_id")
+  rejectionReason    String?              @map("rejection_reason")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileObject         FileObject           @relation(fields: [fileObjectId], references: [id])
+
+  @@index([userId, status])
+  @@index([status])
+  @@map("identity_documents")
 }
 
 model Offer {

@@ -8,7 +8,9 @@ import {
   AUTH_ROLE_NOT_AUTHORIZED,
   AUTH_PROFILE_NOT_FOUND,
   SessionUser,
-  UserProfileSummary
+  UserProfileSummary,
+  ScanStatus,
+  VerificationStatus
 } from '@elmasaif/shared';
 
 @Injectable()
@@ -227,5 +229,17 @@ export class UsersService {
         status: ProfileStatus.ACTIVE
       }
     });
+  }
+
+  async verifyBuyerIdentityPrerequisite(userId: string): Promise<boolean> {
+    const document = await this.prisma.identityDocument.findFirst({
+      where: {
+        userId,
+        status: { in: [VerificationStatus.PENDING_REVIEW, VerificationStatus.VERIFIED] },
+        fileObject: { scanStatus: ScanStatus.CLEAN }
+      },
+      select: { id: true }
+    });
+    return Boolean(document);
   }
 }

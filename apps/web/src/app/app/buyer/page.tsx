@@ -1,14 +1,27 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
 import { EmptyState } from '../../../components/ui/empty-state';
-import { HandCoins, Heart, FileQuestion, Search, ArrowLeft, Building2 } from 'lucide-react';
+import { HandCoins, Heart, FileQuestion, Search, ArrowLeft, Building2, ShieldCheck, X } from 'lucide-react';
+import { useAuth } from '../../../components/providers/auth-provider';
 
 export default function BuyerDashboardPage() {
+  const { identityStatus, refreshIdentityStatus } = useAuth();
+  const [identityPromptDismissed, setIdentityPromptDismissed] = useState(false);
+  const [identityStatusError, setIdentityStatusError] = useState<string | null>(null);
+
+  useEffect(() => {
+    refreshIdentityStatus().catch((error: unknown) => {
+      setIdentityStatusError(
+        error instanceof Error ? error.message : 'تعذر التحقق من حالة الهوية حالياً.'
+      );
+    });
+  }, [refreshIdentityStatus]);
+
   const stats = [
     {
       title: 'عروضي النشطة',
@@ -87,6 +100,39 @@ export default function BuyerDashboardPage() {
           );
         })}
       </div>
+
+      {identityStatusError && (
+        <div role="alert" className="rounded-xl border border-status-rejected/20 bg-status-rejected/10 p-4 text-sm text-status-rejected">
+          تعذر تحميل حالة توثيق الهوية: {identityStatusError}
+        </div>
+      )}
+
+      {identityStatus && !identityStatus.canUploadDealPaymentProof && !identityPromptDismissed && (
+        <section className="relative rounded-xl border border-[#C69C45]/30 bg-[#C69C45]/10 p-5 pe-12" role="status">
+          <button
+            type="button"
+            className="absolute end-3 top-3 rounded p-1 text-ink-muted hover:bg-black/5"
+            onClick={() => setIdentityPromptDismissed(true)}
+            aria-label="إخفاء تنبيه توثيق الهوية"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#C69C45]" aria-hidden="true" />
+            <div className="space-y-2">
+              <h2 className="font-bold text-ink-primary dark:text-dark-ink-primary">
+                أكمل توثيق هويتك لتفعيل إثباتات الدفع
+              </h2>
+              <p className="text-sm text-ink-secondary dark:text-dark-ink-secondary">
+                يلزم رفع وثيقة هوية نظيفة قبل تقديم إثباتات الدفع للصفقات.
+              </p>
+              <Link href="/app/settings/identity" className="inline-flex text-sm font-semibold text-primary underline">
+                الانتقال إلى توثيق الهوية
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Quick Search Shortcut Banner */}
       <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20">

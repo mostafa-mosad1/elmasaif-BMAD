@@ -49,6 +49,7 @@ export const falLicenseSchema = z.string()
 export * from './geo.schema';
 export * from './clock.schema';
 export * from './auth.schema';
+export * from './identity.schema';
 
 export const otpVerifySchema = z.object({
   mobileNumber: saudiMobileSchema,

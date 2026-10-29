@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserRole, SessionUser, UserProfileSummary } from '@elmasaif/shared';
+import { IdentityStatusResponse, UserRole, SessionUser, UserProfileSummary } from '@elmasaif/shared';
 import { apiClient } from '../../lib/api-client';
 
 function useSafeRouter() {
@@ -24,30 +24,43 @@ export interface AuthContextType {
   user: SessionUser | null;
   activeRole: UserRole;
   profiles: UserProfileSummary[];
+  identityStatus: IdentityStatusResponse | null;
   isLoading: boolean;
   switchRole: (role: UserRole) => Promise<void>;
   attachOwnerRole: () => Promise<void>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
+  refreshIdentityStatus: () => Promise<IdentityStatusResponse>;
 }
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,
   activeRole: UserRole.BUYER,
   profiles: [],
+  identityStatus: null,
   isLoading: true,
   switchRole: async () => {},
   attachOwnerRole: async () => {},
   logout: async () => {},
-  refreshSession: async () => {}
+  refreshSession: async () => {},
+  refreshIdentityStatus: async () => {
+    throw new Error('AuthProvider is not available');
+  }
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [activeRole, setActiveRole] = useState<UserRole>(UserRole.BUYER);
   const [profiles, setProfiles] = useState<UserProfileSummary[]>([]);
+  const [identityStatus, setIdentityStatus] = useState<IdentityStatusResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useSafeRouter();
+
+  const refreshIdentityStatus = useCallback(async () => {
+    const response = await apiClient.get<{ data: IdentityStatusResponse }>('/users/identity');
+    setIdentityStatus(response.data);
+    return response.data;
+  }, []);
 
   const refreshSession = useCallback(async () => {
     try {
@@ -66,11 +79,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         setActiveRole(UserRole.BUYER);
         setProfiles([]);
+        setIdentityStatus(null);
       }
     } catch {
       setUser(null);
       setActiveRole(UserRole.BUYER);
       setProfiles([]);
+      setIdentityStatus(null);
     } finally {
       setIsLoading(false);
     }
@@ -113,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setActiveRole(UserRole.BUYER);
       setProfiles([]);
+      setIdentityStatus(null);
       router.push('/');
     }
   }, [router]);
@@ -123,11 +139,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         activeRole,
         profiles,
+        identityStatus,
         isLoading,
         switchRole,
         attachOwnerRole,
         logout,
-        refreshSession
+        refreshSession,
+        refreshIdentityStatus
       }}
     >
       {children}

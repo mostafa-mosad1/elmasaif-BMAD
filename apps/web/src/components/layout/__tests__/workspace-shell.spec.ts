@@ -5,7 +5,7 @@ import { WorkspaceShell } from '../workspace-shell';
 import { AuthContext, AuthContextType } from '../../providers/auth-provider';
 import { DirectionProvider } from '../../providers/direction-provider';
 import { ThemeProvider } from '../../providers/theme-provider';
-import { UserRole, ProfileStatus } from '@elmasaif/shared';
+import { UserRole, ProfileStatus, VerificationStatus } from '@elmasaif/shared';
 
 describe('WorkspaceShell Component (AC: 5, 7)', () => {
   const createMockContext = (activeRole: UserRole): AuthContextType => ({
@@ -32,11 +32,21 @@ describe('WorkspaceShell Component (AC: 5, 7)', () => {
         status: ProfileStatus.ACTIVE
       }
     ],
+    identityStatus: null,
     isLoading: false,
     switchRole: async () => {},
     attachOwnerRole: async () => {},
     logout: async () => {},
-    refreshSession: async () => {}
+    refreshSession: async () => {},
+    refreshIdentityStatus: async () => ({
+      isUploaded: false,
+      status: VerificationStatus.NOT_UPLOADED,
+      documentType: null,
+      maskedIdNumber: null,
+      uploadedAt: null,
+      rejectionReason: null,
+      canUploadDealPaymentProof: false
+    })
   });
 
   const renderWithProviders = (contextValue: AuthContextType, children: React.ReactNode) => {
@@ -74,6 +84,7 @@ describe('WorkspaceShell Component (AC: 5, 7)', () => {
     expect(html).toContain('عروضي النشطة');
     expect(html).toContain('العقارات المفضلة');
     expect(html).toContain('طلبات الشراء');
+    expect(html).toContain('توثيق الهوية');
     expect(html).toContain('محتوى مساحة المشتري');
   });
 
