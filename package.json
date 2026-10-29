@@ -8,7 +8,9 @@
     "packages/*"
   ],
   "scripts": {
-    "postinstall": "npm run prisma:generate",
+    "postinstall": "npm run build:shared && npm run prisma:generate",
+    "predev": "npm run build:shared",
+    "predev:all": "npm run build:shared",
     "dev": "concurrently -n \"API,WEB\" -c \"blue,green\" \"npm run dev:api\" \"npm run dev:web\"",
     "dev:all": "concurrently -n \"API,WEB,WORKER\" -c \"blue,green,magenta\" \"npm run dev:api\" \"npm run dev:web\" \"npm run dev:worker\"",
     "dev:web": "npm run dev --workspace=apps/web",
