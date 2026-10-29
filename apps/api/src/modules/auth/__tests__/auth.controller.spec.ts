@@ -4,7 +4,7 @@ import { AuthService } from '../auth.service';
 import { SessionAuthGuard } from '../guards/session-auth.guard';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { ClockService } from '../../../common/clock/clock.service';
-import { SESSION_COOKIE_NAME } from '@elmasaif/shared';
+import { SESSION_COOKIE_NAME, DEVICE_COOKIE_NAME } from '@elmasaif/shared';
 
 describe('AuthController (AC: 1, 4, 5)', () => {
   let controller: AuthController;
@@ -17,7 +17,9 @@ describe('AuthController (AC: 1, 4, 5)', () => {
       register: jest.fn(),
       verifyRegistrationOtp: jest.fn(),
       resendOtp: jest.fn(),
-      logout: jest.fn()
+      logout: jest.fn(),
+      login: jest.fn(),
+      verifyStepUpOtp: jest.fn()
     };
 
     mockPrismaService = {
@@ -172,6 +174,162 @@ describe('AuthController (AC: 1, 4, 5)', () => {
       expect(mockRes.clearCookie).toHaveBeenCalledWith(SESSION_COOKIE_NAME, { path: '/' });
       expect(mockAuthService.logout).toHaveBeenCalledWith('active-token');
       expect(response.code).toBe('AUTH_LOGOUT_SUCCESS');
+    });
+  });
+
+  describe('login (AC: 1, 4, 5)', () => {
+    it('returns step-up challenge and does NOT set session cookie when step-up is required', async () => {
+      mockAuthService.login.mockResolvedValue({
+        stepUpRequired: true,
+        mobileNumber: '+966 5X XXX 1234',
+        stepUpToken: 'step-up-token',
+        resendAvailableInSeconds: 60,
+        deviceId: 'device-123'
+      });
+
+      const mockReq = {
+        ip: '127.0.0.1',
+        headers: { 'user-agent': 'Chrome-Agent' },
+        cookies: {}
+      } as any;
+
+      const mockRes = {
+        cookie: jest.fn()
+      } as any;
+
+      const body = {
+        identifier: '0501234567',
+        password: 'Password123'
+      };
+
+      const result = await controller.login(body, mockReq, mockRes);
+
+      expect(mockAuthService.login).toHaveBeenCalledWith(
+        body,
+        '127.0.0.1',
+        'Chrome-Agent',
+        expect.any(String)
+      );
+      expect(result.code).toBe('AUTH_STEP_UP_REQUIRED');
+      expect(result.data.stepUpRequired).toBe(true);
+      expect(result.data.mobileNumber).toBe('+966 5X XXX 1234');
+      expect(mockRes.cookie).not.toHaveBeenCalledWith(
+        SESSION_COOKIE_NAME,
+        expect.anything(),
+        expect.anything()
+      );
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        DEVICE_COOKIE_NAME,
+        expect.any(String),
+        expect.anything()
+      );
+    });
+
+    it('sets session and device cookies and returns success when device is recognized', async () => {
+      mockAuthService.login.mockResolvedValue({
+        stepUpRequired: false,
+        user: {
+          id: 'user-1',
+          fullName: 'عبدالله محمد',
+          mobileNumber: '+966501234567',
+          username: 'abdullah',
+          role: 'BUYER'
+        },
+        sessionToken: 'sess-token-xyz',
+        sessionExpiresAt: new Date(),
+        deviceId: 'device-123',
+        deletionCancelled: true
+      });
+
+      const mockReq = {
+        ip: '127.0.0.1',
+        headers: { 'user-agent': 'Chrome-Agent' },
+        cookies: { [DEVICE_COOKIE_NAME]: 'device-123' }
+      } as any;
+
+      const mockRes = {
+        cookie: jest.fn()
+      } as any;
+
+      const body = {
+        identifier: '0501234567',
+        password: 'Password123'
+      };
+
+      const result = await controller.login(body, mockReq, mockRes);
+
+      expect(result.code).toBe('AUTH_LOGIN_SUCCESS');
+      expect(result.data.user.id).toBe('user-1');
+      expect(result.data.deletionCancelled).toBe(true);
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        SESSION_COOKIE_NAME,
+        'sess-token-xyz',
+        expect.objectContaining({
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/'
+        })
+      );
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        DEVICE_COOKIE_NAME,
+        'device-123',
+        expect.objectContaining({
+          path: '/'
+        })
+      );
+    });
+  });
+
+  describe('loginStepUp (AC: 4, 5)', () => {
+    it('verifies step-up OTP, sets session cookie and returns success envelope', async () => {
+      mockAuthService.verifyStepUpOtp.mockResolvedValue({
+        user: {
+          id: 'user-1',
+          fullName: 'عبدالله محمد',
+          mobileNumber: '+966501234567',
+          username: 'abdullah',
+          role: 'BUYER'
+        },
+        sessionToken: 'stepup-session-token',
+        sessionExpiresAt: new Date(),
+        deviceId: 'device-123'
+      });
+
+      const mockReq = {
+        ip: '127.0.0.1',
+        headers: { 'user-agent': 'Chrome-Agent' },
+        cookies: { [DEVICE_COOKIE_NAME]: 'device-123' }
+      } as any;
+
+      const mockRes = {
+        cookie: jest.fn()
+      } as any;
+
+      const body = {
+        mobileNumber: '+966501234567',
+        code: '123456',
+        stepUpToken: 'valid-token'
+      };
+
+      const result = await controller.loginStepUp(body, mockReq, mockRes);
+
+      expect(mockAuthService.verifyStepUpOtp).toHaveBeenCalledWith(
+        body,
+        '127.0.0.1',
+        'Chrome-Agent',
+        'device-123'
+      );
+      expect(result.code).toBe('AUTH_LOGIN_SUCCESS');
+      expect(result.data.user.id).toBe('user-1');
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        SESSION_COOKIE_NAME,
+        'stepup-session-token',
+        expect.objectContaining({
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/'
+        })
+      );
     });
   });
 });

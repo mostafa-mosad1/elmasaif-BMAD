@@ -27,6 +27,9 @@ enum ProfileStatus {
   SUSPENDED
   COMPLIANCE_RESTRICTED
   DELETION_PENDING
+  DEACTIVATED
+  DISABLED
+  SOFT_DELETED
 }
 
 enum PropertyType {
@@ -121,6 +124,8 @@ model User {
   emailVerifiedAt      DateTime?
   deletionRequestedAt  DateTime?
   deletionDueAt        DateTime?
+  failedLoginAttempts  Int                  @default(0) @map("failed_login_attempts")
+  lockedUntil          DateTime?            @map("locked_until")
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
 
@@ -130,6 +135,7 @@ model User {
   phoneChangeRequests  PhoneChangeRequest[]
   authoredRatings      Rating[]             @relation("AuthoredRatings")
   receivedRatings      Rating[]             @relation("ReceivedRatings")
+  knownDevices         KnownDevice[]
 
   @@map("users")
 }
@@ -601,6 +607,22 @@ model Session {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
+}
+
+model KnownDevice {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  deviceHash String   @map("device_hash")
+  userAgent  String?  @map("user_agent")
+  ipAddress  String?  @map("ip_address")
+  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceHash])
+  @@index([userId])
+  @@map("known_devices")
 }
 
 model AdminSession {

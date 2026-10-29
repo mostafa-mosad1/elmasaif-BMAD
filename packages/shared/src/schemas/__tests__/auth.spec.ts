@@ -4,7 +4,9 @@ import {
   registerSchema,
   verifyOtpRegisterSchema,
   resendOtpSchema,
-  sessionUserSchema
+  sessionUserSchema,
+  loginSchema,
+  verifyStepUpOtpSchema
 } from '../auth.schema';
 import {
   OTP_EXPIRY_SECONDS,
@@ -16,6 +18,9 @@ import {
   DEFAULT_PRIVACY_VERSION,
   SESSION_COOKIE_NAME,
   SESSION_EXPIRY_DAYS,
+  LOGIN_MAX_FAILED_ATTEMPTS,
+  LOGIN_LOCKOUT_MINUTES,
+  DEVICE_COOKIE_NAME,
   AUTH_INVALID_PHONE,
   AUTH_PHONE_ALREADY_EXISTS,
   AUTH_NATIONAL_ID_ALREADY_EXISTS,
@@ -25,7 +30,14 @@ import {
   AUTH_OTP_EXPIRED,
   AUTH_OTP_INVALID,
   AUTH_OTP_LOCKED,
-  AUTH_CONSENT_REQUIRED
+  AUTH_CONSENT_REQUIRED,
+  AUTH_INVALID_CREDENTIALS,
+  AUTH_ACCOUNT_LOCKED,
+  AUTH_ACCOUNT_DEACTIVATED,
+  AUTH_ACCOUNT_DISABLED,
+  AUTH_STEP_UP_REQUIRED,
+  AUTH_STEP_UP_INVALID,
+  AUTH_STEP_UP_LOCKED
 } from '../../constants/auth';
 
 describe('Shared Auth Constants (AC: 1, 7)', () => {
@@ -44,6 +56,12 @@ describe('Shared Auth Constants (AC: 1, 7)', () => {
     expect(SESSION_EXPIRY_DAYS).toBe(30);
   });
 
+  it('exports expected login and lockout constants', () => {
+    expect(LOGIN_MAX_FAILED_ATTEMPTS).toBe(5);
+    expect(LOGIN_LOCKOUT_MINUTES).toBe(15);
+    expect(DEVICE_COOKIE_NAME).toBe('elmasaif_device_id');
+  });
+
   it('exports all domain error codes', () => {
     expect(AUTH_INVALID_PHONE).toBe('AUTH_INVALID_PHONE');
     expect(AUTH_PHONE_ALREADY_EXISTS).toBe('AUTH_PHONE_ALREADY_EXISTS');
@@ -55,6 +73,89 @@ describe('Shared Auth Constants (AC: 1, 7)', () => {
     expect(AUTH_OTP_INVALID).toBe('AUTH_OTP_INVALID');
     expect(AUTH_OTP_LOCKED).toBe('AUTH_OTP_LOCKED');
     expect(AUTH_CONSENT_REQUIRED).toBe('AUTH_CONSENT_REQUIRED');
+    expect(AUTH_INVALID_CREDENTIALS).toBe('AUTH_INVALID_CREDENTIALS');
+    expect(AUTH_ACCOUNT_LOCKED).toBe('AUTH_ACCOUNT_LOCKED');
+    expect(AUTH_ACCOUNT_DEACTIVATED).toBe('AUTH_ACCOUNT_DEACTIVATED');
+    expect(AUTH_ACCOUNT_DISABLED).toBe('AUTH_ACCOUNT_DISABLED');
+    expect(AUTH_STEP_UP_REQUIRED).toBe('AUTH_STEP_UP_REQUIRED');
+    expect(AUTH_STEP_UP_INVALID).toBe('AUTH_STEP_UP_INVALID');
+    expect(AUTH_STEP_UP_LOCKED).toBe('AUTH_STEP_UP_LOCKED');
+  });
+});
+
+describe('Login Schema & Step-Up OTP Schema (AC: 1, 7)', () => {
+  it('normalizes Saudi mobile identifier to +9665XXXXXXXX', () => {
+    const result1 = loginSchema.parse({
+      identifier: '0501234567',
+      password: 'password123'
+    });
+    expect(result1.identifier).toBe('+966501234567');
+    expect(result1.rememberDevice).toBe(true);
+
+    const result2 = loginSchema.parse({
+      identifier: '+966 50 123 4567',
+      password: 'password123'
+    });
+    expect(result2.identifier).toBe('+966501234567');
+
+    const result3 = loginSchema.parse({
+      identifier: '501234567',
+      password: 'password123'
+    });
+    expect(result3.identifier).toBe('+966501234567');
+  });
+
+  it('normalizes username identifier to lowercase trimmed string', () => {
+    const result = loginSchema.parse({
+      identifier: '  Saudi_Admin  ',
+      password: 'password123',
+      deviceId: 'device-uuid-1',
+      rememberDevice: false
+    });
+    expect(result.identifier).toBe('saudi_admin');
+    expect(result.deviceId).toBe('device-uuid-1');
+    expect(result.rememberDevice).toBe(false);
+  });
+
+  it('rejects identifiers with fewer than 3 characters', () => {
+    expect(() => loginSchema.parse({
+      identifier: 'ab',
+      password: 'password123'
+    })).toThrow();
+  });
+
+  it('rejects passwords with fewer than 8 characters', () => {
+    expect(() => loginSchema.parse({
+      identifier: 'testuser',
+      password: 'short'
+    })).toThrow();
+  });
+
+  it('validates verifyStepUpOtpSchema successfully', () => {
+    const result = verifyStepUpOtpSchema.parse({
+      mobileNumber: '0501234567',
+      code: '123456',
+      stepUpToken: 'valid-jwt-or-hmac-token',
+      deviceId: 'client-device-123'
+    });
+    expect(result.mobileNumber).toBe('+966501234567');
+    expect(result.code).toBe('123456');
+    expect(result.stepUpToken).toBe('valid-jwt-or-hmac-token');
+    expect(result.deviceId).toBe('client-device-123');
+  });
+
+  it('rejects invalid OTP length or missing token in verifyStepUpOtpSchema', () => {
+    expect(() => verifyStepUpOtpSchema.parse({
+      mobileNumber: '0501234567',
+      code: '12345',
+      stepUpToken: 'token'
+    })).toThrow();
+
+    expect(() => verifyStepUpOtpSchema.parse({
+      mobileNumber: '0501234567',
+      code: '123456',
+      stepUpToken: ''
+    })).toThrow();
   });
 });
 

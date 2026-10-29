@@ -46,11 +46,6 @@ export const saudiMobileSchema = z.string()
 export const falLicenseSchema = z.string()
   .regex(/^[0-9]{10}$/, 'رقم رخصة فال العقارية يجب أن يتكون من 10 أرقام');
 
-export const loginSchema = z.object({
-  usernameOrPhone: z.string().min(3, 'اسم المستخدم أو رقم الجوال مطلوب'),
-  password: z.string().min(8, 'كلمة المرور يجب ألا تقل عن 8 خانات')
-});
-
 export * from './geo.schema';
 export * from './clock.schema';
 export * from './auth.schema';

@@ -7,10 +7,10 @@ import {
   Res,
   UseGuards,
   HttpCode,
-  HttpStatus,
-  UsePipes
+  HttpStatus
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import * as crypto from 'crypto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { SessionAuthGuard } from './guards/session-auth.guard';
@@ -20,12 +20,17 @@ import {
   registerSchema,
   verifyOtpRegisterSchema,
   resendOtpSchema,
+  loginSchema,
+  verifyStepUpOtpSchema,
   RegisterInput,
   VerifyOtpRegisterInput,
   ResendOtpInput,
+  LoginInput,
+  VerifyStepUpOtpInput,
   SessionUser,
   SESSION_COOKIE_NAME,
-  SESSION_EXPIRY_DAYS
+  SESSION_EXPIRY_DAYS,
+  DEVICE_COOKIE_NAME
 } from '@elmasaif/shared';
 
 @ApiTags('Authentication')
@@ -102,6 +107,118 @@ export class AuthController {
       code: 'AUTH_OTP_RESENT',
       message: 'تمت إعادة إرسال رمز التحقق بنجاح',
       data: result
+    };
+  }
+
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login using Saudi mobile or username with password' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Login successful or step-up OTP challenge issued' })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Invalid credentials' })
+  @ApiResponse({ status: 423, description: 'Account locked due to brute-force lockout' })
+  async login(
+    @Body(new ZodValidationPipe(loginSchema)) dto: LoginInput,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const ip = req.ip || req.socket?.remoteAddress || '127.0.0.1';
+    const userAgent = (req.headers['user-agent'] as string) || 'unknown';
+    const clientDeviceId =
+      req.cookies?.[DEVICE_COOKIE_NAME] ||
+      (req.headers['x-device-id'] as string) ||
+      dto.deviceId ||
+      crypto.randomUUID();
+
+    const result = await this.authService.login(dto, ip, userAgent, clientDeviceId);
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    // Always ensure device cookie is issued/extended for 1 year
+    res.cookie(DEVICE_COOKIE_NAME, clientDeviceId, {
+      httpOnly: false,
+      secure: isProduction,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 365 * 24 * 60 * 60 * 1000
+    });
+
+    if (result.stepUpRequired === true) {
+      return {
+        code: 'AUTH_STEP_UP_REQUIRED',
+        message: 'تم إرسال رمز التحقق الإضافي لتأكيد جهاز الدخول الجديد',
+        data: {
+          stepUpRequired: true,
+          mobileNumber: result.mobileNumber,
+          stepUpToken: result.stepUpToken,
+          resendAvailableInSeconds: result.resendAvailableInSeconds
+        },
+        requestId: req.headers['x-request-id']
+      };
+    }
+
+    // Set 30-day session cookie
+    res.cookie(SESSION_COOKIE_NAME, result.sessionToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: SESSION_EXPIRY_DAYS * 24 * 60 * 60 * 1000
+    });
+
+    return {
+      code: 'AUTH_LOGIN_SUCCESS',
+      message: 'تم تسجيل الدخول بنجاح',
+      data: {
+        user: result.user,
+        deletionCancelled: result.deletionCancelled
+      },
+      requestId: req.headers['x-request-id']
+    };
+  }
+
+  @Post('login/step-up')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify step-up OTP challenge for new device login' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Step-up verified and session established' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid OTP or expired challenge' })
+  async loginStepUp(
+    @Body(new ZodValidationPipe(verifyStepUpOtpSchema)) dto: VerifyStepUpOtpInput,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const ip = req.ip || req.socket?.remoteAddress || '127.0.0.1';
+    const userAgent = (req.headers['user-agent'] as string) || 'unknown';
+    const clientDeviceId =
+      req.cookies?.[DEVICE_COOKIE_NAME] ||
+      (req.headers['x-device-id'] as string) ||
+      dto.deviceId ||
+      crypto.randomUUID();
+
+    const result = await this.authService.verifyStepUpOtp(dto, ip, userAgent, clientDeviceId);
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    res.cookie(DEVICE_COOKIE_NAME, clientDeviceId, {
+      httpOnly: false,
+      secure: isProduction,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 365 * 24 * 60 * 60 * 1000
+    });
+
+    res.cookie(SESSION_COOKIE_NAME, result.sessionToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: SESSION_EXPIRY_DAYS * 24 * 60 * 60 * 1000
+    });
+
+    return {
+      code: 'AUTH_LOGIN_SUCCESS',
+      message: 'تم تأكيد الجهاز الجديد وتسجيل الدخول بنجاح',
+      data: {
+        user: result.user
+      },
+      requestId: req.headers['x-request-id']
     };
   }
 

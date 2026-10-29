@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 10-27-2026 15:27
-last_updated: 10-29-2026 11:35
+last_updated: 10-29-2026 14:05
 project: elmasaif
 project_key: NOKEY
 tracking_system: file-system
@@ -47,8 +47,8 @@ development_status:
   epic-0-retrospective: optional
 
   epic-1: in-progress
-  1-1-saudi-mobile-registration-otp-verification-legal-consent-tra: review
-  1-2-returning-user-login-session-handling-lockout: backlog
+  1-1-saudi-mobile-registration-otp-verification-legal-consent-tra: done
+  1-2-returning-user-login-session-handling-lockout: review
   1-3-multi-role-profile-switching-workspace-shell: backlog
   1-4-identity-document-verification: backlog
   1-5-seller-payout-account-management-monospace-iban-card: backlog

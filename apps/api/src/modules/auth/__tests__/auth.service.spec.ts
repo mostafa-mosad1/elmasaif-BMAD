@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpException, HttpStatus } from '@nestjs/common';
+import * as crypto from 'crypto';
 import * as argon2 from 'argon2';
 import { AuthService } from '../auth.service';
 import { OtpService } from '../otp/otp.service';
@@ -10,7 +11,12 @@ import {
   AUTH_NATIONAL_ID_ALREADY_EXISTS,
   AUTH_USERNAME_ALREADY_EXISTS,
   DEFAULT_TERMS_VERSION,
-  DEFAULT_PRIVACY_VERSION
+  DEFAULT_PRIVACY_VERSION,
+  AUTH_INVALID_CREDENTIALS,
+  AUTH_ACCOUNT_LOCKED,
+  AUTH_ACCOUNT_DEACTIVATED,
+  AUTH_ACCOUNT_DISABLED,
+  ProfileStatus
 } from '@elmasaif/shared';
 
 // Mock argon2
@@ -45,13 +51,20 @@ describe('AuthService (AC: 1, 4, 5)', () => {
     mockPrismaService = {
       user: {
         findUnique: jest.fn(),
-        findFirst: jest.fn()
+        findFirst: jest.fn(),
+        update: jest.fn()
+      },
+      knownDevice: {
+        findUnique: jest.fn(),
+        update: jest.fn(),
+        upsert: jest.fn()
       },
       otpVerification: {
         findFirst: jest.fn()
       },
       session: {
         findUnique: jest.fn(),
+        create: jest.fn(),
         delete: jest.fn(),
         deleteMany: jest.fn()
       },
@@ -226,6 +239,268 @@ describe('AuthService (AC: 1, 4, 5)', () => {
         username: 'u_966501234567',
         role: 'BUYER'
       });
+      expect(result.sessionToken).toBeDefined();
+    });
+  });
+
+  describe('login (AC: 1, 2, 3, 4, 5)', () => {
+    const mockUser = {
+      id: 'user-uuid-1',
+      fullName: 'عبدالله محمد',
+      mobileNumber: '+966501234567',
+      username: 'abdullah',
+      passwordHash: 'hashed_password',
+      status: ProfileStatus.ACTIVE,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      profiles: [{ id: 'profile-1', role: 'BUYER', status: 'ACTIVE' }],
+      knownDevices: []
+    };
+
+    it('rejects with 401 AUTH_INVALID_CREDENTIALS if user is not found', async () => {
+      mockPrismaService.user.findFirst.mockResolvedValue(null);
+
+      try {
+        await service.login({ identifier: 'unknown_user', password: 'Password123' }, '127.0.0.1', 'agent');
+        throw new Error('Expected login to throw');
+      } catch (err: any) {
+        expect(err).toBeInstanceOf(HttpException);
+        expect(err.getStatus()).toBe(HttpStatus.UNAUTHORIZED);
+        expect(err.getResponse()).toEqual(expect.objectContaining({ code: AUTH_INVALID_CREDENTIALS }));
+        expect(argon2.verify).toHaveBeenCalled(); // Constant-time dummy verify
+      }
+    });
+
+    it('rejects with 423 AUTH_ACCOUNT_LOCKED immediately if account is currently locked', async () => {
+      const lockedUser = {
+        ...mockUser,
+        lockedUntil: new Date(fixedNow.getTime() + 10 * 60 * 1000), // locked for 10 more minutes
+        failedLoginAttempts: 5
+      };
+      mockPrismaService.user.findFirst.mockResolvedValue(lockedUser);
+
+      try {
+        await service.login({ identifier: '0501234567', password: 'Password123' }, '127.0.0.1', 'agent');
+        throw new Error('Expected login to throw');
+      } catch (err: any) {
+        expect(err).toBeInstanceOf(HttpException);
+        expect(err.getStatus()).toBe(423);
+        expect(err.getResponse()).toEqual(expect.objectContaining({
+          code: AUTH_ACCOUNT_LOCKED
+        }));
+      }
+    });
+
+    it('increments failedLoginAttempts and returns 401 on incorrect password (1st to 4th attempt)', async () => {
+      mockPrismaService.user.findFirst.mockResolvedValue({
+        ...mockUser,
+        failedLoginAttempts: 2
+      });
+      (argon2.verify as jest.Mock).mockResolvedValueOnce(false);
+
+      try {
+        await service.login({ identifier: '0501234567', password: 'WrongPassword' }, '127.0.0.1', 'agent');
+        throw new Error('Expected login to throw');
+      } catch (err: any) {
+        expect(err).toBeInstanceOf(HttpException);
+        expect(err.getStatus()).toBe(HttpStatus.UNAUTHORIZED);
+        expect(err.getResponse()).toEqual(expect.objectContaining({ code: AUTH_INVALID_CREDENTIALS }));
+        expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+          where: { id: 'user-uuid-1' },
+          data: { failedLoginAttempts: 3 }
+        });
+      }
+    });
+
+    it('locks account for 15 minutes and returns 423 on 5th consecutive failed attempt', async () => {
+      mockPrismaService.user.findFirst.mockResolvedValue({
+        ...mockUser,
+        failedLoginAttempts: 4
+      });
+      (argon2.verify as jest.Mock).mockResolvedValueOnce(false);
+
+      try {
+        await service.login({ identifier: '0501234567', password: 'WrongPassword' }, '127.0.0.1', 'agent');
+        throw new Error('Expected login to throw');
+      } catch (err: any) {
+        expect(err).toBeInstanceOf(HttpException);
+        expect(err.getStatus()).toBe(423);
+        expect(err.getResponse()).toEqual(expect.objectContaining({ code: AUTH_ACCOUNT_LOCKED }));
+        expect(mockPrismaService.user.update).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { id: 'user-uuid-1' },
+            data: expect.objectContaining({
+              failedLoginAttempts: 5,
+              lockedUntil: new Date(fixedNow.getTime() + 15 * 60 * 1000)
+            })
+          })
+        );
+      }
+    });
+
+    it('cancels pending deletion and restores ACTIVE status if user status is DELETION_PENDING', async () => {
+      const pendingUser = {
+        ...mockUser,
+        status: ProfileStatus.DELETION_PENDING,
+        deletionRequestedAt: new Date(fixedNow.getTime() - 24 * 60 * 60 * 1000),
+        deletionDueAt: new Date(fixedNow.getTime() + 13 * 24 * 60 * 60 * 1000)
+      };
+      mockPrismaService.user.findFirst.mockResolvedValue(pendingUser);
+      (argon2.verify as jest.Mock).mockResolvedValueOnce(true);
+      mockPrismaService.knownDevice.findUnique.mockResolvedValue({ id: 'kd-1', userId: pendingUser.id });
+      mockPrismaService.session.create.mockResolvedValue({ id: 'sess-1' });
+
+      const result = await service.login({ identifier: '0501234567', password: 'Password123' }, '127.0.0.1', 'agent', 'device-1');
+
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'user-uuid-1' },
+        data: expect.objectContaining({
+          status: ProfileStatus.ACTIVE,
+          deletionRequestedAt: null,
+          deletionDueAt: null,
+          failedLoginAttempts: 0,
+          lockedUntil: null
+        })
+      }));
+      expect(result.stepUpRequired).toBe(false);
+      if (result.stepUpRequired === false) {
+        expect(result.deletionCancelled).toBe(true);
+      }
+    });
+
+    it('rejects login with 403 AUTH_ACCOUNT_DEACTIVATED if user is DEACTIVATED', async () => {
+      mockPrismaService.user.findFirst.mockResolvedValue({
+        ...mockUser,
+        status: ProfileStatus.DEACTIVATED
+      });
+      (argon2.verify as jest.Mock).mockResolvedValueOnce(true);
+
+      try {
+        await service.login({ identifier: '0501234567', password: 'Password123' }, '127.0.0.1', 'agent');
+        throw new Error('Expected login to throw');
+      } catch (err: any) {
+        expect(err).toBeInstanceOf(HttpException);
+        expect(err.getStatus()).toBe(HttpStatus.FORBIDDEN);
+        expect(err.getResponse()).toEqual(expect.objectContaining({ code: AUTH_ACCOUNT_DEACTIVATED }));
+      }
+    });
+
+    it('rejects login with 403 AUTH_ACCOUNT_DISABLED if user is DISABLED or SOFT_DELETED', async () => {
+      mockPrismaService.user.findFirst.mockResolvedValue({
+        ...mockUser,
+        status: ProfileStatus.DISABLED
+      });
+      (argon2.verify as jest.Mock).mockResolvedValueOnce(true);
+
+      try {
+        await service.login({ identifier: '0501234567', password: 'Password123' }, '127.0.0.1', 'agent');
+        throw new Error('Expected login to throw');
+      } catch (err: any) {
+        expect(err).toBeInstanceOf(HttpException);
+        expect(err.getStatus()).toBe(HttpStatus.FORBIDDEN);
+        expect(err.getResponse()).toEqual(expect.objectContaining({ code: AUTH_ACCOUNT_DISABLED }));
+      }
+    });
+
+    it('triggers step-up OTP if device is unrecognized', async () => {
+      mockPrismaService.user.findFirst.mockResolvedValue(mockUser);
+      (argon2.verify as jest.Mock).mockResolvedValueOnce(true);
+      mockPrismaService.knownDevice.findUnique.mockResolvedValue(null);
+
+      const result = await service.login(
+        { identifier: '0501234567', password: 'Password123', deviceId: 'new-device-id' },
+        '10.0.0.1',
+        'Mozilla/Chrome'
+      );
+
+      expect(result.stepUpRequired).toBe(true);
+      if (result.stepUpRequired === true) {
+        expect(result.mobileNumber).toContain('+966');
+        expect(result.stepUpToken).toBeDefined();
+      }
+      expect(mockOtpService.generateAndSendOtp).toHaveBeenCalledWith(
+        mockUser.mobileNumber,
+        'LOGIN_STEP_UP',
+        expect.objectContaining({ userId: mockUser.id })
+      );
+    });
+
+    it('logs in immediately without OTP if device is recognized', async () => {
+      mockPrismaService.user.findFirst.mockResolvedValue(mockUser);
+      (argon2.verify as jest.Mock).mockResolvedValueOnce(true);
+      mockPrismaService.knownDevice.findUnique.mockResolvedValue({
+        id: 'kd-1',
+        userId: mockUser.id,
+        deviceHash: 'hash'
+      });
+      mockPrismaService.session.create.mockResolvedValue({
+        id: 'sess-1',
+        token: 'session-token'
+      });
+
+      const result = await service.login(
+        { identifier: '0501234567', password: 'Password123', deviceId: 'known-device-id' },
+        '10.0.0.1',
+        'Mozilla/Chrome'
+      );
+
+      expect(result.stepUpRequired).toBe(false);
+      if (result.stepUpRequired === false) {
+        expect(result.sessionToken).toBeDefined();
+      }
+      expect(mockPrismaService.knownDevice.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'kd-1' }
+      }));
+    });
+  });
+
+  describe('verifyStepUpOtp (AC: 4, 5)', () => {
+    const mockUser = {
+      id: 'user-uuid-1',
+      fullName: 'عبدالله محمد',
+      mobileNumber: '+966501234567',
+      username: 'abdullah',
+      profiles: [{ role: 'BUYER' }]
+    };
+
+    it('verifies step-up OTP, upserts known device, and establishes session', async () => {
+      mockOtpService.verifyOtp.mockResolvedValue({ id: 'otp-id' });
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      mockPrismaService.session.create.mockResolvedValue({ id: 'sess-1' });
+
+      // Create a valid stepUpToken using the internal helper or format
+      const payload = {
+        userId: mockUser.id,
+        mobileNumber: mockUser.mobileNumber,
+        deviceHash: 'device-hash-123',
+        deviceId: 'device-id-1',
+        exp: fixedNow.getTime() + 300 * 1000
+      };
+      const secret = process.env.SESSION_SECRET || 'super-secret-session-key-for-elmasaif-2026-development';
+      const signature = crypto.createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex');
+      const stepUpToken = Buffer.from(JSON.stringify({ payload, signature })).toString('base64url');
+
+      const result = await service.verifyStepUpOtp(
+        {
+          mobileNumber: mockUser.mobileNumber,
+          code: '123456',
+          stepUpToken,
+          deviceId: 'device-id-1'
+        },
+        '127.0.0.1',
+        'test-agent'
+      );
+
+      expect(mockOtpService.verifyOtp).toHaveBeenCalledWith(mockUser.mobileNumber, 'LOGIN_STEP_UP', '123456');
+      expect(mockPrismaService.knownDevice.upsert).toHaveBeenCalledWith(expect.objectContaining({
+        where: {
+          userId_deviceHash: {
+            userId: mockUser.id,
+            deviceHash: 'device-hash-123'
+          }
+        }
+      }));
+      expect(result.user.id).toBe(mockUser.id);
       expect(result.sessionToken).toBeDefined();
     });
   });

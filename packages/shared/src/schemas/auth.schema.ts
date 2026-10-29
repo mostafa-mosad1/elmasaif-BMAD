@@ -53,6 +53,31 @@ export const resendOtpSchema = z.object({
   mobileNumber: saudiMobileNormalizedSchema
 });
 
+export const loginSchema = z.object({
+  identifier: z.string()
+    .trim()
+    .min(3, 'اسم المستخدم أو رقم الجوال يجب ألا يقل عن 3 أحرف')
+    .transform((val) => {
+      const cleanPhone = val.replace(/[\s-]/g, '');
+      if (/^(\+966|0)?5[0-9]{8}$/.test(cleanPhone)) {
+        if (cleanPhone.startsWith('+966')) return cleanPhone;
+        if (cleanPhone.startsWith('0')) return `+966${cleanPhone.slice(1)}`;
+        if (cleanPhone.startsWith('5')) return `+966${cleanPhone}`;
+      }
+      return val.toLowerCase();
+    }),
+  password: z.string().min(8, 'كلمة المرور يجب ألا تقل عن 8 خانات'),
+  deviceId: z.string().optional(),
+  rememberDevice: z.boolean().optional().default(true)
+});
+
+export const verifyStepUpOtpSchema = z.object({
+  mobileNumber: saudiMobileNormalizedSchema,
+  code: z.string().length(6, 'رمز التحقق يجب أن يتكون من 6 أرقام'),
+  stepUpToken: z.string().min(1, 'رمز التحدي مطلوب'),
+  deviceId: z.string().optional()
+});
+
 export const sessionUserSchema = z.object({
   id: z.string(),
   fullName: z.string(),

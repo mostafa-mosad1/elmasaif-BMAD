@@ -4,14 +4,10 @@ import {
   submitOfferSchema,
   counterOfferSchema,
   uploadPaymentProofSchema,
-  createDemandSchema,
-  loginSchema,
-  registerSchema
+  createDemandSchema
 } from '../schemas';
 import { ListingStatus, DealStatus, PropertyType } from '../enums';
 
-export type LoginInput = z.infer<typeof loginSchema>;
-export type RegisterInput = z.infer<typeof registerSchema>;
 export type CreateListingInput = z.infer<typeof createListingSchema>;
 export type SubmitOfferInput = z.infer<typeof submitOfferSchema>;
 export type CounterOfferInput = z.infer<typeof counterOfferSchema>;
