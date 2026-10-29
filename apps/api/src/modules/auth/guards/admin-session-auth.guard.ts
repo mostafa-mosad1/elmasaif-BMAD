@@ -6,8 +6,8 @@ import { ClockService } from '../../../common/clock/clock.service';
 @Injectable()
 export class AdminSessionAuthGuard implements CanActivate {
   constructor(
-    private readonly prisma: Pick<PrismaService, 'adminSession'>,
-    private readonly clockService: Pick<ClockService, 'now'>
+    private readonly prisma: PrismaService,
+    private readonly clockService: ClockService
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {

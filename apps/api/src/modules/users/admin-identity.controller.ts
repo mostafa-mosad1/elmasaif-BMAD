@@ -76,13 +76,7 @@ export class AdminIdentityGuard implements CanActivate {
 @UseGuards(AdminSessionAuthGuard, AdminIdentityGuard)
 export class AdminIdentityController {
   constructor(
-    private readonly identityService: Pick<
-      IdentityService,
-      | 'getPendingIdentityDocuments'
-      | 'verifyIdentityDocument'
-      | 'rejectIdentityDocument'
-      | 'getAdminIdentityDocumentDownloadUrl'
-    >
+    private readonly identityService: IdentityService
   ) {}
 
   @Get('pending')

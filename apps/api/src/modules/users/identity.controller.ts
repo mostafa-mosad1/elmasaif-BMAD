@@ -47,10 +47,7 @@ export class IdentityFileTooLargeFilter implements ExceptionFilter<PayloadTooLar
 @UseGuards(SessionAuthGuard)
 export class IdentityController {
   constructor(
-    private readonly identityService: Pick<
-      IdentityService,
-      'uploadIdentityDocument' | 'getIdentityStatus' | 'getIdentityDocumentDownloadUrl'
-    >
+    private readonly identityService: IdentityService
   ) {}
 
   @Post('upload')

@@ -32,8 +32,11 @@ describe('AdminSessionAuthGuard', () => {
         })
       }
     } as unknown as jest.Mocked<Pick<PrismaService, 'adminSession'>>;
-    clock = { now: jest.fn().mockReturnValue(now) };
-    guard = new AdminSessionAuthGuard(prisma, clock);
+    clock = { now: jest.fn().mockReturnValue(now) } as unknown as jest.Mocked<Pick<ClockService, 'now'>>;
+    guard = new AdminSessionAuthGuard(
+      prisma as unknown as PrismaService,
+      clock as unknown as ClockService
+    );
   });
 
   it('authenticates using the isolated admin-session cookie and sets the admin principal', async () => {

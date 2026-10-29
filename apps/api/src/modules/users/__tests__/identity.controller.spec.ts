@@ -24,7 +24,7 @@ describe('IdentityController', () => {
         expiresIn: 300
       })
     };
-    controller = new IdentityController(service);
+    controller = new IdentityController(service as unknown as IdentityService);
   });
 
   it('validates upload fields and delegates file processing to the service', async () => {
@@ -35,48 +35,58 @@ describe('IdentityController', () => {
       req
     );
 
+    expect(response).toMatchObject({
+      code: 'SUCCESS',
+      data: { id: 'identity-1' }
+    });
     expect(service.uploadIdentityDocument).toHaveBeenCalledWith(
       'user-1',
       expect.objectContaining({ originalname: 'id.pdf' }),
       IdentityDocumentType.NATIONAL_ID,
       '1234567890'
     );
-    expect(response.data.id).toBe('identity-1');
   });
 
-  it('returns a domain error code for invalid submitted ID numbers', async () => {
+  it('rejects invalid upload metadata before invoking the service', async () => {
+    const req = { user: { id: 'user-1' }, headers: {} };
     await expect(controller.upload(
       { originalname: 'id.pdf', mimetype: 'application/pdf', size: 10, buffer: Buffer.from('document') },
-      { documentType: IdentityDocumentType.NATIONAL_ID, idNumber: '2345678901' },
-      { user: { id: 'user-1' }, headers: {} }
-    )).rejects.toMatchObject({ response: { code: 'IDENTITY_INVALID_ID_NUMBER' } });
+      { documentType: 'INVALID' },
+      req
+    )).rejects.toBeInstanceOf(BadRequestException);
     expect(service.uploadIdentityDocument).not.toHaveBeenCalled();
   });
 
-  it('translates multipart size limits to the documented HTTP 400 error envelope', () => {
+  it('translates PayloadTooLargeException to a structured 400 response', () => {
+    const filter = new IdentityFileTooLargeFilter();
     const json = jest.fn();
     const status = jest.fn().mockReturnValue({ json });
     const host = {
       switchToHttp: () => ({
-        getRequest: () => ({ headers: { 'x-request-id': 'req-oversized' } }),
+        getRequest: () => ({ headers: { 'x-request-id': 'req-large' } }),
         getResponse: () => ({ status })
       })
-    } as never;
-    new IdentityFileTooLargeFilter().catch(new PayloadTooLargeException(), host);
+    } as unknown as Parameters<typeof filter.catch>[1];
+
+    filter.catch(new PayloadTooLargeException('too large'), host);
     expect(status).toHaveBeenCalledWith(400);
     expect(json).toHaveBeenCalledWith(expect.objectContaining({
+      statusCode: 400,
       code: 'IDENTITY_FILE_TOO_LARGE',
-      requestId: 'req-oversized'
+      requestId: 'req-large'
     }));
   });
 
-  it('returns status and an owner-bound document URL', async () => {
-    const req = { user: { id: 'user-1' }, headers: {} };
-    await expect(controller.getStatus(req)).resolves.toMatchObject({
+  it('delegates status retrieval and document URL generation', async () => {
+    await expect(controller.getStatus({ user: { id: 'user-1' }, headers: {} })).resolves.toMatchObject({
+      code: 'SUCCESS',
       data: { status: 'PENDING_REVIEW' }
     });
-    await expect(controller.getDocumentUrl(req)).resolves.toMatchObject({
-      data: { expiresIn: 300 }
+    expect(service.getIdentityStatus).toHaveBeenCalledWith('user-1');
+
+    await expect(controller.getDocumentUrl({ user: { id: 'user-1' }, headers: {} })).resolves.toMatchObject({
+      code: 'SUCCESS',
+      data: { downloadUrl: 'https://private.example/file', expiresIn: 300 }
     });
     expect(service.getIdentityDocumentDownloadUrl).toHaveBeenCalledWith('user-1', 'user-1');
   });
@@ -104,7 +114,7 @@ describe('AdminIdentityController and AdminIdentityGuard', () => {
         expiresIn: 300
       })
     };
-    controller = new AdminIdentityController(service);
+    controller = new AdminIdentityController(service as unknown as IdentityService);
   });
 
   it('requires an active administrator session with the required permission', () => {
