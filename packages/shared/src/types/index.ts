@@ -75,4 +75,4 @@ export * from './clock';
 export * from './jobs';
 export * from './storage';
 export * from './ui';
-
+export * from './auth';

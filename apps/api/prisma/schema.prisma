@@ -631,3 +631,24 @@ model AuditLog {
   @@index([action, createdAt])
   @@map("audit_logs")
 }
+
+
+model OtpVerification {
+  id                String    @id @default(uuid())
+  mobileNumber      String    @map("mobile_number")
+  otpCode           String    @map("otp_code")
+  purpose           String    @map("purpose")
+  attempts          Int       @default(0)
+  maxAttempts       Int       @default(3) @map("max_attempts")
+  expiresAt         DateTime  @map("expires_at")
+  resendAvailableAt DateTime  @map("resend_available_at")
+  lockedUntil       DateTime? @map("locked_until")
+  hourlyCount       Int       @default(1) @map("hourly_count")
+  lastSentAt        DateTime  @default(now()) @map("last_sent_at")
+  metadata          Json?     @map("metadata")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@index([mobileNumber, purpose])
+  @@map("otp_verifications")
+}

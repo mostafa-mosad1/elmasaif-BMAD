@@ -5,6 +5,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './modules/health/health.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { GeoModule } from './modules/geo/geo.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { ClockModule } from './common/clock/clock.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 
@@ -22,7 +23,8 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
     PrismaModule,
     HealthModule,
     StorageModule,
-    GeoModule
+    GeoModule,
+    AuthModule
   ]
 })
 export class AppModule implements NestModule {

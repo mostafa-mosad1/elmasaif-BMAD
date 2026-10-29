@@ -43,9 +43,6 @@ export const saudiIbanSchema = z.string()
 export const saudiMobileSchema = z.string()
   .regex(/^(05|5|\+9665)[0-9]{8}$/, 'رقم الجوال السعودي غير صحيح (يجب أن يبدأ بـ 05 ويتكون من 10 أرقام)');
 
-export const saudiNationalIdSchema = z.string()
-  .regex(/^[12][0-9]{9}$/, 'رقم الهوية الوطنية / الإقامة يجب أن يتكون من 10 أرقام ويبدأ بـ 1 أو 2');
-
 export const falLicenseSchema = z.string()
   .regex(/^[0-9]{10}$/, 'رقم رخصة فال العقارية يجب أن يتكون من 10 أرقام');
 
@@ -54,21 +51,14 @@ export const loginSchema = z.object({
   password: z.string().min(8, 'كلمة المرور يجب ألا تقل عن 8 خانات')
 });
 
-export const registerSchema = z.object({
-  fullName: z.string().min(3, 'الاسم الكامل مطلوب'),
-  mobileNumber: saudiMobileSchema,
-  nationalId: saudiNationalIdSchema,
-  password: z.string().min(8, 'كلمة المرور يجب ألا تقل عن 8 خانات تحتوي على حرف ورقم')
-    .regex(/^(?=.*[A-Za-z])(?=.*\d)/, 'كلمة المرور يجب أن تتضمن حرفاً ورقماً على الأقل')
-});
+export * from './geo.schema';
+export * from './clock.schema';
+export * from './auth.schema';
 
 export const otpVerifySchema = z.object({
   mobileNumber: saudiMobileSchema,
   code: z.string().length(6, 'رمز التحقق يجب أن يتكون من 6 أرقام')
 });
-
-export * from './geo.schema';
-export * from './clock.schema';
 
 export const createListingSchema = z.object({
   title: z.string().min(5, 'عنوان العقار مطلوب').max(150),
