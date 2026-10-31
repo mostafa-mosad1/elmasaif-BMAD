@@ -4,7 +4,7 @@ baseline_commit: 46f0e044753ce181a50207a94988a6febcca8f32
 
 # Story 1.4: Identity Document Verification
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
