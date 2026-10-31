@@ -19,19 +19,19 @@ export const saudiMobileNormalizedSchema = z.string()
 
 export const registerSchema = z.object({
   fullName: z.string()
-    .trim()
-    .min(3, 'الاسم الكامل يجب ألا يقل عن 3 أحرف')
-    .max(100, 'الاسم الكامل يجب ألا يتجاوز 100 حرف'),
+  .trim()
+  .min(3, 'الاسم الكامل يجب ألا يقل عن 3 أحرف')
+  .max(100, 'الاسم الكامل يجب ألا يتجاوز 100 حرف'),
   mobileNumber: saudiMobileNormalizedSchema,
   nationalId: saudiNationalIdSchema,
   password: z.string()
-    .min(8, 'كلمة المرور يجب ألا تقل عن 8 خانات')
-    .regex(/^(?=.*[A-Za-z])(?=.*\d)/, 'كلمة المرور يجب أن تتضمن حرفاً ورقماً على الأقل'),
+  .min(8, 'كلمة المرور يجب ألا تقل عن 8 خانات')
+  .regex(/^(?=.*[A-Za-z])(?=.*\d)/, 'كلمة المرور يجب أن تتضمن حرفاً ورقماً على الأقل'),
   username: z.string()
-    .min(3, 'اسم المستخدم يجب ألا يقل عن 3 خانات')
-    .max(30, 'اسم المستخدم يجب ألا يتجاوز 30 خانة')
-    .regex(/^[a-zA-Z0-9_-]+$/, 'اسم المستخدم يجب أن يحتوي على أحرف وأرقام وشرطة سفلية فقط')
-    .optional(),
+  .min(3, 'اسم المستخدم يجب ألا يقل عن 3 خانات')
+  .max(30, 'اسم المستخدم يجب ألا يتجاوز 30 خانة')
+  .regex(/^[a-zA-Z0-9_-]+$/, 'اسم المستخدم يجب أن يحتوي على أحرف وأرقام وشرطة سفلية فقط')
+  .optional(),
   termsAccepted: z.literal(true, {
     errorMap: () => ({ message: AUTH_CONSENT_REQUIRED })
   }),
@@ -56,17 +56,17 @@ export const resendOtpSchema = z.object({
 
 export const loginSchema = z.object({
   identifier: z.string()
-    .trim()
-    .min(3, 'اسم المستخدم أو رقم الجوال يجب ألا يقل عن 3 أحرف')
-    .transform((val) => {
-      const cleanPhone = val.replace(/[\s-]/g, '');
-      if (/^(\+966|0)?5[0-9]{8}$/.test(cleanPhone)) {
-        if (cleanPhone.startsWith('+966')) return cleanPhone;
-        if (cleanPhone.startsWith('0')) return `+966${cleanPhone.slice(1)}`;
-        if (cleanPhone.startsWith('5')) return `+966${cleanPhone}`;
-      }
-      return val.toLowerCase();
-    }),
+  .trim()
+  .min(3, 'اسم المستخدم أو رقم الجوال يجب ألا يقل عن 3 أحرف')
+  .transform((val) => {
+    const cleanPhone = val.replace(/[\s-]/g, '');
+    if (/^(\+966|0)?5[0-9]{8}$/.test(cleanPhone)) {
+      if (cleanPhone.startsWith('+966')) return cleanPhone;
+      if (cleanPhone.startsWith('0')) return `+966${cleanPhone.slice(1)}`;
+      if (cleanPhone.startsWith('5')) return `+966${cleanPhone}`;
+    }
+    return val.toLowerCase();
+  }),
   password: z.string().min(8, 'كلمة المرور يجب ألا تقل عن 8 خانات'),
   deviceId: z.string().optional(),
   rememberDevice: z.boolean().optional().default(true)
@@ -105,3 +105,27 @@ export const sessionUserSchema = z.object({
   ...data,
   role: data.role || data.activeRole
 }));
+
+// Password Recovery & Change Schemas (Story 1.6)
+export const passwordComplexitySchema = z.string()
+  .min(8, 'كلمة المرور يجب ألا تقل عن 8 خانات')
+  .regex(/^(?=.*[A-Za-z])(?=.*\d)/, 'كلمة المرور يجب أن تتضمن حرفاً ورقماً على الأقل');
+
+export const forgotPasswordSchema = z.object({
+  mobileNumber: saudiMobileNormalizedSchema
+});
+
+export const verifyResetOtpSchema = z.object({
+  mobileNumber: saudiMobileNormalizedSchema,
+  code: z.string().length(6, 'رمز التحقق يجب أن يتكون من 6 أرقام')
+});
+
+export const resetPasswordSchema = z.object({
+  resetToken: z.string().min(1, 'رمز التحدي مطلوب'),
+  newPassword: passwordComplexitySchema
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'كلمة المرور الحالية مطلوبة'),
+  newPassword: passwordComplexitySchema
+});

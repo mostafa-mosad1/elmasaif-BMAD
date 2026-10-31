@@ -25,6 +25,20 @@ import {
   AUTH_ACCOUNT_DEACTIVATED,
   AUTH_ACCOUNT_DISABLED,
   AUTH_STEP_UP_INVALID,
+  AUTH_RESET_INITIATED,
+  AUTH_RESET_OTP_VERIFIED,
+  AUTH_PASSWORD_SAME_AS_CURRENT,
+  AUTH_RESET_TOKEN_INVALID,
+  AUTH_RESET_TOKEN_EXPIRED,
+  AUTH_PASSWORD_RESET_SUCCESS,
+  AUTH_PASSWORD_CHANGE_SUCCESS,
+  PASSWORD_RESET_TOKEN_EXPIRY_SECONDS,
+  ForgotPasswordInput,
+  VerifyResetOtpInput,
+  ResetPasswordInput,
+  ChangePasswordInput,
+  ForgotPasswordResponse,
+  VerifyResetOtpResponse,
   ProfileStatus,
   UserRole
 } from '@elmasaif/shared';
@@ -719,5 +733,368 @@ export class AuthService {
       profiles
     };
   }
-}
 
+  private generateResetToken(userId: string, mobileNumber: string): string {
+    const payload = {
+      userId,
+      mobileNumber,
+      exp: this.clockService.now().getTime() + PASSWORD_RESET_TOKEN_EXPIRY_SECONDS * 1000
+    };
+    const secret = this.getSecret();
+    const signature = crypto
+      .createHmac('sha256', secret)
+      .update(JSON.stringify(payload))
+      .digest('hex');
+    return Buffer.from(JSON.stringify({ payload, signature })).toString('base64url');
+  }
+
+  private verifyResetToken(token: string): { userId: string; mobileNumber: string } {
+    try {
+      const raw = Buffer.from(token, 'base64url').toString('utf8');
+      const parsed = JSON.parse(raw);
+      const { payload, signature } = parsed;
+      const secret = this.getSecret();
+      const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(JSON.stringify(payload))
+        .digest('hex');
+
+      if (!crypto.timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expectedSignature, 'hex'))) {
+        throw new HttpException(
+          {
+            code: AUTH_RESET_TOKEN_INVALID,
+            message: 'رمز استعادة كلمة المرور غير صالح أو تم التلاعب به'
+          },
+          HttpStatus.BAD_REQUEST
+        );
+      }
+
+      if (this.clockService.now().getTime() > payload.exp) {
+        throw new HttpException(
+          {
+            code: AUTH_RESET_TOKEN_EXPIRED,
+            message: 'انتهت صلاحية جلسة استعادة كلمة المرور، يرجى البدء من جديد'
+          },
+          HttpStatus.BAD_REQUEST
+        );
+      }
+
+      return payload;
+    } catch (err) {
+      if (err instanceof HttpException) throw err;
+      throw new HttpException(
+        {
+          code: AUTH_RESET_TOKEN_INVALID,
+          message: 'رمز استعادة كلمة المرور غير صالح'
+        },
+        HttpStatus.BAD_REQUEST
+      );
+    }
+  }
+
+  async forgotPassword(
+    dto: ForgotPasswordInput,
+    ip: string,
+    userAgent: string
+  ): Promise<ForgotPasswordResponse> {
+    this.logger.log(`Password reset initiated from IP ${ip} (UA: ${userAgent})`);
+    const user = await this.prisma.user.findFirst({
+      where: { mobileNumber: dto.mobileNumber }
+    });
+
+    const genericResponse: ForgotPasswordResponse = {
+      code: AUTH_RESET_INITIATED,
+      message: 'إذا كان رقم الجوال مسجلاً، فسيصلك رمز التحقق لإعادة تعيين كلمة المرور',
+      data: {
+        resendAvailableInSeconds: 60
+      }
+    };
+
+    // Constant-time protection for non-existent users
+    if (!user) {
+      try {
+        await argon2.verify(
+          '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$RdescudvJCsgqlfreuzweveAQ',
+          'DummyPassword123'
+        );
+      } catch {
+        // ignore
+      }
+      return genericResponse;
+    }
+
+    // Inactive account protection
+    if (
+      user.status === ProfileStatus.DEACTIVATED ||
+      user.status === ProfileStatus.DISABLED ||
+      user.status === ProfileStatus.SOFT_DELETED ||
+      user.status === ProfileStatus.SUSPENDED
+    ) {
+      return genericResponse;
+    }
+
+    // Dispatch OTP for ACTIVE or DELETION_PENDING
+    const otpResult = await this.otpService.generateAndSendOtp(
+      user.mobileNumber,
+      'PASSWORD_RESET'
+    );
+
+    return {
+      code: AUTH_RESET_INITIATED,
+      message: 'إذا كان رقم الجوال مسجلاً، فسيصلك رمز التحقق لإعادة تعيين كلمة المرور',
+      data: {
+        resendAvailableInSeconds: otpResult.resendAvailableInSeconds || 60
+      }
+    };
+  }
+
+  async verifyResetOtp(
+    dto: VerifyResetOtpInput
+  ): Promise<VerifyResetOtpResponse> {
+    const otpRecord = await this.otpService.verifyOtp(
+      dto.mobileNumber,
+      'PASSWORD_RESET',
+      dto.code
+    );
+    const user = await this.prisma.user.findFirst({
+      where: { mobileNumber: dto.mobileNumber }
+    });
+
+    if (!user) {
+      throw new HttpException(
+        {
+          code: AUTH_INVALID_CREDENTIALS,
+          message: 'المستخدم غير موجود'
+        },
+        HttpStatus.BAD_REQUEST
+      );
+    }
+
+    await this.otpService.cleanupOtp(otpRecord.id);
+
+    const resetToken = this.generateResetToken(user.id, user.mobileNumber);
+
+    return {
+      code: AUTH_RESET_OTP_VERIFIED,
+      message: 'تم تأكيد رمز التحقق بنجاح',
+      data: {
+        resetToken,
+        expiresInSeconds: PASSWORD_RESET_TOKEN_EXPIRY_SECONDS
+      }
+    };
+  }
+
+  async resetPassword(
+    dto: ResetPasswordInput,
+    ip: string,
+    userAgent: string
+  ): Promise<{ code: string; message: string }> {
+    const payload = this.verifyResetToken(dto.resetToken);
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.userId }
+    });
+
+    if (!user) {
+      throw new HttpException(
+        {
+          code: AUTH_INVALID_CREDENTIALS,
+          message: 'المستخدم غير موجود'
+        },
+        HttpStatus.BAD_REQUEST
+      );
+    }
+
+    const isSamePassword = await argon2.verify(user.passwordHash, dto.newPassword);
+    if (isSamePassword) {
+      throw new HttpException(
+        {
+          code: AUTH_PASSWORD_SAME_AS_CURRENT,
+          message: 'كلمة المرور الجديدة يجب أن تكون مختلفة عن كلمة المرور الحالية'
+        },
+        HttpStatus.BAD_REQUEST
+      );
+    }
+
+    const newHash = await argon2.hash(dto.newPassword, {
+      type: argon2.argon2id
+    });
+
+    await this.prisma.$transaction(async (tx: any) => {
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash: newHash,
+          failedLoginAttempts: 0,
+          lockedUntil: null
+        }
+      });
+
+      // Revoke ALL active sessions
+      await tx.session.deleteMany({
+        where: { userId: user.id }
+      });
+
+      // Immutable AuditLog
+      await tx.auditLog.create({
+        data: {
+          actorId: user.id,
+          actorType: 'USER',
+          action: 'AUTH_PASSWORD_RESET',
+          entityType: 'User',
+          entityId: user.id,
+          ipAddress: ip || '127.0.0.1',
+          payload: { source: 'forgot_password_recovery' }
+        }
+      });
+    });
+
+    this.logger.log(
+      `[auth.security_alert] Password reset completed for user ${user.id} (${user.mobileNumber}) from IP ${ip} (UA: ${userAgent})`
+    );
+
+    return {
+      code: AUTH_PASSWORD_RESET_SUCCESS,
+      message: 'تم إعادة تعيين كلمة المرور بنجاح وإلغاء كافة الجلسات النشطة'
+    };
+  }
+
+  async changePassword(
+    userId: string,
+    currentSessionToken: string,
+    dto: ChangePasswordInput,
+    ip: string,
+    userAgent: string
+  ): Promise<{ code: string; message: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      throw new HttpException(
+        {
+          code: AUTH_INVALID_CREDENTIALS,
+          message: 'المستخدم غير موجود'
+        },
+        HttpStatus.UNAUTHORIZED
+      );
+    }
+
+    const now = this.clockService.now();
+    if (user.lockedUntil && now < user.lockedUntil) {
+      const retryAfterSeconds = Math.ceil(
+        (user.lockedUntil.getTime() - now.getTime()) / 1000
+      );
+      throw new HttpException(
+        {
+          code: AUTH_ACCOUNT_LOCKED,
+          message: 'تم قفل الحساب مؤقتاً لمدة 15 دقيقة بسبب المحاولات المتكررة الخاطئة',
+          data: {
+            lockedUntil: user.lockedUntil.toISOString(),
+            retryAfterSeconds: Math.max(0, retryAfterSeconds)
+          }
+        },
+        423
+      );
+    }
+
+    const isCurrentPasswordValid = await argon2.verify(user.passwordHash, dto.currentPassword);
+    if (!isCurrentPasswordValid) {
+      const newAttempts = (user.failedLoginAttempts || 0) + 1;
+      if (newAttempts >= LOGIN_MAX_FAILED_ATTEMPTS) {
+        const lockedUntil = new Date(now.getTime() + LOGIN_LOCKOUT_MINUTES * 60 * 1000);
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: {
+            failedLoginAttempts: newAttempts,
+            lockedUntil
+          }
+        });
+        throw new HttpException(
+          {
+            code: AUTH_ACCOUNT_LOCKED,
+            message: 'تم قفل الحساب مؤقتاً لمدة 15 دقيقة بسبب المحاولات المتكررة الخاطئة',
+            data: {
+              lockedUntil: lockedUntil.toISOString(),
+              retryAfterSeconds: LOGIN_LOCKOUT_MINUTES * 60
+            }
+          },
+          423
+        );
+      }
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failedLoginAttempts: newAttempts
+        }
+      });
+
+      throw new HttpException(
+        {
+          code: AUTH_INVALID_CREDENTIALS,
+          message: 'كلمة المرور الحالية غير صحيحة'
+        },
+        HttpStatus.UNAUTHORIZED
+      );
+    }
+
+    // Verify new password does not match current password
+    const isSamePassword = await argon2.verify(user.passwordHash, dto.newPassword);
+    if (isSamePassword) {
+      throw new HttpException(
+        {
+          code: AUTH_PASSWORD_SAME_AS_CURRENT,
+          message: 'كلمة المرور الجديدة يجب أن تكون مختلفة عن كلمة المرور الحالية'
+        },
+        HttpStatus.BAD_REQUEST
+      );
+    }
+
+    const newHash = await argon2.hash(dto.newPassword, {
+      type: argon2.argon2id
+    });
+
+    await this.prisma.$transaction(async (tx: any) => {
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash: newHash,
+          failedLoginAttempts: 0,
+          lockedUntil: null
+        }
+      });
+
+      // Revoke all OTHER sessions EXCEPT current session token
+      await tx.session.deleteMany({
+        where: {
+          userId: user.id,
+          token: { not: currentSessionToken }
+        }
+      });
+
+      // Immutable AuditLog
+      await tx.auditLog.create({
+        data: {
+          actorId: user.id,
+          actorType: 'USER',
+          action: 'AUTH_PASSWORD_CHANGED',
+          entityType: 'User',
+          entityId: user.id,
+          ipAddress: ip || '127.0.0.1',
+          payload: { sessionPreserved: true }
+        }
+      });
+    });
+
+    this.logger.log(
+      `[auth.security_alert] Authenticated password change for user ${user.id} (${user.mobileNumber}) from IP ${ip} (UA: ${userAgent})`
+    );
+
+    return {
+      code: AUTH_PASSWORD_CHANGE_SUCCESS,
+      message: 'تم تغيير كلمة المرور بنجاح وتم إلغاء الجلسات الأخرى النشطة'
+    };
+  }
+
+}

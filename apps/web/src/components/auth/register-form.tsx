@@ -8,10 +8,12 @@ import { Badge } from '../ui/badge';
 import { OtpInput } from './otp-input';
 import { TermsModal } from './terms-modal';
 import { apiClient, ApiError } from '../../lib/api-client';
+import { useAuth } from '../providers/auth-provider';
 import {
   OTP_THROTTLE_SECONDS,
   OTP_EXPIRY_SECONDS,
-  registerSchema
+  registerSchema,
+  SessionUser
 } from '@elmasaif/shared';
 
 export interface RegisterFormProps {
@@ -20,6 +22,7 @@ export interface RegisterFormProps {
 
 export function RegisterForm({ onSuccessRedirect = '/app/buyer' }: RegisterFormProps) {
   const router = useRouter();
+  const { setSessionUser, refreshSession } = useAuth();
 
   // Step state: 1 = Registration Form, 2 = OTP Verification
   const [step, setStep] = useState<1 | 2>(1);
@@ -145,14 +148,23 @@ export function RegisterForm({ onSuccessRedirect = '/app/buyer' }: RegisterFormP
     setIsLoading(true);
 
     try {
-      await apiClient.post<{
+      const verifyRes = await apiClient.post<{
         code: string;
         message: string;
-        data: { user: unknown };
+        data: { user: SessionUser };
       }>('/auth/verify-otp', {
         mobileNumber: normalizedMobile,
         code
       });
+
+      if (verifyRes.data?.user) {
+        setSessionUser(verifyRes.data.user);
+      }
+      try {
+        await refreshSession();
+      } catch {
+        // ignore
+      }
 
       setSuccessMessage('تم التحقق بنجاح! جاري تحويلك...');
       setTimeout(() => {

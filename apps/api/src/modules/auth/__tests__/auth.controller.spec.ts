@@ -19,7 +19,11 @@ describe('AuthController (AC: 1, 4, 5)', () => {
       resendOtp: jest.fn(),
       logout: jest.fn(),
       login: jest.fn(),
-      verifyStepUpOtp: jest.fn()
+      verifyStepUpOtp: jest.fn(),
+      forgotPassword: jest.fn(),
+      verifyResetOtp: jest.fn(),
+      resetPassword: jest.fn(),
+      changePassword: jest.fn()
     };
 
     mockPrismaService = {
@@ -332,5 +336,105 @@ describe('AuthController (AC: 1, 4, 5)', () => {
       );
     });
   });
-});
 
+  describe('forgotPassword (AC: 1)', () => {
+    it('dispatches forgot password and returns envelope', async () => {
+      mockAuthService.forgotPassword.mockResolvedValue({
+        code: 'AUTH_RESET_INITIATED',
+        message: 'إذا كان رقم الجوال مسجلاً، فسيصلك رمز التحقق لإعادة تعيين كلمة المرور',
+        data: { resendAvailableInSeconds: 60 }
+      });
+
+      const mockReq = {
+        ip: '127.0.0.1',
+        headers: { 'user-agent': 'Jest-Agent', 'x-request-id': 'req-123' }
+      } as any;
+
+      const body = { mobileNumber: '+966501234567' };
+      const result = await controller.forgotPassword(body, mockReq);
+
+      expect(mockAuthService.forgotPassword).toHaveBeenCalledWith(body, '127.0.0.1', 'Jest-Agent');
+      expect(result.code).toBe('AUTH_RESET_INITIATED');
+      expect(result.requestId).toBe('req-123');
+    });
+  });
+
+  describe('verifyResetOtp (AC: 2)', () => {
+    it('verifies OTP and returns challenge token', async () => {
+      mockAuthService.verifyResetOtp.mockResolvedValue({
+        code: 'AUTH_RESET_OTP_VERIFIED',
+        message: 'تم تأكيد رمز التحقق بنجاح',
+        data: { resetToken: 'mock-reset-token', expiresInSeconds: 900 }
+      });
+
+      const mockReq = {
+        headers: { 'x-request-id': 'req-456' }
+      } as any;
+
+      const body = { mobileNumber: '+966501234567', code: '123456' };
+      const result = await controller.verifyResetOtp(body, mockReq);
+
+      expect(mockAuthService.verifyResetOtp).toHaveBeenCalledWith(body);
+      expect(result.code).toBe('AUTH_RESET_OTP_VERIFIED');
+      expect(result.data.resetToken).toBe('mock-reset-token');
+    });
+  });
+
+  describe('resetPassword (AC: 3)', () => {
+    it('resets password and returns success envelope', async () => {
+      mockAuthService.resetPassword.mockResolvedValue({
+        code: 'AUTH_PASSWORD_RESET_SUCCESS',
+        message: 'تم إعادة تعيين كلمة المرور بنجاح وإلغاء كافة الجلسات النشطة'
+      });
+
+      const mockReq = {
+        ip: '127.0.0.1',
+        headers: { 'user-agent': 'Jest-Agent' }
+      } as any;
+
+      const body = { resetToken: 'mock-token', newPassword: 'NewPassword123' };
+      const result = await controller.resetPassword(body, mockReq);
+
+      expect(mockAuthService.resetPassword).toHaveBeenCalledWith(body, '127.0.0.1', 'Jest-Agent');
+      expect(result.code).toBe('AUTH_PASSWORD_RESET_SUCCESS');
+    });
+  });
+
+  describe('changePassword (AC: 4)', () => {
+    it('changes authenticated password using current session cookie', async () => {
+      mockAuthService.changePassword.mockResolvedValue({
+        code: 'AUTH_PASSWORD_CHANGE_SUCCESS',
+        message: 'تم تغيير كلمة المرور بنجاح وتم إلغاء الجلسات الأخرى النشطة'
+      });
+
+      const mockUser = {
+        id: 'u-1',
+        fullName: 'أحمد',
+        mobileNumber: '+966501234567',
+        username: 'ahmed',
+        role: 'BUYER',
+        activeRole: 'BUYER',
+        profiles: []
+      } as any;
+
+      const mockReq = {
+        ip: '127.0.0.1',
+        headers: { 'user-agent': 'Jest-Agent' },
+        cookies: { [SESSION_COOKIE_NAME]: 'active-session-token' }
+      } as any;
+
+      const body = { currentPassword: 'OldPassword1', newPassword: 'NewPassword2' };
+      const result = await controller.changePassword(mockUser, body, mockReq);
+
+      expect(mockAuthService.changePassword).toHaveBeenCalledWith(
+        'u-1',
+        'active-session-token',
+        body,
+        '127.0.0.1',
+        'Jest-Agent'
+      );
+      expect(result.code).toBe('AUTH_PASSWORD_CHANGE_SUCCESS');
+    });
+  });
+
+});

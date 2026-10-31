@@ -31,6 +31,7 @@ export interface AuthContextType {
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
   refreshIdentityStatus: () => Promise<IdentityStatusResponse>;
+  setSessionUser: (user: SessionUser) => void;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -45,7 +46,8 @@ export const AuthContext = createContext<AuthContextType>({
   refreshSession: async () => {},
   refreshIdentityStatus: async () => {
     throw new Error('AuthProvider is not available');
-  }
+  },
+  setSessionUser: () => {}
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -94,6 +96,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     refreshSession();
   }, [refreshSession]);
+
+  const setSessionUser = useCallback((newUser: SessionUser) => {
+    setUser(newUser);
+    const resolvedRole = (newUser.activeRole as UserRole) || (newUser.role as UserRole) || UserRole.BUYER;
+    setActiveRole(resolvedRole);
+    setProfiles(newUser.profiles || []);
+    setIsLoading(false);
+  }, []);
 
   const switchRole = useCallback(
     async (targetRole: UserRole) => {
@@ -145,7 +155,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         attachOwnerRole,
         logout,
         refreshSession,
-        refreshIdentityStatus
+        refreshIdentityStatus,
+        setSessionUser
       }}
     >
       {children}

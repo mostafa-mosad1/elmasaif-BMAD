@@ -27,6 +27,14 @@ import {
   ResendOtpInput,
   LoginInput,
   VerifyStepUpOtpInput,
+  forgotPasswordSchema,
+  verifyResetOtpSchema,
+  resetPasswordSchema,
+  changePasswordSchema,
+  ForgotPasswordInput,
+  VerifyResetOtpInput,
+  ResetPasswordInput,
+  ChangePasswordInput,
   SessionUser,
   SESSION_COOKIE_NAME,
   SESSION_EXPIRY_DAYS,
@@ -260,5 +268,93 @@ export class AuthController {
       message: 'تم تسجيل الخروج بنجاح'
     };
   }
-}
 
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Initiate password recovery with anti-enumeration protection' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Recovery initiated' })
+  async forgotPassword(
+    @Body(new ZodValidationPipe(forgotPasswordSchema)) dto: ForgotPasswordInput,
+    @Req() req: Request
+  ) {
+    const ip = req.ip || req.socket.remoteAddress || '127.0.0.1';
+    const userAgent = (req.headers['user-agent'] as string) || 'unknown';
+
+    const result = await this.authService.forgotPassword(dto, ip, userAgent);
+
+    return {
+      ...result,
+      requestId: req.headers['x-request-id']
+    };
+  }
+
+  @Post('reset-password/verify-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify OTP for password reset and issue reset challenge token' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Reset challenge token issued' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid or expired OTP' })
+  @ApiResponse({ status: 423, description: 'OTP attempts locked' })
+  async verifyResetOtp(
+    @Body(new ZodValidationPipe(verifyResetOtpSchema)) dto: VerifyResetOtpInput,
+    @Req() req: Request
+  ) {
+    const result = await this.authService.verifyResetOtp(dto);
+
+    return {
+      ...result,
+      requestId: req.headers['x-request-id']
+    };
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Execute password reset with challenge token, revoking all sessions' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Password reset and all sessions revoked' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid challenge token or same password' })
+  async resetPassword(
+    @Body(new ZodValidationPipe(resetPasswordSchema)) dto: ResetPasswordInput,
+    @Req() req: Request
+  ) {
+    const ip = req.ip || req.socket.remoteAddress || '127.0.0.1';
+    const userAgent = (req.headers['user-agent'] as string) || 'unknown';
+
+    const result = await this.authService.resetPassword(dto, ip, userAgent);
+
+    return {
+      ...result,
+      requestId: req.headers['x-request-id']
+    };
+  }
+
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(SessionAuthGuard)
+  @ApiOperation({ summary: 'Change password while authenticated, preserving current session' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Password changed and other sessions revoked' })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Invalid current password' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Same password as current' })
+  @ApiResponse({ status: 423, description: 'Account locked due to repeated incorrect password' })
+  async changePassword(
+    @CurrentUser() user: SessionUser,
+    @Body(new ZodValidationPipe(changePasswordSchema)) dto: ChangePasswordInput,
+    @Req() req: Request
+  ) {
+    const ip = req.ip || req.socket.remoteAddress || '127.0.0.1';
+    const userAgent = (req.headers['user-agent'] as string) || 'unknown';
+    const currentSessionToken = req.cookies?.[SESSION_COOKIE_NAME] || '';
+
+    const result = await this.authService.changePassword(
+      user.id,
+      currentSessionToken,
+      dto,
+      ip,
+      userAgent
+    );
+
+    return {
+      ...result,
+      requestId: req.headers['x-request-id']
+    };
+  }
+
+}

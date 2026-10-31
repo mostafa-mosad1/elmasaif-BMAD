@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -16,6 +16,7 @@ import {
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { OtpInput } from './otp-input';
+import { useAuth } from '../providers/auth-provider';
 import { apiClient, ApiError } from '../../lib/api-client';
 import {
   DEVICE_COOKIE_NAME,
@@ -45,6 +46,30 @@ export interface LoginFormProps {
 
 export function LoginForm({ onSuccessRedirect = '/app/buyer' }: LoginFormProps) {
   const router = useRouter();
+  const { user: authUser, isLoading: isAuthLoading, setSessionUser, refreshSession } = useAuth();
+
+  const getEffectiveRedirect = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const redir = params.get('redirect');
+        if (redir && redir.startsWith('/') && !redir.startsWith('/auth')) {
+          return redir;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return onSuccessRedirect;
+  }, [onSuccessRedirect]);
+
+  // Auto-redirect if user is already authenticated
+  useEffect(() => {
+    if (!isAuthLoading && authUser) {
+      const target = getEffectiveRedirect();
+      router.replace(target);
+    }
+  }, [authUser, isAuthLoading, router, getEffectiveRedirect]);
 
   // Step state: 1 = Credentials, 2 = Step-Up OTP
   const [step, setStep] = useState<1 | 2>(1);
@@ -139,13 +164,23 @@ export function LoginForm({ onSuccessRedirect = '/app/buyer' }: LoginFormProps) 
         setStep(2);
       } else {
         // Recognized device -> Success
+        if (res.data?.user) {
+          setSessionUser(res.data.user);
+        }
         if (res.data?.deletionCancelled) {
           setSuccessMessage('تم إلغاء طلب حذف الحساب واستعادة نشاطه بنجاح');
         }
         if (res.data?.deviceId) {
           setStoredDeviceId(res.data.deviceId);
         }
-        router.push(onSuccessRedirect);
+        try {
+          await refreshSession();
+        } catch {
+          // ignore session hydration error if cookie already active
+        }
+        const target = getEffectiveRedirect();
+        router.push(target);
+        router.refresh();
       }
     } catch (err: unknown) {
       if (err instanceof ApiError) {
@@ -194,10 +229,20 @@ export function LoginForm({ onSuccessRedirect = '/app/buyer' }: LoginFormProps) 
         })
       });
 
+      if (res.data?.user) {
+        setSessionUser(res.data.user);
+      }
       if (res.data?.deviceId) {
         setStoredDeviceId(res.data.deviceId);
       }
-      router.push(onSuccessRedirect);
+      try {
+        await refreshSession();
+      } catch {
+        // ignore
+      }
+      const target = getEffectiveRedirect();
+      router.push(target);
+      router.refresh();
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         setErrorMessage(err.message || 'رمز التحقق غير صحيح أو منتهي الصلاحية');

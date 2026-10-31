@@ -7,7 +7,11 @@ import {
   loginSchema,
   verifyStepUpOtpSchema,
   switchRoleSchema,
-  userProfileSummarySchema
+  userProfileSummarySchema,
+  forgotPasswordSchema,
+  verifyResetOtpSchema,
+  resetPasswordSchema,
+  changePasswordSchema
 } from '../schemas/auth.schema';
 
 export type RegisterInput = z.infer<typeof registerSchema>;
@@ -18,6 +22,31 @@ export type LoginInput = z.input<typeof loginSchema>;
 export type VerifyStepUpOtpInput = z.input<typeof verifyStepUpOtpSchema>;
 export type SwitchRoleInput = z.infer<typeof switchRoleSchema>;
 export type UserProfileSummary = z.infer<typeof userProfileSummarySchema>;
+
+// Password Recovery & Change Types (Story 1.6)
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type VerifyResetOtpInput = z.infer<typeof verifyResetOtpSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+export interface ForgotPasswordResponse {
+  code: string;
+  message: string;
+  data: {
+    resendAvailableInSeconds: number;
+  };
+  requestId?: string;
+}
+
+export interface VerifyResetOtpResponse {
+  code: string;
+  message: string;
+  data: {
+    resetToken: string;
+    expiresInSeconds: number;
+  };
+  requestId?: string;
+}
 
 export interface WorkspaceNavigationItem {
   title: string;

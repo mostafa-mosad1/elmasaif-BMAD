@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ShieldCheck, Building2 } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Building2, KeyRound } from 'lucide-react';
 import { Button } from '../../../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
 
@@ -10,11 +10,31 @@ export default function ProfileSettingsPage() {
       <header>
         <h1 className="text-2xl font-bold text-ink-primary dark:text-dark-ink-primary">إعدادات الحساب</h1>
         <p className="mt-1 text-sm text-ink-secondary dark:text-dark-ink-secondary">
-          إدارة معلومات الحساب والمتطلبات المالية والتحقق.
+          إدارة معلومات الحساب والمتطلبات المالية والتحقق والأمان.
         </p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5 text-primary" aria-hidden="true" />
+              كلمة المرور والأمان
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-ink-secondary dark:text-dark-ink-secondary">
+              تغيير كلمة المرور وتأمين حسابك وإدارة الجلسات النشطة عبر الأجهزة.
+            </p>
+            <Link href="/app/settings/password">
+              <Button variant="outline" className="gap-2">
+                إدارة كلمة المرور
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

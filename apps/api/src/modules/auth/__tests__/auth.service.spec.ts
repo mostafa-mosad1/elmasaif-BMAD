@@ -16,6 +16,11 @@ import {
   AUTH_ACCOUNT_LOCKED,
   AUTH_ACCOUNT_DEACTIVATED,
   AUTH_ACCOUNT_DISABLED,
+  AUTH_RESET_INITIATED,
+  AUTH_RESET_OTP_VERIFIED,
+  AUTH_PASSWORD_SAME_AS_CURRENT,
+  AUTH_PASSWORD_RESET_SUCCESS,
+  AUTH_PASSWORD_CHANGE_SUCCESS,
   ProfileStatus
 } from '@elmasaif/shared';
 
@@ -67,6 +72,9 @@ describe('AuthService (AC: 1, 4, 5)', () => {
         create: jest.fn(),
         delete: jest.fn(),
         deleteMany: jest.fn()
+      },
+      auditLog: {
+        create: jest.fn()
       },
       $transaction: jest.fn()
     };
@@ -507,5 +515,262 @@ describe('AuthService (AC: 1, 4, 5)', () => {
       expect(result.sessionToken).toBeDefined();
     });
   });
-});
 
+  describe('forgotPassword (AC: 1)', () => {
+    it('returns generic success envelope with anti-enumeration protection when user does not exist', async () => {
+      mockPrismaService.user.findFirst.mockResolvedValue(null);
+
+      const result = await service.forgotPassword({ mobileNumber: '+966501234567' }, '127.0.0.1', 'test-agent');
+
+      expect(result).toEqual({
+        code: AUTH_RESET_INITIATED,
+        message: 'إذا كان رقم الجوال مسجلاً، فسيصلك رمز التحقق لإعادة تعيين كلمة المرور',
+        data: {
+          resendAvailableInSeconds: 60
+        }
+      });
+      expect(argon2.verify).toHaveBeenCalled();
+      expect(mockOtpService.generateAndSendOtp).not.toHaveBeenCalled();
+    });
+
+    it('silently suppresses OTP and returns generic envelope if user status is DEACTIVATED or DISABLED', async () => {
+      mockPrismaService.user.findFirst.mockResolvedValue({
+        id: 'u-deactivated',
+        mobileNumber: '+966501234567',
+        status: ProfileStatus.DEACTIVATED
+      });
+
+      const result = await service.forgotPassword({ mobileNumber: '+966501234567' }, '127.0.0.1', 'test-agent');
+
+      expect(result.code).toBe(AUTH_RESET_INITIATED);
+      expect(mockOtpService.generateAndSendOtp).not.toHaveBeenCalled();
+    });
+
+    it('dispatches PASSWORD_RESET OTP if user is ACTIVE', async () => {
+      mockPrismaService.user.findFirst.mockResolvedValue({
+        id: 'u-active',
+        mobileNumber: '+966501234567',
+        status: ProfileStatus.ACTIVE
+      });
+      mockOtpService.generateAndSendOtp.mockResolvedValue({
+        success: true,
+        resendAvailableInSeconds: 60
+      });
+
+      const result = await service.forgotPassword({ mobileNumber: '+966501234567' }, '127.0.0.1', 'test-agent');
+
+      expect(result.code).toBe(AUTH_RESET_INITIATED);
+      expect(mockOtpService.generateAndSendOtp).toHaveBeenCalledWith('+966501234567', 'PASSWORD_RESET');
+    });
+  });
+
+  describe('verifyResetOtp (AC: 2)', () => {
+    it('verifies OTP, cleans it up, and returns signed resetToken valid for 15 minutes', async () => {
+      mockOtpService.verifyOtp.mockResolvedValue({ id: 'otp-rec-1' });
+      mockPrismaService.user.findFirst.mockResolvedValue({
+        id: 'u-active-1',
+        mobileNumber: '+966501234567'
+      });
+
+      const result = await service.verifyResetOtp({
+        mobileNumber: '+966501234567',
+        code: '123456'
+      });
+
+      expect(mockOtpService.verifyOtp).toHaveBeenCalledWith('+966501234567', 'PASSWORD_RESET', '123456');
+      expect(mockOtpService.cleanupOtp).toHaveBeenCalledWith('otp-rec-1');
+      expect(result.code).toBe(AUTH_RESET_OTP_VERIFIED);
+      expect(result.data.resetToken).toBeDefined();
+      expect(result.data.expiresInSeconds).toBe(900);
+    });
+  });
+
+  describe('resetPassword (AC: 3)', () => {
+    const mockUser = {
+      id: 'u-active-1',
+      mobileNumber: '+966501234567',
+      passwordHash: 'old_hashed_password',
+      failedLoginAttempts: 3,
+      lockedUntil: new Date('2026-10-31T18:00:00Z')
+    };
+
+    it('rejects with AUTH_PASSWORD_SAME_AS_CURRENT if new password matches existing password', async () => {
+      const secret = process.env.SESSION_SECRET || 'super-secret-session-key-for-elmasaif-2026-development';
+      const payload = {
+        userId: mockUser.id,
+        mobileNumber: mockUser.mobileNumber,
+        exp: fixedNow.getTime() + 900 * 1000
+      };
+      const signature = crypto.createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex');
+      const resetToken = Buffer.from(JSON.stringify({ payload, signature })).toString('base64url');
+
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      (argon2.verify as jest.Mock).mockResolvedValue(true);
+
+      await expect(
+        service.resetPassword({ resetToken, newPassword: 'OldPassword123' }, '127.0.0.1', 'test-agent')
+      ).rejects.toThrow(expect.objectContaining({
+        response: expect.objectContaining({ code: AUTH_PASSWORD_SAME_AS_CURRENT })
+      }));
+    });
+
+    it('atomically hashes new password, resets user lock/attempts, deletes all sessions, and logs audit', async () => {
+      const secret = process.env.SESSION_SECRET || 'super-secret-session-key-for-elmasaif-2026-development';
+      const payload = {
+        userId: mockUser.id,
+        mobileNumber: mockUser.mobileNumber,
+        exp: fixedNow.getTime() + 900 * 1000
+      };
+      const signature = crypto.createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex');
+      const resetToken = Buffer.from(JSON.stringify({ payload, signature })).toString('base64url');
+
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      (argon2.verify as jest.Mock).mockResolvedValue(false);
+      (argon2.hash as jest.Mock).mockResolvedValue('new_argon2id_hash');
+
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => cb(mockPrismaService));
+
+      const result = await service.resetPassword(
+        { resetToken, newPassword: 'BrandNewPassword123' },
+        '127.0.0.1',
+        'test-agent'
+      );
+
+      expect(argon2.hash).toHaveBeenCalledWith('BrandNewPassword123', { type: argon2.argon2id });
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+        where: { id: mockUser.id },
+        data: {
+          passwordHash: 'new_argon2id_hash',
+          failedLoginAttempts: 0,
+          lockedUntil: null
+        }
+      });
+      expect(mockPrismaService.session.deleteMany).toHaveBeenCalledWith({
+        where: { userId: mockUser.id }
+      });
+      expect(mockPrismaService.auditLog.create).toHaveBeenCalledWith({
+        data: {
+          actorId: mockUser.id,
+          actorType: 'USER',
+          action: 'AUTH_PASSWORD_RESET',
+          entityType: 'User',
+          entityId: mockUser.id,
+          ipAddress: '127.0.0.1',
+          payload: { source: 'forgot_password_recovery' }
+        }
+      });
+      expect(result.code).toBe(AUTH_PASSWORD_RESET_SUCCESS);
+    });
+  });
+
+  describe('changePassword (AC: 4)', () => {
+    const mockUser = {
+      id: 'u-authenticated-1',
+      mobileNumber: '+966501234567',
+      passwordHash: 'current_password_hash',
+      failedLoginAttempts: 0,
+      lockedUntil: null
+    };
+
+    it('rejects with AUTH_ACCOUNT_LOCKED if user is locked', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        ...mockUser,
+        lockedUntil: new Date(fixedNow.getTime() + 10 * 60 * 1000)
+      });
+
+      await expect(
+        service.changePassword(
+          mockUser.id,
+          'sess-token-1',
+          { currentPassword: 'WrongPassword1', newPassword: 'NewPassword123' },
+          '127.0.0.1',
+          'test-agent'
+        )
+      ).rejects.toThrow(expect.objectContaining({
+        response: expect.objectContaining({ code: AUTH_ACCOUNT_LOCKED })
+      }));
+    });
+
+    it('increments failedLoginAttempts and locks on 5th failed attempt', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        ...mockUser,
+        failedLoginAttempts: 4
+      });
+      (argon2.verify as jest.Mock).mockResolvedValue(false);
+
+      await expect(
+        service.changePassword(
+          mockUser.id,
+          'sess-token-1',
+          { currentPassword: 'WrongPassword1', newPassword: 'NewPassword123' },
+          '127.0.0.1',
+          'test-agent'
+        )
+      ).rejects.toThrow(expect.objectContaining({
+        response: expect.objectContaining({ code: AUTH_ACCOUNT_LOCKED })
+      }));
+
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: mockUser.id },
+        data: expect.objectContaining({
+          failedLoginAttempts: 5,
+          lockedUntil: expect.any(Date)
+        })
+      }));
+    });
+
+    it('rejects with AUTH_PASSWORD_SAME_AS_CURRENT if new password matches current password', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      (argon2.verify as jest.Mock).mockResolvedValue(true);
+
+      await expect(
+        service.changePassword(
+          mockUser.id,
+          'sess-token-1',
+          { currentPassword: 'CurrentPassword123', newPassword: 'CurrentPassword123' },
+          '127.0.0.1',
+          'test-agent'
+        )
+      ).rejects.toThrow(expect.objectContaining({
+        response: expect.objectContaining({ code: AUTH_PASSWORD_SAME_AS_CURRENT })
+      }));
+    });
+
+    it('revokes all OTHER sessions while preserving the requesting session', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      (argon2.verify as jest.Mock)
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false);
+      (argon2.hash as jest.Mock).mockResolvedValue('new_argon2id_hash');
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => cb(mockPrismaService));
+
+      const result = await service.changePassword(
+        mockUser.id,
+        'current-session-token-to-keep',
+        { currentPassword: 'CurrentPassword123', newPassword: 'BrandNewPassword123' },
+        '127.0.0.1',
+        'test-agent'
+      );
+
+      expect(mockPrismaService.session.deleteMany).toHaveBeenCalledWith({
+        where: {
+          userId: mockUser.id,
+          token: { not: 'current-session-token-to-keep' }
+        }
+      });
+      expect(mockPrismaService.auditLog.create).toHaveBeenCalledWith({
+        data: {
+          actorId: mockUser.id,
+          actorType: 'USER',
+          action: 'AUTH_PASSWORD_CHANGED',
+          entityType: 'User',
+          entityId: mockUser.id,
+          ipAddress: '127.0.0.1',
+          payload: { sessionPreserved: true }
+        }
+      });
+      expect(result.code).toBe(AUTH_PASSWORD_CHANGE_SUCCESS);
+    });
+  });
+
+});

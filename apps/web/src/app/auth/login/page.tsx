@@ -37,7 +37,9 @@ export default function LoginPage() {
           </CardHeader>
 
           <CardContent>
-            <LoginForm />
+            <React.Suspense fallback={<div className="h-48 flex items-center justify-center"><div className="w-8 h-8 border-3 border-primary/20 border-t-primary rounded-full animate-spin" /></div>}>
+              <LoginForm />
+            </React.Suspense>
           </CardContent>
 
           <CardFooter className="justify-center border-t border-surface-border dark:border-dark-surface-border pt-6 mt-6">
