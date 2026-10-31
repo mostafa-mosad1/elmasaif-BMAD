@@ -73,3 +73,4 @@ export * from './storage';
 export * from './ui';
 export * from './auth';
 export * from './identity';
+export * from './payout';

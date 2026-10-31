@@ -204,6 +204,7 @@ model UserProfile {
 
   user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   falLicense           FalLicense?
+  payoutAccounts       PayoutAccount[]
   listings             Listing[]             @relation("ProfileListings")
   buyerOffers          Offer[]               @relation("BuyerOffers")
   buyerDeals           Deal[]                @relation("BuyerDeals")
@@ -235,6 +236,25 @@ model FalLicense {
 
   @@index([lockExpiresAt])
   @@map("fal_licenses")
+}
+
+model PayoutAccount {
+  id                        String      @id @default(uuid())
+  profileId                 String      @map("profile_id")
+  accountHolderName         String      @map("account_holder_name")
+  bankName                  String?     @map("bank_name")
+  ibanEncrypted             String      @map("iban_encrypted")
+  ibanMasked                String      @map("iban_masked")
+  ibanLast4                 String      @map("iban_last4")
+  isDefault                 Boolean     @default(true) @map("is_default")
+  hasCommercialNameMismatch Boolean     @default(false) @map("has_commercial_name_mismatch")
+  createdAt                 DateTime    @default(now()) @map("created_at")
+  updatedAt                 DateTime    @updatedAt @map("updated_at")
+
+  profile                   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@map("payout_accounts")
 }
 
 model AdminUser {

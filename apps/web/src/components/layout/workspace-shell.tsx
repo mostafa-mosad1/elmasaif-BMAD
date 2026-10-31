@@ -21,7 +21,7 @@ import {
   CreditCard,
   Building,
   ShieldCheck,
-  Percent,
+  
   LogOut,
   Sun,
   Moon,
@@ -66,7 +66,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
       { href: '/app/marketer/listings', label: 'إدارة العقارات', icon: Building },
       { href: '/app/marketer/listings/new', label: 'إضافة عقار جديد', icon: PlusCircle },
       { href: '/app/marketer/fal-license', label: 'رخصة فال العقارية', icon: ShieldCheck },
-      { href: '/app/settings/payout', label: 'السعي والعمولات', icon: Percent },
+      { href: '/app/settings/payout', label: 'حسابات التحويل (IBAN)', icon: CreditCard },
       { href: '/app/settings/profile', label: 'إعدادات الحساب', icon: User },
       { href: '/app/settings/identity', label: 'توثيق الهوية', icon: ShieldCheck }
     ],
