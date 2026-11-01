@@ -7,6 +7,7 @@ import {
   JOB_FAL_EXPIRY_WARNINGS,
   JOB_OWNER_FEE_REMINDERS,
   JOB_NOTIFICATION_RETENTION,
+  JOB_ACCOUNT_DELETION_EXPIRY,
   BACKGROUND_JOB_DEFINITIONS
 } from '@elmasaif/shared';
 import { WorkerScheduler } from '../scheduler';
@@ -71,10 +72,11 @@ describe('WorkerScheduler (AC: 1, 2)', () => {
       JOB_FAL_LICENSE_EXPIRY,
       JOB_FAL_EXPIRY_WARNINGS,
       JOB_OWNER_FEE_REMINDERS,
-      JOB_NOTIFICATION_RETENTION
+      JOB_NOTIFICATION_RETENTION,
+      JOB_ACCOUNT_DELETION_EXPIRY
     ];
 
-    expect(boss.schedule).toHaveBeenCalledTimes(7);
+    expect(boss.schedule).toHaveBeenCalledTimes(8);
 
     for (const jobName of expectedJobNames) {
       const def = BACKGROUND_JOB_DEFINITIONS[jobName];
@@ -104,10 +106,11 @@ describe('WorkerScheduler (AC: 1, 2)', () => {
       JOB_FAL_LICENSE_EXPIRY,
       JOB_FAL_EXPIRY_WARNINGS,
       JOB_OWNER_FEE_REMINDERS,
-      JOB_NOTIFICATION_RETENTION
+      JOB_NOTIFICATION_RETENTION,
+      JOB_ACCOUNT_DELETION_EXPIRY
     ];
 
-    expect(boss.work).toHaveBeenCalledTimes(7);
+    expect(boss.work).toHaveBeenCalledTimes(8);
     for (const jobName of expectedJobNames) {
       expect(boss.work).toHaveBeenCalledWith(jobName, expect.any(Function));
     }

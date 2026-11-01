@@ -7,6 +7,7 @@ import {
   JOB_FAL_EXPIRY_WARNINGS,
   JOB_OWNER_FEE_REMINDERS,
   JOB_NOTIFICATION_RETENTION,
+  JOB_ACCOUNT_DELETION_EXPIRY,
   BACKGROUND_JOB_DEFINITIONS,
   BACKGROUND_JOBS,
   JobName,
@@ -22,10 +23,11 @@ describe('Canonical Background Job Contracts & Definitions', () => {
     JOB_FAL_LICENSE_EXPIRY,
     JOB_FAL_EXPIRY_WARNINGS,
     JOB_OWNER_FEE_REMINDERS,
-    JOB_NOTIFICATION_RETENTION
+    JOB_NOTIFICATION_RETENTION,
+    JOB_ACCOUNT_DELETION_EXPIRY
   ];
 
-  it('defines exact string constants for all 7 cataloged jobs', () => {
+  it('defines exact string constants for all cataloged jobs', () => {
     expect(JOB_PAYMENT_DEADLINE_EXPIRY).toBe('payment-deadline-expiry');
     expect(JOB_OFFER_EXPIRY_CHECKER).toBe('offer-expiry-checker');
     expect(JOB_DEMAND_EXPIRY_CHECKER).toBe('demand-expiry-checker');
@@ -33,11 +35,12 @@ describe('Canonical Background Job Contracts & Definitions', () => {
     expect(JOB_FAL_EXPIRY_WARNINGS).toBe('fal-expiry-warnings');
     expect(JOB_OWNER_FEE_REMINDERS).toBe('owner-fee-reminders');
     expect(JOB_NOTIFICATION_RETENTION).toBe('notification-retention');
+    expect(JOB_ACCOUNT_DELETION_EXPIRY).toBe('account-deletion-expiry');
   });
 
   it('contains exactly 7 cataloged jobs in BACKGROUND_JOB_DEFINITIONS', () => {
     const keys = Object.keys(BACKGROUND_JOB_DEFINITIONS);
-    expect(keys).toHaveLength(7);
+    expect(keys).toHaveLength(8);
     for (const job of expectedJobs) {
       expect(BACKGROUND_JOB_DEFINITIONS[job]).toBeDefined();
     }
@@ -75,6 +78,7 @@ describe('Canonical Background Job Contracts & Definitions', () => {
     expect(BACKGROUND_JOB_DEFINITIONS[JOB_FAL_EXPIRY_WARNINGS].cadence).toBe('0 5 * * *');
     expect(BACKGROUND_JOB_DEFINITIONS[JOB_OWNER_FEE_REMINDERS].cadence).toBe('0 6 * * *');
     expect(BACKGROUND_JOB_DEFINITIONS[JOB_NOTIFICATION_RETENTION].cadence).toBe('0 2 * * *');
+    expect(BACKGROUND_JOB_DEFINITIONS[JOB_ACCOUNT_DELETION_EXPIRY].cadence).toBe('0 3 * * *');
   });
 
   it('supports typing of JobExecutionResult', () => {

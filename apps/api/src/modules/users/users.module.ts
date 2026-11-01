@@ -17,6 +17,8 @@ import { PayoutService } from './payout.service';
 import { PhoneChangeController } from './phone-change.controller';
 import { AdminPhoneChangeController } from './admin-phone-change.controller';
 import { PhoneChangeService } from './phone-change.service';
+import { AccountDeletionController } from './account-deletion.controller';
+import { AccountDeletionService } from './account-deletion.service';
 
 @Module({
   imports: [StorageModule, AuthModule, CryptoModule],
@@ -27,7 +29,8 @@ import { PhoneChangeService } from './phone-change.service';
     PayoutController,
     PhoneChangeController,
     AdminPhoneChangeController,
-    ProfileController
+    ProfileController,
+    AccountDeletionController
   ],
   providers: [
     UsersService,
@@ -38,7 +41,8 @@ import { PhoneChangeService } from './phone-change.service';
     IdentityService,
     PayoutService,
     PhoneChangeService,
-    ProfileService
+    ProfileService,
+    AccountDeletionService
   ],
   exports: [
     UsersService,
@@ -46,7 +50,8 @@ import { PhoneChangeService } from './phone-change.service';
     IdentityService,
     PayoutService,
     PhoneChangeService,
-    ProfileService
+    ProfileService,
+    AccountDeletionService
   ]
 })
 export class UsersModule {}

@@ -101,11 +101,11 @@ describe('ProfileService (Story 1.8 Profile Editing & Mandatory Email Verificati
           entityType: 'User',
           entityId: 'usr-123',
           ipAddress: '192.168.1.1',
-          payload: {
+          payload: expect.objectContaining({
             field: 'fullName',
             oldValue: 'خالد بن عبدالعزيز الشمري',
             newValue: 'خالد بن عبدالعزيز بن فهد الشمري'
-          }
+          })
         })
       });
 

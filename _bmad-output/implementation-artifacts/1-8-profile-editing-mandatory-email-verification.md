@@ -4,7 +4,7 @@ baseline_commit: 8fc92cb3ca5fe6c26ed4c86a8e46264524f9b3ad
 
 # Story 1.8: Profile Editing & Mandatory Email Verification
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

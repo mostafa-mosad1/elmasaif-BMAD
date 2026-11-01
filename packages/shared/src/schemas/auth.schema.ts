@@ -170,3 +170,15 @@ export const verifyEmailSchema = z.object({
 });
 
 export const resendEmailVerificationSchema = z.object({}).optional();
+
+// Account Deletion Schemas (Story 1.9)
+export const initiateAccountDeletionSchema = z.object({
+  currentPassword: z.string().min(1, 'كلمة المرور الحالية مطلوبة')
+});
+
+export const confirmAccountDeletionSchema = z.object({
+  deletionToken: z.string().min(1, 'رمز التحدي مطلوب'),
+  code: z.string().length(6, 'رمز التحقق يجب أن يتكون من 6 أرقام')
+});
+
+export const cancelAccountDeletionSchema = z.object({}).optional();

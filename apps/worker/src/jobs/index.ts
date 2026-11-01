@@ -6,6 +6,7 @@ import {
   JOB_FAL_EXPIRY_WARNINGS,
   JOB_OWNER_FEE_REMINDERS,
   JOB_NOTIFICATION_RETENTION,
+  JOB_ACCOUNT_DELETION_EXPIRY,
   JobName,
   JobExecutionResult
 } from '@elmasaif/shared';
@@ -18,6 +19,7 @@ import { falLicenseExpiryHandler } from './fal-license-expiry.job';
 import { falExpiryWarningsHandler } from './fal-expiry-warnings.job';
 import { ownerFeeRemindersHandler } from './owner-fee-reminders.job';
 import { notificationRetentionHandler } from './notification-retention.job';
+import { accountDeletionExpiryHandler } from './account-deletion-expiry.job';
 
 export * from './job-wrapper';
 export * from './payment-deadline-expiry.job';
@@ -27,6 +29,7 @@ export * from './fal-license-expiry.job';
 export * from './fal-expiry-warnings.job';
 export * from './owner-fee-reminders.job';
 export * from './notification-retention.job';
+export * from './account-deletion-expiry.job';
 
 export type JobHandlerFunction = (jobs: PgBoss.Job[] | PgBoss.Job) => Promise<JobExecutionResult>;
 
@@ -37,5 +40,6 @@ export const jobHandlersMap: Record<JobName, JobHandlerFunction> = {
   [JOB_FAL_LICENSE_EXPIRY]: falLicenseExpiryHandler,
   [JOB_FAL_EXPIRY_WARNINGS]: falExpiryWarningsHandler,
   [JOB_OWNER_FEE_REMINDERS]: ownerFeeRemindersHandler,
-  [JOB_NOTIFICATION_RETENTION]: notificationRetentionHandler
+  [JOB_NOTIFICATION_RETENTION]: notificationRetentionHandler,
+  [JOB_ACCOUNT_DELETION_EXPIRY]: accountDeletionExpiryHandler
 };

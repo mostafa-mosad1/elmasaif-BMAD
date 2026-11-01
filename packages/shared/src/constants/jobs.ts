@@ -7,6 +7,7 @@ export const JOB_FAL_LICENSE_EXPIRY = 'fal-license-expiry' as const;
 export const JOB_FAL_EXPIRY_WARNINGS = 'fal-expiry-warnings' as const;
 export const JOB_OWNER_FEE_REMINDERS = 'owner-fee-reminders' as const;
 export const JOB_NOTIFICATION_RETENTION = 'notification-retention' as const;
+export const JOB_ACCOUNT_DELETION_EXPIRY = 'account-deletion-expiry' as const;
 
 export const BACKGROUND_JOB_DEFINITIONS: Record<JobName, JobScheduleConfig> = {
   [JOB_PAYMENT_DEADLINE_EXPIRY]: {
@@ -78,6 +79,16 @@ export const BACKGROUND_JOB_DEFINITIONS: Record<JobName, JobScheduleConfig> = {
     retryBackoff: true,
     expireInMinutes: 60,
     description: 'Purges read notifications older than 90 days (daily at 02:00 UTC)'
+  },
+  [JOB_ACCOUNT_DELETION_EXPIRY]: {
+    name: JOB_ACCOUNT_DELETION_EXPIRY,
+    cadence: '0 3 * * *',
+    singletonKey: JOB_ACCOUNT_DELETION_EXPIRY,
+    retryLimit: 3,
+    retryDelay: 300,
+    retryBackoff: true,
+    expireInMinutes: 60,
+    description: 'Scans and permanently anonymizes accounts past 14-day cooling-off period (daily at 03:00 UTC / 06:00 KSA)'
   }
 };
 

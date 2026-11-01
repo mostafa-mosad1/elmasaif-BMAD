@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ShieldCheck, Building2, KeyRound, Smartphone } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Building2, KeyRound, Smartphone, ShieldAlert } from 'lucide-react';
 import { Button } from '../../../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
 import { ProfileEditor } from '../../../../components/auth/profile-editor';
@@ -112,6 +112,26 @@ export default function ProfileSettingsPage() {
               <Link href="/app/settings/payout">
                 <Button variant="outline" className="gap-2">
                   إدارة الحسابات البنكية
+                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card className="border-rose-200 dark:border-rose-900/40 bg-rose-50/20 dark:bg-rose-950/10">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base font-bold text-rose-700 dark:text-rose-400">
+                <ShieldAlert className="h-5 w-5 text-rose-600 dark:text-rose-400" aria-hidden="true" />
+                منطقة الحذف والأمان (PDPL)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-ink-secondary dark:text-dark-ink-secondary">
+                تقديم طلب حذف الحساب أو تعطيله نظامياً مع مهلة 14 يوماً وفق متطلبات نظام حماية البيانات الشخصية.
+              </p>
+              <Link href="/app/settings/delete-account">
+                <Button variant="outline" className="gap-2 border-rose-300 text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300">
+                  إجراءات حذف الحساب
                   <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </Link>

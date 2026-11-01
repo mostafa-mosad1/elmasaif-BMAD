@@ -5,7 +5,8 @@ export type JobName =
   | 'fal-license-expiry'
   | 'fal-expiry-warnings'
   | 'owner-fee-reminders'
-  | 'notification-retention';
+  | 'notification-retention'
+  | 'account-deletion-expiry';
 
 export interface JobScheduleConfig {
   name: JobName;

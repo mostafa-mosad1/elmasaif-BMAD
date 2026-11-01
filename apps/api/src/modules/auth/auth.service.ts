@@ -494,7 +494,8 @@ export class AuthService {
       throw new HttpException(
         {
           code: AUTH_ACCOUNT_DEACTIVATED,
-          message: 'هذا الحساب معطل. يرجى التواصل مع الدعم الفني'
+          message:
+            'هذا الحساب معطل. نظراً لوجود تعاملات تجارية سابقة، تم تعطيل الحساب والاحتفاظ بالسجلات المالية نظامياً. يرجى التواصل مع الدعم الفني'
         },
         HttpStatus.FORBIDDEN
       );
@@ -508,7 +509,7 @@ export class AuthService {
       throw new HttpException(
         {
           code: AUTH_ACCOUNT_DISABLED,
-          message: 'هذا الحساب موقوف من قبل الإدارة'
+          message: 'هذا الحساب موقوف أو محذوف من قبل الإدارة'
         },
         HttpStatus.FORBIDDEN
       );
@@ -524,6 +525,20 @@ export class AuthService {
           deletionDueAt: null,
           failedLoginAttempts: 0,
           lockedUntil: null
+        }
+      });
+      await this.prisma.auditLog.create({
+        data: {
+          actorId: user.id,
+          actorType: 'USER',
+          action: 'ACCOUNT_DELETION_CANCELLED',
+          entityType: 'User',
+          entityId: user.id,
+          ipAddress: ip || '127.0.0.1',
+          payload: {
+            reason: 'User authenticated during 14-day cooling-off window',
+            restoredStatus: 'ACTIVE'
+          }
         }
       });
       deletionCancelled = true;

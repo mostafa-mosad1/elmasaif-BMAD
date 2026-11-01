@@ -6,7 +6,8 @@ import {
   JOB_FAL_LICENSE_EXPIRY,
   JOB_FAL_EXPIRY_WARNINGS,
   JOB_OWNER_FEE_REMINDERS,
-  JOB_NOTIFICATION_RETENTION
+  JOB_NOTIFICATION_RETENTION,
+  JOB_ACCOUNT_DELETION_EXPIRY
 } from '@elmasaif/shared';
 import {
   paymentDeadlineExpiryHandler,
@@ -16,6 +17,7 @@ import {
   falExpiryWarningsHandler,
   ownerFeeRemindersHandler,
   notificationRetentionHandler,
+  accountDeletionExpiryHandler,
   jobHandlersMap
 } from '../index';
 import { workerClock } from '../../clock';
@@ -36,11 +38,12 @@ describe('Canonical Background Job Handlers (AC: 3)', () => {
     { name: JOB_FAL_LICENSE_EXPIRY, handler: falLicenseExpiryHandler },
     { name: JOB_FAL_EXPIRY_WARNINGS, handler: falExpiryWarningsHandler },
     { name: JOB_OWNER_FEE_REMINDERS, handler: ownerFeeRemindersHandler },
-    { name: JOB_NOTIFICATION_RETENTION, handler: notificationRetentionHandler }
+    { name: JOB_NOTIFICATION_RETENTION, handler: notificationRetentionHandler },
+    { name: JOB_ACCOUNT_DELETION_EXPIRY, handler: accountDeletionExpiryHandler }
   ];
 
   it('exposes all 7 job handlers in the jobHandlersMap', () => {
-    expect(Object.keys(jobHandlersMap)).toHaveLength(7);
+    expect(Object.keys(jobHandlersMap)).toHaveLength(8);
     for (const job of jobs) {
       expect(jobHandlersMap[job.name]).toBe(job.handler);
     }

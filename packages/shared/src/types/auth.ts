@@ -18,7 +18,10 @@ import {
   adminPhoneChangeSchema,
   updateUserProfileSchema,
   verifyEmailSchema,
-  resendEmailVerificationSchema
+  resendEmailVerificationSchema,
+  initiateAccountDeletionSchema,
+  confirmAccountDeletionSchema,
+  cancelAccountDeletionSchema
 } from '../schemas/auth.schema';
 
 export type RegisterInput = z.infer<typeof registerSchema>;
@@ -180,4 +183,54 @@ export interface CancelPendingEmailResponse {
   message: string;
   requestId?: string;
 }
+
+// Account Deletion Types (Story 1.9)
+export type InitiateAccountDeletionInput = z.infer<typeof initiateAccountDeletionSchema>;
+export type ConfirmAccountDeletionInput = z.infer<typeof confirmAccountDeletionSchema>;
+export type CancelAccountDeletionInput = z.infer<typeof cancelAccountDeletionSchema>;
+
+export interface AccountDeletionEligibilityResponse {
+  code: string;
+  message: string;
+  data: {
+    eligible: boolean;
+    hasTransactionHistory: boolean;
+    mode: 'COOLING_OFF' | 'STATUTORY_RETENTION' | 'BLOCKED';
+    coolingOffDays?: number;
+    message: string;
+    blockingReason?: string;
+  };
+  requestId?: string;
+}
+
+export interface InitiateAccountDeletionResponse {
+  code: string;
+  message: string;
+  data: {
+    deletionToken: string;
+    resendAvailableInSeconds: number;
+    maskedMobileNumber: string;
+  };
+  requestId?: string;
+}
+
+export interface ConfirmAccountDeletionResponse {
+  code: string;
+  message: string;
+  data: {
+    status: string;
+    deletionRequestedAt?: string | Date | null;
+    deletionDueAt?: string | Date | null;
+    coolingOffDays?: number;
+    retainedRecords?: boolean;
+  };
+  requestId?: string;
+}
+
+export interface CancelAccountDeletionResponse {
+  code: string;
+  message: string;
+  requestId?: string;
+}
+
 
