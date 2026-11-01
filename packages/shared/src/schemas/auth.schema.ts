@@ -129,3 +129,27 @@ export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'كلمة المرور الحالية مطلوبة'),
   newPassword: passwordComplexitySchema
 });
+
+
+// Phone Change Schemas (Story 1.7)
+export const initiatePhoneChangeSchema = z.object({
+  newMobileNumber: saudiMobileNormalizedSchema
+});
+
+export const verifyPhoneChangeOtpSchema = z.object({
+  requestId: z.string().uuid('معرف الطلب غير صالح'),
+  code: z.string().length(6, 'رمز التحقق يجب أن يتكون من 6 أرقام')
+});
+
+export const resendPhoneChangeOtpSchema = z.object({
+  requestId: z.string().uuid('معرف الطلب غير صالح'),
+  target: z.enum(['OLD', 'NEW'])
+});
+
+export const adminPhoneChangeSchema = z.object({
+  newMobileNumber: saudiMobileNormalizedSchema,
+  officialIdVerified: z.literal(true, {
+    errorMap: () => ({ message: 'يجب تأكيد التحقق من الهوية الرسمية' })
+  }),
+  reason: z.string().trim().min(10, 'سبب التحديث الإداري مطلوب (10 أحرف على الأقل)')
+});

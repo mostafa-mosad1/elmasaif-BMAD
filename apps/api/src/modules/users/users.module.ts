@@ -12,10 +12,20 @@ import { AdminIdentityController, AdminIdentityGuard } from './admin-identity.co
 import { IdentityService } from './identity.service';
 import { PayoutController } from './payout.controller';
 import { PayoutService } from './payout.service';
+import { PhoneChangeController } from './phone-change.controller';
+import { AdminPhoneChangeController } from './admin-phone-change.controller';
+import { PhoneChangeService } from './phone-change.service';
 
 @Module({
   imports: [StorageModule, AuthModule, CryptoModule],
-  controllers: [UsersController, IdentityController, AdminIdentityController, PayoutController],
+  controllers: [
+    UsersController,
+    IdentityController,
+    AdminIdentityController,
+    PayoutController,
+    PhoneChangeController,
+    AdminPhoneChangeController
+  ],
   providers: [
     UsersService,
     ActiveRoleGuard,
@@ -23,8 +33,15 @@ import { PayoutService } from './payout.service';
     AdminSessionAuthGuard,
     AdminIdentityGuard,
     IdentityService,
-    PayoutService
+    PayoutService,
+    PhoneChangeService
   ],
-  exports: [UsersService, ActiveRoleGuard, IdentityService, PayoutService]
+  exports: [
+    UsersService,
+    ActiveRoleGuard,
+    IdentityService,
+    PayoutService,
+    PhoneChangeService
+  ]
 })
 export class UsersModule {}

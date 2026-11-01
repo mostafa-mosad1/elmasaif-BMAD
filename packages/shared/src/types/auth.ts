@@ -11,7 +11,11 @@ import {
   forgotPasswordSchema,
   verifyResetOtpSchema,
   resetPasswordSchema,
-  changePasswordSchema
+  changePasswordSchema,
+  initiatePhoneChangeSchema,
+  verifyPhoneChangeOtpSchema,
+  resendPhoneChangeOtpSchema,
+  adminPhoneChangeSchema
 } from '../schemas/auth.schema';
 
 export type RegisterInput = z.infer<typeof registerSchema>;
@@ -83,6 +87,47 @@ export interface StepUpRequiredResponse {
     mobileNumber: string;
     stepUpToken: string;
     resendAvailableInSeconds: number;
+  };
+  requestId?: string;
+}
+
+// Phone Change Types (Story 1.7)
+export type InitiatePhoneChangeInput = z.infer<typeof initiatePhoneChangeSchema>;
+export type VerifyPhoneChangeOtpInput = z.infer<typeof verifyPhoneChangeOtpSchema>;
+export type ResendPhoneChangeOtpInput = z.infer<typeof resendPhoneChangeOtpSchema>;
+export type AdminPhoneChangeInput = z.infer<typeof adminPhoneChangeSchema>;
+
+export interface InitiatePhoneChangeResponse {
+  code: string;
+  message: string;
+  data: {
+    requestId: string;
+    oldPhoneNumberMasked: string;
+    newPhoneNumberMasked: string;
+    expiresInSeconds: number;
+    resendAvailableInSeconds: number;
+  };
+  requestId?: string;
+}
+
+export interface VerifyPhoneChangeOtpResponse {
+  code: string;
+  message: string;
+  data: {
+    requestId: string;
+    oldVerified: boolean;
+    newVerified: boolean;
+    isCompleted: boolean;
+  };
+  requestId?: string;
+}
+
+export interface PhoneChangeCompletionResponse {
+  code: string;
+  message: string;
+  data: {
+    mobileNumber: string;
+    isCompleted: boolean;
   };
   requestId?: string;
 }

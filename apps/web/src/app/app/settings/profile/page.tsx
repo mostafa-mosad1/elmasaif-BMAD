@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ShieldCheck, Building2, KeyRound } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Building2, KeyRound, Smartphone } from 'lucide-react';
 import { Button } from '../../../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
 
@@ -15,6 +15,26 @@ export default function ProfileSettingsPage() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Smartphone className="h-5 w-5 text-primary" aria-hidden="true" />
+              رقم الجوال المعتمد
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-ink-secondary dark:text-dark-ink-secondary">
+              تحديث رقم الجوال المسجل بحسابك عبر التحقق المزدوج الآمن.
+            </p>
+            <Link href="/app/settings/mobile">
+              <Button variant="outline" className="gap-2">
+                تحديث رقم الجوال
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
