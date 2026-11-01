@@ -132,6 +132,7 @@ model User {
   nationalId           String               @unique
   passwordHash         String
   status               ProfileStatus        @default(ACTIVE)
+  email                String?              @unique
   pendingEmail         String?
   emailVerifiedAt      DateTime?
   deletionRequestedAt  DateTime?

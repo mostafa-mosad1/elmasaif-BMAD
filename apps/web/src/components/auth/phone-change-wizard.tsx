@@ -10,7 +10,6 @@ import {
   RotateCw,
   Loader2,
   AlertTriangle,
-  ArrowRight,
   Headphones
 } from 'lucide-react';
 import { OtpInput } from './otp-input';
@@ -44,7 +43,7 @@ export function PhoneChangeWizard({
   const [step, setStep] = useState<WizardStep>('initiate');
 
   // Step 1: Initiation
-  const [currentPhone, setCurrentPhone] = useState(initialPhone);
+  const [currentPhone] = useState(initialPhone);
   const [newMobileNumber, setNewMobileNumber] = useState('');
   const [activeDealBlocked, setActiveDealBlocked] = useState(hasActiveDeals);
 
@@ -183,7 +182,9 @@ export function PhoneChangeWizard({
       );
 
       if (res.data.isCompleted) {
-        const finalPhone = (res.data as any).mobileNumber || newMobileNumber;
+        const finalPhone =
+          ('mobileNumber' in res.data ? (res.data.mobileNumber as string) : undefined) ||
+          newMobileNumber;
         setUpdatedPhone(finalPhone);
         setStep('completed');
         if (onSuccess) onSuccess(finalPhone);
@@ -230,7 +231,9 @@ export function PhoneChangeWizard({
       );
 
       if (res.data.isCompleted) {
-        const finalPhone = (res.data as any).mobileNumber || newMobileNumber;
+        const finalPhone =
+          ('mobileNumber' in res.data ? (res.data.mobileNumber as string) : undefined) ||
+          newMobileNumber;
         setUpdatedPhone(finalPhone);
         setStep('completed');
         if (onSuccess) onSuccess(finalPhone);

@@ -15,7 +15,10 @@ import {
   initiatePhoneChangeSchema,
   verifyPhoneChangeOtpSchema,
   resendPhoneChangeOtpSchema,
-  adminPhoneChangeSchema
+  adminPhoneChangeSchema,
+  updateUserProfileSchema,
+  verifyEmailSchema,
+  resendEmailVerificationSchema
 } from '../schemas/auth.schema';
 
 export type RegisterInput = z.infer<typeof registerSchema>;
@@ -131,3 +134,50 @@ export interface PhoneChangeCompletionResponse {
   };
   requestId?: string;
 }
+
+// Profile & Email Verification Types (Story 1.8)
+export type UpdateUserProfileInput = z.infer<typeof updateUserProfileSchema>;
+export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+export type ResendEmailVerificationInput = z.infer<typeof resendEmailVerificationSchema>;
+
+export interface UpdateUserProfileResponse {
+  code: string;
+  message: string;
+  data: {
+    id: string;
+    fullName: string;
+    email?: string | null;
+    pendingEmail?: string | null;
+    isEmailPending?: boolean;
+    emailVerifiedAt?: string | Date | null;
+    hasCommercialNameMismatch?: boolean;
+    commercialNameMismatchNotice?: string;
+  };
+  requestId?: string;
+}
+
+export interface VerifyEmailResponse {
+  code: string;
+  message: string;
+  data: {
+    email: string;
+    emailVerifiedAt: string | Date;
+  };
+  requestId?: string;
+}
+
+export interface ResendEmailVerificationResponse {
+  code: string;
+  message: string;
+  data: {
+    resendAvailableInSeconds: number;
+  };
+  requestId?: string;
+}
+
+export interface CancelPendingEmailResponse {
+  code: string;
+  message: string;
+  requestId?: string;
+}
+

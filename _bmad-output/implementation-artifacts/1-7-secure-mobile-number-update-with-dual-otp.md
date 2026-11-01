@@ -4,7 +4,7 @@ baseline_commit: d2b5f3bc0ab51de53fb96abe5ac685bd9b5333ba
 
 # Story 1.7: Secure Mobile Number Update with Dual-OTP
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

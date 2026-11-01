@@ -98,6 +98,9 @@ export const sessionUserSchema = z.object({
   fullName: z.string(),
   mobileNumber: z.string(),
   username: z.string(),
+  email: z.string().nullable().optional(),
+  pendingEmail: z.string().nullable().optional(),
+  emailVerifiedAt: z.union([z.date(), z.string()]).nullable().optional(),
   role: z.string().optional(),
   activeRole: z.nativeEnum(UserRole).default(UserRole.BUYER),
   profiles: z.array(userProfileSummarySchema).default([])
@@ -153,3 +156,17 @@ export const adminPhoneChangeSchema = z.object({
   }),
   reason: z.string().trim().min(10, 'سبب التحديث الإداري مطلوب (10 أحرف على الأقل)')
 });
+
+// Profile & Email Verification Schemas (Story 1.8)
+export const updateUserProfileSchema = z.object({
+  fullName: z.string().trim().min(3, 'الاسم يجب ألا يقل عن 3 أحرف').max(100, 'الاسم يجب ألا يزيد عن 100 حرف').optional(),
+  email: z.string().trim().toLowerCase().email('صيغة البريد الإلكتروني غير صالحة').optional()
+}).refine((data) => data.fullName !== undefined || data.email !== undefined, {
+  message: 'يجب تقديم حقل واحد على الأقل للتحديث'
+});
+
+export const verifyEmailSchema = z.object({
+  token: z.string().trim().min(1, 'رمز التحقق مطلوب')
+});
+
+export const resendEmailVerificationSchema = z.object({}).optional();

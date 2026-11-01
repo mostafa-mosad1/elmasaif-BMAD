@@ -1,3 +1,5 @@
+import { ProfileController } from './profile.controller';
+import { ProfileService } from './profile.service';
 import { Module } from '@nestjs/common';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
@@ -24,7 +26,8 @@ import { PhoneChangeService } from './phone-change.service';
     AdminIdentityController,
     PayoutController,
     PhoneChangeController,
-    AdminPhoneChangeController
+    AdminPhoneChangeController,
+    ProfileController
   ],
   providers: [
     UsersService,
@@ -34,14 +37,16 @@ import { PhoneChangeService } from './phone-change.service';
     AdminIdentityGuard,
     IdentityService,
     PayoutService,
-    PhoneChangeService
+    PhoneChangeService,
+    ProfileService
   ],
   exports: [
     UsersService,
     ActiveRoleGuard,
     IdentityService,
     PayoutService,
-    PhoneChangeService
+    PhoneChangeService,
+    ProfileService
   ]
 })
 export class UsersModule {}

@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import {
   ShieldAlert,
-  ShieldCheck,
   CheckCircle2,
   AlertTriangle,
   Loader2,
@@ -17,7 +16,6 @@ import {
   AUTH_PHONE_IN_USE,
   AUTH_PHONE_SAME_AS_CURRENT,
   AUTH_PHONE_CHANGE_ACTIVE_DEAL_BLOCK,
-  ADMIN_PHONE_CHANGE_SUCCESS,
   PhoneChangeCompletionResponse
 } from '@elmasaif/shared';
 
