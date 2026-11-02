@@ -27,7 +27,8 @@ import {
   Moon,
   Globe,
   Menu,
-  X
+  X,
+  MapPin
 } from 'lucide-react';
 
 interface WorkspaceShellProps {
@@ -93,7 +94,8 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
       { href: '/app/settings/identity', label: 'توثيق الهوية', icon: ShieldCheck }
     ],
     [UserRole.ADMIN]: [
-      { href: '/admin/dashboard', label: 'لوحة تحكم المشرف', icon: LayoutDashboard }
+      { href: '/admin/dashboard', label: 'لوحة تحكم المشرف', icon: LayoutDashboard },
+      { href: '/admin/geo', label: 'إدارة المدن والأحياء', icon: MapPin }
     ]
   };
 

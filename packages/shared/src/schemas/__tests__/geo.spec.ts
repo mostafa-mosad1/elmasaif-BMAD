@@ -5,12 +5,166 @@ import {
   geoTreeItemSchema,
   geoTreeResponseSchema,
   createListingSchema,
-  PropertyType
+  PropertyType,
+  createCitySchema,
+  updateCitySchema,
+  createDistrictSchema,
+  updateDistrictSchema,
+  toggleGeoActiveSchema,
+  adminGeoQuerySchema,
+  GEO_CITY_NOT_FOUND,
+  GEO_DISTRICT_NOT_FOUND,
+  GEO_CITY_INACTIVE,
+  GEO_DISTRICT_INACTIVE,
+  GEO_CITY_DUPLICATE_NAME,
+  GEO_DISTRICT_DUPLICATE_NAME
 } from '../../index';
 
 describe('Geographic Schemas & Types Validation', () => {
   const validCityId = '11111111-0000-4000-8000-000000000001';
   const validDistrictId = '22222222-0001-4000-8000-000000000001';
+
+  describe('createCitySchema', () => {
+    it('should validate valid city creation input', () => {
+      const input = {
+        nameAr: 'الرياض',
+        nameEn: 'Riyadh',
+        isActive: true
+      };
+      const result = createCitySchema.safeParse(input);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.nameAr).toBe('الرياض');
+        expect(result.data.nameEn).toBe('Riyadh');
+        expect(result.data.isActive).toBe(true);
+      }
+    });
+
+    it('should default isActive to true when omitted', () => {
+      const input = {
+        nameAr: 'جدة',
+        nameEn: 'Jeddah'
+      };
+      const result = createCitySchema.safeParse(input);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.isActive).toBe(true);
+      }
+    });
+
+    it('should reject names shorter than 2 characters or longer than 100 characters', () => {
+      expect(createCitySchema.safeParse({ nameAr: 'أ', nameEn: 'Riyadh' }).success).toBe(false);
+      expect(createCitySchema.safeParse({ nameAr: 'الرياض', nameEn: 'R' }).success).toBe(false);
+      expect(createCitySchema.safeParse({ nameAr: 'أ'.repeat(101), nameEn: 'Riyadh' }).success).toBe(false);
+      expect(createCitySchema.safeParse({ nameAr: 'الرياض', nameEn: 'R'.repeat(101) }).success).toBe(false);
+    });
+  });
+
+  describe('updateCitySchema', () => {
+    it('should accept partial updates', () => {
+      expect(updateCitySchema.safeParse({ nameAr: 'مكة المكرمة' }).success).toBe(true);
+      expect(updateCitySchema.safeParse({ nameEn: 'Makkah' }).success).toBe(true);
+      expect(updateCitySchema.safeParse({ isActive: false }).success).toBe(true);
+      expect(updateCitySchema.safeParse({}).success).toBe(true);
+    });
+
+    it('should enforce min length 2 when name fields are provided', () => {
+      expect(updateCitySchema.safeParse({ nameAr: 'أ' }).success).toBe(false);
+      expect(updateCitySchema.safeParse({ nameEn: 'A' }).success).toBe(false);
+    });
+  });
+
+  describe('createDistrictSchema', () => {
+    it('should validate valid district creation input', () => {
+      const input = {
+        cityId: validCityId,
+        nameAr: 'النرجس',
+        nameEn: 'Al-Narjis',
+        isActive: true
+      };
+      const result = createDistrictSchema.safeParse(input);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.cityId).toBe(validCityId);
+        expect(result.data.nameAr).toBe('النرجس');
+        expect(result.data.isActive).toBe(true);
+      }
+    });
+
+    it('should default isActive to true when omitted', () => {
+      const input = {
+        cityId: validCityId,
+        nameAr: 'النرجس',
+        nameEn: 'Al-Narjis'
+      };
+      const result = createDistrictSchema.safeParse(input);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.isActive).toBe(true);
+      }
+    });
+
+    it('should reject invalid cityId format or missing cityId', () => {
+      expect(createDistrictSchema.safeParse({ cityId: 'invalid-uuid', nameAr: 'النرجس', nameEn: 'Al-Narjis' }).success).toBe(false);
+      expect(createDistrictSchema.safeParse({ nameAr: 'النرجس', nameEn: 'Al-Narjis' }).success).toBe(false);
+    });
+
+    it('should reject names shorter than 2 or longer than 100 characters', () => {
+      expect(createDistrictSchema.safeParse({ cityId: validCityId, nameAr: 'ح', nameEn: 'Al-Narjis' }).success).toBe(false);
+      expect(createDistrictSchema.safeParse({ cityId: validCityId, nameAr: 'النرجس', nameEn: 'A' }).success).toBe(false);
+      expect(createDistrictSchema.safeParse({ cityId: validCityId, nameAr: 'ح'.repeat(101), nameEn: 'Al-Narjis' }).success).toBe(false);
+    });
+  });
+
+  describe('updateDistrictSchema', () => {
+    it('should accept partial updates', () => {
+      expect(updateDistrictSchema.safeParse({ nameAr: 'الياسمين' }).success).toBe(true);
+      expect(updateDistrictSchema.safeParse({ nameEn: 'Al-Yasmin' }).success).toBe(true);
+      expect(updateDistrictSchema.safeParse({ isActive: false }).success).toBe(true);
+      expect(updateDistrictSchema.safeParse({}).success).toBe(true);
+    });
+
+    it('should enforce length rules when name fields are provided', () => {
+      expect(updateDistrictSchema.safeParse({ nameAr: 'ي' }).success).toBe(false);
+      expect(updateDistrictSchema.safeParse({ nameEn: 'Y' }).success).toBe(false);
+    });
+  });
+
+  describe('toggleGeoActiveSchema', () => {
+    it('should validate boolean isActive', () => {
+      expect(toggleGeoActiveSchema.safeParse({ isActive: true }).success).toBe(true);
+      expect(toggleGeoActiveSchema.safeParse({ isActive: false }).success).toBe(true);
+      expect(toggleGeoActiveSchema.safeParse({ isActive: 'true' }).success).toBe(false);
+      expect(toggleGeoActiveSchema.safeParse({}).success).toBe(false);
+    });
+  });
+
+  describe('adminGeoQuerySchema', () => {
+    it('should validate and coerce includeInactive query parameter', () => {
+      const parsed1 = adminGeoQuerySchema.safeParse({ includeInactive: 'true' });
+      expect(parsed1.success).toBe(true);
+      if (parsed1.success) {
+        expect(parsed1.data.includeInactive).toBe(true);
+      }
+
+      const parsed2 = adminGeoQuerySchema.safeParse({});
+      expect(parsed2.success).toBe(true);
+      if (parsed2.success) {
+        expect(parsed2.data.includeInactive).toBeUndefined();
+      }
+    });
+  });
+
+  describe('Geographic Error Constants', () => {
+    it('should export all standardized geographic error constants', () => {
+      expect(GEO_CITY_NOT_FOUND).toBe('GEO_CITY_NOT_FOUND');
+      expect(GEO_DISTRICT_NOT_FOUND).toBe('GEO_DISTRICT_NOT_FOUND');
+      expect(GEO_CITY_INACTIVE).toBe('GEO_CITY_INACTIVE');
+      expect(GEO_DISTRICT_INACTIVE).toBe('GEO_DISTRICT_INACTIVE');
+      expect(GEO_CITY_DUPLICATE_NAME).toBe('GEO_CITY_DUPLICATE_NAME');
+      expect(GEO_DISTRICT_DUPLICATE_NAME).toBe('GEO_DISTRICT_DUPLICATE_NAME');
+    });
+  });
 
   describe('citySchema', () => {
     it('should validate a valid city payload', () => {
