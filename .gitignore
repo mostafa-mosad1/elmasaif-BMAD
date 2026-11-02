@@ -27,6 +27,10 @@ pnpm-debug.log*
 apps/api/prisma/*.db
 apps/api/prisma/*.db-journal
 
+# Local storage fallback
+.storage/
+**/.storage/
+
 # OS & Editor
 .DS_Store
 Thumbs.db

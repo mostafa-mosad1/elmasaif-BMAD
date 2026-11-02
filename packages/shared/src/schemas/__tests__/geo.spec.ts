@@ -294,7 +294,15 @@ describe('Geographic Schemas & Types Validation', () => {
       bedrooms: 5,
       bathrooms: 6,
       yearBuilt: 2023,
-      payoutIban: 'SA0380000000608010167519'
+      payoutIban: 'SA0380000000608010167519',
+      photos: [
+        { fileUrl: 'p1.jpg', mimeType: 'image/jpeg', fileSize: 1000, isPrimary: true },
+        { fileUrl: 'p2.jpg', mimeType: 'image/jpeg', fileSize: 1000, isPrimary: false },
+        { fileUrl: 'p3.jpg', mimeType: 'image/jpeg', fileSize: 1000, isPrimary: false }
+      ],
+      documents: [
+        { documentType: 'TITLE_DEED', fileUrl: 'd1.pdf', mimeType: 'application/pdf', fileSize: 2000, visibility: 'ADMIN_ONLY' }
+      ]
     };
 
     it('should accept listing with valid UUID cityId and districtId', () => {

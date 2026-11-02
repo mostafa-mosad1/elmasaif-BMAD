@@ -78,7 +78,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
     ],
     [UserRole.OWNER]: [
       { href: '/app/owner', label: 'لوحة تحكم المالك', icon: LayoutDashboard },
-      { href: '/app/owner/direct-listing', label: 'طلب عرض عقار مباشر', icon: PlusCircle },
+      { href: '/app/owner/listings/new', label: 'طلب عرض عقار مباشر', icon: PlusCircle },
       { href: '/app/owner/contracts', label: 'عقود الوساطة الإلكترونية', icon: FileText },
       { href: '/app/settings/payout', label: 'حسابات التحويل (IBAN)', icon: CreditCard },
       { href: '/app/settings/profile', label: 'إعدادات الحساب', icon: User },

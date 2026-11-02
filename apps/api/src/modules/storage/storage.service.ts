@@ -8,6 +8,8 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   S3Client,
   GetObjectCommand,
@@ -22,7 +24,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ScanStatus } from '@elmasaif/shared';
 
-export type StoragePartition = 'quarantine' | 'identity' | 'payments' | 'contracts' | 'licenses';
+export type StoragePartition = 'quarantine' | 'identity' | 'payments' | 'contracts' | 'licenses' | 'listings' | 'listing';
 
 export interface StorageContext {
   userId?: string;
@@ -51,11 +53,16 @@ export class StorageService {
   private readonly region: string;
   private readonly bucketName: string;
   private readonly forcePathStyle: boolean;
+  private readonly storageDriver: 's3' | 'local';
+  private readonly localBasePath: string;
 
   constructor(
     private readonly configService: ConfigService,
     @Optional() private readonly prisma?: PrismaService,
   ) {
+    const configuredDriver = this.configService.get<string>('STORAGE_DRIVER')?.toLowerCase();
+    this.storageDriver = configuredDriver === 'local' ? 'local' : 's3';
+
     this.endpoint =
       this.configService.get<string>('STORAGE_ENDPOINT') ??
       this.configService.get<string>('S3_ENDPOINT') ??
@@ -86,6 +93,15 @@ export class StorageService {
     this.forcePathStyle =
       typeof rawPathStyle === 'string' ? rawPathStyle.toLowerCase() === 'true' : Boolean(rawPathStyle);
 
+    this.localBasePath = path.resolve(process.cwd(), '.storage', this.bucketName);
+    try {
+      if (!fs.existsSync(this.localBasePath)) {
+        fs.mkdirSync(this.localBasePath, { recursive: true });
+      }
+    } catch {
+      // ignore
+    }
+
     this.s3Client = new S3Client({
       endpoint: this.endpoint,
       region: this.region,
@@ -97,7 +113,26 @@ export class StorageService {
     });
 
     this.logger.log(
-      `StorageService initialized targeting sovereign bucket '${this.bucketName}' on endpoint '${this.endpoint}' (region: ${this.region}, forcePathStyle: ${this.forcePathStyle})`,
+      `StorageService initialized (driver: ${this.storageDriver}) targeting sovereign bucket '${this.bucketName}' on endpoint '${this.endpoint}' (region: ${this.region}, forcePathStyle: ${this.forcePathStyle})`,
+    );
+  }
+
+  private isNetworkOrDevError(err: any): boolean {
+    const isDev = (this.configService.get<string>('NODE_ENV') || 'development') !== 'production';
+    if (!isDev) return false;
+    const msg = (err?.message || '').toLowerCase();
+    const code = (err?.code || '').toLowerCase();
+    const name = (err?.name || '').toLowerCase();
+    return (
+      code === 'econnreset' ||
+      code === 'econnrefused' ||
+      code === 'etimedout' ||
+      name === 'timeouterror' ||
+      msg.includes('socket hang up') ||
+      msg.includes('econnreset') ||
+      msg.includes('econnrefused') ||
+      msg.includes('connection timeout') ||
+      msg.includes('failed to fetch')
     );
   }
 
@@ -112,12 +147,25 @@ export class StorageService {
 
     const clampedExpiry = Math.min(Math.max(1, expiresInSeconds), MAX_EXPIRATION_SECONDS);
 
+    if (this.storageDriver === 'local') {
+      const apiBase = this.configService.get<string>('API_URL') || 'http://localhost:4000';
+      return `${apiBase}/api/v1/storage/raw?key=${encodeURIComponent(key.trim())}`;
+    }
+
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
       Key: key.trim(),
     });
 
-    return getSignedUrl(this.s3Client, command, { expiresIn: clampedExpiry });
+    try {
+      return await getSignedUrl(this.s3Client, command, { expiresIn: clampedExpiry });
+    } catch (err: any) {
+      if (this.isNetworkOrDevError(err)) {
+        const apiBase = this.configService.get<string>('API_URL') || 'http://localhost:4000';
+        return `${apiBase}/api/v1/storage/raw?key=${encodeURIComponent(key.trim())}`;
+      }
+      throw err;
+    }
   }
 
   /**
@@ -141,18 +189,36 @@ export class StorageService {
 
     const clampedExpiry = Math.min(Math.max(1, expiresInSeconds), MAX_EXPIRATION_SECONDS);
 
+    if (this.storageDriver === 'local') {
+      const apiBase = this.configService.get<string>('API_URL') || 'http://localhost:4000';
+      return {
+        uploadUrl: `${apiBase}/api/v1/storage/raw-upload?key=${encodeURIComponent(key.trim())}`,
+        key: key.trim(),
+      };
+    }
+
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
       Key: key.trim(),
       ContentType: contentType,
     });
 
-    const uploadUrl = await getSignedUrl(this.s3Client, command, { expiresIn: clampedExpiry });
-
-    return {
-      uploadUrl,
-      key: key.trim(),
-    };
+    try {
+      const uploadUrl = await getSignedUrl(this.s3Client, command, { expiresIn: clampedExpiry });
+      return {
+        uploadUrl,
+        key: key.trim(),
+      };
+    } catch (err: any) {
+      if (this.isNetworkOrDevError(err)) {
+        const apiBase = this.configService.get<string>('API_URL') || 'http://localhost:4000';
+        return {
+          uploadUrl: `${apiBase}/api/v1/storage/raw-upload?key=${encodeURIComponent(key.trim())}`,
+          key: key.trim(),
+        };
+      }
+      throw err;
+    }
   }
 
   /**
@@ -199,6 +265,13 @@ export class StorageService {
         }
         return `licenses/${context.userId}/${leafFilename}`;
 
+      case 'listings':
+      case 'listing':
+        if (!context?.userId) {
+          throw new BadRequestException('userId is required in context for listings partition');
+        }
+        return `listings/${context.userId}/${leafFilename}`;
+
       default:
         throw new BadRequestException(`Unsupported storage partition: ${partition}`);
     }
@@ -210,6 +283,15 @@ export class StorageService {
   async checkObjectExists(key: string): Promise<boolean> {
     if (!key || !key.trim()) {
       throw new BadRequestException('Object key is required');
+    }
+
+    const localPath = path.join(this.localBasePath, key.trim());
+    if (fs.existsSync(localPath)) {
+      return true;
+    }
+
+    if (this.storageDriver === 'local') {
+      return false;
     }
 
     try {
@@ -224,6 +306,9 @@ export class StorageService {
       if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
         return false;
       }
+      if (fs.existsSync(localPath)) {
+        return true;
+      }
       this.logger.error(`Error checking object existence for key '${key}': ${error.message}`);
       throw error;
     }
@@ -237,12 +322,32 @@ export class StorageService {
       throw new BadRequestException('Object key is required');
     }
 
-    await this.s3Client.send(
-      new DeleteObjectCommand({
-        Bucket: this.bucketName,
-        Key: key.trim(),
-      }),
-    );
+    const localPath = path.join(this.localBasePath, key.trim());
+    if (fs.existsSync(localPath)) {
+      try {
+        fs.unlinkSync(localPath);
+      } catch {
+        // ignore
+      }
+    }
+
+    if (this.storageDriver === 'local') {
+      return;
+    }
+
+    try {
+      await this.s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucketName,
+          Key: key.trim(),
+        }),
+      );
+    } catch (err: any) {
+      if (this.isNetworkOrDevError(err)) {
+        return;
+      }
+      throw err;
+    }
   }
 
   /**
@@ -253,19 +358,51 @@ export class StorageService {
       throw new BadRequestException('Source and destination keys are required');
     }
 
-    await this.s3Client.send(
-      new CopyObjectCommand({
-        Bucket: this.bucketName,
-        CopySource: encodeURIComponent(`${this.bucketName}/${sourceKey.trim()}`),
-        Key: destinationKey.trim(),
-      }),
-    );
+    const sourceLocal = path.join(this.localBasePath, sourceKey.trim());
+    const destLocal = path.join(this.localBasePath, destinationKey.trim());
+
+    if (fs.existsSync(sourceLocal)) {
+      try {
+        fs.mkdirSync(path.dirname(destLocal), { recursive: true });
+        fs.copyFileSync(sourceLocal, destLocal);
+      } catch (err: any) {
+        this.logger.warn(`Local copy failed from '${sourceLocal}' to '${destLocal}': ${err.message}`);
+      }
+    }
+
+    if (this.storageDriver === 'local') {
+      return;
+    }
+
+    try {
+      await this.s3Client.send(
+        new CopyObjectCommand({
+          Bucket: this.bucketName,
+          CopySource: encodeURIComponent(`${this.bucketName}/${sourceKey.trim()}`),
+          Key: destinationKey.trim(),
+        }),
+      );
+    } catch (err: any) {
+      if (fs.existsSync(destLocal)) {
+        return;
+      }
+      throw err;
+    }
   }
 
   /**
    * Ensures the private bucket exists (primarily for non-production environments and automated testing).
    */
   async ensureBucketExists(bucketName?: string): Promise<void> {
+    if (this.storageDriver === 'local') {
+      try {
+        fs.mkdirSync(this.localBasePath, { recursive: true });
+      } catch {
+        // ignore
+      }
+      return;
+    }
+
     const targetBucket = bucketName || this.bucketName;
 
     try {
@@ -279,6 +416,15 @@ export class StorageService {
         error.name !== 'BucketAlreadyOwnedByYou' &&
         error.name !== 'BucketAlreadyExists'
       ) {
+        if (this.isNetworkOrDevError(error)) {
+          this.logger.warn(`S3 connection unreachable in ensureBucketExists, using local disk directory`);
+          try {
+            fs.mkdirSync(this.localBasePath, { recursive: true });
+          } catch {
+            // ignore
+          }
+          return;
+        }
         this.logger.error(`Failed to verify or create bucket '${targetBucket}': ${error.message}`);
         throw error;
       }
@@ -293,18 +439,33 @@ export class StorageService {
       throw new BadRequestException('Object key is required');
     }
 
+    if (this.storageDriver === 'local') {
+      const localPath = path.join(this.localBasePath, key.trim());
+      if (fs.existsSync(localPath)) {
+        return fs.readFileSync(localPath);
+      }
+      throw new NotFoundException(`File not found in local storage: ${key}`);
+    }
+
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
       Key: key.trim(),
     });
 
-    const response = await this.s3Client.send(command);
-    if (!response.Body) {
-      throw new BadRequestException(`Object body is empty for key: ${key}`);
+    try {
+      const response = await this.s3Client.send(command);
+      if (!response.Body) {
+        throw new BadRequestException(`Object body is empty for key: ${key}`);
+      }
+      const byteArray = await (response.Body as any).transformToByteArray();
+      return Buffer.from(byteArray);
+    } catch (err: any) {
+      const localPath = path.join(this.localBasePath, key.trim());
+      if (this.isNetworkOrDevError(err) && fs.existsSync(localPath)) {
+        return fs.readFileSync(localPath);
+      }
+      throw err;
     }
-
-    const byteArray = await (response.Body as any).transformToByteArray();
-    return Buffer.from(byteArray);
   }
 
   /**
@@ -315,6 +476,17 @@ export class StorageService {
       throw new BadRequestException('Object key is required');
     }
 
+    if (this.storageDriver === 'local') {
+      const fullPath = path.join(this.localBasePath, key.trim());
+      try {
+        fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+        fs.writeFileSync(fullPath, buffer);
+      } catch (err: any) {
+        this.logger.warn(`Failed writing to local storage fallback: ${err.message}`);
+      }
+      return;
+    }
+
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
       Key: key.trim(),
@@ -322,7 +494,24 @@ export class StorageService {
       ContentType: contentType,
     });
 
-    await this.s3Client.send(command);
+    try {
+      await this.s3Client.send(command);
+    } catch (err: any) {
+      if (this.isNetworkOrDevError(err)) {
+        const fullPath = path.join(this.localBasePath, key.trim());
+        try {
+          fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+          fs.writeFileSync(fullPath, buffer);
+        } catch (fsErr: any) {
+          this.logger.warn(`Failed writing to local storage fallback: ${fsErr.message}`);
+        }
+        this.logger.warn(
+          `S3 putObject unreachable (${err.message}). Stored file '${key}' in local storage fallback.`,
+        );
+        return;
+      }
+      throw err;
+    }
   }
 
   /**
@@ -366,4 +555,3 @@ export class StorageService {
     throw new NotFoundException(`File record not found for ID '${fileObjectId}'`);
   }
 }
-

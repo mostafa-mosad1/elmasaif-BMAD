@@ -52,29 +52,11 @@ export * from './auth.schema';
 export * from './identity.schema';
 export * from './payout.schema';
 export * from './preferences.schema';
+export * from './listing.schema';
 
 export const otpVerifySchema = z.object({
   mobileNumber: saudiMobileSchema,
   code: z.string().length(6, 'رمز التحقق يجب أن يتكون من 6 أرقام')
-});
-
-export const createListingSchema = z.object({
-  title: z.string().min(5, 'عنوان العقار مطلوب').max(150),
-  description: z.string().min(20, 'وصف العقار يجب أن يكون وافياً ومفصلاً'),
-  propertyType: z.nativeEnum(PropertyType),
-  cityId: z.string().uuid('معرف المدينة يجب أن يكون بصيغة UUID صالحة'),
-  districtId: z.string().uuid('معرف الحي يجب أن يكون بصيغة UUID صالحة'),
-  city: z.string().min(2, 'المدينة مطلوبة').optional(),
-  district: z.string().min(2, 'الحي مطلوب').optional(),
-  streetName: z.string().optional(),
-  latitude: z.number().min(15).max(33),
-  longitude: z.number().min(34).max(56),
-  askPrice: z.string().regex(/^\d+(\.\d{1,2})?$/, 'السعر المطلوب غير صحيح (أرقام عشرية صحيحة)'),
-  areaSquareMeters: z.number().positive('المساحة يجب أن تكون أكبر من صفر'),
-  bedrooms: z.number().int().nonnegative().optional(),
-  bathrooms: z.number().int().nonnegative().optional(),
-  yearBuilt: z.number().int().min(1950).max(2030).optional(),
-  payoutIban: saudiIbanSchema
 });
 
 export const submitOfferSchema = z.object({

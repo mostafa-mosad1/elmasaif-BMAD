@@ -2,7 +2,10 @@ import {
   Controller,
   Post,
   Get,
+  Put,
   Param,
+  Res,
+  Req,
   Body,
   Query,
   UseInterceptors,
@@ -299,5 +302,52 @@ export class StorageController {
     }
 
     throw new NotFoundException(`File record not found for ID '${id}'`);
+  }
+  @Get('raw')
+  @ApiOperation({ summary: 'Stream raw file in development when local fallback is used' })
+  async getRawFile(
+    @Query('key') key: string,
+    @Res() res: any,
+  ) {
+    if (!key || !key.trim()) {
+      throw new BadRequestException('Key is required');
+    }
+    const exists = await this.storageService.checkObjectExists(key);
+    if (!exists) {
+      throw new NotFoundException('File not found');
+    }
+    const buffer = await this.storageService.getObjectBuffer(key);
+    const cleanKey = key.toLowerCase();
+    const mime = cleanKey.endsWith('.pdf')
+      ? 'application/pdf'
+      : cleanKey.endsWith('.png')
+      ? 'image/png'
+      : cleanKey.endsWith('.webp')
+      ? 'image/webp'
+      : 'image/jpeg';
+
+    res.setHeader('Content-Type', mime);
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    res.send(buffer);
+  }
+
+  @Put('raw-upload')
+  @ApiOperation({ summary: 'Receive raw file upload in development when local fallback is used' })
+  async putRawFile(
+    @Query('key') key: string,
+    @Req() req: any,
+    @Res() res: any,
+  ) {
+    if (!key || !key.trim()) {
+      throw new BadRequestException('Key is required');
+    }
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk: Buffer) => chunks.push(chunk));
+    req.on('end', async () => {
+      const buffer = Buffer.concat(chunks);
+      const mime = req.headers['content-type'] || 'application/octet-stream';
+      await this.storageService.putObject(key, buffer, mime);
+      res.status(HttpStatus.OK).send();
+    });
   }
 }

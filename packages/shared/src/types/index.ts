@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import {
-  createListingSchema,
   submitOfferSchema,
   counterOfferSchema,
   uploadPaymentProofSchema,
@@ -8,7 +7,6 @@ import {
 } from '../schemas';
 import { ListingStatus, DealStatus, PropertyType } from '../enums';
 
-export type CreateListingInput = z.infer<typeof createListingSchema>;
 export type SubmitOfferInput = z.infer<typeof submitOfferSchema>;
 export type CounterOfferInput = z.infer<typeof counterOfferSchema>;
 export type UploadPaymentProofInput = z.infer<typeof uploadPaymentProofSchema>;
@@ -75,3 +73,4 @@ export * from './auth';
 export * from './identity';
 export * from './payout';
 export * from './preferences';
+export * from './listing';

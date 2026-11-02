@@ -43,10 +43,13 @@ export async function apiClient<T>(
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const url = `${baseUrl}${cleanEndpoint}`;
 
-  const defaultHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-  };
+  const defaultHeaders: Record<string, string> =
+    typeof FormData !== 'undefined' && options.body instanceof FormData
+      ? { Accept: 'application/json' }
+      : {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        };
 
   const config: RequestInit = {
     ...options,

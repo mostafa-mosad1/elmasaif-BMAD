@@ -27,7 +27,7 @@ export default function OwnerDashboardPage() {
           </p>
         </div>
 
-        <Link href="/app/owner/direct-listing">
+        <Link href="/app/owner/listings/new">
           <Button variant="primary" className="gap-2">
             <PlusCircle className="w-4 h-4" />
             <span>طلب عرض عقار مباشر</span>
@@ -49,7 +49,7 @@ export default function OwnerDashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Link href="/app/owner/direct-listing">
+            <Link href="/app/owner/listings/new">
               <Button variant="primary" size="sm" className="w-full gap-2">
                 <span>تقديم طلب عرض مباشر</span>
                 <ArrowLeft className="w-4 h-4" />
@@ -116,7 +116,7 @@ export default function OwnerDashboardPage() {
             description="لم تقم بإرسال أي طلبات لعرض عقاراتك حتى الآن. ابدأ بطلب عرض مباشر لربط عقارك بالمشترين المؤهلين."
             icon={<Building className="w-7 h-7" />}
             actionLabel="طلب عرض عقار مباشر"
-            actionHref="/app/owner/direct-listing"
+            actionHref="/app/owner/listings/new"
           />
         </CardContent>
       </Card>
