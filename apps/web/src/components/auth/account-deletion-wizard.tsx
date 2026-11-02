@@ -2,11 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
   ShieldAlert,
   AlertTriangle,
-  Lock,
   Eye,
   EyeOff,
   Clock,
@@ -24,10 +22,7 @@ import { apiClient, ApiError } from '../../lib/api-client';
 import {
   AccountDeletionEligibilityResponse,
   InitiateAccountDeletionResponse,
-  ConfirmAccountDeletionResponse,
-  AUTH_DELETION_ACTIVE_DEAL_BLOCK,
-  AUTH_DELETION_OPEN_DISPUTE_BLOCK,
-  AUTH_DELETION_ACTIVE_CONTRACT_BLOCK
+  ConfirmAccountDeletionResponse
 } from '@elmasaif/shared';
 
 export interface AccountDeletionWizardProps {
@@ -45,7 +40,6 @@ export function AccountDeletionWizard({
   initialBlockedReason,
   onSuccess
 }: AccountDeletionWizardProps) {
-  const router = useRouter();
   const [step, setStep] = useState<DeletionStep>('password');
 
   // Blocking / Eligibility state
@@ -87,7 +81,7 @@ export function AccountDeletionWizard({
             setBlockingReason(null);
           }
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (isMounted) {
           if (err instanceof ApiError && err.status === 409) {
             setIsBlocked(true);
@@ -142,7 +136,7 @@ export function AccountDeletionWizard({
       setMaskedMobileNumber(res.data.maskedMobileNumber);
       setResendCooldown(res.data.resendAvailableInSeconds || 60);
       setStep('otp');
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (err instanceof ApiError) {
         if (err.status === 409) {
           setIsBlocked(true);
@@ -192,7 +186,7 @@ export function AccountDeletionWizard({
       if (onSuccess) {
         onSuccess();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (err instanceof ApiError) {
         setErrorMessage(err.message || 'رمز التحقق غير صحيح أو منتهي الصلاحية');
       } else {
@@ -220,12 +214,21 @@ export function AccountDeletionWizard({
 
       setDeletionToken(res.data.deletionToken);
       setResendCooldown(res.data.resendAvailableInSeconds || 60);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'تعذر إعادة إرسال رمز التحقق');
+    } catch (err: unknown) {
+      const msg = err instanceof ApiError ? err.message : 'تعذر إعادة إرسال رمز التحقق';
+      setErrorMessage(msg);
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (isCheckingEligibility) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div dir="rtl" className="w-full max-w-2xl mx-auto space-y-6">
@@ -378,7 +381,6 @@ export function AccountDeletionWizard({
                     رمز التحقق (OTP)
                   </label>
                   <OtpInput
-                    length={6}
                     value={otpCode}
                     onChange={(val) => setOtpCode(val)}
                     disabled={isLoading}
@@ -408,7 +410,7 @@ export function AccountDeletionWizard({
 
                 <Button
                   type="submit"
-                  variant="destructive"
+                  variant="danger"
                   disabled={isLoading || otpCode.length !== 6}
                   className="w-full h-11 bg-rose-700 hover:bg-rose-800 text-white font-bold gap-2"
                 >

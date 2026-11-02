@@ -51,6 +51,7 @@ export * from './clock.schema';
 export * from './auth.schema';
 export * from './identity.schema';
 export * from './payout.schema';
+export * from './preferences.schema';
 
 export const otpVerifySchema = z.object({
   mobileNumber: saudiMobileSchema,

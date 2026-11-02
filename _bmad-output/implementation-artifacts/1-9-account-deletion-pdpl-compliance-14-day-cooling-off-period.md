@@ -4,7 +4,7 @@ baseline_commit: 58ce7b491906aa4a53d8544261d751b6b1c31764
 
 # Story 1.9: Account Deletion, PDPL Compliance & 14-Day Cooling-Off Period
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

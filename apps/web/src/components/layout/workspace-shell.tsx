@@ -7,7 +7,8 @@ import { useAuth } from '../providers/auth-provider';
 import { useDirection } from '../providers/direction-provider';
 import { useTheme } from '../providers/theme-provider';
 import { WorkspaceRoleSwitcher } from './workspace-role-switcher';
-import { UserRole, SupportedLocale } from '@elmasaif/shared';
+import { UserRole, SupportedLocale, ThemeMode } from '@elmasaif/shared';
+import { apiClient } from '../../lib/api-client';
 import {
   Building2,
   LayoutDashboard,
@@ -21,7 +22,6 @@ import {
   CreditCard,
   Building,
   ShieldCheck,
-  
   LogOut,
   Sun,
   Moon,
@@ -42,6 +42,28 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const isArabic = locale === SupportedLocale.AR;
+
+  const handleQuickToggleLocale = () => {
+    const nextLocale = isArabic ? SupportedLocale.EN : SupportedLocale.AR;
+    toggleLocale();
+    if (user) {
+      apiClient('/users/preferences', {
+        method: 'PATCH',
+        body: JSON.stringify({ preferredLanguage: nextLocale })
+      }).catch(() => {});
+    }
+  };
+
+  const handleQuickToggleTheme = () => {
+    const nextTheme = resolvedTheme === 'dark' ? ThemeMode.LIGHT : ThemeMode.DARK;
+    toggleTheme();
+    if (user) {
+      apiClient('/users/preferences', {
+        method: 'PATCH',
+        body: JSON.stringify({ themeMode: nextTheme })
+      }).catch(() => {});
+    }
+  };
 
   const roleNavItems = {
     [UserRole.BUYER]: [
@@ -202,7 +224,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Language Switcher */}
             <button
-              onClick={toggleLocale}
+              onClick={handleQuickToggleLocale}
               type="button"
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface border border-surface-border dark:border-dark-surface-border transition-colors"
               aria-label={isArabic ? 'Switch to English' : 'التبديل إلى العربية'}
@@ -213,7 +235,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
 
             {/* Dark Mode Toggle */}
             <button
-              onClick={toggleTheme}
+              onClick={handleQuickToggleTheme}
               type="button"
               className="p-2 rounded-lg text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface border border-surface-border dark:border-dark-surface-border transition-colors"
               aria-label={resolvedTheme === 'dark' ? 'Activate Light Mode' : 'تفعيل الوضع الداكن'}

@@ -1,5 +1,3 @@
-import { ProfileController } from './profile.controller';
-import { ProfileService } from './profile.service';
 import { Module } from '@nestjs/common';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
@@ -17,8 +15,12 @@ import { PayoutService } from './payout.service';
 import { PhoneChangeController } from './phone-change.controller';
 import { AdminPhoneChangeController } from './admin-phone-change.controller';
 import { PhoneChangeService } from './phone-change.service';
+import { ProfileController } from './profile.controller';
+import { ProfileService } from './profile.service';
 import { AccountDeletionController } from './account-deletion.controller';
 import { AccountDeletionService } from './account-deletion.service';
+import { PreferencesController } from './preferences.controller';
+import { PreferencesService } from './preferences.service';
 
 @Module({
   imports: [StorageModule, AuthModule, CryptoModule],
@@ -30,7 +32,8 @@ import { AccountDeletionService } from './account-deletion.service';
     PhoneChangeController,
     AdminPhoneChangeController,
     ProfileController,
-    AccountDeletionController
+    AccountDeletionController,
+    PreferencesController
   ],
   providers: [
     UsersService,
@@ -42,7 +45,8 @@ import { AccountDeletionService } from './account-deletion.service';
     PayoutService,
     PhoneChangeService,
     ProfileService,
-    AccountDeletionService
+    AccountDeletionService,
+    PreferencesService
   ],
   exports: [
     UsersService,
@@ -51,7 +55,8 @@ import { AccountDeletionService } from './account-deletion.service';
     PayoutService,
     PhoneChangeService,
     ProfileService,
-    AccountDeletionService
+    AccountDeletionService,
+    PreferencesService
   ]
 })
 export class UsersModule {}

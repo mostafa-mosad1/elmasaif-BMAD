@@ -1,6 +1,14 @@
 import React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ShieldCheck, Building2, KeyRound, Smartphone, ShieldAlert } from 'lucide-react';
+import {
+  ArrowLeft,
+  ShieldCheck,
+  Building2,
+  KeyRound,
+  Smartphone,
+  ShieldAlert,
+  Sliders
+} from 'lucide-react';
 import { Button } from '../../../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
 import { ProfileEditor } from '../../../../components/auth/profile-editor';
@@ -35,9 +43,29 @@ export default function ProfileSettingsPage() {
       {/* Preserved Sub-navigation Cards */}
       <section className="space-y-4 pt-4 border-t border-border/40">
         <h2 className="text-lg font-semibold text-ink-primary dark:text-dark-ink-primary">
-          إجراءات الأمان والتحقق والخدمات المالية
+          إجراءات الأمان والتحقق والخدمات المالية والتفضيلات
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base font-bold">
+                <Sliders className="h-5 w-5 text-primary" aria-hidden="true" />
+                التفضيلات والمظهر والإشعارات
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-ink-secondary dark:text-dark-ink-secondary">
+                تخصيص لغة الواجهة، النمط البصري (فاتح/داكن/نظام)، وتفضيلات قنوات الإشعارات.
+              </p>
+              <Link href="/app/settings/preferences">
+                <Button variant="outline" className="gap-2">
+                  تعديل التفضيلات
+                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base font-bold">

@@ -150,6 +150,7 @@ model User {
   receivedRatings      Rating[]             @relation("ReceivedRatings")
   knownDevices         KnownDevice[]
   identityDocuments    IdentityDocument[]
+  preferences          UserPreference?
 
   @@map("users")
 }
@@ -192,6 +193,23 @@ model PhoneChangeRequest {
 
   @@index([userId, status])
   @@map("phone_change_requests")
+}
+
+model UserPreference {
+  id                 String   @id @default(uuid())
+  userId             String   @unique @map("user_id")
+  preferredLanguage  String   @default("ar") @map("preferred_language")
+  themeMode          String   @default("light") @map("theme_mode")
+  emailNotifications Boolean  @default(true) @map("email_notifications")
+  smsNotifications   Boolean  @default(true) @map("sms_notifications")
+  marketingAlerts    Boolean  @default(false) @map("marketing_alerts")
+  inquiryAlerts      Boolean  @default(true) @map("inquiry_alerts")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
 }
 
 model UserProfile {
