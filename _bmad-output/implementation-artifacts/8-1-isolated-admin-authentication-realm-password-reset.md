@@ -4,7 +4,7 @@ baseline_commit: 449e582fa421a58c9c0568ed447c9a0a6591474c
 
 # Story 8.1: Isolated Admin Authentication Realm & Password Reset
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 10-27-2026 15:27
-last_updated: 11-03-2026 09:56
+last_updated: 11-03-2026 10:33
 project: elmasaif
 project_key: NOKEY
 tracking_system: file-system
@@ -63,7 +63,7 @@ development_status:
   2-1-geographic-master-data-administration-cascading-dropdown: done
   2-2-listing-creation-document-visibility-classification: review
   2-3-reusable-property-card-16-9-media-carousel: backlog
-  2-4-listing-moderation-queue-with-15-minute-task-claim-locking: backlog
+  2-4-listing-moderation-queue-with-15-minute-task-claim-locking: in-progress
   2-5-admin-price-suggestion-seller-response: backlog
   2-6-listing-archiving-suspension-compliance-blocking: backlog
   2-7-listing-view-engagement-analytics: backlog
@@ -110,7 +110,7 @@ development_status:
   epic-7-retrospective: optional
 
   epic-8: in-progress
-  8-1-isolated-admin-authentication-realm-password-reset: review
+  8-1-isolated-admin-authentication-realm-password-reset: done
   8-2-granular-dynamic-rbac-super-admin-user-management: backlog
   8-3-unified-operational-queue-task-claim-heartbeat-locking-servi: backlog
   8-4-review-moderation-workspace: backlog
