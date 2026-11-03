@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 10-27-2026 15:27
-last_updated: 11-02-2026 14:25
+last_updated: 11-03-2026 09:56
 project: elmasaif
 project_key: NOKEY
 tracking_system: file-system
@@ -109,8 +109,8 @@ development_status:
   7-3-contract-fee-payment-proof-verification-auto-publishing: backlog
   epic-7-retrospective: optional
 
-  epic-8: backlog
-  8-1-isolated-admin-authentication-realm-password-reset: backlog
+  epic-8: in-progress
+  8-1-isolated-admin-authentication-realm-password-reset: review
   8-2-granular-dynamic-rbac-super-admin-user-management: backlog
   8-3-unified-operational-queue-task-claim-heartbeat-locking-servi: backlog
   8-4-review-moderation-workspace: backlog

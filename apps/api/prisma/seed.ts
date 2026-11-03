@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, AdminRole } from '@prisma/client';
+import * as argon2 from 'argon2';
 
 const prisma = new PrismaClient();
 
@@ -157,11 +158,74 @@ export async function seedGeographicData() {
   console.log(`✅ Geographic seeding complete: ${totalCitiesSeeded} cities, ${totalDistrictsSeeded} districts.`);
 }
 
+export interface SeedAdminAccount {
+  id: string;
+  username: string;
+  email: string;
+  fullName: string;
+  role: AdminRole;
+  defaultPassword: string;
+}
+
+export const INITIAL_ADMIN_ACCOUNTS: SeedAdminAccount[] = [
+  {
+    id: '99999999-0000-4000-8000-000000000001',
+    username: 'superadmin',
+    email: 'admin@elmasaif.sa',
+    fullName: 'المشرف العام - المصايف',
+    role: AdminRole.SUPER_ADMIN,
+    defaultPassword: process.env.SEED_SUPERADMIN_PASSWORD || 'Admin@Elmasaif2026',
+  },
+  {
+    id: '99999999-0000-4000-8000-000000000002',
+    username: 'moderator',
+    email: 'moderator@elmasaif.sa',
+    fullName: 'مشرف العمليات',
+    role: AdminRole.MODERATOR,
+    defaultPassword: process.env.SEED_MODERATOR_PASSWORD || 'Moderator@Elmasaif2026',
+  },
+];
+
+export async function seedAdminUsers() {
+  console.log('🔐 Seeding Isolated Administrative Accounts (AdminUser)...');
+
+  for (const account of INITIAL_ADMIN_ACCOUNTS) {
+    const passwordHash = await argon2.hash(account.defaultPassword, {
+      type: argon2.argon2id,
+    });
+
+    await prisma.adminUser.upsert({
+      where: { username: account.username },
+      update: {
+        email: account.email,
+        fullName: account.fullName,
+        passwordHash,
+        role: account.role,
+        isActive: true,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+      },
+      create: {
+        id: account.id,
+        username: account.username,
+        email: account.email,
+        fullName: account.fullName,
+        passwordHash,
+        role: account.role,
+        isActive: true,
+      },
+    });
+  }
+
+  console.log(`✅ Admin accounts seeded: ${INITIAL_ADMIN_ACCOUNTS.length} isolated staff accounts.`);
+}
+
 async function main() {
   try {
     await seedGeographicData();
+    await seedAdminUsers();
   } catch (error) {
-    console.error('❌ Failed to seed geographic data:', error);
+    console.error('❌ Failed to seed database:', error);
     process.exit(1);
   } finally {
     await prisma.$disconnect();

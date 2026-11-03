@@ -21,7 +21,11 @@ import {
   resendEmailVerificationSchema,
   initiateAccountDeletionSchema,
   confirmAccountDeletionSchema,
-  cancelAccountDeletionSchema
+  cancelAccountDeletionSchema,
+  adminLoginSchema,
+  adminInitiatePasswordResetSchema,
+  adminCompletePasswordResetSchema,
+  adminSessionUserSchema
 } from '../schemas/auth.schema';
 
 export type RegisterInput = z.infer<typeof registerSchema>;
@@ -232,5 +236,50 @@ export interface CancelAccountDeletionResponse {
   message: string;
   requestId?: string;
 }
+
+// Isolated Admin Authentication & Password Reset Types (Story 8.1)
+export type AdminLoginInput = z.input<typeof adminLoginSchema>;
+export type AdminInitiatePasswordResetInput = z.infer<typeof adminInitiatePasswordResetSchema>;
+export type AdminCompletePasswordResetInput = z.infer<typeof adminCompletePasswordResetSchema>;
+export type AdminSessionUser = z.infer<typeof adminSessionUserSchema>;
+
+export interface AdminLoginResponse {
+  code: string;
+  message: string;
+  data: {
+    admin: AdminSessionUser;
+    sessionExpiresAt: string | Date;
+    inactivityTimeoutHours: number;
+  };
+  requestId?: string;
+}
+
+export interface AdminSessionResponse {
+  code: string;
+  message: string;
+  data: {
+    admin: AdminSessionUser;
+  };
+  requestId?: string;
+}
+
+export interface AdminInitiatePasswordResetResponse {
+  code: string;
+  message: string;
+  data: {
+    adminId: string;
+    email: string;
+    expiresInSeconds: number;
+    activeSessionsRevoked: boolean;
+  };
+  requestId?: string;
+}
+
+export interface AdminCompletePasswordResetResponse {
+  code: string;
+  message: string;
+  requestId?: string;
+}
+
 
 

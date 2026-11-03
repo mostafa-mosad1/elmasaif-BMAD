@@ -1,3 +1,5 @@
+import { AdminRole } from '../enums';
+
 export const OTP_EXPIRY_SECONDS = 300;
 export const OTP_THROTTLE_SECONDS = 60;
 export const OTP_MAX_HOURLY_REQUESTS = 3;
@@ -116,3 +118,103 @@ export const DELETION_TOKEN_EXPIRY_SECONDS = 900;
 export const USER_PREFERENCES_RETRIEVED = 'USER_PREFERENCES_RETRIEVED';
 export const USER_PREFERENCES_UPDATED = 'USER_PREFERENCES_UPDATED';
 export const PREFERENCES_CRITICAL_ALERTS_IMMUTABLE = 'PREFERENCES_CRITICAL_ALERTS_IMMUTABLE';
+
+// Isolated Admin Authentication & Password Reset Constants & Codes (Story 8.1)
+export const ADMIN_SESSION_INACTIVITY_HOURS = 8;
+export const ADMIN_SESSION_INACTIVITY_MS = 8 * 60 * 60 * 1000;
+export const ADMIN_LOGIN_MAX_FAILED_ATTEMPTS = 5;
+export const ADMIN_LOGIN_LOCKOUT_MINUTES = 15;
+export const ADMIN_PASSWORD_RESET_EXPIRY_SECONDS = 900;
+
+export const ADMIN_INVALID_CREDENTIALS = 'ADMIN_INVALID_CREDENTIALS';
+export const ADMIN_ACCOUNT_LOCKED = 'ADMIN_ACCOUNT_LOCKED';
+export const ADMIN_ACCOUNT_DISABLED = 'ADMIN_ACCOUNT_DISABLED';
+export const ADMIN_LOGIN_SUCCESS = 'ADMIN_LOGIN_SUCCESS';
+export const ADMIN_LOGOUT_SUCCESS = 'ADMIN_LOGOUT_SUCCESS';
+export const ADMIN_SESSION_PROFILE = 'ADMIN_SESSION_PROFILE';
+export const ADMIN_NOT_FOUND = 'ADMIN_NOT_FOUND';
+export const ADMIN_RESET_DISPATCHED = 'ADMIN_RESET_DISPATCHED';
+export const ADMIN_RESET_TOKEN_INVALID = 'ADMIN_RESET_TOKEN_INVALID';
+export const ADMIN_RESET_TOKEN_EXPIRED = 'ADMIN_RESET_TOKEN_EXPIRED';
+export const ADMIN_PASSWORD_RESET_SUCCESS = 'ADMIN_PASSWORD_RESET_SUCCESS';
+
+export const ADMIN_ROLE_PERMISSIONS: Record<AdminRole, string[]> = {
+  [AdminRole.SUPER_ADMIN]: [
+    'Users.View',
+    'Users.Status',
+    'Users.HardDelete',
+    'Users.PhoneChange',
+    'Licenses.Review',
+    'Listings.Review',
+    'Listings.Compliance',
+    'Price.Suggest',
+    'Contracts.Review',
+    'Contracts.FeeOverride',
+    'Contracts.Manage',
+    'ContractFees.Review',
+    'Offers.Review',
+    'Deals.View',
+    'Deals.FinalApprove',
+    'Deals.StatusOverride',
+    'Deals.DisputeResolve',
+    'Payments.Review',
+    'Conversations.Handle',
+    'Tickets.Handle',
+    'Reports.Handle',
+    'Reports.Analytics',
+    'Penalties.Apply',
+    'Fraud.View',
+    'Finance.View',
+    'Finance.Export',
+    'Settings.Commission',
+    'Settings.Manage',
+    'Rbac.Manage',
+    'Content.Manage',
+    'CMS.Manage',
+    'Bulk.Execute',
+    'Notes.Manage',
+    'Audit.View',
+    'Reviews.Moderate',
+    'Geo.Manage',
+    'Tasks.ForceUnlock',
+    'Compliance.Manage',
+  ],
+  [AdminRole.MODERATOR]: [
+    'Users.View',
+    'Licenses.Review',
+    'Listings.Review',
+    'Price.Suggest',
+    'Contracts.Review',
+    'ContractFees.Review',
+    'Offers.Review',
+    'Deals.View',
+    'Payments.Review',
+    'Conversations.Handle',
+    'Tickets.Handle',
+    'Reports.Handle',
+    'Notes.Manage',
+    'Reviews.Moderate',
+  ],
+  [AdminRole.FINANCIAL_AUDITOR]: [
+    'Users.View',
+    'Deals.View',
+    'Payments.Review',
+    'ContractFees.Review',
+    'Finance.View',
+    'Finance.Export',
+    'Notes.Manage',
+    'Audit.View',
+  ],
+  [AdminRole.COMPLIANCE_OFFICER]: [
+    'Users.View',
+    'Licenses.Review',
+    'Listings.Review',
+    'Listings.Compliance',
+    'Deals.View',
+    'Reports.Handle',
+    'Fraud.View',
+    'Compliance.Manage',
+    'Notes.Manage',
+    'Audit.View',
+  ],
+};

@@ -1,5 +1,10 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { ADMIN_SESSION_COOKIE_NAME, AdminRole } from '@elmasaif/shared';
+import {
+  ADMIN_ROLE_PERMISSIONS,
+  ADMIN_SESSION_COOKIE_NAME,
+  ADMIN_SESSION_INACTIVITY_MS,
+  AdminRole
+} from '@elmasaif/shared';
 import { ClockService } from '../../../common/clock/clock.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AdminSessionAuthGuard } from '../guards/admin-session-auth.guard';
@@ -78,5 +83,43 @@ describe('AdminSessionAuthGuard', () => {
     });
     await expect(guard.canActivate(context({ cookies: { [ADMIN_SESSION_COOKIE_NAME]: 'inactive' }, headers: {} })))
       .rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('extends 8-hour sliding inactivity window and attaches permissions array when session is active', async () => {
+    const updateMock = jest.fn().mockResolvedValue({});
+    (prisma.adminSession as unknown as Record<string, unknown>).update = updateMock;
+    (prisma.adminSession.findUnique as jest.Mock).mockResolvedValueOnce({
+      id: 'session-123',
+      expiresAt: new Date(now.getTime() + 60_000),
+      admin: {
+        id: 'superadmin-1',
+        username: 'superadmin',
+        email: 'admin@elmasaif.sa',
+        fullName: 'المشرف العام',
+        role: AdminRole.SUPER_ADMIN,
+        isActive: true
+      }
+    });
+
+    const request: Record<string, unknown> = {
+      cookies: { [ADMIN_SESSION_COOKIE_NAME]: 'valid-admin-token' },
+      headers: {}
+    };
+
+    await expect(guard.canActivate(context(request))).resolves.toBe(true);
+
+    expect(updateMock).toHaveBeenCalledWith({
+      where: { id: 'session-123' },
+      data: {
+        lastActivityAt: now,
+        expiresAt: new Date(now.getTime() + ADMIN_SESSION_INACTIVITY_MS)
+      }
+    });
+    expect(request.adminSessionToken).toBe('valid-admin-token');
+    expect(request.admin).toMatchObject({
+      id: 'superadmin-1',
+      role: AdminRole.SUPER_ADMIN,
+      permissions: ADMIN_ROLE_PERMISSIONS[AdminRole.SUPER_ADMIN]
+    });
   });
 });

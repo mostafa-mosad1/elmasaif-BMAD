@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { AUTH_CONSENT_REQUIRED, AUTH_INVALID_PHONE } from '../constants/auth';
-import { UserRole, ProfileStatus } from '../enums';
+import { UserRole, ProfileStatus, AdminRole } from '../enums';
 
 export const saudiNationalIdSchema = z.string()
   .regex(/^[12][0-9]{9}$/, 'رقم الهوية الوطنية / الإقامة يجب أن يتكون من 10 أرقام ويبدأ بـ 1 أو 2');
@@ -182,3 +182,38 @@ export const confirmAccountDeletionSchema = z.object({
 });
 
 export const cancelAccountDeletionSchema = z.object({}).optional();
+
+// Isolated Admin Authentication & Password Reset Schemas (Story 8.1)
+export const adminLoginSchema = z.object({
+  identifier: z
+    .string()
+    .trim()
+    .min(3, 'اسم المستخدم أو البريد الإلكتروني مطلوب')
+    .transform((val) => val.toLowerCase()),
+  password: z.string().min(8, 'كلمة المرور يجب ألا تقل عن 8 خانات'),
+});
+
+export const adminInitiatePasswordResetSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(10, 'سبب إعادة تعيين كلمة المرور الإدارية مطلوب (10 أحرف على الأقل)')
+    .max(500, 'السبب يجب ألا يتجاوز 500 حرف'),
+});
+
+export const adminCompletePasswordResetSchema = z.object({
+  token: z.string().trim().min(1, 'رمز إعادة تعيين كلمة المرور مطلوب'),
+  newPassword: passwordComplexitySchema,
+});
+
+export const adminSessionUserSchema = z.object({
+  id: z.string(),
+  username: z.string(),
+  email: z.string(),
+  fullName: z.string(),
+  role: z.nativeEnum(AdminRole),
+  isActive: z.boolean(),
+  lastLoginAt: z.union([z.date(), z.string()]).nullable().optional(),
+  permissions: z.array(z.string()).default([]),
+});
+

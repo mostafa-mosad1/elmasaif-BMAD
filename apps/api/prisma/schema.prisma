@@ -277,18 +277,22 @@ model PayoutAccount {
 }
 
 model AdminUser {
-  id           String         @id @default(uuid())
-  username     String         @unique
-  email        String         @unique
-  fullName     String
-  passwordHash String
-  role         AdminRole      @default(MODERATOR)
-  isActive     Boolean        @default(true)
-  lastLoginAt  DateTime?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id                     String         @id @default(uuid())
+  username               String         @unique
+  email                  String         @unique
+  fullName               String
+  passwordHash           String
+  role                   AdminRole      @default(MODERATOR)
+  isActive               Boolean        @default(true)
+  lastLoginAt            DateTime?
+  failedLoginAttempts    Int            @default(0) @map("failed_login_attempts")
+  lockedUntil            DateTime?      @map("locked_until")
+  passwordResetTokenHash String?        @map("password_reset_token_hash")
+  passwordResetExpiresAt DateTime?      @map("password_reset_expires_at")
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
 
-  sessions     AdminSession[]
+  sessions               AdminSession[]
 
   @@map("admin_users")
 }
@@ -701,14 +705,16 @@ model KnownDevice {
 }
 
 model AdminSession {
-  id        String    @id @default(uuid())
-  adminId   String
-  token     String    @unique
-  ipAddress String?
-  expiresAt DateTime
-  createdAt DateTime  @default(now())
+  id             String    @id @default(uuid())
+  adminId        String
+  token          String    @unique
+  ipAddress      String?
+  userAgent      String?   @map("user_agent")
+  lastActivityAt DateTime  @default(now()) @map("last_activity_at")
+  expiresAt      DateTime
+  createdAt      DateTime  @default(now())
 
-  admin     AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  admin          AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   @@map("admin_sessions")
 }

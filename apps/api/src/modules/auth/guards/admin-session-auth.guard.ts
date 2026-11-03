@@ -1,5 +1,11 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
-import { ADMIN_AUTH_REQUIRED, ADMIN_SESSION_COOKIE_NAME } from '@elmasaif/shared';
+import {
+  ADMIN_AUTH_REQUIRED,
+  ADMIN_ROLE_PERMISSIONS,
+  ADMIN_SESSION_COOKIE_NAME,
+  ADMIN_SESSION_INACTIVITY_MS,
+  AdminRole
+} from '@elmasaif/shared';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { ClockService } from '../../../common/clock/clock.service';
 
@@ -25,21 +31,38 @@ export class AdminSessionAuthGuard implements CanActivate {
       include: { admin: true }
     });
 
+    const now = this.clockService.now();
+
     if (
       !session ||
-      session.expiresAt <= this.clockService.now() ||
+      session.expiresAt <= now ||
       !session.admin.isActive
     ) {
       throw this.unauthorized();
     }
 
+    // Slide the 8-hour inactivity window forward on active requests
+    const newExpiresAt = new Date(now.getTime() + ADMIN_SESSION_INACTIVITY_MS);
+    if (session.id && typeof this.prisma.adminSession.update === 'function') {
+      await this.prisma.adminSession.update({
+        where: { id: session.id },
+        data: {
+          lastActivityAt: now,
+          expiresAt: newExpiresAt
+        }
+      });
+    }
+
+    const role = session.admin.role as AdminRole;
+    request.adminSessionToken = token;
     request.admin = {
       id: session.admin.id,
       username: session.admin.username,
       email: session.admin.email,
       fullName: session.admin.fullName,
-      role: session.admin.role,
-      isActive: session.admin.isActive
+      role,
+      isActive: session.admin.isActive,
+      permissions: ADMIN_ROLE_PERMISSIONS[role] || []
     };
     return true;
   }

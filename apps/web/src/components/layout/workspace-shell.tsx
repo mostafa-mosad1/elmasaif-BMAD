@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../providers/auth-provider';
+import { useAdminAuth } from '../providers/admin-auth-provider';
 import { useDirection } from '../providers/direction-provider';
 import { useTheme } from '../providers/theme-provider';
 import { WorkspaceRoleSwitcher } from './workspace-role-switcher';
@@ -38,11 +39,13 @@ interface WorkspaceShellProps {
 export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const pathname = usePathname();
   const { user, activeRole, logout } = useAuth();
+  const { admin, logoutAdmin } = useAdminAuth();
   const { locale, toggleLocale } = useDirection();
   const { resolvedTheme, toggleTheme } = useTheme();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const isArabic = locale === SupportedLocale.AR;
+  const isAdminRoute = Boolean(pathname?.startsWith('/admin'));
 
   const handleQuickToggleLocale = () => {
     const nextLocale = isArabic ? SupportedLocale.EN : SupportedLocale.AR;
@@ -94,7 +97,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
       { href: '/app/settings/identity', label: 'توثيق الهوية', icon: ShieldCheck }
     ],
     [UserRole.ADMIN]: [
-      { href: '/admin/dashboard', label: 'لوحة تحكم المشرف', icon: LayoutDashboard },
+      { href: '/admin', label: 'لوحة تحكم المشرف', icon: LayoutDashboard },
       { href: '/admin/geo', label: 'إدارة المدن والأحياء', icon: MapPin }
     ]
   };
@@ -106,8 +109,10 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
     [UserRole.ADMIN]: 'مساحة الإدارة'
   };
 
-  const navItems = roleNavItems[activeRole] || roleNavItems[UserRole.BUYER];
-  const workspaceTitle = roleTitleMap[activeRole] || 'مساحة العمل';
+  const effectiveRole = isAdminRoute ? UserRole.ADMIN : activeRole;
+  const navItems = roleNavItems[effectiveRole] || roleNavItems[UserRole.BUYER];
+  const workspaceTitle = roleTitleMap[effectiveRole] || 'مساحة العمل';
+  const handleActiveLogout = isAdminRoute ? logoutAdmin : logout;
 
   return (
     <div className="min-h-screen flex bg-surface-sunken dark:bg-dark-surface font-sans antialiased text-ink-primary dark:text-dark-ink-primary">
@@ -177,32 +182,59 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
           })}
         </nav>
 
-        {/* User Profile Footer in Sidebar */}
-        {user && (
+        {/* User / Admin Profile Footer in Sidebar */}
+        {isAdminRoute && admin ? (
           <div className="p-4 border-t border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface/40">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5 overflow-hidden">
                 <div className="w-8 h-8 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-xs shrink-0">
-                  {user.fullName ? user.fullName.charAt(0) : 'U'}
+                  {admin.fullName ? admin.fullName.charAt(0) : 'A'}
                 </div>
                 <div className="flex flex-col overflow-hidden">
-                  <span className="text-xs font-semibold truncate">{user.fullName}</span>
+                  <span className="text-xs font-semibold truncate">{admin.fullName}</span>
                   <span className="text-[10px] text-ink-muted dark:text-dark-ink-muted truncate">
-                    {user.mobileNumber}
+                    {admin.role} • {admin.email}
                   </span>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={logout}
+                onClick={logoutAdmin}
                 className="p-1.5 rounded-md text-ink-muted hover:text-status-rejected hover:bg-surface dark:hover:bg-dark-surface-raised transition-colors"
-                title="تسجيل الخروج"
-                aria-label="Logout"
+                title="تسجيل الخروج الإداري"
+                aria-label="Logout Admin"
               >
                 <LogOut className="w-4 h-4" />
               </button>
             </div>
           </div>
+        ) : (
+          user && (
+            <div className="p-4 border-t border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface/40">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5 overflow-hidden">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-xs shrink-0">
+                    {user.fullName ? user.fullName.charAt(0) : 'U'}
+                  </div>
+                  <div className="flex flex-col overflow-hidden">
+                    <span className="text-xs font-semibold truncate">{user.fullName}</span>
+                    <span className="text-[10px] text-ink-muted dark:text-dark-ink-muted truncate">
+                      {user.mobileNumber}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="p-1.5 rounded-md text-ink-muted hover:text-status-rejected hover:bg-surface dark:hover:bg-dark-surface-raised transition-colors"
+                  title="تسجيل الخروج"
+                  aria-label="Logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )
         )}
       </aside>
 
@@ -252,7 +284,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
             {/* Logout button */}
             <button
               type="button"
-              onClick={logout}
+              onClick={handleActiveLogout}
               className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-status-rejected hover:bg-status-rejected/10 rounded-lg transition-colors"
             >
               <LogOut className="w-3.5 h-3.5" />
