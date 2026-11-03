@@ -38,6 +38,8 @@ import {
   blockListingSchema,
   UnsuspendListingInput,
   unsuspendListingSchema,
+  listingAnalyticsQuerySchema,
+  ListingAnalyticsQuery,
 } from '@elmasaif/shared';
 import { AdminListingsService } from './admin-listings.service';
 
@@ -68,6 +70,25 @@ export class AdminListingsController {
     const result = await this.adminListingsService.getModerationQueue(
       query,
       req.admin.id,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      data: result,
+    };
+  }
+
+  @Get('analytics/overview')
+  @HttpCode(HttpStatus.OK)
+  @RequireAdminPermission('Reports.Analytics', 'Listings.Review')
+  @ApiOperation({
+    summary: 'Retrieve global platform-level listing engagement analytics',
+  })
+  async getGlobalEngagementAnalytics(
+    @Query(new ZodValidationPipe(listingAnalyticsQuerySchema))
+    query: ListingAnalyticsQuery,
+  ) {
+    const result = await this.adminListingsService.getGlobalEngagementAnalytics(
+      query.days ?? 30,
     );
     return {
       statusCode: HttpStatus.OK,

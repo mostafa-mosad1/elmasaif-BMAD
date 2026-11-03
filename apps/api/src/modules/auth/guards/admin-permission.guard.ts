@@ -13,10 +13,12 @@ export class AdminPermissionGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredPermission = this.reflector.getAllAndOverride<string | undefined>(
-      ADMIN_PERMISSION_METADATA_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const requiredPermission = this.reflector.getAllAndOverride<
+      string | string[] | undefined
+    >(ADMIN_PERMISSION_METADATA_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     if (!requiredPermission) {
       return true;
@@ -40,10 +42,18 @@ export class AdminPermissionGuard implements CanActivate {
       ? admin.permissions
       : [];
 
-    if (!permissions.includes(requiredPermission)) {
+    const requiredList = Array.isArray(requiredPermission)
+      ? requiredPermission
+      : [requiredPermission];
+
+    const hasPermission = requiredList.some((perm) =>
+      permissions.includes(perm),
+    );
+
+    if (!hasPermission) {
       throw new ForbiddenException({
         code: AUTH_NOT_AUTHORIZED,
-        message: `الدور الإداري الحالي لا يملك الصلاحية المطلوبة (${requiredPermission})`,
+        message: `الدور الإداري الحالي لا يملك الصلاحية المطلوبة (${requiredList.join(', ')})`,
       });
     }
 

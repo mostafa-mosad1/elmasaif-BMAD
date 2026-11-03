@@ -13,6 +13,9 @@ import {
   suspendListingSchema,
   blockListingSchema,
   unsuspendListingSchema,
+  listingEngagementEventSchema,
+  batchListingEngagementSchema,
+  listingAnalyticsQuerySchema,
 } from '../schemas/listing.schema';
 import {
   PropertyType,
@@ -37,6 +40,47 @@ export type ArchiveListingInput = z.infer<typeof archiveListingSchema>;
 export type SuspendListingInput = z.infer<typeof suspendListingSchema>;
 export type BlockListingInput = z.infer<typeof blockListingSchema>;
 export type UnsuspendListingInput = z.infer<typeof unsuspendListingSchema>;
+export type ListingEngagementEvent = z.infer<typeof listingEngagementEventSchema>;
+export type BatchListingEngagementInput = z.infer<typeof batchListingEngagementSchema>;
+export type ListingAnalyticsQuery = z.infer<typeof listingAnalyticsQuerySchema>;
+
+export interface ListingAnalyticsSummary {
+  listingId: string;
+  totalViews: number;
+  totalImpressions: number;
+  totalFavorites: number;
+  offersCount: number;
+  conversionRatio: number;
+  dailyMetrics: Array<{
+    date: string;
+    impressions: number;
+    detailViews: number;
+    favoriteAdds: number;
+  }>;
+}
+
+export interface AdminGlobalEngagementAnalytics {
+  totalActiveListings: number;
+  totalLifetimeImpressions: number;
+  totalLifetimeViews: number;
+  totalLifetimeFavorites: number;
+  averageConversionRatio: number;
+  topListings: Array<{
+    id: string;
+    title: string;
+    propertyType: string;
+    cityName: string;
+    askPrice: number;
+    views: number;
+    favorites: number;
+  }>;
+  dailyTrends: Array<{
+    date: string;
+    impressions: number;
+    detailViews: number;
+    favorites: number;
+  }>;
+}
 
 export interface PriceSuggestionItem {
   id: string;
@@ -144,6 +188,11 @@ export interface ListingDetailResponse {
   archiveReason?: string | null;
   activePriceSuggestion?: PriceSuggestionItem | null;
   priceSuggestions?: PriceSuggestionItem[];
+  totalViews?: number;
+  totalImpressions?: number;
+  totalFavorites?: number;
+  isFavorited?: boolean;
+  offersCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -175,6 +224,11 @@ export interface ListingSummaryItem {
   archiveReason?: string | null;
   activePriceSuggestion?: PriceSuggestionItem | null;
   priceSuggestions?: PriceSuggestionItem[];
+  totalViews?: number;
+  totalImpressions?: number;
+  totalFavorites?: number;
+  isFavorited?: boolean;
+  offersCount?: number;
   createdAt: string;
 }
 

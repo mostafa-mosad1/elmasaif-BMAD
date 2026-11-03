@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PropertyType, DocumentVisibility, ListingStatus, SuspensionCategory } from '../enums';
+import { PropertyType, DocumentVisibility, ListingStatus, SuspensionCategory, ListingEngagementEventType } from '../enums';
 import { saudiIbanSchema } from './index';
 import {
   MAX_LISTING_FILE_SIZE_BYTES,
@@ -203,6 +203,36 @@ export const unsuspendListingSchema = z.object({
     .min(10, 'ملاحظات المعالجة ورفع الإيقاف يجب ألا تقل عن 10 أحرف')
     .max(1000, 'ملاحظات المعالجة يجب ألا تتجاوز 1000 حرف'),
 });
+
+export const listingEngagementEventSchema = z.object({
+  listingId: z.string().uuid('معرف العقار يجب أن يكون بصيغة UUID صالحة'),
+  eventType: z.nativeEnum(ListingEngagementEventType, {
+    errorMap: () => ({ message: 'نوع تفاعل العقار غير صالح' }),
+  }),
+  count: z
+    .number()
+    .int()
+    .min(1, 'عدد التفاعلات يجب ألا يقل عن 1')
+    .max(100, 'الحد الأقصى لدفعة التفاعل هو 100')
+    .default(1),
+});
+
+export const batchListingEngagementSchema = z.object({
+  events: z
+    .array(listingEngagementEventSchema)
+    .min(1, 'يجب إرسال تفاعل واحد على الأقل في الدفعة')
+    .max(50, 'الحد الأقصى للتفاعلات في الدفعة الواحدة هو 50'),
+});
+
+export const listingAnalyticsQuerySchema = z.object({
+  days: z.coerce
+    .number()
+    .int()
+    .min(1, 'عدد الأيام يجب أن يكون 1 على الأقل')
+    .max(90, 'الحد الأقصى للنطاق الزمني هو 90 يوماً')
+    .default(30),
+});
+
 
 
 

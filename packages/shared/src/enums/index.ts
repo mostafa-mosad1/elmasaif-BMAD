@@ -134,4 +134,9 @@ export enum PriceSuggestionStatus {
   SUPERSEDED = 'SUPERSEDED'
 }
 
+export enum ListingEngagementEventType {
+  IMPRESSION = 'IMPRESSION',
+  DETAIL_VIEW = 'DETAIL_VIEW',
+}
+
 export * from './ui';

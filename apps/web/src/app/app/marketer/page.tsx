@@ -19,6 +19,9 @@ import {
   AlertTriangle,
   Ban,
   Archive,
+  Eye,
+  BarChart2,
+  Heart,
 } from 'lucide-react';
 import { ListingStatus, PropertyType } from '@elmasaif/shared';
 import { apiClient } from '../../../lib/api-client';
@@ -26,6 +29,7 @@ import { SellerPriceSuggestionCard } from '../../../components/listings/seller-p
 import {
   SellerListingArchiveActions,
   ListingStatusBadge,
+  SellerListingEngagement,
 } from '../../../components/listings';
 
 const PROPERTY_TYPE_LABELS: Record<string, string> = {
@@ -54,6 +58,9 @@ export default function MarketerDashboardPage() {
   }, []);
 
   const activeCount = myListings.filter((l) => l.status === ListingStatus.ACTIVE).length;
+  const totalViews = myListings.reduce((sum, l) => sum + (l.totalViews || 0), 0);
+  const totalImpressions = myListings.reduce((sum, l) => sum + (l.totalImpressions || 0), 0);
+  const totalFavorites = myListings.reduce((sum, l) => sum + (l.totalFavorites || 0), 0);
 
   const stats = [
     {
@@ -61,6 +68,13 @@ export default function MarketerDashboardPage() {
       count: activeCount,
       description: 'عقارات نشطة ومعتمدة في المنصة',
       icon: Building,
+      href: '/app/marketer'
+    },
+    {
+      title: 'إجمالي المشاهدات والتفاعل',
+      count: totalViews,
+      description: `${totalImpressions.toLocaleString('en-US')} ظهور • ${totalFavorites.toLocaleString('en-US')} في المفضلة`,
+      icon: Eye,
       href: '/app/marketer'
     },
     {
@@ -131,7 +145,7 @@ export default function MarketerDashboardPage() {
       </Card>
 
       {/* Quick Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
         {stats.map((s) => {
           const Icon = s.icon;
           return (
@@ -221,6 +235,15 @@ export default function MarketerDashboardPage() {
                     )}
                   </div>
                 </div>
+
+                {/* Listing Engagement & Conversion Analytics */}
+                <SellerListingEngagement
+                  listingId={item.id}
+                  totalViews={item.totalViews}
+                  totalImpressions={item.totalImpressions}
+                  totalFavorites={item.totalFavorites}
+                  offersCount={item.offersCount}
+                />
 
                 {item.status === ListingStatus.SUSPENDED && item.complianceReason && (
                   <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2.5">

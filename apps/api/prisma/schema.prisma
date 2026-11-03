@@ -162,6 +162,7 @@ model User {
   knownDevices         KnownDevice[]
   identityDocuments    IdentityDocument[]
   preferences          UserPreference?
+  favorites            ListingFavorite[]
 
   @@map("users")
 }
@@ -366,6 +367,9 @@ model Listing {
   complianceOfficerId String?          @map("compliance_officer_id")
   archivedAt        DateTime?          @map("archived_at")
   archiveReason     String?            @map("archive_reason")
+  totalViews        Int                @default(0) @map("total_views")
+  totalImpressions  Int                @default(0) @map("total_impressions")
+  totalFavorites    Int                @default(0) @map("total_favorites")
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
@@ -377,10 +381,44 @@ model Listing {
   offers           Offer[]
   deals            Deal[]
   ownerContract    OwnerContract?
+  dailyMetrics     ListingDailyMetric[]
+  favorites        ListingFavorite[]
 
   @@index([status, propertyType, cityId, districtId])
   @@index([lockExpiresAt])
   @@map("listings")
+}
+
+model ListingDailyMetric {
+  id           String   @id @default(uuid())
+  listingId    String   @map("listing_id")
+  date         DateTime @db.Date
+  impressions  Int      @default(0)
+  detailViews  Int      @default(0) @map("detail_views")
+  favoriteAdds Int      @default(0) @map("favorite_adds")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  listing      Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, date])
+  @@index([date])
+  @@map("listing_daily_metrics")
+}
+
+model ListingFavorite {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  listingId String   @map("listing_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@index([listingId])
+  @@map("listing_favorites")
 }
 
 model PriceSuggestion {

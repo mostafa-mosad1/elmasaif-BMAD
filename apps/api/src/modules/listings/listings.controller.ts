@@ -38,6 +38,10 @@ import {
   RespondPriceSuggestionInput,
   archiveListingSchema,
   ArchiveListingInput,
+  batchListingEngagementSchema,
+  BatchListingEngagementInput,
+  listingAnalyticsQuerySchema,
+  ListingAnalyticsQuery,
   SESSION_COOKIE_NAME,
   ADMIN_SESSION_COOKIE_NAME,
 } from '@elmasaif/shared';
@@ -91,12 +95,41 @@ export class ListingsController {
     return this.listingsService.uploadMediaOrDocument(file, userId, purpose || 'photo');
   }
 
+  @Post('analytics/events')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOperation({
+    summary:
+      'Asynchronously ingest batched listing engagement events (impressions and detail views)',
+  })
+  async recordAnalyticsEvents(
+    @Body(new ZodValidationPipe(batchListingEngagementSchema))
+    dto: BatchListingEngagementInput,
+  ) {
+    return this.listingsService.recordBatchEngagement(dto);
+  }
+
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'List public ACTIVE property listings' })
-  async getPublicListings(@Query('limit') limit?: string) {
+  async getPublicListings(@Req() req: any, @Query('limit') limit?: string) {
+    let requesterUserId: string | undefined;
+    const userToken =
+      req.cookies?.[SESSION_COOKIE_NAME] ||
+      req.headers?.authorization?.replace(/^Bearer\s+/i, '');
+
+    if (userToken) {
+      const session = await this.prisma.session.findUnique({
+        where: { token: userToken },
+        select: { userId: true, expiresAt: true },
+      });
+      if (session && session.expiresAt > this.clockService.now()) {
+        requesterUserId = session.userId;
+      }
+    }
+
     const result = await this.listingsService.getPublicActiveListings(
       limit ? Number(limit) : 24,
+      requesterUserId,
     );
     return {
       statusCode: HttpStatus.OK,
@@ -251,6 +284,54 @@ export class ListingsController {
     return {
       statusCode: HttpStatus.OK,
       message: 'تم إلغاء أرشفة الإعلان وإعادة تنشيطه بنجاح',
+      data: result,
+    };
+  }
+
+  @Post(':id/favorite')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(SessionAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Toggle favorite bookmark for an authenticated user on a listing',
+  })
+  async toggleFavorite(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: any,
+  ) {
+    const result = await this.listingsService.toggleFavorite(id, req.user.id);
+    return {
+      statusCode: HttpStatus.OK,
+      message: result.isFavorited
+        ? 'تمت إضافة العقار إلى المفضلة'
+        : 'تمت إزالة العقار من المفضلة',
+      data: result,
+    };
+  }
+
+  @Get(':id/analytics')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(SessionAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Retrieve engagement metrics and conversion trend for an authored listing',
+  })
+  async getListingAnalytics(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query(new ZodValidationPipe(listingAnalyticsQuerySchema))
+    query: ListingAnalyticsQuery,
+    @Req() req: any,
+  ) {
+    const isAdmin = Boolean(req.user?.isAdmin);
+    const result = await this.listingsService.getListingAnalytics(
+      id,
+      req.user.id,
+      query.days ?? 30,
+      isAdmin,
+    );
+    return {
+      statusCode: HttpStatus.OK,
       data: result,
     };
   }

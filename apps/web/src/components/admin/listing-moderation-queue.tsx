@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   Ban,
   RefreshCw,
+  BarChart2,
   MapPin,
 } from 'lucide-react';
 import {
@@ -137,6 +138,14 @@ export function ListingModerationQueue({
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            href="/admin/listings/analytics"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold border border-white/20 transition-colors"
+          >
+            <BarChart2 className="w-3.5 h-3.5" />
+            <span>تحليلات التفاعل العامة</span>
+          </Link>
+
           <button
             type="button"
             onClick={() => fetchQueue(statusFilter)}

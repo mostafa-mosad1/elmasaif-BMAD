@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   CheckCircle2,
@@ -20,6 +20,9 @@ import {
 } from '@elmasaif/shared';
 import { Card, Badge, Button } from '../ui';
 import { PropertyMediaCarousel } from './property-media-carousel';
+import { useListingAnalytics } from '../../hooks/use-listing-analytics';
+import { apiClient } from '../../lib/api-client';
+import { useAuth } from '../providers/auth-provider';
 
 export interface PropertyCardProps {
   listing: ListingSummaryItem;
@@ -40,6 +43,116 @@ export function PropertyCard({
   isFavorited = false,
   className,
 }: PropertyCardProps) {
+  let user: any = null;
+  try {
+    const auth = useAuth();
+    user = auth.user;
+  } catch {
+    user = null;
+  }
+
+  const [localFavorited, setLocalFavorited] = useState(
+    isFavorited || Boolean(listing.isFavorited),
+  );
+  const [localFavoritesCount, setLocalFavoritesCount] = useState(
+    listing.totalFavorites ?? 0,
+  );
+
+  useEffect(() => {
+    setLocalFavorited(isFavorited || Boolean(listing.isFavorited));
+  }, [isFavorited, listing.isFavorited]);
+
+  const cardRef = useRef<HTMLDivElement>(null);
+  const { recordImpression } = useListingAnalytics();
+  const impressionRecordedRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      impressionRecordedRef.current ||
+      !cardRef.current ||
+      typeof IntersectionObserver === 'undefined'
+    ) {
+      return;
+    }
+
+    let timer: NodeJS.Timeout | null = null;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry && entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+          if (!timer && !impressionRecordedRef.current) {
+            timer = setTimeout(() => {
+              if (!impressionRecordedRef.current) {
+                impressionRecordedRef.current = true;
+                recordImpression(listing.id);
+                observer.disconnect();
+              }
+            }, 1000);
+          }
+        } else if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+      },
+      { threshold: 0.5 },
+    );
+
+    observer.observe(cardRef.current);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [listing.id, recordImpression]);
+
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (onFavoriteToggle) {
+      onFavoriteToggle(listing.id);
+      return;
+    }
+
+    if (!user) {
+      if (typeof window !== 'undefined') {
+        const confirmLogin = window.confirm(
+          'يرجى تسجيل الدخول أو إنشاء حساب لإضافة العقار إلى قائمة المفضلة.',
+        );
+        if (confirmLogin) {
+          window.location.href = `/auth/login?redirect=${encodeURIComponent(
+            window.location.pathname,
+          )}`;
+        }
+      }
+      return;
+    }
+
+    const previousState = localFavorited;
+    const previousCount = localFavoritesCount;
+    const nextState = !previousState;
+    const nextCount = nextState
+      ? previousCount + 1
+      : Math.max(0, previousCount - 1);
+
+    setLocalFavorited(nextState);
+    setLocalFavoritesCount(nextCount);
+
+    try {
+      const response = await apiClient.post<{
+        data: { isFavorited: boolean; totalFavorites: number };
+      }>(`/listings/${listing.id}/favorite`);
+      if (response?.data) {
+        setLocalFavorited(response.data.isFavorited);
+        setLocalFavoritesCount(response.data.totalFavorites);
+      }
+    } catch (err) {
+      setLocalFavorited(previousState);
+      setLocalFavoritesCount(previousCount);
+      console.error('Failed to toggle favorite', err);
+    }
+  };
+
   const numericPrice = Number(listing.askPrice) || 0;
   const formattedAskPrice = numericPrice.toLocaleString('en-US');
   const commission = Math.round(numericPrice * PLATFORM_COMMISSION_RATE);
@@ -115,6 +228,7 @@ export function PropertyCard({
 
   return (
     <Card
+      ref={cardRef}
       hoverEffect
       className={twMerge('overflow-hidden flex flex-col p-0 group', className)}
     >
@@ -128,24 +242,20 @@ export function PropertyCard({
           bottomRightSlot={bottomRightPrice}
         />
 
-        {onFavoriteToggle && (
-          <button
-            type="button"
-            aria-label={isFavorited ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'}
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              onFavoriteToggle(listing.id);
-            }}
-            className="absolute bottom-3 left-3 z-20 w-8 h-8 rounded-full bg-black/55 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-sm transition-colors"
-          >
-            <Heart
-              className={`w-4 h-4 ${
-                isFavorited ? 'fill-red-500 text-red-500' : 'text-white'
-              }`}
-            />
-          </button>
-        )}
+        <button
+          type="button"
+          aria-label={
+            localFavorited ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'
+          }
+          onClick={handleFavoriteClick}
+          className="absolute bottom-3 left-3 z-20 w-8 h-8 rounded-full bg-black/55 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-sm transition-colors"
+        >
+          <Heart
+            className={`w-4 h-4 ${
+              localFavorited ? 'fill-red-500 text-red-500' : 'text-white'
+            }`}
+          />
+        </button>
       </div>
 
       <div className="p-5 flex-1 flex flex-col justify-between">

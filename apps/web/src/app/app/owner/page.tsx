@@ -27,6 +27,7 @@ import { SellerPriceSuggestionCard } from '../../../components/listings/seller-p
 import {
   SellerListingArchiveActions,
   ListingStatusBadge,
+  SellerListingEngagement,
 } from '../../../components/listings';
 
 const PROPERTY_TYPE_LABELS: Record<string, string> = {
@@ -231,6 +232,15 @@ export default function OwnerDashboardPage() {
                     )}
                   </div>
                 </div>
+
+                {/* Listing Engagement & Conversion Analytics */}
+                <SellerListingEngagement
+                  listingId={item.id}
+                  totalViews={item.totalViews}
+                  totalImpressions={item.totalImpressions}
+                  totalFavorites={item.totalFavorites}
+                  offersCount={item.offersCount}
+                />
 
                 {item.status === ListingStatus.SUSPENDED && item.complianceReason && (
                   <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2.5">

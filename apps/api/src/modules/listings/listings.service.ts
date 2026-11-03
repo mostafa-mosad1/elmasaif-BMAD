@@ -41,6 +41,9 @@ import {
   LISTING_COMPLIANCE_SUSPENDED,
   PRICE_SUGGESTION_NOT_FOUND,
   PRICE_SUGGESTION_ALREADY_RESPONDED,
+  ListingEngagementEventType,
+  BatchListingEngagementInput,
+  ListingAnalyticsSummary,
   GEO_CITY_INACTIVE,
   GEO_DISTRICT_INACTIVE,
   MAX_LISTING_FILE_SIZE_BYTES,
@@ -300,7 +303,7 @@ export class ListingsService {
   /**
    * Lists public ACTIVE property listings for the marketplace home/search view.
    */
-  async getPublicActiveListings(limit = 24): Promise<any> {
+  async getPublicActiveListings(limit = 24, requesterUserId?: string): Promise<any> {
     const listings = await this.prisma.listing.findMany({
       where: {
         status: ListingStatus.ACTIVE,
@@ -322,8 +325,25 @@ export class ListingsService {
             role: true,
           },
         },
+        _count: {
+          select: {
+            offers: true,
+          },
+        },
       },
     });
+
+    let favoritedListingIds = new Set<string>();
+    if (requesterUserId && this.prisma.listingFavorite) {
+      const userFavorites = await this.prisma.listingFavorite.findMany({
+        where: {
+          userId: requesterUserId,
+          listingId: { in: listings.map((l: any) => l.id) },
+        },
+        select: { listingId: true },
+      });
+      favoritedListingIds = new Set(userFavorites.map((f: any) => f.listingId));
+    }
 
     const items = await Promise.all(
       listings.map(async (listing: any) => {
@@ -364,6 +384,10 @@ export class ListingsService {
           photoCount: photos.length,
           photos,
           primaryPhotoUrl,
+          totalViews: listing.totalViews ?? 0,
+          totalImpressions: listing.totalImpressions ?? 0,
+          totalFavorites: listing.totalFavorites ?? 0,
+          isFavorited: favoritedListingIds.has(listing.id),
           createdAt: listing.createdAt,
         };
       }),
@@ -402,6 +426,11 @@ export class ListingsService {
           select: {
             id: true,
             role: true,
+          },
+        },
+        _count: {
+          select: {
+            offers: true,
           },
         },
       },
@@ -470,6 +499,10 @@ export class ListingsService {
           photos,
           documentCount: legalDocs.length,
           primaryPhotoUrl,
+          totalViews: listing.totalViews ?? 0,
+          totalImpressions: listing.totalImpressions ?? 0,
+          totalFavorites: listing.totalFavorites ?? 0,
+          offersCount: listing._count?.offers ?? 0,
           activePriceSuggestion,
           priceSuggestions,
           createdAt: listing.createdAt,
@@ -512,6 +545,11 @@ export class ListingsService {
             },
           },
         },
+        _count: {
+          select: {
+            offers: true,
+          },
+        },
       },
     });
 
@@ -521,6 +559,20 @@ export class ListingsService {
         message: `العقار المطلوب برقم '${id}' غير موجود`,
       });
     }
+
+    const isFavorited =
+      requesterUserId && this.prisma.listingFavorite
+        ? Boolean(
+            await this.prisma.listingFavorite.findUnique({
+            where: {
+              userId_listingId: {
+                userId: requesterUserId,
+                listingId: id,
+              },
+            },
+          }),
+        )
+      : false;
 
     const isSeller = Boolean(
       requesterUserId && listing.sellerProfile?.userId === requesterUserId,
@@ -643,6 +695,11 @@ export class ListingsService {
       archiveReason: (listing as any).archiveReason ?? null,
       photos,
       documents,
+      totalViews: listing.totalViews ?? 0,
+      totalImpressions: listing.totalImpressions ?? 0,
+      totalFavorites: listing.totalFavorites ?? 0,
+      isFavorited,
+      offersCount: listing._count?.offers ?? 0,
       createdAt: listing.createdAt,
       updatedAt: listing.updatedAt,
     };
@@ -1189,5 +1246,262 @@ export class ListingsService {
       this.logger.log(`Listing '${listingId}' unarchived and reactivated by seller '${userId}'`);
       return updatedListing;
     });
+  }
+
+  /**
+   * Asynchronously ingests engagement event batches (impressions and detail views).
+   * Aggregates events per listing per day (truncated to midnight UTC), updates
+   * ListingDailyMetric and increments lifetime counters on Listing.
+   * Adheres strictly to Saudi PDPL: no visitor identifiers or IP addresses stored.
+   */
+  async recordBatchEngagement(
+    dto: BatchListingEngagementInput,
+  ): Promise<{ processed: number }> {
+    if (!dto.events || dto.events.length === 0) {
+      return { processed: 0 };
+    }
+
+    const now = this.clockService.now();
+    const todayUtc = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    );
+
+    const aggregates: Record<
+      string,
+      { impressions: number; detailViews: number }
+    > = {};
+
+    for (const event of dto.events) {
+      if (!aggregates[event.listingId]) {
+        aggregates[event.listingId] = { impressions: 0, detailViews: 0 };
+      }
+      const count = event.count ?? 1;
+      if (event.eventType === ListingEngagementEventType.IMPRESSION) {
+        aggregates[event.listingId].impressions += count;
+      } else if (event.eventType === ListingEngagementEventType.DETAIL_VIEW) {
+        aggregates[event.listingId].detailViews += count;
+      }
+    }
+
+    const listingIds = Object.keys(aggregates);
+    const existingListings = await this.prisma.listing.findMany({
+      where: { id: { in: listingIds } },
+      select: { id: true },
+    });
+    const validListingIdSet = new Set(existingListings.map((l: any) => l.id));
+
+    for (const listingId of listingIds) {
+      if (!validListingIdSet.has(listingId)) {
+        continue;
+      }
+      const { impressions, detailViews } = aggregates[listingId];
+      try {
+        await this.prisma.$transaction(async (tx: any) => {
+          await tx.listingDailyMetric.upsert({
+            where: {
+              listingId_date: {
+                listingId,
+                date: todayUtc,
+              },
+            },
+            create: {
+              listingId,
+              date: todayUtc,
+              impressions,
+              detailViews,
+              favoriteAdds: 0,
+            },
+            update: {
+              impressions: { increment: impressions },
+              detailViews: { increment: detailViews },
+            },
+          });
+
+          await tx.listing.update({
+            where: { id: listingId },
+            data: {
+              totalImpressions: { increment: impressions },
+              totalViews: { increment: detailViews },
+            },
+          });
+        });
+      } catch (err: any) {
+        this.logger.warn(
+          `Failed to record engagement for listing ${listingId}: ${err?.message}`,
+        );
+      }
+    }
+
+    return { processed: dto.events.length };
+  }
+
+  /**
+   * Toggles bookmark favorite for an authenticated user on a target listing.
+   * Atomically creates/deletes ListingFavorite, updates Listing.totalFavorites,
+   * and increments favoriteAdds in ListingDailyMetric on add.
+   */
+  async toggleFavorite(
+    listingId: string,
+    userId: string,
+  ): Promise<{ isFavorited: boolean; totalFavorites: number }> {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+      select: { id: true, totalFavorites: true },
+    });
+
+    if (!listing) {
+      throw new NotFoundException({
+        code: LISTING_NOT_FOUND,
+        message: `العقار المطلوب برقم '${listingId}' غير موجود`,
+      });
+    }
+
+    return this.prisma.$transaction(async (tx: any) => {
+      const existing = await tx.listingFavorite.findUnique({
+        where: {
+          userId_listingId: {
+            userId,
+            listingId,
+          },
+        },
+      });
+
+      if (existing) {
+        await tx.listingFavorite.delete({
+          where: { id: existing.id },
+        });
+
+        const newTotal = Math.max(0, (listing.totalFavorites ?? 1) - 1);
+        await tx.listing.update({
+          where: { id: listingId },
+          data: { totalFavorites: newTotal },
+        });
+
+        return { isFavorited: false, totalFavorites: newTotal };
+      } else {
+        await tx.listingFavorite.create({
+          data: {
+            userId,
+            listingId,
+            createdAt: this.clockService.now(),
+          },
+        });
+
+        const updatedListing = await tx.listing.update({
+          where: { id: listingId },
+          data: { totalFavorites: { increment: 1 } },
+          select: { totalFavorites: true },
+        });
+
+        const now = this.clockService.now();
+        const todayUtc = new Date(
+          Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+        );
+
+        await tx.listingDailyMetric.upsert({
+          where: {
+            listingId_date: {
+              listingId,
+              date: todayUtc,
+            },
+          },
+          create: {
+            listingId,
+            date: todayUtc,
+            impressions: 0,
+            detailViews: 0,
+            favoriteAdds: 1,
+          },
+          update: {
+            favoriteAdds: { increment: 1 },
+          },
+        });
+
+        return {
+          isFavorited: true,
+          totalFavorites: updatedListing.totalFavorites,
+        };
+      }
+    });
+  }
+
+  /**
+   * Retrieves comprehensive engagement analytics and conversion rates for an authored listing.
+   * Accessible by the authenticated listing seller or an authorized administrator.
+   */
+  async getListingAnalytics(
+    listingId: string,
+    userId: string,
+    days = 30,
+    isAdmin = false,
+  ): Promise<ListingAnalyticsSummary> {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+      include: {
+        sellerProfile: {
+          select: { userId: true },
+        },
+        _count: {
+          select: { offers: true },
+        },
+      },
+    });
+
+    if (!listing) {
+      throw new NotFoundException({
+        code: LISTING_NOT_FOUND,
+        message: `العقار المطلوب برقم '${listingId}' غير موجود`,
+      });
+    }
+
+    if (!isAdmin && listing.sellerProfile?.userId !== userId) {
+      throw new ForbiddenException({
+        code: LISTING_ROLE_UNAUTHORIZED,
+        message: 'غير مصرح لك باستعراض إحصائيات هذا الإعلان',
+      });
+    }
+
+    const now = this.clockService.now();
+    const startDate = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() - (days - 1),
+      ),
+    );
+
+    const dailyMetrics = await this.prisma.listingDailyMetric.findMany({
+      where: {
+        listingId,
+        date: { gte: startDate },
+      },
+      orderBy: { date: 'asc' },
+    });
+
+    const mappedDaily = dailyMetrics.map((m: any) => ({
+      date:
+        m.date instanceof Date
+          ? m.date.toISOString().split('T')[0]
+          : String(m.date).split('T')[0],
+      impressions: m.impressions,
+      detailViews: m.detailViews,
+      favoriteAdds: m.favoriteAdds,
+    }));
+
+    const offersCount = listing._count?.offers ?? 0;
+    const conversionRatio =
+      listing.totalViews > 0
+        ? Number(((offersCount / listing.totalViews) * 100).toFixed(2))
+        : 0;
+
+    return {
+      listingId: listing.id,
+      totalViews: listing.totalViews ?? 0,
+      totalImpressions: listing.totalImpressions ?? 0,
+      totalFavorites: listing.totalFavorites ?? 0,
+      offersCount,
+      conversionRatio,
+      dailyMetrics: mappedDaily,
+    };
   }
 }

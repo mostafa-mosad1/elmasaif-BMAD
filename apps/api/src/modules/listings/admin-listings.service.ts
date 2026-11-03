@@ -37,6 +37,7 @@ import {
   ListingStatus,
   OfferStatus,
   MAX_LISTING_PRICE_SAR,
+  AdminGlobalEngagementAnalytics,
   MIN_LISTING_PRICE_SAR,
   ModerationQueueItem,
   ModerationQueueResponse,
@@ -1423,6 +1424,114 @@ export class AdminListingsService {
       `Listing '${listingId}' unsuspended by admin '${admin.id}'`,
     );
     return updated;
+  }
+
+  /**
+   * Calculates platform-wide global listing engagement analytics:
+   * Active listing count, aggregate lifetime views/impressions/favorites,
+   * average conversion ratio, top 10 listings by views & favorites,
+   * and 30-day grouped daily trends.
+   */
+  async getGlobalEngagementAnalytics(
+    days: number = 30,
+  ): Promise<AdminGlobalEngagementAnalytics> {
+    const totalActiveListings = await this.prisma.listing.count({
+      where: { status: ListingStatus.ACTIVE },
+    });
+
+    const aggregateResult = await this.prisma.listing.aggregate({
+      _sum: {
+        totalImpressions: true,
+        totalViews: true,
+        totalFavorites: true,
+      },
+    });
+
+    const totalLifetimeImpressions =
+      aggregateResult._sum.totalImpressions ?? 0;
+    const totalLifetimeViews = aggregateResult._sum.totalViews ?? 0;
+    const totalLifetimeFavorites = aggregateResult._sum.totalFavorites ?? 0;
+
+    const totalOffersCount = await this.prisma.offer.count();
+    const averageConversionRatio =
+      totalLifetimeViews > 0
+        ? Number(((totalOffersCount / totalLifetimeViews) * 100).toFixed(2))
+        : 0;
+
+    const topListingsRaw = await this.prisma.listing.findMany({
+      orderBy: [{ totalViews: 'desc' }, { totalFavorites: 'desc' }],
+      take: 10,
+      include: {
+        city: true,
+      },
+    });
+
+    const topListings = topListingsRaw.map((l: any) => ({
+      id: l.id,
+      title: l.title,
+      propertyType: l.propertyType,
+      cityName: l.city?.nameAr || '',
+      askPrice: Number(l.askPrice),
+      views: l.totalViews ?? 0,
+      favorites: l.totalFavorites ?? 0,
+    }));
+
+    const now = this.clockService.now();
+    const startDate = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() - (days - 1),
+      ),
+    );
+
+    const dailyMetrics = await this.prisma.listingDailyMetric.findMany({
+      where: {
+        date: { gte: startDate },
+      },
+      orderBy: { date: 'asc' },
+    });
+
+    const trendsByDate: Record<
+      string,
+      { impressions: number; detailViews: number; favorites: number }
+    > = {};
+
+    for (const m of dailyMetrics) {
+      const dStr =
+        m.date instanceof Date
+          ? m.date.toISOString().split('T')[0]
+          : String(m.date).split('T')[0];
+      if (!trendsByDate[dStr]) {
+        trendsByDate[dStr] = {
+          impressions: 0,
+          detailViews: 0,
+          favorites: 0,
+        };
+      }
+      trendsByDate[dStr].impressions += m.impressions;
+      trendsByDate[dStr].detailViews += m.detailViews;
+      trendsByDate[dStr].favorites += m.favoriteAdds;
+    }
+
+    const dailyTrends = Object.entries(trendsByDate).map(
+      ([date, counts]) => ({
+        date,
+        impressions: counts.impressions,
+        detailViews: counts.detailViews,
+        favorites: counts.favorites,
+      }),
+    );
+
+    return {
+      totalActiveListings,
+      totalLifetimeImpressions,
+      totalLifetimeViews,
+      totalLifetimeFavorites,
+      averageConversionRatio,
+      topListings,
+      dailyTrends,
+    };
   }
 }
 
