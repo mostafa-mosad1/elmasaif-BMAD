@@ -9,6 +9,10 @@ import {
   forceUnlockListingSchema,
   createPriceSuggestionSchema,
   respondPriceSuggestionSchema,
+  archiveListingSchema,
+  suspendListingSchema,
+  blockListingSchema,
+  unsuspendListingSchema,
 } from '../schemas/listing.schema';
 import {
   PropertyType,
@@ -17,6 +21,7 @@ import {
   ScanStatus,
   UserRole,
   PriceSuggestionStatus,
+  SuspensionCategory,
 } from '../enums';
 
 export type CreateListingInput = z.infer<typeof createListingSchema>;
@@ -28,6 +33,10 @@ export type RejectListingInput = z.infer<typeof rejectListingSchema>;
 export type ForceUnlockListingInput = z.infer<typeof forceUnlockListingSchema>;
 export type CreatePriceSuggestionInput = z.infer<typeof createPriceSuggestionSchema>;
 export type RespondPriceSuggestionInput = z.infer<typeof respondPriceSuggestionSchema>;
+export type ArchiveListingInput = z.infer<typeof archiveListingSchema>;
+export type SuspendListingInput = z.infer<typeof suspendListingSchema>;
+export type BlockListingInput = z.infer<typeof blockListingSchema>;
+export type UnsuspendListingInput = z.infer<typeof unsuspendListingSchema>;
 
 export interface PriceSuggestionItem {
   id: string;
@@ -71,6 +80,12 @@ export interface ModerationQueueItem {
   photoCount: number;
   documentCount: number;
   rejectionReason?: string | null;
+  complianceReason?: string | null;
+  complianceCategory?: string | null;
+  complianceActionAt?: string | null;
+  complianceOfficerId?: string | null;
+  archivedAt?: string | null;
+  archiveReason?: string | null;
   createdAt: string;
   updatedAt: string;
   lockInfo: ListingLockInfo;
@@ -121,6 +136,12 @@ export interface ListingDetailResponse {
   version: number;
   photos: PropertyDocumentResponse[];
   documents: PropertyDocumentResponse[];
+  complianceReason?: string | null;
+  complianceCategory?: string | null;
+  complianceActionAt?: string | null;
+  complianceOfficerId?: string | null;
+  archivedAt?: string | null;
+  archiveReason?: string | null;
   activePriceSuggestion?: PriceSuggestionItem | null;
   priceSuggestions?: PriceSuggestionItem[];
   createdAt: string;
@@ -147,6 +168,11 @@ export interface ListingSummaryItem {
   photoCount?: number;
   photos?: string[];
   rejectionReason?: string | null;
+  complianceReason?: string | null;
+  complianceCategory?: string | null;
+  complianceActionAt?: string | null;
+  archivedAt?: string | null;
+  archiveReason?: string | null;
   activePriceSuggestion?: PriceSuggestionItem | null;
   priceSuggestions?: PriceSuggestionItem[];
   createdAt: string;

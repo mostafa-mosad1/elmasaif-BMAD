@@ -15,6 +15,9 @@ import {
   ApproveListingInput,
   CreatePriceSuggestionInput,
   ForceUnlockListingInput,
+  SuspendListingInput,
+  BlockListingInput,
+  UnsuspendListingInput,
   LISTING_FORCE_UNLOCK_REASON_REQUIRED,
   LISTING_INVALID_STATE_TRANSITION,
   LISTING_LOCK_CONFLICT,
@@ -22,12 +25,17 @@ import {
   LISTING_LOCK_EXPIRED,
   LISTING_LOCK_REQUIRED,
   LISTING_NOT_FOUND,
+  LISTING_NOT_SUSPENDED,
+  LISTING_ALREADY_BLOCKED,
+  LISTING_PERMANENTLY_BLOCKED,
+  LISTING_COMPLIANCE_SUSPENDED,
   LISTING_PRICE_OUT_OF_RANGE,
   LISTING_REJECTION_REASON_REQUIRED,
   LISTING_VERSION_CONFLICT,
   ListingLockInfo,
   ListingModerationQueueQuery,
   ListingStatus,
+  OfferStatus,
   MAX_LISTING_PRICE_SAR,
   MIN_LISTING_PRICE_SAR,
   ModerationQueueItem,
@@ -254,6 +262,16 @@ export class AdminListingsService {
         photoCount,
         documentCount,
         rejectionReason: listing.rejectionReason ?? null,
+        complianceReason: listing.complianceReason ?? null,
+        complianceCategory: listing.complianceCategory ?? null,
+        complianceActionAt: listing.complianceActionAt instanceof Date
+          ? listing.complianceActionAt.toISOString()
+          : (listing.complianceActionAt ? String(listing.complianceActionAt) : null),
+        complianceOfficerId: listing.complianceOfficerId ?? null,
+        archivedAt: listing.archivedAt instanceof Date
+          ? listing.archivedAt.toISOString()
+          : (listing.archivedAt ? String(listing.archivedAt) : null),
+        archiveReason: listing.archiveReason ?? null,
         createdAt:
           listing.createdAt instanceof Date
             ? listing.createdAt.toISOString()
@@ -1038,6 +1056,373 @@ export class AdminListingsService {
     );
 
     return this.mapPriceSuggestionItem(created);
+  }
+
+  /**
+   * Suspends (hides) a listing for compliance violations (FR-14, UC-66).
+   * Cancels unexpired non-deal offers, clears claim locks, writes audit log, and notifies seller.
+   */
+  async suspendListing(
+    listingId: string,
+    admin: AuthenticatedAdminActor,
+    dto: SuspendListingInput,
+  ): Promise<any> {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+      include: {
+        sellerProfile: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    if (!listing) {
+      throw new NotFoundException({
+        code: LISTING_NOT_FOUND,
+        message: `العقار المطلوب برقم '${listingId}' غير موجود`,
+      });
+    }
+
+    if (listing.status === ListingStatus.BLOCKED) {
+      throw new ConflictException({
+        code: LISTING_ALREADY_BLOCKED,
+        message: 'لا يمكن إيقاف إعلان محظور نهائياً',
+      });
+    }
+
+    if (listing.status === ListingStatus.SUSPENDED) {
+      throw new ConflictException({
+        code: LISTING_INVALID_STATE_TRANSITION,
+        message: 'الإعلان موقوف للامتثال بالفعل',
+      });
+    }
+
+    const now = this.clockService.now();
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updatedListing = await tx.listing.update({
+        where: { id: listingId },
+        data: {
+          status: ListingStatus.SUSPENDED,
+          version: { increment: 1 },
+          complianceReason: dto.complianceReason,
+          complianceCategory: dto.suspensionCategory || null,
+          complianceActionAt: now,
+          complianceOfficerId: admin.id,
+          lockedByAdminId: null,
+          lockedAt: null,
+          lockExpiresAt: null,
+        },
+      });
+
+      // Cancel pending non-deal offers
+      await tx.offer.updateMany({
+        where: {
+          listingId,
+          status: {
+            in: [
+              OfferStatus.SUBMITTED,
+              OfferStatus.IN_REVIEW,
+              OfferStatus.RELAYED_TO_SELLER,
+              OfferStatus.COUNTER_OFFERED,
+            ],
+          },
+        },
+        data: {
+          status: OfferStatus.WITHDRAWN,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: admin.id,
+          actorType: 'ADMIN',
+          action: 'LISTING_COMPLIANCE_SUSPENDED',
+          entityType: 'Listing',
+          entityId: listingId,
+          payload: {
+            previousStatus: listing.status,
+            newStatus: ListingStatus.SUSPENDED,
+            complianceReason: dto.complianceReason,
+            suspensionCategory: dto.suspensionCategory ?? null,
+            adminId: admin.id,
+            adminName: admin.fullName,
+            actionAt: now.toISOString(),
+          },
+        },
+      });
+
+      return updatedListing;
+    });
+
+    // Dispatch email notification to seller
+    const sellerEmail = (listing as any).sellerProfile?.user?.email;
+    const sellerName =
+      (listing as any).sellerProfile?.user?.fullName ||
+      (listing as any).sellerProfile?.user?.username ||
+      'عزيزنا العميل';
+
+    if (sellerEmail && this.emailTransportService) {
+      try {
+        await this.emailTransportService.sendEmail({
+          to: sellerEmail,
+          subject: `المصايف العقارية — إشعار إيقاف مؤقت للإعلان العقاري للامتثال والرقابة: ${listing.title}`,
+          text: [
+            `مرحباً ${sellerName}،`,
+            '',
+            `نحيطكم علماً بأنه قد تم إيقاف إعلانكم العقاري "${listing.title}" مؤقتاً من قبل إدارة الامتثال والرقابة في منصة المصايف.`,
+            `- سبب الإيقاف: ${dto.complianceReason}`,
+            dto.suspensionCategory ? `- التصنيف: ${dto.suspensionCategory}` : '',
+            '',
+            'تم إخفاء الإعلان من نتائج البحث العام لحين استيفاء متطلبات الامتثال. إذا كان هناك صفقة نشطة جارية، فإنها ستستمر لإكمال الإجراءات النظامية.',
+            'يمكنكم التواصل مع فريق الدعم والامتثال لتقديم المستندات وتصحيح الملاحظات.',
+          ]
+            .filter(Boolean)
+            .join('\n'),
+        });
+      } catch (err) {
+        this.logger.warn(
+          `Failed to dispatch compliance suspend email: ${(err as Error).message}`,
+        );
+      }
+    }
+
+    this.logger.log(
+      `Listing '${listingId}' suspended for compliance by admin '${admin.id}'`,
+    );
+    return updated;
+  }
+
+  /**
+   * Permanently blocks a violating listing (FR-14, UC-66, BR-16).
+   * Prevents reactivation, cancels pending non-deal offers, releases locks, and notifies seller.
+   */
+  async blockListing(
+    listingId: string,
+    admin: AuthenticatedAdminActor,
+    dto: BlockListingInput,
+  ): Promise<any> {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+      include: {
+        sellerProfile: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    if (!listing) {
+      throw new NotFoundException({
+        code: LISTING_NOT_FOUND,
+        message: `العقار المطلوب برقم '${listingId}' غير موجود`,
+      });
+    }
+
+    if (listing.status === ListingStatus.BLOCKED) {
+      throw new ConflictException({
+        code: LISTING_ALREADY_BLOCKED,
+        message: 'الإعلان محظور نهائياً بالفعل',
+      });
+    }
+
+    const now = this.clockService.now();
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updatedListing = await tx.listing.update({
+        where: { id: listingId },
+        data: {
+          status: ListingStatus.BLOCKED,
+          version: { increment: 1 },
+          complianceReason: dto.blockingReason,
+          complianceCategory: dto.violationCode || null,
+          complianceActionAt: now,
+          complianceOfficerId: admin.id,
+          lockedByAdminId: null,
+          lockedAt: null,
+          lockExpiresAt: null,
+        },
+      });
+
+      await tx.offer.updateMany({
+        where: {
+          listingId,
+          status: {
+            in: [
+              OfferStatus.SUBMITTED,
+              OfferStatus.IN_REVIEW,
+              OfferStatus.RELAYED_TO_SELLER,
+              OfferStatus.COUNTER_OFFERED,
+            ],
+          },
+        },
+        data: {
+          status: OfferStatus.WITHDRAWN,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: admin.id,
+          actorType: 'ADMIN',
+          action: 'LISTING_COMPLIANCE_BLOCKED',
+          entityType: 'Listing',
+          entityId: listingId,
+          payload: {
+            previousStatus: listing.status,
+            newStatus: ListingStatus.BLOCKED,
+            blockingReason: dto.blockingReason,
+            violationCode: dto.violationCode ?? null,
+            adminId: admin.id,
+            adminName: admin.fullName,
+            actionAt: now.toISOString(),
+          },
+        },
+      });
+
+      return updatedListing;
+    });
+
+    const sellerEmail = (listing as any).sellerProfile?.user?.email;
+    const sellerName =
+      (listing as any).sellerProfile?.user?.fullName ||
+      (listing as any).sellerProfile?.user?.username ||
+      'عزيزنا العميل';
+
+    if (sellerEmail && this.emailTransportService) {
+      try {
+        await this.emailTransportService.sendEmail({
+          to: sellerEmail,
+          subject: `المصايف العقارية — إشعار حظر نهائي للإعلان العقاري: ${listing.title}`,
+          text: [
+            `مرحباً ${sellerName}،`,
+            '',
+            `نحيطكم علماً بأنه قد تم فرض حظر نهائي على إعلانكم العقاري "${listing.title}" لمخالفته الأنظمة واللوائح المعتمدة في منصة المصايف والهيئة العامة للعقار.`,
+            `- سبب الحظر النهائي: ${dto.blockingReason}`,
+            dto.violationCode ? `- رمز المخالفة: ${dto.violationCode}` : '',
+            '',
+            'لا يمكن إعادة نشر هذا الإعلان أو تعديله مجدداً.',
+          ]
+            .filter(Boolean)
+            .join('\n'),
+        });
+      } catch (err) {
+        this.logger.warn(
+          `Failed to dispatch compliance block email: ${(err as Error).message}`,
+        );
+      }
+    }
+
+    this.logger.log(
+      `Listing '${listingId}' blocked permanently by admin '${admin.id}'`,
+    );
+    return updated;
+  }
+
+  /**
+   * Restores a SUSPENDED listing back to ACTIVE (UC-66, Listings.Compliance).
+   * Clears compliance flags, records audit log, and notifies seller.
+   */
+  async unsuspendListing(
+    listingId: string,
+    admin: AuthenticatedAdminActor,
+    dto: UnsuspendListingInput,
+  ): Promise<any> {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+      include: {
+        sellerProfile: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    if (!listing) {
+      throw new NotFoundException({
+        code: LISTING_NOT_FOUND,
+        message: `العقار المطلوب برقم '${listingId}' غير موجود`,
+      });
+    }
+
+    if (listing.status !== ListingStatus.SUSPENDED) {
+      throw new BadRequestException({
+        code: LISTING_NOT_SUSPENDED,
+        message: 'الإعلان ليس في حالة إيقاف مؤقت لرفع الإيقاف عنه',
+      });
+    }
+
+    const now = this.clockService.now();
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updatedListing = await tx.listing.update({
+        where: { id: listingId },
+        data: {
+          status: ListingStatus.ACTIVE,
+          version: { increment: 1 },
+          complianceReason: null,
+          complianceCategory: null,
+          complianceActionAt: null,
+          complianceOfficerId: null,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: admin.id,
+          actorType: 'ADMIN',
+          action: 'LISTING_COMPLIANCE_UNSUSPENDED',
+          entityType: 'Listing',
+          entityId: listingId,
+          payload: {
+            previousStatus: ListingStatus.SUSPENDED,
+            newStatus: ListingStatus.ACTIVE,
+            resolutionNotes: dto.resolutionNotes,
+            adminId: admin.id,
+            adminName: admin.fullName,
+            actionAt: now.toISOString(),
+          },
+        },
+      });
+
+      return updatedListing;
+    });
+
+    const sellerEmail = (listing as any).sellerProfile?.user?.email;
+    const sellerName =
+      (listing as any).sellerProfile?.user?.fullName ||
+      (listing as any).sellerProfile?.user?.username ||
+      'عزيزنا العميل';
+
+    if (sellerEmail && this.emailTransportService) {
+      try {
+        await this.emailTransportService.sendEmail({
+          to: sellerEmail,
+          subject: `المصايف العقارية — إشعار رفع الإيقاف وإعادة تنشيط الإعلان العقاري: ${listing.title}`,
+          text: [
+            `مرحباً ${sellerName}،`,
+            '',
+            `يسرنا إبلاغكم بأنه قد تم حل ملاحظات الامتثال ورفع الإيقاف المؤقت عن إعلانكم العقاري "${listing.title}".`,
+            `- ملاحظات المعالجة: ${dto.resolutionNotes}`,
+            '',
+            'الإعلان متاح الآن في البحث العام للجمهور.',
+          ].join('\n'),
+        });
+      } catch (err) {
+        this.logger.warn(
+          `Failed to dispatch unsuspend email: ${(err as Error).message}`,
+        );
+      }
+    }
+
+    this.logger.log(
+      `Listing '${listingId}' unsuspended by admin '${admin.id}'`,
+    );
+    return updated;
   }
 }
 

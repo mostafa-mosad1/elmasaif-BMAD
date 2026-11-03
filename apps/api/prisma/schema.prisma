@@ -50,6 +50,9 @@ enum ListingStatus {
   SOLD
   REJECTED
   UNDER_COMPLIANCE_REVIEW
+  ARCHIVED
+  SUSPENDED
+  BLOCKED
 }
 
 enum OfferStatus {
@@ -61,6 +64,7 @@ enum OfferStatus {
   COUNTER_OFFERED
   ACCEPTED_BY_BUYER
   EXPIRED
+  WITHDRAWN
 }
 
 enum DealStatus {
@@ -356,6 +360,12 @@ model Listing {
   rejectionReason  String?            @map("rejection_reason")
   reviewedByAdminId String?           @map("reviewed_by_admin_id")
   reviewedAt       DateTime?          @map("reviewed_at")
+  complianceReason  String?            @map("compliance_reason")
+  complianceCategory String?           @map("compliance_category")
+  complianceActionAt DateTime?         @map("compliance_action_at")
+  complianceOfficerId String?          @map("compliance_officer_id")
+  archivedAt        DateTime?          @map("archived_at")
+  archiveReason     String?            @map("archive_reason")
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 

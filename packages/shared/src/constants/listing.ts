@@ -1,4 +1,4 @@
-import { PropertyType } from '../enums';
+import { PropertyType, ListingStatus, SuspensionCategory } from '../enums';
 
 export const LISTING_NOT_FOUND = 'LISTING_NOT_FOUND';
 export const LISTING_TITLE_INVALID = 'LISTING_TITLE_INVALID';
@@ -35,6 +35,17 @@ export const PRICE_SUGGESTION_ALREADY_RESPONDED = 'PRICE_SUGGESTION_ALREADY_RESP
 export const PRICE_SUGGESTION_SAME_AS_CURRENT = 'PRICE_SUGGESTION_SAME_AS_CURRENT';
 export const PRICE_SUGGESTION_REASON_REQUIRED = 'PRICE_SUGGESTION_REASON_REQUIRED';
 
+// Compliance and Archiving Constants (Story 2.6 / FR-14 / UC-38 / UC-66)
+export const LISTING_ARCHIVE_BLOCKED_RESERVED = 'LISTING_ARCHIVE_BLOCKED_RESERVED';
+export const LISTING_ARCHIVE_BLOCKED_ACTIVE_DEAL = 'LISTING_ARCHIVE_BLOCKED_ACTIVE_DEAL';
+export const LISTING_ARCHIVE_BLOCKED_ACTIVE_OFFERS = 'LISTING_ARCHIVE_BLOCKED_ACTIVE_OFFERS';
+export const LISTING_NOT_ARCHIVED = 'LISTING_NOT_ARCHIVED';
+export const LISTING_NOT_SUSPENDED = 'LISTING_NOT_SUSPENDED';
+export const LISTING_ALREADY_BLOCKED = 'LISTING_ALREADY_BLOCKED';
+export const LISTING_PERMANENTLY_BLOCKED = 'LISTING_PERMANENTLY_BLOCKED';
+export const LISTING_COMPLIANCE_REASON_REQUIRED = 'LISTING_COMPLIANCE_REASON_REQUIRED';
+export const LISTING_COMPLIANCE_SUSPENDED = 'LISTING_COMPLIANCE_SUSPENDED';
+
 export const MIN_LISTING_PRICE_SAR = 1;
 export const MAX_LISTING_PRICE_SAR = 50_000_000;
 export const MIN_LISTING_PHOTOS = 3;
@@ -57,6 +68,28 @@ export const PROPERTY_TYPE_LABELS_AR: Record<PropertyType, string> = {
   [PropertyType.BUILDING]: 'عمارة',
   [PropertyType.COMMERCIAL]: 'مكتب / تجاري',
   [PropertyType.FARM]: 'مزرعة / استراحة',
+};
+
+export const LISTING_STATUS_LABELS_AR: Record<ListingStatus, string> = {
+  [ListingStatus.DRAFT]: 'مسودة',
+  [ListingStatus.PENDING_REVIEW]: 'قيد المراجعة',
+  [ListingStatus.PENDING_FEE]: 'في انتظار الرسوم',
+  [ListingStatus.ACTIVE]: 'نشط',
+  [ListingStatus.RESERVED]: 'محجوز',
+  [ListingStatus.SOLD]: 'تم البيع',
+  [ListingStatus.REJECTED]: 'مرفوض',
+  [ListingStatus.UNDER_COMPLIANCE_REVIEW]: 'تحت تدقيق الامتثال',
+  [ListingStatus.ARCHIVED]: 'مؤرشف',
+  [ListingStatus.SUSPENDED]: 'معلق للامتثال',
+  [ListingStatus.BLOCKED]: 'محظور',
+};
+
+export const SUSPENSION_CATEGORY_LABELS_AR: Record<SuspensionCategory, string> = {
+  [SuspensionCategory.MISLEADING_SPECIFICATIONS]: 'مواصفات مضللة أو غير دقيقة',
+  [SuspensionCategory.INVALID_FAL_LICENSE]: 'رخصة فال غير صالحة أو منتهية',
+  [SuspensionCategory.UNAUTHORIZED_BROKERAGE]: 'وساطة غير مصرح بها',
+  [SuspensionCategory.FRAUD_SUSPICION]: 'اشتباه في احتيال أو تلاعب',
+  [SuspensionCategory.OTHER]: 'أسباب أخرى',
 };
 
 

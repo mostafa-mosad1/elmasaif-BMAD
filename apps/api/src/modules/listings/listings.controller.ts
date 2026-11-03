@@ -36,6 +36,8 @@ import {
   CreateListingInput,
   respondPriceSuggestionSchema,
   RespondPriceSuggestionInput,
+  archiveListingSchema,
+  ArchiveListingInput,
   SESSION_COOKIE_NAME,
   ADMIN_SESSION_COOKIE_NAME,
 } from '@elmasaif/shared';
@@ -210,6 +212,45 @@ export class ListingsController {
     return {
       statusCode: HttpStatus.OK,
       message: 'تم رفض مقترح تعديل السعر والاحتفاظ بالسعر المطلوب الحالي دون تغيير',
+      data: result,
+    };
+  }
+
+  @Post(':id/archive')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(SessionAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Archive an authored property listing (FR-14, UC-38, BR-16)',
+  })
+  async archiveListing(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodValidationPipe(archiveListingSchema)) body: ArchiveListingInput,
+    @Req() req: any,
+  ) {
+    const result = await this.listingsService.archiveListing(id, req.user.id, body);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'تمت أرشفة الإعلان بنجاح وإلغاء العروض المعلقة المرتبطة به',
+      data: result,
+    };
+  }
+
+  @Post(':id/unarchive')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(SessionAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Unarchive / reactivate an authored property listing (UC-38, BR-13)',
+  })
+  async unarchiveListing(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: any,
+  ) {
+    const result = await this.listingsService.unarchiveListing(id, req.user.id);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'تم إلغاء أرشفة الإعلان وإعادة تنشيطه بنجاح',
       data: result,
     };
   }

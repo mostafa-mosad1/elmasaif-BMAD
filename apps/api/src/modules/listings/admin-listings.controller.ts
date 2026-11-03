@@ -32,6 +32,12 @@ import {
   listingModerationQueueQuerySchema,
   RejectListingInput,
   rejectListingSchema,
+  SuspendListingInput,
+  suspendListingSchema,
+  BlockListingInput,
+  blockListingSchema,
+  UnsuspendListingInput,
+  unsuspendListingSchema,
 } from '@elmasaif/shared';
 import { AdminListingsService } from './admin-listings.service';
 
@@ -237,6 +243,78 @@ export class AdminListingsController {
     return {
       statusCode: HttpStatus.CREATED,
       message: 'تم إرسال مقترح تعديل السعر الاسترشادي وإشعار البائع بنجاح',
+      data: result,
+    };
+  }
+
+  @Post(':id/suspend')
+  @HttpCode(HttpStatus.OK)
+  @RequireAdminPermission('Listings.Compliance')
+  @ApiOperation({
+    summary: 'Suspend a property listing for compliance violation (FR-14, UC-66)',
+  })
+  @ApiParam({ name: 'id', description: 'Listing UUID' })
+  async suspendListing(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(suspendListingSchema)) body: SuspendListingInput,
+    @Req() req: any,
+  ) {
+    const result = await this.adminListingsService.suspendListing(
+      id,
+      req.admin,
+      body,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'تم إيقاف الإعلان مؤقتاً للامتثال وإخفاؤه من البحث العام',
+      data: result,
+    };
+  }
+
+  @Post(':id/block')
+  @HttpCode(HttpStatus.OK)
+  @RequireAdminPermission('Listings.Compliance')
+  @ApiOperation({
+    summary: 'Permanently block a violating property listing (FR-14, UC-66, BR-16)',
+  })
+  @ApiParam({ name: 'id', description: 'Listing UUID' })
+  async blockListing(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(blockListingSchema)) body: BlockListingInput,
+    @Req() req: any,
+  ) {
+    const result = await this.adminListingsService.blockListing(
+      id,
+      req.admin,
+      body,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'تم حظر الإعلان نهائياً وإلغاء العروض المعلقة',
+      data: result,
+    };
+  }
+
+  @Post(':id/unsuspend')
+  @HttpCode(HttpStatus.OK)
+  @RequireAdminPermission('Listings.Compliance')
+  @ApiOperation({
+    summary: 'Unsuspend and reactivate a suspended listing (UC-66, Listings.Compliance)',
+  })
+  @ApiParam({ name: 'id', description: 'Listing UUID' })
+  async unsuspendListing(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(unsuspendListingSchema)) body: UnsuspendListingInput,
+    @Req() req: any,
+  ) {
+    const result = await this.adminListingsService.unsuspendListing(
+      id,
+      req.admin,
+      body,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'تم رفع الإيقاف وإعادة تنشيط الإعلان في البحث العام بنجاح',
       data: result,
     };
   }

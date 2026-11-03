@@ -16,10 +16,17 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
+  AlertTriangle,
+  Ban,
+  Archive,
 } from 'lucide-react';
 import { ListingStatus, PropertyType } from '@elmasaif/shared';
 import { apiClient } from '../../../lib/api-client';
 import { SellerPriceSuggestionCard } from '../../../components/listings/seller-price-suggestion-card';
+import {
+  SellerListingArchiveActions,
+  ListingStatusBadge,
+} from '../../../components/listings';
 
 const PROPERTY_TYPE_LABELS: Record<string, string> = {
   [PropertyType.VILLA]: 'فيلا',
@@ -189,24 +196,68 @@ export default function MarketerDashboardPage() {
                       {`${Number(item.askPrice).toLocaleString('en-US')} SAR`}
                     </div>
 
-                    {item.status === ListingStatus.ACTIVE ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>معتمد ومنشور في السوق</span>
-                      </span>
-                    ) : item.status === ListingStatus.REJECTED ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-100 text-red-800 text-xs font-bold">
-                        <XCircle className="w-3.5 h-3.5" />
-                        <span>مرفوض من الإدارة</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-bold">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>بانتظار المراجعة الإدارية</span>
-                      </span>
+                    <ListingStatusBadge status={item.status} />
+
+                    {(item.status === ListingStatus.ACTIVE ||
+                      item.status === ListingStatus.ARCHIVED) && (
+                      <SellerListingArchiveActions
+                        listingId={item.id}
+                        status={item.status}
+                        archiveReason={item.archiveReason}
+                        onStatusChanged={(newStatus, updatedData) => {
+                          setMyListings((prev) =>
+                            prev.map((l) =>
+                              l.id === item.id
+                                ? {
+                                    ...l,
+                                    status: newStatus,
+                                    ...(updatedData || {}),
+                                  }
+                                : l,
+                            ),
+                          );
+                        }}
+                      />
                     )}
                   </div>
                 </div>
+
+                {item.status === ListingStatus.SUSPENDED && item.complianceReason && (
+                  <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <div>
+                        <span className="font-bold">إعلان موقوف مؤقتاً للامتثال والرقابة: </span>
+                        <span>{item.complianceReason}</span>
+                      </div>
+                      <p className="text-ink-secondary dark:text-dark-ink-secondary text-[11px]">
+                        تم إخفاء هذا الإعلان مؤقتاً من نتائج البحث العام لحين استيفاء المتطلبات النظامية وتعديل الملاحظات.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {item.status === ListingStatus.BLOCKED && item.complianceReason && (
+                  <div className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 text-red-900 dark:text-red-200 text-xs flex items-start gap-2.5">
+                    <Ban className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <div>
+                        <span className="font-bold">إعلان محظور نهائياً بموجب قرار الامتثال: </span>
+                        <span>{item.complianceReason}</span>
+                      </div>
+                      <p className="text-red-700 dark:text-red-300 text-[11px]">
+                        تم فرض حظر نهائي على هذا العقار لمخالفته لوائح الهيئة العامة للعقار وضوابط المنصة، ولا يمكن تعديله أو إعادة نشره.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {item.status === ListingStatus.ARCHIVED && item.archiveReason && (
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-300 text-xs">
+                    <span className="font-bold">سبب الأرشفة: </span>
+                    <span>{item.archiveReason}</span>
+                  </div>
+                )}
 
                 {item.status === ListingStatus.REJECTED && item.rejectionReason && (
                   <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs">

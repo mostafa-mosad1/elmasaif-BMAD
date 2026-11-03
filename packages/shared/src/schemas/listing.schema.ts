@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PropertyType, DocumentVisibility, ListingStatus } from '../enums';
+import { PropertyType, DocumentVisibility, ListingStatus, SuspensionCategory } from '../enums';
 import { saudiIbanSchema } from './index';
 import {
   MAX_LISTING_FILE_SIZE_BYTES,
@@ -159,6 +159,49 @@ export const respondPriceSuggestionSchema = z.object({
     .trim()
     .max(1000, 'ملاحظة البائع يجب ألا تتجاوز 1000 حرف')
     .optional(),
+});
+
+export const archiveListingSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .max(500, 'سبب الأرشفة يجب ألا يتجاوز 500 حرف')
+    .optional(),
+});
+
+export const suspendListingSchema = z.object({
+  complianceReason: z
+    .string()
+    .trim()
+    .min(10, 'سبب الإيقاف يجب ألا يقل عن 10 أحرف')
+    .max(1000, 'سبب الإيقاف يجب ألا يتجاوز 1000 حرف'),
+  suspensionCategory: z
+    .nativeEnum(SuspensionCategory, {
+      errorMap: () => ({ message: 'تصنيف سبب الإيقاف غير صالح' }),
+    })
+    .optional(),
+});
+
+export const blockListingSchema = z.object({
+  blockingReason: z
+    .string()
+    .trim()
+    .min(10, 'سبب الحظر يجب ألا يقل عن 10 أحرف')
+    .max(1000, 'سبب الحظر يجب ألا يتجاوز 1000 حرف'),
+  violationCode: z
+    .string()
+    .trim()
+    .min(3, 'رمز المخالفة يجب ألا يقل عن 3 أحرف')
+    .max(50, 'رمز المخالفة يجب ألا يتجاوز 50 حرفاً')
+    .optional(),
+});
+
+export const unsuspendListingSchema = z.object({
+  resolutionNotes: z
+    .string()
+    .trim()
+    .min(10, 'ملاحظات المعالجة ورفع الإيقاف يجب ألا تقل عن 10 أحرف')
+    .max(1000, 'ملاحظات المعالجة يجب ألا تتجاوز 1000 حرف'),
 });
 
 

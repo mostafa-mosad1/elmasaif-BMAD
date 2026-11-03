@@ -13,6 +13,7 @@ import {
   PriceSuggestionStatus,
   PropertyType,
   UserRole,
+  SuspensionCategory,
 } from '@elmasaif/shared';
 import {
   AlertTriangle,
@@ -28,6 +29,9 @@ import {
   RefreshCw,
   ShieldAlert,
   ShieldCheck,
+  ShieldOff,
+  Ban,
+  X,
   Unlock,
   User,
   XCircle,
@@ -96,6 +100,25 @@ export function ListingModerationReview({
     type: 'success' | 'error';
     message: string;
   } | null>(null);
+
+  const canManageCompliance =
+    hasPermission('Listings.Compliance') ||
+    admin?.role === AdminRole.SUPER_ADMIN ||
+    admin?.role === AdminRole.COMPLIANCE_OFFICER;
+
+  // Compliance actions state (Story 2.6 / FR-14, UC-66)
+  const [showSuspendModal, setShowSuspendModal] = useState(false);
+  const [complianceReason, setComplianceReason] = useState('');
+  const [suspensionCategory, setSuspensionCategory] = useState<string>('');
+
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [blockingReason, setBlockingReason] = useState('');
+  const [violationCode, setViolationCode] = useState('');
+
+  const [showUnsuspendModal, setShowUnsuspendModal] = useState(false);
+  const [resolutionNotes, setResolutionNotes] = useState('');
+
+  const [submittingCompliance, setSubmittingCompliance] = useState<string | null>(null);
 
   const canForceUnlock =
     hasPermission('Tasks.ForceUnlock') || admin?.role === AdminRole.SUPER_ADMIN;
@@ -355,6 +378,144 @@ export function ListingModerationReview({
       });
     } finally {
       setSubmittingAction(null);
+    }
+  };
+
+  const handleSuspend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!detail) return;
+    if (complianceReason.trim().length < 10) {
+      setFeedback({
+        type: 'error',
+        message: 'سبب الإيقاف يجب ألا يقل عن 10 أحرف للتوضيح النظامي',
+      });
+      return;
+    }
+    setSubmittingCompliance('suspend');
+    setFeedback(null);
+    try {
+      const res = await apiClient.post<{ statusCode: number; data: any; message: string }>(
+        `/admin/listings/${listingId}/suspend`,
+        {
+          complianceReason: complianceReason.trim(),
+          suspensionCategory: suspensionCategory || undefined,
+        },
+      );
+      if (res?.data) {
+        setDetail((prev: any) => ({
+          ...prev,
+          status: ListingStatus.SUSPENDED,
+          complianceReason: complianceReason.trim(),
+          complianceCategory: suspensionCategory || null,
+          version: res.data.version ?? prev.version + 1,
+        }));
+      }
+      setShowSuspendModal(false);
+      setComplianceReason('');
+      setSuspensionCategory('');
+      setFeedback({
+        type: 'success',
+        message: 'تم إيقاف الإعلان مؤقتاً للامتثال وإخفاؤه من البحث العام بنجاح',
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err?.message || 'تعذر إيقاف الإعلان للامتثال',
+      });
+    } finally {
+      setSubmittingCompliance(null);
+    }
+  };
+
+  const handleBlock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!detail) return;
+    if (blockingReason.trim().length < 10) {
+      setFeedback({
+        type: 'error',
+        message: 'سبب الحظر يجب ألا يقل عن 10 أحرف',
+      });
+      return;
+    }
+    setSubmittingCompliance('block');
+    setFeedback(null);
+    try {
+      const res = await apiClient.post<{ statusCode: number; data: any; message: string }>(
+        `/admin/listings/${listingId}/block`,
+        {
+          blockingReason: blockingReason.trim(),
+          violationCode: violationCode.trim() || undefined,
+        },
+      );
+      if (res?.data) {
+        setDetail((prev: any) => ({
+          ...prev,
+          status: ListingStatus.BLOCKED,
+          complianceReason: blockingReason.trim(),
+          complianceCategory: violationCode.trim() || null,
+          version: res.data.version ?? prev.version + 1,
+        }));
+      }
+      setShowBlockModal(false);
+      setBlockingReason('');
+      setViolationCode('');
+      setFeedback({
+        type: 'success',
+        message: 'تم فرض حظر نهائي على الإعلان وإلغاء العروض المرتبطة بنجاح',
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err?.message || 'تعذر حظر الإعلان',
+      });
+    } finally {
+      setSubmittingCompliance(null);
+    }
+  };
+
+  const handleUnsuspend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!detail) return;
+    if (resolutionNotes.trim().length < 10) {
+      setFeedback({
+        type: 'error',
+        message: 'ملاحظات المعالجة يجب ألا تقل عن 10 أحرف',
+      });
+      return;
+    }
+    setSubmittingCompliance('unsuspend');
+    setFeedback(null);
+    try {
+      const res = await apiClient.post<{ statusCode: number; data: any; message: string }>(
+        `/admin/listings/${listingId}/unsuspend`,
+        {
+          resolutionNotes: resolutionNotes.trim(),
+        },
+      );
+      if (res?.data) {
+        setDetail((prev: any) => ({
+          ...prev,
+          status: ListingStatus.ACTIVE,
+          complianceReason: null,
+          complianceCategory: null,
+          complianceActionAt: null,
+          complianceOfficerId: null,
+          version: res.data.version ?? prev.version + 1,
+        }));
+      }
+      setShowUnsuspendModal(false);
+      setResolutionNotes('');
+      setFeedback({
+        type: 'success',
+        message: 'تم رفع الإيقاف وإعادة تنشيط الإعلان في البحث العام بنجاح',
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err?.message || 'تعذر رفع الإيقاف عن الإعلان',
+      });
+    } finally {
+      setSubmittingCompliance(null);
     }
   };
 
@@ -896,6 +1057,74 @@ export function ListingModerationReview({
                   </p>
                 )}
               </div>
+            ) : detail.status === ListingStatus.SUSPENDED ? (
+              <div
+                className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs space-y-2"
+                data-testid="admin-suspended-banner"
+              >
+                <div className="font-bold flex items-center gap-1.5 text-amber-800 dark:text-amber-300">
+                  <AlertTriangle className="w-4 h-4 text-amber-600" />
+                  <span>الإعلان موقوف مؤقتاً للامتثال والرقابة</span>
+                </div>
+                {detail.complianceReason && (
+                  <p className="text-[11px] leading-relaxed">
+                    <span className="font-bold">السبب: </span>
+                    <span>{detail.complianceReason}</span>
+                  </p>
+                )}
+                {detail.complianceCategory && (
+                  <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                    <span className="font-bold">التصنيف: </span>
+                    <span>{detail.complianceCategory}</span>
+                  </p>
+                )}
+                {canManageCompliance && (
+                  <button
+                    type="button"
+                    onClick={() => setShowUnsuspendModal(true)}
+                    className="mt-2 w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold"
+                    data-testid="unsuspend-listing-btn"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>رفع الإيقاف وإعادة التنشيط</span>
+                  </button>
+                )}
+              </div>
+            ) : detail.status === ListingStatus.BLOCKED ? (
+              <div
+                className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs space-y-2"
+                data-testid="admin-blocked-banner"
+              >
+                <div className="font-bold flex items-center gap-1.5 text-rose-800 dark:text-rose-300">
+                  <Ban className="w-4 h-4 text-rose-600" />
+                  <span>الإعلان محظور نهائياً بموجب قرار الامتثال</span>
+                </div>
+                {detail.complianceReason && (
+                  <p className="text-[11px] leading-relaxed">
+                    <span className="font-bold">سبب الحظر: </span>
+                    <span>{detail.complianceReason}</span>
+                  </p>
+                )}
+                <p className="text-[11px] text-rose-700 dark:text-rose-400">
+                  هذا الإعلان محظور نهائياً ولا يمكن تنشيطه أو تعديله.
+                </p>
+              </div>
+            ) : detail.status === ListingStatus.ARCHIVED ? (
+              <div
+                className="p-4 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs space-y-1.5"
+                data-testid="admin-archived-banner"
+              >
+                <div className="font-bold flex items-center gap-1.5">
+                  <ShieldOff className="w-4 h-4 text-slate-600" />
+                  <span>الإعلان مؤرشف من قبل البائع</span>
+                </div>
+                {detail.archiveReason && (
+                  <p className="text-[11px] leading-relaxed">
+                    <span className="font-bold">سبب الأرشفة: </span>
+                    <span>{detail.archiveReason}</span>
+                  </p>
+                )}
+              </div>
             ) : (
               <>
                 {/* Approve Section */}
@@ -1078,6 +1307,69 @@ export function ListingModerationReview({
               </div>
             )}
           </div>
+
+          {/* Compliance Actions Panel (Story 2.6 / FR-14 / UC-66) */}
+          {canManageCompliance && (
+            <div
+              className="bg-surface dark:bg-dark-surface-raised border border-amber-300/40 dark:border-amber-800/40 rounded-2xl p-5 space-y-4"
+              data-testid="admin-compliance-panel"
+            >
+              <div className="flex items-center justify-between border-b border-surface-border dark:border-dark-surface-border pb-3">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="w-5 h-5 text-amber-600" />
+                  <h2 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
+                    إجراءات الامتثال والرقابة (FR-14)
+                  </h2>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">
+                  صلاحيات الامتثال
+                </span>
+              </div>
+
+              <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary leading-relaxed">
+                إجراءات رقابية سيادية للتعامل مع مخالفات الإعلانات، رخص فال، أو شبهات التلاعب مع الحفاظ على الصفقات الجارية.
+              </p>
+
+              <div className="space-y-2.5">
+                {detail.status !== ListingStatus.SUSPENDED &&
+                  detail.status !== ListingStatus.BLOCKED && (
+                    <button
+                      type="button"
+                      onClick={() => setShowSuspendModal(true)}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-sm transition-colors"
+                      data-testid="open-suspend-modal-btn"
+                    >
+                      <AlertTriangle className="w-4 h-4" />
+                      <span>إيقاف مؤقت للامتثال (Suspend)</span>
+                    </button>
+                  )}
+
+                {detail.status === ListingStatus.SUSPENDED && (
+                  <button
+                    type="button"
+                    onClick={() => setShowUnsuspendModal(true)}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm transition-colors"
+                    data-testid="open-unsuspend-modal-btn"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>رفع الإيقاف وإعادة التنشيط (Unsuspend)</span>
+                  </button>
+                )}
+
+                {detail.status !== ListingStatus.BLOCKED && (
+                  <button
+                    type="button"
+                    onClick={() => setShowBlockModal(true)}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold shadow-sm transition-colors"
+                    data-testid="open-block-modal-btn"
+                  >
+                    <Ban className="w-4 h-4" />
+                    <span>حظر نهائي للإعلان (Permanent Block)</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1120,6 +1412,232 @@ export function ListingModerationReview({
                   className="px-4 py-1.5 rounded-lg bg-red-700 hover:bg-red-800 text-white text-xs font-bold"
                 >
                   تأكيد فك القفل الإجباري
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Suspend Listing Modal (Story 2.6 / FR-14) */}
+      {showSuspendModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          data-testid="suspend-modal"
+        >
+          <div className="bg-white dark:bg-dark-surface-raised border border-surface-border rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-surface-border pb-3">
+              <div className="flex items-center gap-2 text-amber-700 font-bold text-base">
+                <AlertTriangle className="w-5 h-5" />
+                <span>إيقاف مؤقت للإعلان العقاري للامتثال والرقابة</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSuspendModal(false)}
+                className="text-ink-muted hover:text-ink-primary p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-ink-secondary leading-relaxed">
+              سيتم إخفاء هذا الإعلان فوراً من البحث العام وإلغاء العروض المعلقة غير المرتبطة بصفقة نشطة. الصفقات الجارية تستمر دون انقطاع.
+            </p>
+            <form onSubmit={handleSuspend} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold mb-1">
+                  تصنيف سبب الإيقاف (اختياري)
+                </label>
+                <select
+                  value={suspensionCategory}
+                  onChange={(e) => setSuspensionCategory(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-surface-border bg-white dark:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  data-testid="suspension-category-select"
+                >
+                  <option value="">بدون تصنيف محدد</option>
+                  <option value={SuspensionCategory.MISLEADING_SPECIFICATIONS}>مواصفات مضللة أو غير دقيقة</option>
+                  <option value={SuspensionCategory.INVALID_FAL_LICENSE}>رخصة فال غير صالحة أو منتهية</option>
+                  <option value={SuspensionCategory.UNAUTHORIZED_BROKERAGE}>وساطة غير مصرح بها</option>
+                  <option value={SuspensionCategory.FRAUD_SUSPICION}>اشتباه في تلاعب أو احتيال</option>
+                  <option value={SuspensionCategory.OTHER}>أسباب أخرى</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold mb-1">
+                  سبب الإيقاف وملاحظات الرقابة (10 أحرف على الأقل) *
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  minLength={10}
+                  maxLength={1000}
+                  value={complianceReason}
+                  onChange={(e) => setComplianceReason(e.target.value)}
+                  placeholder="اذكر بالتفصيل المخالفة المرصودة والاشتراطات المطلوب استيفاؤها..."
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-surface-border focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  data-testid="compliance-reason-input"
+                />
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-border">
+                <button
+                  type="button"
+                  onClick={() => setShowSuspendModal(false)}
+                  className="px-3.5 py-1.5 rounded-lg border border-surface-border text-xs font-semibold"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingCompliance === "suspend"}
+                  className="px-4 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold disabled:opacity-50"
+                  data-testid="confirm-suspend-btn"
+                >
+                  {submittingCompliance === "suspend" ? "جاري الإيقاف..." : "تأكيد الإيقاف المؤقت"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Permanent Block Listing Modal (Story 2.6 / FR-14, BR-16) */}
+      {showBlockModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          data-testid="block-modal"
+        >
+          <div className="bg-white dark:bg-dark-surface-raised border border-red-300 dark:border-red-900 rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-surface-border pb-3">
+              <div className="flex items-center gap-2 text-rose-700 font-bold text-base">
+                <Ban className="w-5 h-5" />
+                <span>حظر نهائي للإعلان العقاري (Permanent Ban)</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBlockModal(false)}
+                className="text-ink-muted hover:text-ink-primary p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-xs text-red-900 dark:text-red-200 space-y-1">
+              <p className="font-bold">تحذير أمني ونظامي حرج:</p>
+              <p className="leading-relaxed">
+                حظر الإعلان إجراء دائم ونهائي لا يمكن التراجع عنه أو إعادة نشر العقار بعده. سيتم شطب الإعلان من العرض، وإلغاء كافة العروض المفتوحة وإشعار البائع بالقرار.
+              </p>
+            </div>
+            <form onSubmit={handleBlock} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold mb-1">
+                  رمز أو رقم المخالفة النظامية (اختياري)
+                </label>
+                <input
+                  type="text"
+                  value={violationCode}
+                  onChange={(e) => setViolationCode(e.target.value)}
+                  placeholder="مثال: VIO-REGA-2026-99"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-surface-border focus:outline-none focus:ring-2 focus:ring-rose-500 font-mono"
+                  data-testid="violation-code-input"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold mb-1">
+                  أسباب ومبررات الحظر النهائي (10 أحرف على الأقل) *
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  minLength={10}
+                  maxLength={1000}
+                  value={blockingReason}
+                  onChange={(e) => setBlockingReason(e.target.value)}
+                  placeholder="بيان تفصيلي بالمخالفة الجسيمة أو قرار المنع الصادر بحق الإعلان..."
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-surface-border focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  data-testid="blocking-reason-input"
+                />
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-border">
+                <button
+                  type="button"
+                  onClick={() => setShowBlockModal(false)}
+                  className="px-3.5 py-1.5 rounded-lg border border-surface-border text-xs font-semibold"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingCompliance === "block"}
+                  className="px-4 py-1.5 rounded-lg bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold disabled:opacity-50"
+                  data-testid="confirm-block-btn"
+                >
+                  {submittingCompliance === "block" ? "جاري الحظر..." : "تأكيد الحظر النهائي"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Unsuspend Listing Modal (Story 2.6 / UC-66) */}
+      {showUnsuspendModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          data-testid="unsuspend-modal"
+        >
+          <div className="bg-white dark:bg-dark-surface-raised border border-surface-border rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-surface-border pb-3">
+              <div className="flex items-center gap-2 text-emerald-700 font-bold text-base">
+                <CheckCircle2 className="w-5 h-5" />
+                <span>رفع الإيقاف وإعادة تنشيط الإعلان العقاري</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowUnsuspendModal(false)}
+                className="text-ink-muted hover:text-ink-primary p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-ink-secondary leading-relaxed">
+              سيتم إعادة نشر الإعلان فوراً في البحث العام للمشترين والجمهور وإشعار البائع بحل ملاحظات الامتثال.
+            </p>
+            <form onSubmit={handleUnsuspend} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold mb-1">
+                  ملاحظات ومبررات رفع الإيقاف (10 أحرف على الأقل) *
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  minLength={10}
+                  maxLength={1000}
+                  value={resolutionNotes}
+                  onChange={(e) => setResolutionNotes(e.target.value)}
+                  placeholder="بيان معالجة الملاحظات، التحقق من تجديد رخصة فال، أو صحة الوثائق..."
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-surface-border focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  data-testid="resolution-notes-input"
+                />
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-border">
+                <button
+                  type="button"
+                  onClick={() => setShowUnsuspendModal(false)}
+                  className="px-3.5 py-1.5 rounded-lg border border-surface-border text-xs font-semibold"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingCompliance === "unsuspend"}
+                  className="px-4 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold disabled:opacity-50"
+                  data-testid="confirm-unsuspend-btn"
+                >
+                  {submittingCompliance === "unsuspend" ? "جاري التنشيط..." : "تأكيد رفع الإيقاف"}
                 </button>
               </div>
             </form>

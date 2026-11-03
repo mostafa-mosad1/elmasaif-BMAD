@@ -14,6 +14,8 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
+  AlertTriangle,
+  Ban,
   RefreshCw,
   MapPin,
 } from 'lucide-react';
@@ -211,6 +213,32 @@ export function ListingModerationQueue({
           >
             <XCircle className="w-3.5 h-3.5" />
             <span>مرفوضة</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter(ListingStatus.SUSPENDED)}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
+              statusFilter === ListingStatus.SUSPENDED
+                ? 'bg-[#1B4332] text-white shadow-sm'
+                : 'text-ink-secondary hover:bg-surface-sunken'
+            }`}
+          >
+            <AlertTriangle className="w-3.5 h-3.5" />
+            <span>معلق للامتثال</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter(ListingStatus.BLOCKED)}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
+              statusFilter === ListingStatus.BLOCKED
+                ? 'bg-[#1B4332] text-white shadow-sm'
+                : 'text-ink-secondary hover:bg-surface-sunken'
+            }`}
+          >
+            <Ban className="w-3.5 h-3.5" />
+            <span>محظور</span>
           </button>
         </div>
 

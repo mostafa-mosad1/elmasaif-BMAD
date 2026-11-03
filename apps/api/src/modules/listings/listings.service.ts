@@ -15,11 +15,14 @@ import {
   UserRole,
   ProfileStatus,
   ListingStatus,
+  OfferStatus,
+  DealStatus,
   DocumentVisibility,
   ScanStatus,
   PriceSuggestionStatus,
   PriceSuggestionItem,
   RespondPriceSuggestionInput,
+  ArchiveListingInput,
   LISTING_NOT_FOUND,
   LISTING_ROLE_UNAUTHORIZED,
   LISTING_INVALID_STATE_TRANSITION,
@@ -28,6 +31,14 @@ import {
   LISTING_FAL_LICENSE_REQUIRED,
   LISTING_INVALID_IBAN,
   LISTING_MALWARE_DETECTED,
+  LISTING_ARCHIVE_BLOCKED_RESERVED,
+  LISTING_ARCHIVE_BLOCKED_ACTIVE_DEAL,
+  LISTING_ARCHIVE_BLOCKED_ACTIVE_OFFERS,
+  LISTING_NOT_ARCHIVED,
+  LISTING_NOT_SUSPENDED,
+  LISTING_ALREADY_BLOCKED,
+  LISTING_PERMANENTLY_BLOCKED,
+  LISTING_COMPLIANCE_SUSPENDED,
   PRICE_SUGGESTION_NOT_FOUND,
   PRICE_SUGGESTION_ALREADY_RESPONDED,
   GEO_CITY_INACTIVE,
@@ -443,6 +454,16 @@ export class ListingsService {
           status: listing.status,
           rejectionReason: (listing as any).rejectionReason ?? null,
           reviewedAt: (listing as any).reviewedAt ?? null,
+          complianceReason: (listing as any).complianceReason ?? null,
+          complianceCategory: (listing as any).complianceCategory ?? null,
+          complianceActionAt: (listing as any).complianceActionAt
+            ? new Date((listing as any).complianceActionAt).toISOString()
+            : null,
+          complianceOfficerId: (listing as any).complianceOfficerId ?? null,
+          archivedAt: (listing as any).archivedAt
+            ? new Date((listing as any).archivedAt).toISOString()
+            : null,
+          archiveReason: (listing as any).archiveReason ?? null,
           sellerRole,
           isFalVerified: sellerRole === UserRole.MARKETER,
           photoCount: photos.length,
@@ -505,6 +526,20 @@ export class ListingsService {
       requesterUserId && listing.sellerProfile?.userId === requesterUserId,
     );
     const canViewPrivate = isSeller || requesterIsAdmin;
+
+    if (
+      [
+        ListingStatus.ARCHIVED,
+        ListingStatus.SUSPENDED,
+        ListingStatus.BLOCKED,
+      ].includes(listing.status as any) &&
+      !canViewPrivate
+    ) {
+      throw new NotFoundException({
+        code: LISTING_NOT_FOUND,
+        message: `العقار المطلوب برقم '${id}' غير متاح حالياً`,
+      });
+    }
 
     // Filter documents based on visibility permissions
     let documentsToReturn = listing.documents;
@@ -596,6 +631,16 @@ export class ListingsService {
           }
         : {}),
       version: listing.version,
+      complianceReason: (listing as any).complianceReason ?? null,
+      complianceCategory: (listing as any).complianceCategory ?? null,
+      complianceActionAt: (listing as any).complianceActionAt
+        ? new Date((listing as any).complianceActionAt).toISOString()
+        : null,
+      complianceOfficerId: (listing as any).complianceOfficerId ?? null,
+      archivedAt: (listing as any).archivedAt
+        ? new Date((listing as any).archivedAt).toISOString()
+        : null,
+      archiveReason: (listing as any).archiveReason ?? null,
       photos,
       documents,
       createdAt: listing.createdAt,
@@ -893,5 +938,256 @@ export class ListingsService {
       fileSize: file.size,
       scanStatus: outcome.fileObject.scanStatus,
     };
+  }
+
+  /**
+   * Archives an authored listing when no longer available.
+   * Enforces ownership, reserved status lock guard, active deal guard, and active offer guard.
+   * Automatically withdraws open non-deal offers, clears claim locks, and writes audit log.
+   */
+  async archiveListing(
+    listingId: string,
+    userId: string,
+    dto?: ArchiveListingInput,
+  ): Promise<any> {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+      include: {
+        sellerProfile: true,
+        deals: true,
+        offers: true,
+      },
+    });
+
+    if (!listing) {
+      throw new NotFoundException({
+        code: LISTING_NOT_FOUND,
+        message: `العقار المطلوب برقم '${listingId}' غير موجود`,
+      });
+    }
+
+    // 1. Ownership Guard
+    if (listing.sellerProfile?.userId !== userId) {
+      throw new ForbiddenException({
+        code: LISTING_ROLE_UNAUTHORIZED,
+        message: 'غير مصرح لك بأرشفة هذا الإعلان لعدم تطابق الملكية',
+      });
+    }
+
+    // 2. Reserved Lock Guard
+    if (listing.status === ListingStatus.RESERVED) {
+      throw new ConflictException({
+        code: LISTING_ARCHIVE_BLOCKED_RESERVED,
+        message: 'لا يمكن أرشفة العقار المحجوز لوجود إجراءات صفقة جارية',
+      });
+    }
+
+    if (listing.status === ListingStatus.BLOCKED) {
+      throw new ConflictException({
+        code: LISTING_PERMANENTLY_BLOCKED,
+        message: 'لا يمكن أرشفة إعلان محظور نهائياً من قبل الامتثال والرقابة',
+      });
+    }
+
+    if (listing.status === ListingStatus.SUSPENDED) {
+      throw new ConflictException({
+        code: LISTING_COMPLIANCE_SUSPENDED,
+        message: 'لا يمكن أرشفة إعلان موقوف مؤقتاً من قبل الامتثال والرقابة',
+      });
+    }
+
+    // 3. Active Deal Guard (non-terminal deals)
+    const activeDeals = listing.deals.filter((deal: any) =>
+      [
+        DealStatus.AWAITING_PAYMENT_PROOF,
+        DealStatus.UNDER_ADMIN_AUDIT,
+        DealStatus.PAYMENT_REJECTED,
+      ].includes(deal.status as any),
+    );
+
+    if (activeDeals.length > 0) {
+      throw new ConflictException({
+        code: LISTING_ARCHIVE_BLOCKED_ACTIVE_DEAL,
+        message: 'لا يمكن أرشفة الإعلان لوجود صفقة بيع جارية ونشطة مرتبطة به',
+      });
+    }
+
+    // 4. Active Unexpired Approved Offers Guard
+    const now = this.clockService.now();
+    const activeOffers = listing.offers.filter((offer: any) => {
+      const isUnexpired = new Date(offer.expiresAt).getTime() > now.getTime();
+      return (
+        isUnexpired &&
+        [
+          OfferStatus.ACCEPTED_BY_SELLER,
+          OfferStatus.ACCEPTED_BY_BUYER,
+          OfferStatus.RELAYED_TO_SELLER,
+          OfferStatus.IN_REVIEW,
+        ].includes(offer.status as any)
+      );
+    });
+
+    if (activeOffers.length > 0) {
+      throw new ConflictException({
+        code: LISTING_ARCHIVE_BLOCKED_ACTIVE_OFFERS,
+        message: 'لا يمكن أرشفة الإعلان لوجود عروض شراء نشطة وغير منتهية الصلاحية قيد المراجعة أو مقبولة',
+      });
+    }
+
+    // 5. Execute atomic transaction
+    return this.prisma.$transaction(async (tx) => {
+      const updatedListing = await tx.listing.update({
+        where: { id: listingId },
+        data: {
+          status: ListingStatus.ARCHIVED,
+          version: { increment: 1 },
+          archivedAt: now,
+          archiveReason: dto?.reason || null,
+          lockedByAdminId: null,
+          lockedAt: null,
+          lockExpiresAt: null,
+        },
+      });
+
+      // Automatically withdraw outstanding open non-deal offers
+      await tx.offer.updateMany({
+        where: {
+          listingId,
+          status: {
+            in: [
+              OfferStatus.SUBMITTED,
+              OfferStatus.IN_REVIEW,
+              OfferStatus.RELAYED_TO_SELLER,
+              OfferStatus.COUNTER_OFFERED,
+            ],
+          },
+        },
+        data: {
+          status: OfferStatus.WITHDRAWN,
+        },
+      });
+
+      // Immutable AuditLog entry
+      await tx.auditLog.create({
+        data: {
+          actorId: userId,
+          actorType: 'USER',
+          action: 'LISTING_ARCHIVED',
+          entityType: 'Listing',
+          entityId: listingId,
+          payload: {
+            previousStatus: listing.status,
+            newStatus: ListingStatus.ARCHIVED,
+            sellerUserId: userId,
+            reason: dto?.reason ?? null,
+            archivedAt: now.toISOString(),
+          },
+        },
+      });
+
+      this.logger.log(`Listing '${listingId}' archived by seller '${userId}'`);
+      return updatedListing;
+    });
+  }
+
+  /**
+   * Unarchives and reactivates an authored listing.
+   * Enforces seller profile status, licensing, and compliance blocking rules.
+   */
+  async unarchiveListing(listingId: string, userId: string): Promise<any> {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+      include: {
+        sellerProfile: {
+          include: {
+            falLicense: true,
+          },
+        },
+      },
+    });
+
+    if (!listing) {
+      throw new NotFoundException({
+        code: LISTING_NOT_FOUND,
+        message: `العقار المطلوب برقم '${listingId}' غير موجود`,
+      });
+    }
+
+    // 1. Ownership Guard
+    if (listing.sellerProfile?.userId !== userId) {
+      throw new ForbiddenException({
+        code: LISTING_ROLE_UNAUTHORIZED,
+        message: 'غير مصرح لك بإلغاء أرشفة هذا الإعلان لعدم تطابق الملكية',
+      });
+    }
+
+    // 2. Listing is currently in ARCHIVED status
+    if (listing.status === ListingStatus.BLOCKED) {
+      throw new ConflictException({
+        code: LISTING_PERMANENTLY_BLOCKED,
+        message: 'لا يمكن تنشيط إعلان محظور نهائياً بموجب قرار الامتثال',
+      });
+    }
+    if (listing.status === ListingStatus.SUSPENDED) {
+      throw new ConflictException({
+        code: LISTING_COMPLIANCE_SUSPENDED,
+        message: 'لا يمكن تنشيط إعلان موقوف بموجب قرار الامتثال والرقابة',
+      });
+    }
+    if (listing.status !== ListingStatus.ARCHIVED) {
+      throw new BadRequestException({
+        code: LISTING_NOT_ARCHIVED,
+        message: 'الإعلان ليس في حالة مؤرشفة لتتم إعادة تنشيطه',
+      });
+    }
+
+    // 3. Seller Profile Good Standing Guard
+    const profile = listing.sellerProfile;
+    if (!profile || profile.status !== ProfileStatus.ACTIVE) {
+      throw new ForbiddenException({
+        code: LISTING_ROLE_UNAUTHORIZED,
+        message: 'الملف التعريفي للبائع غير نشط أو مقيد ولا يمكن تنشيط الإعلان',
+      });
+    }
+
+    if (profile.role === UserRole.MARKETER && !profile.falLicense) {
+      throw new ForbiddenException({
+        code: LISTING_FAL_LICENSE_REQUIRED,
+        message: 'يلزم وجود رخصة فال سارية لإلغاء أرشفة وتنشيط الإعلان',
+      });
+    }
+
+    const now = this.clockService.now();
+
+    return this.prisma.$transaction(async (tx) => {
+      const updatedListing = await tx.listing.update({
+        where: { id: listingId },
+        data: {
+          status: ListingStatus.ACTIVE,
+          version: { increment: 1 },
+          archivedAt: null,
+          archiveReason: null,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: userId,
+          actorType: 'USER',
+          action: 'LISTING_UNARCHIVED',
+          entityType: 'Listing',
+          entityId: listingId,
+          payload: {
+            previousStatus: ListingStatus.ARCHIVED,
+            newStatus: ListingStatus.ACTIVE,
+            sellerUserId: userId,
+            unarchivedAt: now.toISOString(),
+          },
+        },
+      });
+
+      this.logger.log(`Listing '${listingId}' unarchived and reactivated by seller '${userId}'`);
+      return updatedListing;
+    });
   }
 }

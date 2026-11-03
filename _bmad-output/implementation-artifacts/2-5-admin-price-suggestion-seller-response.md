@@ -3,7 +3,7 @@ baseline_commit: 0abc2cdde8637397716f4106d592970d822d9e93
 ---
 # Story 2.5: Admin Price Suggestion & Seller Response
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
