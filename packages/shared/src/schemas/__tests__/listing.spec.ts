@@ -24,6 +24,8 @@ import {
   MAX_LISTING_PHOTOS,
   MAX_LISTING_FILE_SIZE_BYTES,
   SAUDI_BOUNDS,
+  PROPERTY_TYPE_LABELS_AR,
+  PLATFORM_COMMISSION_RATE,
   PropertyType,
   DocumentVisibility,
 } from '../../../src';
@@ -58,6 +60,18 @@ describe('Listing Constants', () => {
       maxLat: 32.5,
       minLng: 34.5,
       maxLng: 55.7,
+    });
+  });
+
+  it('should export canonical PROPERTY_TYPE_LABELS_AR and PLATFORM_COMMISSION_RATE', () => {
+    expect(PLATFORM_COMMISSION_RATE).toBe(0.025);
+    expect(PROPERTY_TYPE_LABELS_AR).toEqual({
+      [PropertyType.VILLA]: 'فيلا',
+      [PropertyType.LAND]: 'أرض',
+      [PropertyType.APARTMENT]: 'شقة',
+      [PropertyType.BUILDING]: 'عمارة',
+      [PropertyType.COMMERCIAL]: 'مكتب / تجاري',
+      [PropertyType.FARM]: 'مزرعة / استراحة',
     });
   });
 });

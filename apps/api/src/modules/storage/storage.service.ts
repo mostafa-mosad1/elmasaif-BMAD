@@ -147,7 +147,8 @@ export class StorageService {
 
     const clampedExpiry = Math.min(Math.max(1, expiresInSeconds), MAX_EXPIRATION_SECONDS);
 
-    if (this.storageDriver === 'local') {
+    const localPath = path.join(this.localBasePath, key.trim());
+    if (this.storageDriver === 'local' || fs.existsSync(localPath)) {
       const apiBase = this.configService.get<string>('API_URL') || 'http://localhost:4000';
       return `${apiBase}/api/v1/storage/raw?key=${encodeURIComponent(key.trim())}`;
     }
@@ -439,11 +440,12 @@ export class StorageService {
       throw new BadRequestException('Object key is required');
     }
 
+    const localPath = path.join(this.localBasePath, key.trim());
+    if (fs.existsSync(localPath)) {
+      return fs.readFileSync(localPath);
+    }
+
     if (this.storageDriver === 'local') {
-      const localPath = path.join(this.localBasePath, key.trim());
-      if (fs.existsSync(localPath)) {
-        return fs.readFileSync(localPath);
-      }
       throw new NotFoundException(`File not found in local storage: ${key}`);
     }
 

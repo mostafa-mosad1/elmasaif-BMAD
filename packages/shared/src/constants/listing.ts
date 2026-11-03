@@ -1,3 +1,5 @@
+import { PropertyType } from '../enums';
+
 export const LISTING_NOT_FOUND = 'LISTING_NOT_FOUND';
 export const LISTING_TITLE_INVALID = 'LISTING_TITLE_INVALID';
 export const LISTING_PRICE_OUT_OF_RANGE = 'LISTING_PRICE_OUT_OF_RANGE';
@@ -39,4 +41,16 @@ export const SAUDI_BOUNDS = {
   minLng: 34.5,
   maxLng: 55.7,
 } as const;
+
+export const PLATFORM_COMMISSION_RATE = 0.025;
+
+export const PROPERTY_TYPE_LABELS_AR: Record<PropertyType, string> = {
+  [PropertyType.VILLA]: 'فيلا',
+  [PropertyType.LAND]: 'أرض',
+  [PropertyType.APARTMENT]: 'شقة',
+  [PropertyType.BUILDING]: 'عمارة',
+  [PropertyType.COMMERCIAL]: 'مكتب / تجاري',
+  [PropertyType.FARM]: 'مزرعة / استراحة',
+};
+
 

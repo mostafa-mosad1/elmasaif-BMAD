@@ -72,6 +72,7 @@ describe('ListingsService', () => {
       listing: {
         create: jest.fn(),
         findUnique: jest.fn(),
+        findMany: jest.fn(),
       },
       propertyDocument: {
         createMany: jest.fn(),
@@ -571,6 +572,124 @@ describe('ListingsService', () => {
       await expect(
         service.uploadMediaOrDocument(mockFile, mockUserId, 'photo'),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('getPublicActiveListings & getMyListings media array enrichment (Story 2.3)', () => {
+    it('should enrich public active listings with signed photos[], primaryPhotoUrl, photoCount, sellerRole, and isFalVerified without bathrooms', async () => {
+      prisma.listing.findMany.mockResolvedValue([
+        {
+          id: 'listing-public-1',
+          title: 'فيلا مودرن في النرجس',
+          description: 'فيلا بتصميم حديث',
+          propertyType: PropertyType.VILLA,
+          cityId: mockCityId,
+          districtId: mockDistrictId,
+          city: { nameAr: 'الرياض' },
+          district: { nameAr: 'النرجس' },
+          askPrice: 3200000,
+          areaSquareMeters: 450,
+          bedrooms: 5,
+          yearBuilt: 2025,
+          status: ListingStatus.ACTIVE,
+          sellerProfile: {
+            id: mockProfileId,
+            role: UserRole.MARKETER,
+          },
+          documents: [
+            {
+              id: 'p1',
+              documentType: 'PHOTO',
+              fileUrl: 'listings/u1/p1.jpg',
+              visibility: DocumentVisibility.PUBLIC,
+            },
+            {
+              id: 'p2',
+              documentType: 'PHOTO',
+              fileUrl: 'listings/u1/p2.jpg',
+              visibility: DocumentVisibility.PUBLIC,
+            },
+          ],
+          createdAt: new Date('2026-11-01T10:00:00.000Z'),
+        },
+      ]);
+
+      const response = await service.getPublicActiveListings(12);
+
+      expect(prisma.listing.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { status: ListingStatus.ACTIVE },
+          include: expect.objectContaining({
+            documents: {
+              where: {
+                documentType: 'PHOTO',
+                visibility: DocumentVisibility.PUBLIC,
+              },
+            },
+          }),
+        }),
+      );
+      expect(response.items).toHaveLength(1);
+      const item = response.items[0];
+      expect(item.photos).toEqual([
+        'https://s3.local/listings/u1/p1.jpg?signed=true',
+        'https://s3.local/listings/u1/p2.jpg?signed=true',
+      ]);
+      expect(item.primaryPhotoUrl).toBe('https://s3.local/listings/u1/p1.jpg?signed=true');
+      expect(item.photoCount).toBe(2);
+      expect(item.sellerRole).toBe(UserRole.MARKETER);
+      expect(item.isFalVerified).toBe(true);
+      expect(item.bathrooms).toBeUndefined();
+    });
+
+    it('should enrich getMyListings with signed photos[] and isFalVerified = false for OWNER listings', async () => {
+      prisma.listing.findMany.mockResolvedValue([
+        {
+          id: 'listing-owner-1',
+          title: 'أرض سكنية بالملقا',
+          propertyType: PropertyType.LAND,
+          cityId: mockCityId,
+          districtId: mockDistrictId,
+          city: { nameAr: 'الرياض' },
+          district: { nameAr: 'الملقا' },
+          askPrice: 4100000,
+          areaSquareMeters: 600,
+          bedrooms: null,
+          yearBuilt: null,
+          status: ListingStatus.PENDING_REVIEW,
+          sellerProfile: {
+            id: mockProfileId,
+            role: UserRole.OWNER,
+          },
+          documents: [
+            {
+              id: 'p1',
+              documentType: 'PHOTO',
+              fileUrl: 'listings/u1/land1.jpg',
+              visibility: DocumentVisibility.PUBLIC,
+            },
+            {
+              id: 'deed1',
+              documentType: 'TITLE_DEED',
+              fileUrl: 'listings/u1/deed1.pdf',
+              visibility: DocumentVisibility.ADMIN_ONLY,
+            },
+          ],
+          createdAt: new Date('2026-11-01T10:00:00.000Z'),
+          updatedAt: new Date('2026-11-01T10:00:00.000Z'),
+        },
+      ]);
+
+      const response = await service.getMyListings(mockUserId);
+      expect(response.items).toHaveLength(1);
+      const item = response.items[0];
+      expect(item.photos).toEqual(['https://s3.local/listings/u1/land1.jpg?signed=true']);
+      expect(item.primaryPhotoUrl).toBe('https://s3.local/listings/u1/land1.jpg?signed=true');
+      expect(item.photoCount).toBe(1);
+      expect(item.documentCount).toBe(1);
+      expect(item.sellerRole).toBe(UserRole.OWNER);
+      expect(item.isFalVerified).toBe(false);
+      expect(item.bathrooms).toBeUndefined();
     });
   });
 });

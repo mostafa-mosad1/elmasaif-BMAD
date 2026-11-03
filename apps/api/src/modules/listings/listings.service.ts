@@ -285,18 +285,23 @@ export class ListingsService {
 
     const items = await Promise.all(
       listings.map(async (listing: any) => {
-        const photos = Array.isArray(listing.documents) ? listing.documents : [];
-        let primaryPhotoUrl: string | null = null;
-        if (photos.length > 0 && photos[0].fileUrl) {
-          try {
-            primaryPhotoUrl = await this.storageService.getPresignedDownloadUrl(
-              photos[0].fileUrl,
-              300,
-            );
-          } catch {
-            primaryPhotoUrl = photos[0].fileUrl;
-          }
-        }
+        const photoDocs = Array.isArray(listing.documents) ? listing.documents : [];
+        const photos: string[] = await Promise.all(
+          photoDocs
+            .filter((doc: any) => Boolean(doc?.fileUrl))
+            .map(async (doc: any) => {
+              try {
+                return await this.storageService.getPresignedDownloadUrl(
+                  doc.fileUrl,
+                  300,
+                );
+              } catch {
+                return doc.fileUrl;
+              }
+            }),
+        );
+        const primaryPhotoUrl = photos[0] ?? null;
+        const sellerRole = listing.sellerProfile?.role || UserRole.OWNER;
 
         return {
           id: listing.id,
@@ -312,8 +317,10 @@ export class ListingsService {
           bedrooms: listing.bedrooms,
           yearBuilt: listing.yearBuilt,
           status: listing.status,
-          sellerRole: listing.sellerProfile?.role || UserRole.OWNER,
+          sellerRole,
+          isFalVerified: sellerRole === UserRole.MARKETER,
           photoCount: photos.length,
+          photos,
           primaryPhotoUrl,
           createdAt: listing.createdAt,
         };
@@ -358,19 +365,24 @@ export class ListingsService {
     const items = await Promise.all(
       listings.map(async (listing: any) => {
         const docs = Array.isArray(listing.documents) ? listing.documents : [];
-        const photos = docs.filter((d: any) => d.documentType === 'PHOTO');
+        const photoDocs = docs.filter((d: any) => d.documentType === 'PHOTO');
         const legalDocs = docs.filter((d: any) => d.documentType !== 'PHOTO');
-        let primaryPhotoUrl: string | null = null;
-        if (photos.length > 0 && photos[0].fileUrl) {
-          try {
-            primaryPhotoUrl = await this.storageService.getPresignedDownloadUrl(
-              photos[0].fileUrl,
-              300,
-            );
-          } catch {
-            primaryPhotoUrl = photos[0].fileUrl;
-          }
-        }
+        const photos: string[] = await Promise.all(
+          photoDocs
+            .filter((doc: any) => Boolean(doc?.fileUrl))
+            .map(async (doc: any) => {
+              try {
+                return await this.storageService.getPresignedDownloadUrl(
+                  doc.fileUrl,
+                  300,
+                );
+              } catch {
+                return doc.fileUrl;
+              }
+            }),
+        );
+        const primaryPhotoUrl = photos[0] ?? null;
+        const sellerRole = listing.sellerProfile?.role || UserRole.OWNER;
 
         return {
           id: listing.id,
@@ -383,11 +395,14 @@ export class ListingsService {
           askPrice: Number(listing.askPrice),
           areaSquareMeters: listing.areaSquareMeters,
           bedrooms: listing.bedrooms,
+          yearBuilt: listing.yearBuilt,
           status: listing.status,
           rejectionReason: (listing as any).rejectionReason ?? null,
           reviewedAt: (listing as any).reviewedAt ?? null,
-          sellerRole: listing.sellerProfile?.role || UserRole.OWNER,
+          sellerRole,
+          isFalVerified: sellerRole === UserRole.MARKETER,
           photoCount: photos.length,
+          photos,
           documentCount: legalDocs.length,
           primaryPhotoUrl,
           createdAt: listing.createdAt,

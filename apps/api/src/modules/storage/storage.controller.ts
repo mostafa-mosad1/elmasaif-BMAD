@@ -327,6 +327,7 @@ export class StorageController {
       : 'image/jpeg';
 
     res.setHeader('Content-Type', mime);
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.setHeader('Cache-Control', 'private, max-age=300');
     res.send(buffer);
   }

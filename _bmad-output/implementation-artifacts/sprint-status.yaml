@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 10-27-2026 15:27
-last_updated: 11-03-2026 10:59
+last_updated: 11-03-2026 11:50
 project: elmasaif
 project_key: NOKEY
 tracking_system: file-system
@@ -62,7 +62,7 @@ development_status:
   epic-2: in-progress
   2-1-geographic-master-data-administration-cascading-dropdown: done
   2-2-listing-creation-document-visibility-classification: review
-  2-3-reusable-property-card-16-9-media-carousel: backlog
+  2-3-reusable-property-card-16-9-media-carousel: review
   2-4-listing-moderation-queue-with-15-minute-task-claim-locking: review
   2-5-admin-price-suggestion-seller-response: backlog
   2-6-listing-archiving-suspension-compliance-blocking: backlog

@@ -101,6 +101,7 @@ export interface ListingDetailResponse {
 export interface ListingSummaryItem {
   id: string;
   title: string;
+  description?: string;
   propertyType: PropertyType;
   cityId: string;
   districtId: string;
@@ -109,8 +110,13 @@ export interface ListingSummaryItem {
   askPrice: number | string;
   areaSquareMeters: number;
   bedrooms?: number | null;
+  yearBuilt?: number | null;
   status: ListingStatus;
-  primaryPhotoUrl?: string;
+  sellerRole?: UserRole;
+  isFalVerified?: boolean;
+  primaryPhotoUrl?: string | null;
+  photoCount?: number;
+  photos?: string[];
   createdAt: string;
 }
 
