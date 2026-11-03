@@ -98,6 +98,9 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
     ],
     [UserRole.ADMIN]: [
       { href: '/admin', label: 'لوحة تحكم المشرف', icon: LayoutDashboard },
+      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Listings.Review')
+        ? [{ href: '/admin/listings/moderation', label: 'طابور مراجعة الإعلانات العقارية', icon: Building }]
+        : []),
       ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Geo.Manage')
         ? [{ href: '/admin/geo', label: 'إدارة المدن والأحياء', icon: MapPin }]
         : [])

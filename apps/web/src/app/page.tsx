@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ShieldCheck,
@@ -18,10 +18,24 @@ import {
 } from 'lucide-react';
 import { LayoutShell } from '../components/layout';
 import { Button, Badge, Card, EmptyState } from '../components/ui';
+import { UserRole } from '@elmasaif/shared';
+import { apiClient } from '../lib/api-client';
 
 export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState(0);
   const [showEmptyStateDemo, setShowEmptyStateDemo] = useState(false);
+  const [liveListings, setLiveListings] = useState<any[]>([]);
+
+  useEffect(() => {
+    apiClient
+      .get<{ statusCode: number; data: { items: any[] } }>('/listings?limit=12')
+      .then((res) => {
+        if (res?.data?.items) {
+          setLiveListings(res.data.items);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const categories = [
     'الكل',
@@ -243,6 +257,98 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {liveListings.map((item) => {
+            const commission = Math.round(Number(item.askPrice) * 0.025);
+            const isMarketer = item.sellerRole === UserRole.MARKETER;
+            return (
+              <Card key={item.id} hoverEffect className="overflow-hidden flex flex-col p-0">
+                <div className="relative aspect-[16/10] bg-surface-sunken dark:bg-dark-surface-sunken overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
+                  {item.primaryPhotoUrl ? (
+                    <img
+                      src={item.primaryPhotoUrl}
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-emerald-950 flex items-center justify-center text-primary-light text-sm font-medium px-4 text-center">
+                      {item.title}
+                    </div>
+                  )}
+                  <div className="absolute top-3 right-3 z-20">
+                    {isMarketer ? (
+                      <Badge
+                        variant="verified"
+                        size="sm"
+                        icon={<CheckCircle2 className="w-3.5 h-3.5 text-status-verified" />}
+                      >
+                        معلن مرخص (فال)
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant="pending"
+                        size="sm"
+                        icon={<Building2 className="w-3.5 h-3.5 text-status-pending" />}
+                      >
+                        عرض مالك مباشر
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="absolute top-3 left-3 z-20 bg-black/60 backdrop-blur text-white px-2.5 py-1 rounded-pill text-xs font-mono">
+                    {`1/${item.photoCount || 1}`}
+                  </div>
+                  <div className="absolute bottom-3 right-3 z-20 text-white font-mono-numbers text-xl font-bold">
+                    {`${Number(item.askPrice).toLocaleString('en-US')} `}
+                    <span className="text-xs font-sans font-normal">ر.س</span>
+                  </div>
+                </div>
+
+                <div className="p-5 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 text-xs text-ink-secondary dark:text-dark-ink-secondary mb-2">
+                      <MapPin className="w-3.5 h-3.5 text-primary dark:text-primary-light" />
+                      <span>{`${item.cityName}، حي ${item.districtName}`}</span>
+                    </div>
+                    <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary line-clamp-1">
+                      {item.title}
+                    </h3>
+                    <div className="mt-4 pt-3 border-t border-surface-border dark:border-dark-surface-border grid grid-cols-3 gap-2 text-center text-xs text-ink-secondary dark:text-dark-ink-secondary">
+                      <div>
+                        <span className="block font-bold text-ink-primary dark:text-dark-ink-primary text-sm font-mono-numbers">
+                          {`${item.areaSquareMeters} م²`}
+                        </span>
+                        المساحة
+                      </div>
+                      <div>
+                        <span className="block font-bold text-ink-primary dark:text-dark-ink-primary text-sm">
+                          {item.bedrooms ? `${item.bedrooms} غرف` : '—'}
+                        </span>
+                        الغرف
+                      </div>
+                      <div>
+                        <span className="block font-bold text-ink-primary dark:text-dark-ink-primary text-sm font-mono-numbers">
+                          {item.yearBuilt || 'جديد'}
+                        </span>
+                        البناء
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 pt-4 border-t border-surface-border dark:border-dark-surface-border flex items-center justify-between">
+                    <div className="text-xs text-ink-secondary dark:text-dark-ink-secondary">
+                      سعي المنصة:{' '}
+                      <span className="font-bold text-primary dark:text-primary-light font-mono-numbers">
+                        {`${commission.toLocaleString('en-US')} ر.س`}
+                      </span>
+                    </div>
+                    <Button variant="outline" size="sm">
+                      تقديم عرض
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
           {/* Card 1 */}
           <Card hoverEffect className="overflow-hidden flex flex-col p-0">
             <div className="relative aspect-[16/10] bg-surface-sunken dark:bg-dark-surface-sunken overflow-hidden group">

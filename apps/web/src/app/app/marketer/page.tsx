@@ -1,21 +1,59 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
 import { EmptyState } from '../../../components/ui/empty-state';
-import { ShieldCheck, Building, PlusCircle, MessageSquare, TrendingUp } from 'lucide-react';
+import {
+  ShieldCheck,
+  Building,
+  PlusCircle,
+  MessageSquare,
+  TrendingUp,
+  MapPin,
+  CheckCircle2,
+  Clock,
+  XCircle,
+} from 'lucide-react';
+import { ListingStatus, PropertyType } from '@elmasaif/shared';
+import { apiClient } from '../../../lib/api-client';
+
+const PROPERTY_TYPE_LABELS: Record<string, string> = {
+  [PropertyType.VILLA]: 'فيلا',
+  [PropertyType.LAND]: 'أرض',
+  [PropertyType.APARTMENT]: 'شقة',
+  [PropertyType.BUILDING]: 'عمارة',
+  [PropertyType.COMMERCIAL]: 'تجاري',
+  [PropertyType.FARM]: 'مزرعة / استراحة',
+};
 
 export default function MarketerDashboardPage() {
+  const [myListings, setMyListings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiClient
+      .get<{ statusCode: number; data: { items: any[] } }>('/listings/my')
+      .then((res) => {
+        if (res?.data?.items) {
+          setMyListings(res.data.items);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const activeCount = myListings.filter((l) => l.status === ListingStatus.ACTIVE).length;
+
   const stats = [
     {
       title: 'العقارات المعروضة',
-      count: 0,
+      count: activeCount,
       description: 'عقارات نشطة ومعتمدة في المنصة',
       icon: Building,
-      href: '/app/marketer/listings'
+      href: '/app/marketer'
     },
     {
       title: 'استفسارات المشترين',
@@ -113,18 +151,87 @@ export default function MarketerDashboardPage() {
         })}
       </div>
 
-      {/* Empty State */}
-      <Card>
-        <CardContent className="p-6">
-          <EmptyState
-            title="لا توجد عقارات مضافة في محفظتك"
-            description="ابدأ بإضافة أول عقار مسوق لديك، مع إرفاق ترخيص الإعلان وبيانات الصك للنشر المباشر."
-            icon={<Building className="w-7 h-7" />}
-            actionLabel="إضافة عقار جديد"
-            actionHref="/app/marketer/listings/new"
-          />
-        </CardContent>
-      </Card>
+      {/* Marketer Listings or Empty State */}
+      {myListings.length > 0 ? (
+        <Card>
+          <CardHeader className="border-b border-surface-border dark:border-dark-surface-border">
+            <CardTitle className="text-lg font-bold">
+              العقارات المسوقة وحالة الاعتماد ({myListings.length})
+            </CardTitle>
+            <CardDescription className="text-xs mt-1">
+              قائمة العقارات المرفوعة وحالتها الحالية في المنصة.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="divide-y divide-surface-border dark:divide-dark-surface-border p-0">
+            {myListings.map((item) => (
+              <div key={item.id} className="p-5 flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-bold">
+                        {PROPERTY_TYPE_LABELS[item.propertyType] || item.propertyType}
+                      </span>
+                      <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
+                        {item.title}
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-ink-secondary">
+                      <MapPin className="w-3.5 h-3.5 text-primary" />
+                      <span>{`${item.cityName} — حي ${item.districtName}`}</span>
+                      <span>•</span>
+                      <span className="font-mono">{`${item.areaSquareMeters} م²`}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div dir="ltr" className="font-mono font-bold text-sm text-[#1B4332] dark:text-emerald-400">
+                      {`${Number(item.askPrice).toLocaleString('en-US')} SAR`}
+                    </div>
+
+                    {item.status === ListingStatus.ACTIVE ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>معتمد ومنشور في السوق</span>
+                      </span>
+                    ) : item.status === ListingStatus.REJECTED ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-100 text-red-800 text-xs font-bold">
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span>مرفوض من الإدارة</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-bold">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>بانتظار المراجعة الإدارية</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {item.status === ListingStatus.REJECTED && item.rejectionReason && (
+                  <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs">
+                    <span className="font-bold">سبب الرفض من الإدارة: </span>
+                    <span>{item.rejectionReason}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : (
+        !loading && (
+          <Card>
+            <CardContent className="p-6">
+              <EmptyState
+                title="لا توجد عقارات مضافة في محفظتك"
+                description="ابدأ بإضافة أول عقار مسوق لديك، مع إرفاق ترخيص الإعلان وبيانات الصك للنشر المباشر."
+                icon={<Building className="w-7 h-7" />}
+                actionLabel="إضافة عقار جديد"
+                actionHref="/app/marketer/listings/new"
+              />
+            </CardContent>
+          </Card>
+        )
+      )}
     </div>
   );
 }

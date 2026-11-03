@@ -87,6 +87,32 @@ export class ListingsController {
     return this.listingsService.uploadMediaOrDocument(file, userId, purpose || 'photo');
   }
 
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'List public ACTIVE property listings' })
+  async getPublicListings(@Query('limit') limit?: string) {
+    const result = await this.listingsService.getPublicActiveListings(
+      limit ? Number(limit) : 24,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      data: result,
+    };
+  }
+
+  @Get('my')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(SessionAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List current authenticated seller (Owner/Marketer) listings with moderation status' })
+  async getMyListings(@Req() req: any) {
+    const result = await this.listingsService.getMyListings(req.user.id);
+    return {
+      statusCode: HttpStatus.OK,
+      data: result,
+    };
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Retrieve property listing details by ID' })
   @ApiResponse({ status: 200, description: 'Listing details retrieved', type: ListingResponseDto })

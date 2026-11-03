@@ -256,6 +256,150 @@ export class ListingsService {
   }
 
   /**
+   * Lists public ACTIVE property listings for the marketplace home/search view.
+   */
+  async getPublicActiveListings(limit = 24): Promise<any> {
+    const listings = await this.prisma.listing.findMany({
+      where: {
+        status: ListingStatus.ACTIVE,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(100, Math.max(1, Number(limit) || 24)),
+      include: {
+        city: true,
+        district: true,
+        documents: {
+          where: {
+            documentType: 'PHOTO',
+            visibility: DocumentVisibility.PUBLIC,
+          },
+        },
+        sellerProfile: {
+          select: {
+            id: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    const items = await Promise.all(
+      listings.map(async (listing: any) => {
+        const photos = Array.isArray(listing.documents) ? listing.documents : [];
+        let primaryPhotoUrl: string | null = null;
+        if (photos.length > 0 && photos[0].fileUrl) {
+          try {
+            primaryPhotoUrl = await this.storageService.getPresignedDownloadUrl(
+              photos[0].fileUrl,
+              300,
+            );
+          } catch {
+            primaryPhotoUrl = photos[0].fileUrl;
+          }
+        }
+
+        return {
+          id: listing.id,
+          title: listing.title,
+          description: listing.description,
+          propertyType: listing.propertyType,
+          cityId: listing.cityId,
+          districtId: listing.districtId,
+          cityName: listing.city?.nameAr || '',
+          districtName: listing.district?.nameAr || '',
+          askPrice: Number(listing.askPrice),
+          areaSquareMeters: listing.areaSquareMeters,
+          bedrooms: listing.bedrooms,
+          yearBuilt: listing.yearBuilt,
+          status: listing.status,
+          sellerRole: listing.sellerProfile?.role || UserRole.OWNER,
+          photoCount: photos.length,
+          primaryPhotoUrl,
+          createdAt: listing.createdAt,
+        };
+      }),
+    );
+
+    return { items };
+  }
+
+  /**
+   * Lists all property listings created by the authenticated user (across OWNER / MARKETER profiles)
+   * including moderation status (PENDING_REVIEW, ACTIVE, REJECTED) and rejectionReason.
+   */
+  async getMyListings(userId: string): Promise<any> {
+    const listings = await this.prisma.listing.findMany({
+      where: {
+        sellerProfile: {
+          userId,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        city: true,
+        district: true,
+        documents: {
+          select: {
+            id: true,
+            documentType: true,
+            fileUrl: true,
+            visibility: true,
+          },
+        },
+        sellerProfile: {
+          select: {
+            id: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    const items = await Promise.all(
+      listings.map(async (listing: any) => {
+        const docs = Array.isArray(listing.documents) ? listing.documents : [];
+        const photos = docs.filter((d: any) => d.documentType === 'PHOTO');
+        const legalDocs = docs.filter((d: any) => d.documentType !== 'PHOTO');
+        let primaryPhotoUrl: string | null = null;
+        if (photos.length > 0 && photos[0].fileUrl) {
+          try {
+            primaryPhotoUrl = await this.storageService.getPresignedDownloadUrl(
+              photos[0].fileUrl,
+              300,
+            );
+          } catch {
+            primaryPhotoUrl = photos[0].fileUrl;
+          }
+        }
+
+        return {
+          id: listing.id,
+          title: listing.title,
+          propertyType: listing.propertyType,
+          cityId: listing.cityId,
+          districtId: listing.districtId,
+          cityName: listing.city?.nameAr || '',
+          districtName: listing.district?.nameAr || '',
+          askPrice: Number(listing.askPrice),
+          areaSquareMeters: listing.areaSquareMeters,
+          bedrooms: listing.bedrooms,
+          status: listing.status,
+          rejectionReason: (listing as any).rejectionReason ?? null,
+          reviewedAt: (listing as any).reviewedAt ?? null,
+          sellerRole: listing.sellerProfile?.role || UserRole.OWNER,
+          photoCount: photos.length,
+          documentCount: legalDocs.length,
+          primaryPhotoUrl,
+          createdAt: listing.createdAt,
+          updatedAt: listing.updatedAt,
+        };
+      }),
+    );
+
+    return { items };
+  }
+
+  /**
    * Retrieves listing details with document visibility filtering and signed URLs.
    */
   async getListingById(

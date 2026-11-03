@@ -346,6 +346,9 @@ model Listing {
   lockedByAdminId  String?
   lockedAt         DateTime?
   lockExpiresAt    DateTime?
+  rejectionReason  String?            @map("rejection_reason")
+  reviewedByAdminId String?           @map("reviewed_by_admin_id")
+  reviewedAt       DateTime?          @map("reviewed_at")
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 

@@ -15,6 +15,7 @@ import {
   Lock,
   Users,
   ArrowLeft,
+  Building2,
 } from 'lucide-react';
 import { apiClient } from '../../lib/api-client';
 import { useAdminAuth } from '../../components/providers/admin-auth-provider';
@@ -30,6 +31,10 @@ export default function AdminDashboardPage() {
     hasPermission('Rbac.Manage') || admin?.role === AdminRole.SUPER_ADMIN;
   const canManageGeo =
     hasPermission('Geo.Manage') || admin?.role === AdminRole.SUPER_ADMIN;
+  const canReviewListings =
+    hasPermission('Listings.Review') ||
+    admin?.role === AdminRole.SUPER_ADMIN ||
+    admin?.role === AdminRole.MODERATOR;
 
   const loadStaff = useCallback(async () => {
     if (!canManageRbac) return;
@@ -68,10 +73,20 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {canReviewListings && (
+            <Link
+              href="/admin/listings/moderation"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-[#1B4332] text-xs font-bold shadow-sm hover:bg-[#D8F3DC] transition-colors"
+            >
+              <Building2 className="w-4 h-4" />
+              <span>طابور مراجعة الإعلانات العقارية</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </Link>
+          )}
           {canManageGeo ? (
             <Link
               href="/admin/geo"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-[#1B4332] text-xs font-bold shadow-sm hover:bg-[#D8F3DC] transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 text-white border border-white/25 text-xs font-bold shadow-sm hover:bg-white/25 transition-colors"
             >
               <MapPin className="w-4 h-4" />
               <span>إدارة المدن والأحياء</span>

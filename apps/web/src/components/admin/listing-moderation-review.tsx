@@ -1,0 +1,869 @@
+'use client';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import {
+  AdminRole,
+  DocumentVisibility,
+  LISTING_LOCK_HEARTBEAT_INTERVAL_MS,
+  ListingLockInfo,
+  ListingStatus,
+  PropertyType,
+  UserRole,
+} from '@elmasaif/shared';
+import {
+  AlertTriangle,
+  ArrowRight,
+  Building2,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
+  FileText,
+  Image as ImageIcon,
+  Lock,
+  MapPin,
+  RefreshCw,
+  ShieldAlert,
+  ShieldCheck,
+  Unlock,
+  User,
+  XCircle,
+} from 'lucide-react';
+import { apiClient } from '../../lib/api-client';
+import { useAdminAuth } from '../providers/admin-auth-provider';
+
+const PROPERTY_TYPE_LABELS: Record<string, string> = {
+  [PropertyType.VILLA]: 'فيلا',
+  [PropertyType.LAND]: 'أرض',
+  [PropertyType.APARTMENT]: 'شقة',
+  [PropertyType.BUILDING]: 'عمارة',
+  [PropertyType.COMMERCIAL]: 'تجاري',
+  [PropertyType.FARM]: 'مزرعة / استراحة',
+};
+
+const DOC_TYPE_LABELS: Record<string, string> = {
+  TITLE_DEED: 'صك الملكية الإلكتروني',
+  OWNER_AUTHORIZATION: 'عقد تفويض المالك / اتفاقية الوساطة',
+  COMMERCIAL_REGISTRATION: 'السجل التجاري',
+  FLOOR_PLAN: 'المخطط الهندسي / الكروكي',
+  OTHER: 'مستند إضافي',
+};
+
+function formatCountdown(seconds: number): string {
+  const safe = Math.max(0, Math.floor(seconds));
+  const mins = Math.floor(safe / 60);
+  const secs = safe % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+export interface ListingModerationReviewProps {
+  listingId: string;
+  initialDetail?: any;
+}
+
+export function ListingModerationReview({
+  listingId,
+  initialDetail,
+}: ListingModerationReviewProps) {
+  const router = useRouter();
+  const { admin, hasPermission } = useAdminAuth();
+
+  const [detail, setDetail] = useState<any | null>(initialDetail || null);
+  const [loading, setLoading] = useState<boolean>(!initialDetail);
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(
+    initialDetail?.lockInfo?.remainingSeconds ?? 0,
+  );
+
+  // Decision form state
+  const [approvalNotes, setApprovalNotes] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [submittingAction, setSubmittingAction] = useState<string | null>(null);
+
+  // Force unlock modal state
+  const [showForceUnlockModal, setShowForceUnlockModal] = useState(false);
+  const [forceUnlockReason, setForceUnlockReason] = useState('');
+
+  // Feedback banner
+  const [feedback, setFeedback] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+
+  const canForceUnlock =
+    hasPermission('Tasks.ForceUnlock') || admin?.role === AdminRole.SUPER_ADMIN;
+
+  const loadDetail = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await apiClient.get<{ statusCode: number; data: any }>(
+        `/admin/listings/${listingId}`,
+      );
+      if (res?.data) {
+        setDetail(res.data);
+        setRemainingSeconds(res.data.lockInfo?.remainingSeconds ?? 0);
+      }
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err?.message || 'تعذر تحميل بيانات الإعلان للمراجعة',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [listingId]);
+
+  useEffect(() => {
+    if (!initialDetail) {
+      loadDetail();
+    }
+  }, [initialDetail, loadDetail]);
+
+  // Live 1-second countdown timer for active locks
+  useEffect(() => {
+    if (!detail?.lockInfo?.isLocked || remainingSeconds <= 0) {
+      return;
+    }
+    const timer = setInterval(() => {
+      setRemainingSeconds((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [detail?.lockInfo?.isLocked, remainingSeconds]);
+
+  // Automatic 5-minute heartbeat renewal while holding the lock
+  useEffect(() => {
+    if (!detail?.lockInfo?.isLocked || !detail?.lockInfo?.isLockedByCurrentAdmin) {
+      return;
+    }
+
+    const heartbeatTimer = setInterval(async () => {
+      try {
+        const res = await apiClient.post<{ statusCode: number; data: any }>(
+          `/admin/listings/${listingId}/heartbeat`,
+        );
+        if (res?.data?.lockInfo) {
+          setDetail((prev: any) =>
+            prev ? { ...prev, lockInfo: res.data.lockInfo } : prev,
+          );
+          setRemainingSeconds(res.data.lockInfo.remainingSeconds ?? 900);
+        }
+      } catch {
+        // Ignore transient network errors; manual extend or re-claim remains available
+      }
+    }, LISTING_LOCK_HEARTBEAT_INTERVAL_MS);
+
+    return () => clearInterval(heartbeatTimer);
+  }, [
+    listingId,
+    detail?.lockInfo?.isLocked,
+    detail?.lockInfo?.isLockedByCurrentAdmin,
+  ]);
+
+  const handleClaimTask = async () => {
+    setSubmittingAction('claim');
+    setFeedback(null);
+    try {
+      const res = await apiClient.post<{ statusCode: number; data: any }>(
+        `/admin/listings/${listingId}/claim`,
+      );
+      if (res?.data?.lockInfo) {
+        setDetail((prev: any) =>
+          prev ? { ...prev, lockInfo: res.data.lockInfo } : prev,
+        );
+        setRemainingSeconds(res.data.lockInfo.remainingSeconds ?? 900);
+      }
+      setFeedback({
+        type: 'success',
+        message: 'تم استلام المهمة وقفلها حصرياً باسمك لمدة 15 دقيقة',
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err?.message || 'تعذر استلام المهمة — قد تكون مقفولة بواسطة مشرف آخر',
+      });
+      await loadDetail();
+    } finally {
+      setSubmittingAction(null);
+    }
+  };
+
+  const handleHeartbeatExtend = async () => {
+    setSubmittingAction('heartbeat');
+    setFeedback(null);
+    try {
+      const res = await apiClient.post<{ statusCode: number; data: any }>(
+        `/admin/listings/${listingId}/heartbeat`,
+      );
+      if (res?.data?.lockInfo) {
+        setDetail((prev: any) =>
+          prev ? { ...prev, lockInfo: res.data.lockInfo } : prev,
+        );
+        setRemainingSeconds(res.data.lockInfo.remainingSeconds ?? 900);
+      }
+      setFeedback({
+        type: 'success',
+        message: 'تم تمديد مهلة قفل المراجعة لمدة 15 دقيقة إضافية',
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err?.message || 'تعذر تمديد قفل المراجعة',
+      });
+    } finally {
+      setSubmittingAction(null);
+    }
+  };
+
+  const handleReleaseLock = async () => {
+    setSubmittingAction('release');
+    setFeedback(null);
+    try {
+      await apiClient.post(`/admin/listings/${listingId}/release`);
+      router.push('/admin/listings/moderation');
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err?.message || 'تعذر تحرير قفل المهمة',
+      });
+      setSubmittingAction(null);
+    }
+  };
+
+  const handleForceUnlock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (forceUnlockReason.trim().length < 5) {
+      setFeedback({
+        type: 'error',
+        message: 'سبب فك القفل الإجباري يجب ألا يقل عن 5 أحرف',
+      });
+      return;
+    }
+
+    setSubmittingAction('force-unlock');
+    setFeedback(null);
+    try {
+      const res = await apiClient.post<{ statusCode: number; data: any }>(
+        `/admin/listings/${listingId}/force-unlock`,
+        { reason: forceUnlockReason.trim() },
+      );
+      if (res?.data?.lockInfo) {
+        setDetail((prev: any) =>
+          prev ? { ...prev, lockInfo: res.data.lockInfo } : prev,
+        );
+        setRemainingSeconds(0);
+      }
+      setShowForceUnlockModal(false);
+      setForceUnlockReason('');
+      setFeedback({
+        type: 'success',
+        message: 'تم فك القفل الإجباري للمهمة وتسجيل الإجراء في سجل التدقيق',
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err?.message || 'تعذر تنفيذ فك القفل الإجباري',
+      });
+    } finally {
+      setSubmittingAction(null);
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!detail) return;
+    setSubmittingAction('approve');
+    setFeedback(null);
+    try {
+      const res = await apiClient.post<{ statusCode: number; data: any }>(
+        `/admin/listings/${listingId}/approve`,
+        {
+          version: detail.version,
+          notes: approvalNotes.trim() || undefined,
+        },
+      );
+      if (res?.data) {
+        setDetail((prev: any) => ({
+          ...prev,
+          status: ListingStatus.ACTIVE,
+          version: res.data.version ?? prev.version + 1,
+          lockInfo: res.data.lockInfo,
+        }));
+      }
+      setFeedback({
+        type: 'success',
+        message: 'تم اعتماد الإعلان العقاري ونشره بنجاح في المنصة',
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err?.message || 'تعذر اعتماد الإعلان العقاري',
+      });
+    } finally {
+      setSubmittingAction(null);
+    }
+  };
+
+  const handleReject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!detail) return;
+    if (rejectionReason.trim().length < 10) {
+      setFeedback({
+        type: 'error',
+        message: 'سبب الرفض يجب ألا يقل عن 10 أحرف لتوضيح الملاحظات لمقدم الإعلان',
+      });
+      return;
+    }
+
+    setSubmittingAction('reject');
+    setFeedback(null);
+    try {
+      const res = await apiClient.post<{ statusCode: number; data: any }>(
+        `/admin/listings/${listingId}/reject`,
+        {
+          version: detail.version,
+          rejectionReason: rejectionReason.trim(),
+        },
+      );
+      if (res?.data) {
+        setDetail((prev: any) => ({
+          ...prev,
+          status: ListingStatus.REJECTED,
+          rejectionReason: rejectionReason.trim(),
+          version: res.data.version ?? prev.version + 1,
+          lockInfo: res.data.lockInfo,
+        }));
+      }
+      setFeedback({
+        type: 'success',
+        message: 'تم رفض الإعلان العقاري وحفظ أسباب الرفض في السجل',
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err?.message || 'تعذر رفض الإعلان العقاري',
+      });
+    } finally {
+      setSubmittingAction(null);
+    }
+  };
+
+  if (loading && !detail) {
+    return (
+      <div dir="rtl" className="p-12 text-center text-ink-muted text-sm">
+        جاري تحميل تفاصيل الإعلان العقاري للمراجعة...
+      </div>
+    );
+  }
+
+  if (!detail) {
+    return (
+      <div dir="rtl" className="p-12 text-center space-y-3">
+        <p className="text-sm font-bold text-red-600">
+          لم يتم العثور على الإعلان العقاري المطلوب
+        </p>
+        <Link
+          href="/admin/listings/moderation"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-primary underline"
+        >
+          <ArrowRight className="w-4 h-4" />
+          <span>العودة إلى طابور المراجعة</span>
+        </Link>
+      </div>
+    );
+  }
+
+  const lockInfo: ListingLockInfo = detail.lockInfo || {
+    isLocked: false,
+    isLockedByCurrentAdmin: false,
+    lockedByAdminId: null,
+    lockedByAdminName: null,
+    lockedAt: null,
+    lockExpiresAt: null,
+    remainingSeconds: 0,
+  };
+
+  const isLockedByCurrentAdmin =
+    lockInfo.isLocked && lockInfo.isLockedByCurrentAdmin && remainingSeconds > 0;
+  const isLockedByOther =
+    lockInfo.isLocked && !lockInfo.isLockedByCurrentAdmin && remainingSeconds > 0;
+  const isPendingReview = detail.status === ListingStatus.PENDING_REVIEW;
+  const canExecuteDecision =
+    isPendingReview && isLockedByCurrentAdmin && !submittingAction;
+
+  return (
+    <div dir="rtl" className="space-y-6">
+      {/* Top Breadcrumb & Back Link */}
+      <div className="flex items-center justify-between">
+        <Link
+          href="/admin/listings/moderation"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-ink-secondary hover:text-primary transition-colors"
+        >
+          <ArrowRight className="w-4 h-4" />
+          <span>العودة إلى طابور مراجعة الإعلانات العقارية</span>
+        </Link>
+
+        <span dir="ltr" className="text-xs font-mono text-ink-muted">
+          {`Listing ID: ${detail.id} • v${detail.version}`}
+        </span>
+      </div>
+
+      {/* 1. Lock Status Banner (AC #2, #3, #4, #5) */}
+      {isLockedByCurrentAdmin ? (
+        <div className="rounded-2xl bg-[#1B4332] text-white p-5 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+              <Lock className="w-5 h-5 text-[#D8F3DC]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold">
+                  قفل المراجعة الحصري نشط باسمك
+                </h2>
+                <span
+                  dir="ltr"
+                  className="px-2.5 py-0.5 rounded-full bg-white/20 text-[#D8F3DC] font-mono text-xs font-bold"
+                >
+                  {formatCountdown(remainingSeconds)}
+                </span>
+              </div>
+              <p className="text-xs text-white/80 mt-1">
+                يتم تمديد القفل تلقائياً كل 5 دقائق طالما أن نافذة المراجعة نشطة لمنع تضارب القرارات.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={Boolean(submittingAction)}
+              onClick={handleHeartbeatExtend}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold border border-white/20 transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>تمديد القفل</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={Boolean(submittingAction)}
+              onClick={handleReleaseLock}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white text-[#1B4332] hover:bg-[#D8F3DC] text-xs font-bold shadow-sm transition-colors"
+            >
+              <Unlock className="w-3.5 h-3.5" />
+              <span>تحرير المهمة</span>
+            </button>
+          </div>
+        </div>
+      ) : isLockedByOther ? (
+        <div
+          role="region"
+          aria-label="Read-Only Lock Warning"
+          className="rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-900 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        >
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-200/70 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-5 h-5 text-amber-800" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-2 py-0.5 rounded-full bg-amber-200 text-amber-950 text-[11px] font-bold">
+                  وضع القراءة فقط
+                </span>
+                <h2 className="text-sm font-bold">
+                  {`هذا الإعلان قيد المراجعة حالياً بواسطة ${lockInfo.lockedByAdminName || 'مشرف آخر'}`}
+                </h2>
+                <span
+                  dir="ltr"
+                  className="px-2.5 py-0.5 rounded-full bg-amber-900 text-amber-50 font-mono text-xs font-bold"
+                >
+                  {formatCountdown(remainingSeconds)}
+                </span>
+              </div>
+              <p className="text-xs text-amber-800 mt-1">
+                جميع أزرار الاعتماد والرفض معطلة مؤقتاً لمنع تضارب المراجعة حتى انتهاء المهلة أو تحرير المهمة.
+              </p>
+            </div>
+          </div>
+
+          {canForceUnlock && (
+            <button
+              type="button"
+              onClick={() => setShowForceUnlockModal(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-700 hover:bg-red-800 text-white text-xs font-bold shadow-sm transition-colors shrink-0"
+            >
+              <ShieldAlert className="w-4 h-4" />
+              <span>فك القفل الإجباري (Force Unlock)</span>
+            </button>
+          )}
+        </div>
+      ) : (
+        isPendingReview && (
+          <div className="rounded-2xl bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                <Unlock className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
+                  الإعلان متاح للاستلام والمراجعة
+                </h2>
+                <p className="text-xs text-ink-secondary">
+                  يجب استلام المهمة أولاً لتفعيل قفل المراجعة الحصري (15 دقيقة) وتتمكن من اتخاذ قرار الاعتماد أو الرفض.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              disabled={Boolean(submittingAction)}
+              onClick={handleClaimTask}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#1B4332] hover:bg-[#2D6A4F] text-white text-xs font-bold shadow-sm transition-colors"
+            >
+              <Lock className="w-4 h-4" />
+              <span>استلام المهمة لبدء المراجعة (15 دقيقة)</span>
+            </button>
+          </div>
+        )
+      )}
+
+      {/* Feedback Banner */}
+      {feedback && (
+        <div
+          role="status"
+          className={`p-4 rounded-xl border text-xs font-bold flex items-center justify-between ${
+            feedback.type === 'success'
+              ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+              : 'bg-red-50 border-red-300 text-red-900'
+          }`}
+        >
+          <span>{feedback.message}</span>
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            className="underline"
+          >
+            إغلاق
+          </button>
+        </div>
+      )}
+
+      {/* Main Two-Column Review Workspace */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Right Column (8 cols): Property & Legal Document Inspection */}
+        <div className="lg:col-span-8 space-y-6">
+          {/* Property Overview Card */}
+          <div className="bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border rounded-2xl p-6 space-y-4">
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-surface-border dark:border-dark-surface-border pb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-bold">
+                    {PROPERTY_TYPE_LABELS[detail.propertyType] || detail.propertyType}
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-md bg-surface-sunken text-ink-secondary text-xs font-semibold">
+                    {`الحالة: ${detail.status}`}
+                  </span>
+                </div>
+                <h1 className="text-xl font-bold text-ink-primary dark:text-dark-ink-primary mt-2">
+                  {detail.title}
+                </h1>
+                <div className="flex items-center gap-1.5 text-xs text-ink-secondary mt-1">
+                  <MapPin className="w-3.5 h-3.5 text-primary" />
+                  <span>
+                    {`${detail.cityName || ''} — حي ${detail.districtName || ''}${
+                      detail.streetName ? ` (${detail.streetName})` : ''
+                    }`}
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-left">
+                <div className="text-[11px] text-ink-muted">السعر المطلوب</div>
+                <div
+                  dir="ltr"
+                  className="text-xl font-mono font-bold text-[#1B4332] dark:text-emerald-400"
+                >
+                  {`${Number(detail.askPrice).toLocaleString('en-US')} SAR`}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-xs font-bold text-ink-secondary">وصف العقار</h3>
+              <p className="text-xs text-ink-primary dark:text-dark-ink-primary leading-relaxed whitespace-pre-line">
+                {detail.description}
+              </p>
+            </div>
+
+            {/* Key Specs & Monospace IBAN */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+              <div className="p-3 rounded-xl bg-surface-sunken dark:bg-dark-surface">
+                <div className="text-[11px] text-ink-muted">المساحة</div>
+                <div className="text-xs font-mono font-bold mt-0.5">
+                  {`${detail.areaSquareMeters} م²`}
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-surface-sunken dark:bg-dark-surface">
+                <div className="text-[11px] text-ink-muted">غرف النوم</div>
+                <div className="text-xs font-mono font-bold mt-0.5">
+                  {detail.bedrooms ?? 'غير محدد'}
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-surface-sunken dark:bg-dark-surface">
+                <div className="text-[11px] text-ink-muted">سنة البناء</div>
+                <div className="text-xs font-mono font-bold mt-0.5">
+                  {detail.yearBuilt ?? 'غير محدد'}
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-surface-sunken dark:bg-dark-surface">
+                <div className="text-[11px] text-ink-muted">الإحداثيات الجغرافية</div>
+                <div dir="ltr" className="text-[11px] font-mono font-semibold mt-0.5">
+                  {`${detail.latitude}, ${detail.longitude}`}
+                </div>
+              </div>
+            </div>
+
+            {/* Payout IBAN Card (Monospace) */}
+            {detail.payoutIban && (
+              <div className="p-3.5 rounded-xl bg-[#1B4332]/5 border border-[#1B4332]/20 flex items-center justify-between">
+                <span className="text-xs font-bold text-[#1B4332] dark:text-emerald-300">
+                  حساب الآيبان المرتبط لصرف مستحقات البائع (IBAN):
+                </span>
+                <span
+                  dir="ltr"
+                  className="font-mono text-xs font-bold tracking-wider text-ink-primary dark:text-dark-ink-primary"
+                >
+                  {detail.payoutIban}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Classified Legal Documents Section (ADMIN_ONLY) */}
+          <div className="bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border rounded-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-[#1B4332]" />
+                <h2 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
+                  المستندات القانونية والملكية المصنفة
+                </h2>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 text-[11px] font-bold">
+                سري للإدارة فقط (ADMIN_ONLY)
+              </span>
+            </div>
+
+            <div className="divide-y divide-surface-border dark:divide-dark-surface-border">
+              {(detail.documents || []).map((doc: any) => (
+                <div
+                  key={doc.id}
+                  className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+                >
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-ink-primary dark:text-dark-ink-primary">
+                        {DOC_TYPE_LABELS[doc.documentType] || doc.documentType}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-mono font-bold">
+                        {doc.scanStatus || 'CLEAN'}
+                      </span>
+                      {doc.visibility === DocumentVisibility.ADMIN_ONLY && (
+                        <span className="px-2 py-0.5 rounded bg-red-100 text-red-800 text-[10px] font-bold">
+                          ADMIN_ONLY
+                        </span>
+                      )}
+                    </div>
+                    <div dir="ltr" className="text-[11px] font-mono text-ink-muted">
+                      {`${doc.mimeType} • ${Math.round((doc.fileSize || 0) / 1024)} KB`}
+                    </div>
+                  </div>
+
+                  <a
+                    href={doc.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary text-primary hover:bg-primary hover:text-white text-xs font-bold transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>معاينة المستند (رابط موقع 300 ثانية)</span>
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Public Photos Gallery */}
+          <div className="bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border rounded-2xl p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="w-5 h-5 text-primary" />
+              <h2 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
+                {`صور العقار العامة (${(detail.photos || []).length})`}
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {(detail.photos || []).map((photo: any, idx: number) => (
+                <div
+                  key={photo.id || idx}
+                  className="p-3 rounded-xl border border-surface-border bg-surface-sunken flex flex-col justify-between gap-2"
+                >
+                  <div className="text-xs font-semibold text-ink-primary">
+                    {`صورة العقار #${idx + 1}`}
+                  </div>
+                  <a
+                    href={photo.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] text-primary font-bold hover:underline"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    <span>فتح الصورة</span>
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Left Column (4 cols): Seller Info & Moderation Decision Panel */}
+        <div className="lg:col-span-4 space-y-6">
+          {/* Seller Profile Card */}
+          <div className="bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border rounded-2xl p-5 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
+              <User className="w-4 h-4 text-primary" />
+              <span>بيانات مقدم الإعلان</span>
+            </div>
+            <div className="space-y-1.5 text-xs">
+              <div className="flex justify-between">
+                <span className="text-ink-muted">الاسم الكامل:</span>
+                <span className="font-bold">
+                  {detail.sellerProfile?.user?.fullName || 'غير متوفر'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-ink-muted">الصفة:</span>
+                <span className="font-semibold text-primary">
+                  {detail.sellerProfile?.role === UserRole.MARKETER
+                    ? 'وسيط عقاري مرخص (فال)'
+                    : 'مالك العقار المباشر'}
+                </span>
+              </div>
+              {detail.sellerProfile?.user?.mobileNumber && (
+                <div className="flex justify-between">
+                  <span className="text-ink-muted">رقم الجوال:</span>
+                  <span dir="ltr" className="font-mono">
+                    {detail.sellerProfile.user.mobileNumber}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Moderation Decision Panel (AC #6) */}
+          <div className="bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border rounded-2xl p-5 space-y-5">
+            <div className="flex items-center gap-2 border-b border-surface-border dark:border-dark-surface-border pb-3">
+              <ShieldCheck className="w-5 h-5 text-[#1B4332]" />
+              <h2 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
+                قرار المراجعة الإدارية
+              </h2>
+            </div>
+
+            {/* Approve Section */}
+            <div className="space-y-2.5">
+              <label className="block text-xs font-semibold text-ink-secondary">
+                ملاحظات الاعتماد الداخلية (اختياري)
+              </label>
+              <textarea
+                rows={2}
+                disabled={!canExecuteDecision}
+                value={approvalNotes}
+                onChange={(e) => setApprovalNotes(e.target.value)}
+                placeholder="تم التحقق من مطابقة الصك ورخصة فال..."
+                className="w-full px-3 py-2 text-xs rounded-xl border border-surface-border bg-white dark:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+              />
+              <button
+                type="button"
+                disabled={!canExecuteDecision}
+                onClick={handleApprove}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1B4332] hover:bg-[#2D6A4F] text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>اعتماد ونشر الإعلان</span>
+              </button>
+            </div>
+
+            <hr className="border-surface-border dark:border-dark-surface-border" />
+
+            {/* Reject Section */}
+            <form onSubmit={handleReject} className="space-y-2.5">
+              <label className="block text-xs font-semibold text-red-700">
+                أسباب وملاحظات الرفض (إلزامي عند الرفض — 10 أحرف على الأقل)
+              </label>
+              <textarea
+                rows={3}
+                disabled={!canExecuteDecision}
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="وضح سبب رفض الإعلان بدقة ليتمكن المالك أو الوسيط من تصحيحه..."
+                className="w-full px-3 py-2 text-xs rounded-xl border border-red-300 bg-white dark:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-red-600 disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                disabled={!canExecuteDecision}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-700 hover:bg-red-800 text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <XCircle className="w-4 h-4" />
+                <span>رفض الإعلان مع الملاحظات</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      {/* Super Admin Force Unlock Modal (AC #5) */}
+      {showForceUnlockModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-dark-surface-raised border border-surface-border rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center gap-2 text-red-700 font-bold text-base">
+              <ShieldAlert className="w-5 h-5" />
+              <span>فك القفل الإجباري للمهمة (Tasks.ForceUnlock)</span>
+            </div>
+            <p className="text-xs text-ink-secondary leading-relaxed">
+              سيتم إلغاء القفل الحالي المملوك للمشرف المناوب وتسجيل عملية فك القفل الإجباري في سجل التدقيق غير القابل للتعديل (AuditLog).
+            </p>
+            <form onSubmit={handleForceUnlock} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold mb-1">
+                  سبب فك القفل الإجباري (5 أحرف على الأقل) *
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  value={forceUnlockReason}
+                  onChange={(e) => setForceUnlockReason(e.target.value)}
+                  placeholder="مثال: انتهاء مناوبة المشرف أو انقطاع الاتصال..."
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-surface-border focus:outline-none focus:ring-2 focus:ring-red-600"
+                />
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowForceUnlockModal(false)}
+                  className="px-3.5 py-1.5 rounded-lg border border-surface-border text-xs font-semibold"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingAction === 'force-unlock'}
+                  className="px-4 py-1.5 rounded-lg bg-red-700 hover:bg-red-800 text-white text-xs font-bold"
+                >
+                  تأكيد فك القفل الإجباري
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+

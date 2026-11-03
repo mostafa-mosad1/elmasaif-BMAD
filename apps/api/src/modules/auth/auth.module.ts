@@ -11,6 +11,7 @@ import { StaticOtpProvider } from './otp/providers/static-otp.provider';
 import { SmsOtpProvider } from './otp/providers/sms-otp.provider';
 import { SessionAuthGuard } from './guards/session-auth.guard';
 import { AdminSessionAuthGuard } from './guards/admin-session-auth.guard';
+import { AdminPermissionGuard } from './guards/admin-permission.guard';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { ClockModule } from '../../common/clock/clock.module';
 
@@ -24,6 +25,7 @@ import { ClockModule } from '../../common/clock/clock.module';
     OtpService,
     SessionAuthGuard,
     AdminSessionAuthGuard,
+    AdminPermissionGuard,
     StaticOtpProvider,
     SmsOtpProvider,
     {
@@ -49,7 +51,8 @@ import { ClockModule } from '../../common/clock/clock.module';
     EmailTransportService,
     OtpService,
     SessionAuthGuard,
-    AdminSessionAuthGuard
+    AdminSessionAuthGuard,
+    AdminPermissionGuard
   ]
 })
 export class AuthModule {}

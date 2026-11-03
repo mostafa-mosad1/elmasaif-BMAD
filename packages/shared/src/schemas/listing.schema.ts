@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PropertyType, DocumentVisibility } from '../enums';
+import { PropertyType, DocumentVisibility, ListingStatus } from '../enums';
 import { saudiIbanSchema } from './index';
 import {
   MAX_LISTING_FILE_SIZE_BYTES,
@@ -9,6 +9,7 @@ import {
   MAX_LISTING_PRICE_SAR,
   SAUDI_BOUNDS,
 } from '../constants/listing';
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '../constants';
 
 export const listingPhotoItemSchema = z.object({
   fileUrl: z.string().min(1, 'رابط الصورة مطلوب'),
@@ -86,4 +87,50 @@ export const createListingSchema = z
     delete data.bathrooms;
     return data;
   });
+
+export const listingModerationQueueQuerySchema = z.object({
+  status: z
+    .nativeEnum(ListingStatus, {
+      errorMap: () => ({ message: 'حالة المراجعة غير صالحة' }),
+    })
+    .optional()
+    .default(ListingStatus.PENDING_REVIEW),
+  page: z.coerce.number().int().min(1, 'رقم الصفحة يجب أن يكون 1 أو أكثر').optional().default(1),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(MAX_PAGE_SIZE, `الحد الأقصى لعدد العناصر هو ${MAX_PAGE_SIZE}`)
+    .optional()
+    .default(DEFAULT_PAGE_SIZE),
+  cityId: z.string().uuid('معرف المدينة غير صالح').optional(),
+  propertyType: z
+    .nativeEnum(PropertyType, {
+      errorMap: () => ({ message: 'نوع العقار غير صالح' }),
+    })
+    .optional(),
+});
+
+export const approveListingSchema = z.object({
+  version: z.number().int().positive('رقم النسخة (version) مطلوب للتأكد من عدم تعارض التعديلات'),
+  notes: z.string().trim().max(1000, 'الملاحظات يجب ألا تتجاوز 1000 حرف').optional(),
+});
+
+export const rejectListingSchema = z.object({
+  version: z.number().int().positive('رقم النسخة (version) مطلوب للتأكد من عدم تعارض التعديلات'),
+  rejectionReason: z
+    .string()
+    .trim()
+    .min(10, 'سبب الرفض يجب ألا يقل عن 10 أحرف')
+    .max(1000, 'سبب الرفض يجب ألا يتجاوز 1000 حرف'),
+});
+
+export const forceUnlockListingSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(5, 'سبب فك القفل الإجباري يجب ألا يقل عن 5 أحرف')
+    .max(500, 'سبب فك القفل الإجباري يجب ألا يتجاوز 500 حرف'),
+});
+
 
