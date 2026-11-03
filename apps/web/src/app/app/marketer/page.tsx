@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { ListingStatus, PropertyType } from '@elmasaif/shared';
 import { apiClient } from '../../../lib/api-client';
+import { SellerPriceSuggestionCard } from '../../../components/listings/seller-price-suggestion-card';
 
 const PROPERTY_TYPE_LABELS: Record<string, string> = {
   [PropertyType.VILLA]: 'فيلا',
@@ -211,6 +212,32 @@ export default function MarketerDashboardPage() {
                   <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs">
                     <span className="font-bold">سبب الرفض من الإدارة: </span>
                     <span>{item.rejectionReason}</span>
+                  </div>
+                )}
+
+                {item.activePriceSuggestion && (
+                  <div className="mt-2">
+                    <SellerPriceSuggestionCard
+                      listingId={item.id}
+                      suggestion={item.activePriceSuggestion}
+                      onResponded={(action, updatedSuggestion, updatedListing) => {
+                        setMyListings((prev) =>
+                          prev.map((l) => {
+                            if (l.id !== item.id) return l;
+                            return {
+                              ...l,
+                              ...(updatedListing
+                                ? {
+                                    askPrice: updatedListing.askPrice,
+                                    status: updatedListing.status,
+                                  }
+                                : {}),
+                              activePriceSuggestion: updatedSuggestion,
+                            };
+                          }),
+                        );
+                      }}
+                    />
                   </div>
                 )}
               </div>

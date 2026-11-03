@@ -24,6 +24,8 @@ import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import {
   ApproveListingInput,
   approveListingSchema,
+  CreatePriceSuggestionInput,
+  createPriceSuggestionSchema,
   ForceUnlockListingInput,
   forceUnlockListingSchema,
   ListingModerationQueueQuery,
@@ -210,6 +212,31 @@ export class AdminListingsController {
     return {
       statusCode: HttpStatus.OK,
       message: 'تم رفض الإعلان العقاري وإشعار مقدم الطلب بالملاحظات',
+      data: result,
+    };
+  }
+
+  @Post(':id/suggest-price')
+  @HttpCode(HttpStatus.CREATED)
+  @RequireAdminPermission('Price.Suggest')
+  @ApiOperation({
+    summary: 'Submit an administrative price adjustment suggestion with market rationale (FR-57, BR-16)',
+  })
+  @ApiParam({ name: 'id', description: 'Listing UUID' })
+  async suggestListingPrice(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(createPriceSuggestionSchema))
+    body: CreatePriceSuggestionInput,
+    @Req() req: any,
+  ) {
+    const result = await this.adminListingsService.suggestListingPrice(
+      id,
+      req.admin,
+      body,
+    );
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'تم إرسال مقترح تعديل السعر الاسترشادي وإشعار البائع بنجاح',
       data: result,
     };
   }

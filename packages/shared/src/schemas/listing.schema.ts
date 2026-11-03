@@ -133,4 +133,33 @@ export const forceUnlockListingSchema = z.object({
     .max(500, 'سبب فك القفل الإجباري يجب ألا يتجاوز 500 حرف'),
 });
 
+export const createPriceSuggestionSchema = z.object({
+  suggestedPrice: z
+    .union([
+      z.number(),
+      z.string().regex(/^\d+(\.\d{1,2})?$/, 'السعر المقترح غير صحيح (أرقام عشرية صحيحة)'),
+    ])
+    .pipe(z.coerce.number())
+    .refine(
+      (val) => val >= MIN_LISTING_PRICE_SAR && val <= MAX_LISTING_PRICE_SAR,
+      {
+        message: `السعر المقترح يجب أن يكون بين ${MIN_LISTING_PRICE_SAR} و ${MAX_LISTING_PRICE_SAR.toLocaleString()} ريال سعودي`,
+      },
+    ),
+  reason: z
+    .string()
+    .trim()
+    .min(10, 'سبب ومبررات اقتراح السعر يجب ألا يقل عن 10 أحرف')
+    .max(1000, 'سبب ومبررات اقتراح السعر يجب ألا يتجاوز 1000 حرف'),
+});
+
+export const respondPriceSuggestionSchema = z.object({
+  sellerResponseNote: z
+    .string()
+    .trim()
+    .max(1000, 'ملاحظة البائع يجب ألا تتجاوز 1000 حرف')
+    .optional(),
+});
+
+
 

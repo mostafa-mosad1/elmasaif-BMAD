@@ -260,8 +260,15 @@ export function ListingModerationQueue({
                     >
                       {/* Title & Location */}
                       <td className="py-3.5 px-4">
-                        <div className="font-bold text-sm text-ink-primary dark:text-dark-ink-primary">
-                          {item.title}
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm text-ink-primary dark:text-dark-ink-primary">
+                            {item.title}
+                          </span>
+                          {item.activePriceSuggestion && (
+                            <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-200 text-[10px] font-bold">
+                              مقترح سعر معلّق
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-1 text-[11px] text-ink-secondary mt-0.5">
                           <MapPin className="w-3 h-3 text-primary" />
@@ -361,10 +368,14 @@ export function ListingModerationQueue({
                           ) : (
                             <Link
                               href={`/admin/listings/${item.id}/review`}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-400 bg-amber-50 text-amber-900 hover:bg-amber-100 text-xs font-bold transition-colors"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-primary/30 bg-primary/5 text-primary hover:bg-primary hover:text-white text-xs font-bold transition-colors"
                             >
                               <Eye className="w-3.5 h-3.5" />
-                              <span>معاينة للقراءة فقط</span>
+                              <span>
+                                {statusFilter === ListingStatus.ACTIVE
+                                  ? 'معاينة واقتراح سعر'
+                                  : 'معاينة وتفاصيل الإعلان'}
+                              </span>
                             </Link>
                           )}
                         </div>

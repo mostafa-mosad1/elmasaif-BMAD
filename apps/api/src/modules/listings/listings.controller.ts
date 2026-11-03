@@ -34,6 +34,8 @@ import {
   UserRole,
   createListingSchema,
   CreateListingInput,
+  respondPriceSuggestionSchema,
+  RespondPriceSuggestionInput,
   SESSION_COOKIE_NAME,
   ADMIN_SESSION_COOKIE_NAME,
 } from '@elmasaif/shared';
@@ -156,6 +158,60 @@ export class ListingsController {
     }
 
     return this.listingsService.getListingById(id, requesterUserId, requesterIsAdmin);
+  }
+
+  @Post(':id/price-suggestions/:suggestionId/accept')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(SessionAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Accept an administrative price suggestion on a listing (FR-57, BR-13)',
+  })
+  async acceptPriceSuggestion(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('suggestionId', new ParseUUIDPipe()) suggestionId: string,
+    @Body(new ZodValidationPipe(respondPriceSuggestionSchema))
+    body: RespondPriceSuggestionInput,
+    @Req() req: any,
+  ) {
+    const result = await this.listingsService.acceptPriceSuggestion(
+      id,
+      suggestionId,
+      req.user.id,
+      body,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'تم قبول السعر الاسترشادي المقترح وتحديث السعر المطلوب للإعلان بنجاح',
+      data: result,
+    };
+  }
+
+  @Post(':id/price-suggestions/:suggestionId/decline')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(SessionAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Decline an administrative price suggestion and keep original askPrice (FR-57)',
+  })
+  async declinePriceSuggestion(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('suggestionId', new ParseUUIDPipe()) suggestionId: string,
+    @Body(new ZodValidationPipe(respondPriceSuggestionSchema))
+    body: RespondPriceSuggestionInput,
+    @Req() req: any,
+  ) {
+    const result = await this.listingsService.declinePriceSuggestion(
+      id,
+      suggestionId,
+      req.user.id,
+      body,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'تم رفض مقترح تعديل السعر والاحتفاظ بالسعر المطلوب الحالي دون تغيير',
+      data: result,
+    };
   }
 }
 

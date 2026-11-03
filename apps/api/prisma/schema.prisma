@@ -124,6 +124,13 @@ enum VerificationStatus {
   REJECTED
 }
 
+enum PriceSuggestionStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  SUPERSEDED
+}
+
 model User {
   id                   String               @id @default(uuid())
   username             String               @unique
@@ -356,6 +363,7 @@ model Listing {
   district         District           @relation(fields: [districtId, cityId], references: [id, cityId])
   sellerProfile    UserProfile        @relation("ProfileListings", fields: [sellerProfileId], references: [id])
   documents        PropertyDocument[]
+  priceSuggestions PriceSuggestion[]
   offers           Offer[]
   deals            Deal[]
   ownerContract    OwnerContract?
@@ -363,6 +371,26 @@ model Listing {
   @@index([status, propertyType, cityId, districtId])
   @@index([lockExpiresAt])
   @@map("listings")
+}
+
+model PriceSuggestion {
+  id                   String                @id @default(uuid())
+  listingId            String                @map("listing_id")
+  currentAskPrice      Decimal               @db.Decimal(12, 2) @map("current_ask_price")
+  suggestedPrice       Decimal               @db.Decimal(12, 2) @map("suggested_price")
+  reason               String
+  status               PriceSuggestionStatus @default(PENDING)
+  suggestedByAdminId   String                @map("suggested_by_admin_id")
+  suggestedByAdminName String                @map("suggested_by_admin_name")
+  sellerResponseNote   String?               @map("seller_response_note")
+  respondedAt          DateTime?             @map("responded_at")
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
+
+  listing              Listing               @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, status])
+  @@map("price_suggestions")
 }
 
 model PropertyDocument {

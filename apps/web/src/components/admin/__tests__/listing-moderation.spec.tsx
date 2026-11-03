@@ -6,6 +6,7 @@ import {
   DocumentVisibility,
   ListingStatus,
   ModerationQueueItem,
+  PriceSuggestionStatus,
   PropertyType,
   ScanStatus,
   UserRole,
@@ -247,7 +248,7 @@ describe('ListingModerationQueue & ListingModerationReview SSR (Story 2.4)', () 
 
       // Actions
       expect(html).toContain('استلام ومراجعة الإعلان');
-      expect(html).toContain('معاينة للقراءة فقط');
+      expect(html).toContain('معاينة وتفاصيل الإعلان');
     });
   });
 
@@ -332,6 +333,85 @@ describe('ListingModerationQueue & ListingModerationReview SSR (Story 2.4)', () 
 
       expect(html).toContain('هذا الإعلان قيد المراجعة حالياً بواسطة خالد المشرف المناوب');
       expect(html).toContain('فك القفل الإجباري (Force Unlock)');
+    });
+
+    it('renders price suggestion card, input controls, and historical suggestion items with badges (Story 2.5)', () => {
+      const detailWithSuggestions = {
+        ...baseListingDetail,
+        priceSuggestions: [
+          {
+            id: 'sug-1',
+            listingId: 'listing-1',
+            currentAskPrice: 4500000,
+            suggestedPrice: 4100000,
+            reason: 'متوسط سعر المتر في الملقا للفلل المماثلة بناءً على الصفقات المعتمدة',
+            status: PriceSuggestionStatus.PENDING,
+            suggestedByAdminId: 'admin-mod-1',
+            suggestedByAdminName: 'أحمد المراجع',
+            sellerResponseNote: null,
+            respondedAt: null,
+            createdAt: '2026-11-03T09:00:00.000Z',
+          },
+          {
+            id: 'sug-0',
+            listingId: 'listing-1',
+            currentAskPrice: 4500000,
+            suggestedPrice: 4300000,
+            reason: 'اقتراح أولي سابق تم تجاوزه',
+            status: PriceSuggestionStatus.SUPERSEDED,
+            suggestedByAdminId: 'admin-super-1',
+            suggestedByAdminName: 'سلمان المشرف العام',
+            sellerResponseNote: null,
+            respondedAt: '2026-11-03T08:50:00.000Z',
+            createdAt: '2026-11-03T08:30:00.000Z',
+          },
+        ],
+      };
+
+      const html = renderWithAdmin(
+        <ListingModerationReview
+          listingId="listing-1"
+          initialDetail={detailWithSuggestions}
+        />,
+        mockModerator,
+      );
+
+      expect(html).toContain('اقتراح تعديل السعر الاسترشادي (FR-57)');
+      expect(html).toContain('BR-16: استقلالية تسعير البائع');
+      expect(html).toContain('إرسال مقترح السعر للبائع');
+      expect(html).toContain('4,100,000 SAR');
+      expect(html).toContain('بانتظار رد البائع');
+      expect(html).toContain('تم استبداله');
+      expect(html).toContain('متوسط سعر المتر في الملقا للفلل المماثلة بناءً على الصفقات المعتمدة');
+    });
+  });
+
+  describe('ListingModerationQueue Price Suggestion Badges (Story 2.5)', () => {
+    it('renders pending price suggestion badge on listings with active suggestion', () => {
+      const itemsWithBadge: ModerationQueueItem[] = [
+        {
+          ...sampleQueueItems[0],
+          activePriceSuggestion: {
+            id: 'sug-1',
+            listingId: 'listing-1',
+            currentAskPrice: 4500000,
+            suggestedPrice: 4100000,
+            reason: 'مبررات السوق',
+            status: PriceSuggestionStatus.PENDING,
+            suggestedByAdminId: 'admin-1',
+            suggestedByAdminName: 'أحمد',
+            sellerResponseNote: null,
+            respondedAt: null,
+            createdAt: '2026-11-03T10:00:00.000Z',
+          },
+        },
+      ];
+
+      const html = renderWithAdmin(
+        <ListingModerationQueue initialItems={itemsWithBadge} initialTotal={1} />,
+      );
+
+      expect(html).toContain('مقترح سعر معلّق');
     });
   });
 });

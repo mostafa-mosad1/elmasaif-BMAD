@@ -14,6 +14,13 @@ import {
   approveListingSchema,
   rejectListingSchema,
   forceUnlockListingSchema,
+  createPriceSuggestionSchema,
+  respondPriceSuggestionSchema,
+  PRICE_SUGGESTION_NOT_FOUND,
+  PRICE_SUGGESTION_ALREADY_RESPONDED,
+  PRICE_SUGGESTION_SAME_AS_CURRENT,
+  PRICE_SUGGESTION_REASON_REQUIRED,
+  PriceSuggestionStatus,
   ListingStatus,
   PropertyType,
 } from '../../index';
@@ -125,6 +132,66 @@ describe('Listing Moderation Constants & Schemas (Story 2.4)', () => {
       if (!result.success) {
         expect(result.error.issues[0].message).toContain('سبب فك القفل الإجباري يجب ألا يقل عن 5 أحرف');
       }
+    });
+  });
+
+  describe('Price Suggestion Constants, Enum & Schemas (Story 2.5)', () => {
+    it('exports PriceSuggestionStatus enum and error constants', () => {
+      expect(PriceSuggestionStatus.PENDING).toBe('PENDING');
+      expect(PriceSuggestionStatus.ACCEPTED).toBe('ACCEPTED');
+      expect(PriceSuggestionStatus.DECLINED).toBe('DECLINED');
+      expect(PriceSuggestionStatus.SUPERSEDED).toBe('SUPERSEDED');
+      expect(PRICE_SUGGESTION_NOT_FOUND).toBe('PRICE_SUGGESTION_NOT_FOUND');
+      expect(PRICE_SUGGESTION_ALREADY_RESPONDED).toBe('PRICE_SUGGESTION_ALREADY_RESPONDED');
+      expect(PRICE_SUGGESTION_SAME_AS_CURRENT).toBe('PRICE_SUGGESTION_SAME_AS_CURRENT');
+      expect(PRICE_SUGGESTION_REASON_REQUIRED).toBe('PRICE_SUGGESTION_REASON_REQUIRED');
+    });
+
+    it('validates createPriceSuggestionSchema with valid suggestedPrice and reason', () => {
+      const parsed = createPriceSuggestionSchema.parse({
+        suggestedPrice: 2150000,
+        reason: '  متوسط سعر المتر في حي الملقا للفلل المشابهة هو 8,600 ريال بناءً على الصفقات الأخيرة  ',
+      });
+      expect(parsed.suggestedPrice).toBe(2150000);
+      expect(parsed.reason).toBe('متوسط سعر المتر في حي الملقا للفلل المشابهة هو 8,600 ريال بناءً على الصفقات الأخيرة');
+    });
+
+    it('accepts numeric string for suggestedPrice in createPriceSuggestionSchema', () => {
+      const parsed = createPriceSuggestionSchema.parse({
+        suggestedPrice: '1850000.50',
+        reason: 'تقييم استرشادي بناءً على موقع العقار وحركة السوق الحالية في المنطقة',
+      });
+      expect(parsed.suggestedPrice).toBe(1850000.5);
+    });
+
+    it('rejects out-of-range suggestedPrice or short reason (< 10 chars) in createPriceSuggestionSchema', () => {
+      expect(
+        createPriceSuggestionSchema.safeParse({
+          suggestedPrice: 0,
+          reason: 'سبب وجيه وكافٍ لتعديل السعر المطلوب',
+        }).success,
+      ).toBe(false);
+
+      expect(
+        createPriceSuggestionSchema.safeParse({
+          suggestedPrice: 60_000_000,
+          reason: 'سبب وجيه وكافٍ لتعديل السعر المطلوب',
+        }).success,
+      ).toBe(false);
+
+      const shortReason = createPriceSuggestionSchema.safeParse({
+        suggestedPrice: 1500000,
+        reason: 'قصير',
+      });
+      expect(shortReason.success).toBe(false);
+    });
+
+    it('validates respondPriceSuggestionSchema with optional sellerResponseNote', () => {
+      expect(respondPriceSuggestionSchema.parse({})).toEqual({});
+      const parsed = respondPriceSuggestionSchema.parse({
+        sellerResponseNote: '  موافق على السعر الاسترشادي المقترح لتسريع البيع  ',
+      });
+      expect(parsed.sellerResponseNote).toBe('موافق على السعر الاسترشادي المقترح لتسريع البيع');
     });
   });
 });

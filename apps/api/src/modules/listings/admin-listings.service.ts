@@ -4,12 +4,16 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClockService } from '../../common/clock/clock.service';
+import { EmailTransportService } from '../auth/email/email-transport.service';
 import { ListingsService } from './listings.service';
 import {
   ApproveListingInput,
+  CreatePriceSuggestionInput,
   ForceUnlockListingInput,
   LISTING_FORCE_UNLOCK_REASON_REQUIRED,
   LISTING_INVALID_STATE_TRANSITION,
@@ -18,13 +22,20 @@ import {
   LISTING_LOCK_EXPIRED,
   LISTING_LOCK_REQUIRED,
   LISTING_NOT_FOUND,
+  LISTING_PRICE_OUT_OF_RANGE,
   LISTING_REJECTION_REASON_REQUIRED,
   LISTING_VERSION_CONFLICT,
   ListingLockInfo,
   ListingModerationQueueQuery,
   ListingStatus,
+  MAX_LISTING_PRICE_SAR,
+  MIN_LISTING_PRICE_SAR,
   ModerationQueueItem,
   ModerationQueueResponse,
+  PRICE_SUGGESTION_REASON_REQUIRED,
+  PRICE_SUGGESTION_SAME_AS_CURRENT,
+  PriceSuggestionItem,
+  PriceSuggestionStatus,
   RejectListingInput,
   UserRole,
 } from '@elmasaif/shared';
@@ -47,7 +58,31 @@ export class AdminListingsService {
     private readonly prisma: PrismaService,
     private readonly clockService: ClockService,
     private readonly listingsService: ListingsService,
+    @Optional() private readonly emailTransportService?: EmailTransportService,
   ) {}
+
+  private mapPriceSuggestionItem(s: any): PriceSuggestionItem {
+    return {
+      id: s.id,
+      listingId: s.listingId,
+      currentAskPrice: Number(s.currentAskPrice),
+      suggestedPrice: Number(s.suggestedPrice),
+      reason: s.reason,
+      status: s.status as PriceSuggestionStatus,
+      suggestedByAdminId: s.suggestedByAdminId,
+      suggestedByAdminName: s.suggestedByAdminName,
+      sellerResponseNote: s.sellerResponseNote ?? null,
+      respondedAt: s.respondedAt
+        ? s.respondedAt instanceof Date
+          ? s.respondedAt.toISOString()
+          : String(s.respondedAt)
+        : null,
+      createdAt:
+        s.createdAt instanceof Date
+          ? s.createdAt.toISOString()
+          : String(s.createdAt),
+    };
+  }
 
   /**
    * Computes deterministic lock state using ClockService.now().
@@ -137,6 +172,9 @@ export class AdminListingsService {
               visibility: true,
             },
           },
+          priceSuggestions: {
+            orderBy: { createdAt: 'desc' },
+          },
           sellerProfile: {
             include: {
               user: {
@@ -184,6 +222,16 @@ export class AdminListingsService {
       const docs = Array.isArray(listing.documents) ? listing.documents : [];
       const photoCount = docs.filter((d: any) => d.documentType === 'PHOTO').length;
       const documentCount = docs.filter((d: any) => d.documentType !== 'PHOTO').length;
+      const rawSuggestions = Array.isArray(listing.priceSuggestions)
+        ? listing.priceSuggestions
+        : [];
+      const priceSuggestions = rawSuggestions.map((s: any) =>
+        this.mapPriceSuggestionItem(s),
+      );
+      const activePriceSuggestion =
+        priceSuggestions.find(
+          (s: PriceSuggestionItem) => s.status === PriceSuggestionStatus.PENDING,
+        ) ?? null;
 
       return {
         id: listing.id,
@@ -215,6 +263,8 @@ export class AdminListingsService {
             ? listing.updatedAt.toISOString()
             : String(listing.updatedAt),
         lockInfo: this.buildLockInfo(listing, now, currentAdminId, adminNameMap),
+        activePriceSuggestion,
+        priceSuggestions,
       };
     });
 
@@ -799,6 +849,195 @@ export class AdminListingsService {
         lockInfo: this.buildLockInfo(updated || {}, now, admin.id),
       };
     });
+  }
+
+  /**
+   * Submits an administrative price adjustment suggestion with market rationale without altering Listing.askPrice (FR-57, BR-16).
+   */
+  async suggestListingPrice(
+    listingId: string,
+    admin: AuthenticatedAdminActor,
+    dto: CreatePriceSuggestionInput,
+  ): Promise<PriceSuggestionItem> {
+    const reason = dto?.reason?.trim();
+    if (!reason || reason.length < 10) {
+      throw new BadRequestException({
+        code: PRICE_SUGGESTION_REASON_REQUIRED,
+        message: 'سبب ومبررات اقتراح السعر يجب ألا يقل عن 10 أحرف',
+      });
+    }
+
+    const suggestedPrice = Number(dto?.suggestedPrice);
+    if (
+      !Number.isFinite(suggestedPrice) ||
+      suggestedPrice < MIN_LISTING_PRICE_SAR ||
+      suggestedPrice > MAX_LISTING_PRICE_SAR
+    ) {
+      throw new BadRequestException({
+        code: LISTING_PRICE_OUT_OF_RANGE,
+        message: `السعر المقترح يجب أن يكون بين ${MIN_LISTING_PRICE_SAR} و ${MAX_LISTING_PRICE_SAR.toLocaleString()} ريال سعودي`,
+      });
+    }
+
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+      include: {
+        sellerProfile: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                username: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!listing) {
+      throw new NotFoundException({
+        code: LISTING_NOT_FOUND,
+        message: `العقار المطلوب برقم '${listingId}' غير موجود`,
+      });
+    }
+
+    if (
+      listing.status !== ListingStatus.PENDING_REVIEW &&
+      listing.status !== ListingStatus.ACTIVE
+    ) {
+      throw new ConflictException({
+        code: LISTING_INVALID_STATE_TRANSITION,
+        message: `لا يمكن تقديم اقتراح تعديل سعر لإعلان في حالة ${listing.status}؛ يُسمح فقط للإعلانات بانتظار المراجعة أو النشطة`,
+      });
+    }
+
+    const now = this.clockService.now();
+    const isActivelyLockedByOther = Boolean(
+      listing.lockedByAdminId &&
+        listing.lockedByAdminId !== admin.id &&
+        listing.lockExpiresAt &&
+        new Date(listing.lockExpiresAt).getTime() > now.getTime(),
+    );
+
+    if (isActivelyLockedByOther && listing.lockedByAdminId) {
+      const holder = await this.prisma.adminUser.findUnique({
+        where: { id: listing.lockedByAdminId },
+        select: { id: true, fullName: true, username: true },
+      });
+      const adminNameMap = new Map<string, string>();
+      if (holder) {
+        adminNameMap.set(holder.id, holder.fullName || holder.username);
+      }
+      const conflictLockInfo = this.buildLockInfo(
+        listing,
+        now,
+        admin.id,
+        adminNameMap,
+      );
+
+      throw new ConflictException({
+        code: LISTING_LOCK_CONFLICT,
+        message: `هذا الإعلان قيد المراجعة حالياً بواسطة ${conflictLockInfo.lockedByAdminName || 'مشرف آخر'}`,
+        lockInfo: conflictLockInfo,
+      });
+    }
+
+    const currentAskPrice = Number(listing.askPrice);
+    if (Math.abs(suggestedPrice - currentAskPrice) < 0.005) {
+      throw new BadRequestException({
+        code: PRICE_SUGGESTION_SAME_AS_CURRENT,
+        message: 'السعر المقترح مطابق للسعر الحالي المطلوب؛ يرجى إدخال سعر استرشادي مختلف',
+      });
+    }
+
+    const created = await this.prisma.$transaction(async (tx) => {
+      // 1. Supersede any existing PENDING suggestion on this listing
+      await tx.priceSuggestion.updateMany({
+        where: {
+          listingId,
+          status: PriceSuggestionStatus.PENDING,
+        },
+        data: {
+          status: PriceSuggestionStatus.SUPERSEDED,
+          respondedAt: now,
+        },
+      });
+
+      // 2. Create new PENDING PriceSuggestion record (BR-16: NEVER update listing.askPrice here)
+      const suggestion = await tx.priceSuggestion.create({
+        data: {
+          listingId,
+          currentAskPrice: listing.askPrice,
+          suggestedPrice: new Prisma.Decimal(suggestedPrice),
+          reason,
+          status: PriceSuggestionStatus.PENDING,
+          suggestedByAdminId: admin.id,
+          suggestedByAdminName: admin.fullName,
+          createdAt: now,
+        },
+      });
+
+      // 3. Record immutable AuditLog entry
+      await tx.auditLog.create({
+        data: {
+          actorId: admin.id,
+          actorType: 'ADMIN',
+          action: 'LISTING_PRICE_SUGGESTED',
+          entityType: 'Listing',
+          entityId: listingId,
+          payload: {
+            suggestionId: suggestion.id,
+            currentAskPrice,
+            suggestedPrice,
+            reason,
+            suggestedByAdminId: admin.id,
+            suggestedByAdminName: admin.fullName,
+            suggestedAt: now.toISOString(),
+          },
+        },
+      });
+
+      return suggestion;
+    });
+
+    // 4. Dispatch email notification if seller has an email address (FR-44, FR-57)
+    const sellerEmail = (listing as any).sellerProfile?.user?.email;
+    const sellerName =
+      (listing as any).sellerProfile?.user?.fullName ||
+      (listing as any).sellerProfile?.user?.username ||
+      'عزيزنا العميل';
+
+    if (sellerEmail && this.emailTransportService) {
+      try {
+        await this.emailTransportService.sendEmail({
+          to: sellerEmail,
+          subject: `المصايف العقارية — مقترح تعديل السعر الاسترشادي لإعلانك: ${listing.title}`,
+          text: [
+            `مرحباً ${sellerName}،`,
+            '',
+            `قام فريق التقييم والمراجعة العقارية في منصة المصايف بدراسة إعلانك "${listing.title}" وتقديم مقترح استرشادي لتعديل السعر المطلوب:`,
+            `- السعر المطلوب الحالي: ${currentAskPrice.toLocaleString('en-US')} ريال سعودي`,
+            `- السعر الاسترشادي المقترح: ${suggestedPrice.toLocaleString('en-US')} ريال سعودي`,
+            `- المبررات السوقية: ${reason}`,
+            '',
+            'يمكنك الدخول إلى لوحة التحكم الخاصة بك لقبول السعر المقترح أو رفضه مع الاحتفاظ بسعرك الحالي دون أي التزام.',
+          ].join('\n'),
+        });
+      } catch (err) {
+        this.logger.warn(
+          `Failed to dispatch price suggestion email for listing '${listingId}': ${(err as Error).message}`,
+        );
+      }
+    }
+
+    this.logger.log(
+      `Price suggestion '${created.id}' (${currentAskPrice} -> ${suggestedPrice} SAR) submitted on listing '${listingId}' by admin '${admin.id}'`,
+    );
+
+    return this.mapPriceSuggestionItem(created);
   }
 }
 

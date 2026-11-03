@@ -2,6 +2,7 @@ import {
   Injectable,
   Logger,
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
@@ -16,12 +17,19 @@ import {
   ListingStatus,
   DocumentVisibility,
   ScanStatus,
+  PriceSuggestionStatus,
+  PriceSuggestionItem,
+  RespondPriceSuggestionInput,
   LISTING_NOT_FOUND,
+  LISTING_ROLE_UNAUTHORIZED,
+  LISTING_INVALID_STATE_TRANSITION,
   LISTING_MARKETER_AUTH_DOC_REQUIRED,
   LISTING_OWNER_DEED_REQUIRED,
   LISTING_FAL_LICENSE_REQUIRED,
   LISTING_INVALID_IBAN,
   LISTING_MALWARE_DETECTED,
+  PRICE_SUGGESTION_NOT_FOUND,
+  PRICE_SUGGESTION_ALREADY_RESPONDED,
   GEO_CITY_INACTIVE,
   GEO_DISTRICT_INACTIVE,
   MAX_LISTING_FILE_SIZE_BYTES,
@@ -39,6 +47,29 @@ export class ListingsService {
     private readonly storageService: StorageService,
     private readonly quarantineService: QuarantineService,
   ) {}
+
+  private mapPriceSuggestionItem(s: any): PriceSuggestionItem {
+    return {
+      id: s.id,
+      listingId: s.listingId,
+      currentAskPrice: Number(s.currentAskPrice),
+      suggestedPrice: Number(s.suggestedPrice),
+      reason: s.reason,
+      status: s.status as PriceSuggestionStatus,
+      suggestedByAdminId: s.suggestedByAdminId,
+      suggestedByAdminName: s.suggestedByAdminName,
+      sellerResponseNote: s.sellerResponseNote ?? null,
+      respondedAt: s.respondedAt
+        ? s.respondedAt instanceof Date
+          ? s.respondedAt.toISOString()
+          : String(s.respondedAt)
+        : null,
+      createdAt:
+        s.createdAt instanceof Date
+          ? s.createdAt.toISOString()
+          : String(s.createdAt),
+    };
+  }
 
   /**
    * Creates a new property listing with validation of location, pricing,
@@ -353,6 +384,9 @@ export class ListingsService {
             visibility: true,
           },
         },
+        priceSuggestions: {
+          orderBy: { createdAt: 'desc' },
+        },
         sellerProfile: {
           select: {
             id: true,
@@ -383,6 +417,16 @@ export class ListingsService {
         );
         const primaryPhotoUrl = photos[0] ?? null;
         const sellerRole = listing.sellerProfile?.role || UserRole.OWNER;
+        const rawSuggestions = Array.isArray(listing.priceSuggestions)
+          ? listing.priceSuggestions
+          : [];
+        const priceSuggestions = rawSuggestions.map((s: any) =>
+          this.mapPriceSuggestionItem(s),
+        );
+        const activePriceSuggestion =
+          priceSuggestions.find(
+            (s: PriceSuggestionItem) => s.status === PriceSuggestionStatus.PENDING,
+          ) ?? null;
 
         return {
           id: listing.id,
@@ -405,6 +449,8 @@ export class ListingsService {
           photos,
           documentCount: legalDocs.length,
           primaryPhotoUrl,
+          activePriceSuggestion,
+          priceSuggestions,
           createdAt: listing.createdAt,
           updatedAt: listing.updatedAt,
         };
@@ -428,6 +474,9 @@ export class ListingsService {
         city: true,
         district: true,
         documents: true,
+        priceSuggestions: {
+          orderBy: { createdAt: 'desc' },
+        },
         sellerProfile: {
           include: {
             user: {
@@ -508,6 +557,18 @@ export class ListingsService {
     const photos = documentsToReturn.filter((d: any) => d.documentType === 'PHOTO');
     const documents = documentsToReturn.filter((d: any) => d.documentType !== 'PHOTO');
 
+    const rawSuggestions = Array.isArray((listing as any).priceSuggestions)
+      ? (listing as any).priceSuggestions
+      : [];
+    const priceSuggestions = canViewPrivate
+      ? rawSuggestions.map((s: any) => this.mapPriceSuggestionItem(s))
+      : undefined;
+    const activePriceSuggestion = canViewPrivate
+      ? priceSuggestions?.find(
+          (s: PriceSuggestionItem) => s.status === PriceSuggestionStatus.PENDING,
+        ) ?? null
+      : undefined;
+
     return {
       id: listing.id,
       title: listing.title,
@@ -527,13 +588,249 @@ export class ListingsService {
       status: listing.status,
       sellerProfileId: listing.sellerProfileId,
       sellerProfile: sanitizedSellerProfile,
-      ...(canViewPrivate ? { payoutIban: listing.payoutIban } : {}),
+      ...(canViewPrivate
+        ? {
+            payoutIban: listing.payoutIban,
+            activePriceSuggestion,
+            priceSuggestions,
+          }
+        : {}),
       version: listing.version,
       photos,
       documents,
       createdAt: listing.createdAt,
       updatedAt: listing.updatedAt,
     };
+  }
+
+  /**
+   * Seller accepts an active PENDING administrative price suggestion (FR-57, BR-13).
+   * Atomically updates PriceSuggestion.status = ACCEPTED, updates Listing.askPrice = suggestedPrice,
+   * increments Listing.version, and returns the listing to PENDING_REVIEW for moderation confirmation.
+   */
+  async acceptPriceSuggestion(
+    listingId: string,
+    suggestionId: string,
+    userId: string,
+    dto: RespondPriceSuggestionInput = {},
+  ): Promise<any> {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+      include: {
+        sellerProfile: {
+          select: {
+            id: true,
+            userId: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    if (!listing) {
+      throw new NotFoundException({
+        code: LISTING_NOT_FOUND,
+        message: `العقار المطلوب برقم '${listingId}' غير موجود`,
+      });
+    }
+
+    if (listing.sellerProfile?.userId !== userId) {
+      throw new ForbiddenException({
+        code: LISTING_ROLE_UNAUTHORIZED,
+        message: 'غير مصرح لك بالرد على مقترح السعر؛ هذا الإعلان لا يتبع لحسابك',
+      });
+    }
+
+    if (
+      listing.status !== ListingStatus.PENDING_REVIEW &&
+      listing.status !== ListingStatus.ACTIVE
+    ) {
+      throw new ConflictException({
+        code: LISTING_INVALID_STATE_TRANSITION,
+        message: `لا يمكن قبول مقترح السعر لأن حالة الإعلان الحالية هي ${listing.status}`,
+      });
+    }
+
+    const suggestion = await this.prisma.priceSuggestion.findUnique({
+      where: { id: suggestionId },
+    });
+
+    if (!suggestion || suggestion.listingId !== listingId) {
+      throw new NotFoundException({
+        code: PRICE_SUGGESTION_NOT_FOUND,
+        message: 'مقترح تعديل السعر المطلوب غير موجود أو لا يتبع لهذا الإعلان',
+      });
+    }
+
+    if (suggestion.status !== PriceSuggestionStatus.PENDING) {
+      throw new ConflictException({
+        code: PRICE_SUGGESTION_ALREADY_RESPONDED,
+        message: 'تم الرد على مقترح تعديل السعر مسبقاً أو تم استبداله بمقترح أحدث',
+      });
+    }
+
+    const now = this.clockService.now();
+    const sellerResponseNote = dto?.sellerResponseNote?.trim() || null;
+    const previousAskPrice = Number(listing.askPrice);
+    const newAskPrice = Number(suggestion.suggestedPrice);
+    const previousStatus = listing.status;
+    const newStatus = ListingStatus.PENDING_REVIEW;
+
+    return this.prisma.$transaction(async (tx) => {
+      const updatedSuggestion = await tx.priceSuggestion.update({
+        where: { id: suggestionId },
+        data: {
+          status: PriceSuggestionStatus.ACCEPTED,
+          sellerResponseNote,
+          respondedAt: now,
+        },
+      });
+
+      const updatedListing = await tx.listing.update({
+        where: { id: listingId },
+        data: {
+          askPrice: new Prisma.Decimal(newAskPrice),
+          status: newStatus,
+          version: { increment: 1 },
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: userId,
+          actorType: 'USER',
+          action: 'LISTING_PRICE_SUGGESTION_ACCEPTED',
+          entityType: 'Listing',
+          entityId: listingId,
+          payload: {
+            suggestionId,
+            previousAskPrice,
+            newAskPrice,
+            previousStatus,
+            newStatus,
+            sellerResponseNote,
+            respondedAt: now.toISOString(),
+          },
+        },
+      });
+
+      this.logger.log(
+        `Seller '${userId}' accepted price suggestion '${suggestionId}' on listing '${listingId}' (${previousAskPrice} -> ${newAskPrice} SAR, status: ${newStatus})`,
+      );
+
+      return {
+        suggestion: this.mapPriceSuggestionItem(updatedSuggestion),
+        listing: {
+          id: updatedListing.id,
+          askPrice: Number(updatedListing.askPrice),
+          status: updatedListing.status,
+          version: updatedListing.version,
+        },
+      };
+    });
+  }
+
+  /**
+   * Seller declines an active PENDING administrative price suggestion without penalty (FR-57).
+   * Preserves Listing.askPrice and Listing.status completely unchanged.
+   */
+  async declinePriceSuggestion(
+    listingId: string,
+    suggestionId: string,
+    userId: string,
+    dto: RespondPriceSuggestionInput = {},
+  ): Promise<any> {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+      include: {
+        sellerProfile: {
+          select: {
+            id: true,
+            userId: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    if (!listing) {
+      throw new NotFoundException({
+        code: LISTING_NOT_FOUND,
+        message: `العقار المطلوب برقم '${listingId}' غير موجود`,
+      });
+    }
+
+    if (listing.sellerProfile?.userId !== userId) {
+      throw new ForbiddenException({
+        code: LISTING_ROLE_UNAUTHORIZED,
+        message: 'غير مصرح لك بالرد على مقترح السعر؛ هذا الإعلان لا يتبع لحسابك',
+      });
+    }
+
+    const suggestion = await this.prisma.priceSuggestion.findUnique({
+      where: { id: suggestionId },
+    });
+
+    if (!suggestion || suggestion.listingId !== listingId) {
+      throw new NotFoundException({
+        code: PRICE_SUGGESTION_NOT_FOUND,
+        message: 'مقترح تعديل السعر المطلوب غير موجود أو لا يتبع لهذا الإعلان',
+      });
+    }
+
+    if (suggestion.status !== PriceSuggestionStatus.PENDING) {
+      throw new ConflictException({
+        code: PRICE_SUGGESTION_ALREADY_RESPONDED,
+        message: 'تم الرد على مقترح تعديل السعر مسبقاً أو تم استبداله بمقترح أحدث',
+      });
+    }
+
+    const now = this.clockService.now();
+    const sellerResponseNote = dto?.sellerResponseNote?.trim() || null;
+    const preservedAskPrice = Number(listing.askPrice);
+    const suggestedPrice = Number(suggestion.suggestedPrice);
+
+    return this.prisma.$transaction(async (tx) => {
+      const updatedSuggestion = await tx.priceSuggestion.update({
+        where: { id: suggestionId },
+        data: {
+          status: PriceSuggestionStatus.DECLINED,
+          sellerResponseNote,
+          respondedAt: now,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: userId,
+          actorType: 'USER',
+          action: 'LISTING_PRICE_SUGGESTION_DECLINED',
+          entityType: 'Listing',
+          entityId: listingId,
+          payload: {
+            suggestionId,
+            preservedAskPrice,
+            suggestedPrice,
+            sellerResponseNote,
+            respondedAt: now.toISOString(),
+          },
+        },
+      });
+
+      this.logger.log(
+        `Seller '${userId}' declined price suggestion '${suggestionId}' on listing '${listingId}' (preserved askPrice: ${preservedAskPrice} SAR)`,
+      );
+
+      return {
+        suggestion: this.mapPriceSuggestionItem(updatedSuggestion),
+        listing: {
+          id: listing.id,
+          askPrice: preservedAskPrice,
+          status: listing.status,
+          version: listing.version,
+        },
+      };
+    });
   }
 
   /**

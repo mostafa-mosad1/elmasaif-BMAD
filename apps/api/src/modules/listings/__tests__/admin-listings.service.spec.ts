@@ -8,9 +8,11 @@ import { AdminListingsService } from '../admin-listings.service';
 import { ListingsService } from '../listings.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { ClockService } from '../../../common/clock/clock.service';
+import { EmailTransportService } from '../../auth/email/email-transport.service';
 import {
   AdminRole,
   ListingStatus,
+  PriceSuggestionStatus,
   PropertyType,
   UserRole,
   LISTING_LOCK_CONFLICT,
@@ -20,6 +22,7 @@ import {
   LISTING_INVALID_STATE_TRANSITION,
   LISTING_NOT_FOUND,
   LISTING_LOCK_DURATION_MS,
+  PRICE_SUGGESTION_SAME_AS_CURRENT,
 } from '@elmasaif/shared';
 
 describe('AdminListingsService (Story 2.4)', () => {
@@ -27,6 +30,7 @@ describe('AdminListingsService (Story 2.4)', () => {
   let prisma: any;
   let clockService: any;
   let listingsService: any;
+  let emailTransportService: any;
 
   const baseNow = new Date('2026-11-03T10:00:00.000Z');
 
@@ -116,6 +120,11 @@ describe('AdminListingsService (Story 2.4)', () => {
         findMany: jest.fn(),
         findUnique: jest.fn(),
       },
+      priceSuggestion: {
+        updateMany: jest.fn(),
+        create: jest.fn(),
+        findMany: jest.fn(),
+      },
       auditLog: {
         create: jest.fn(),
       },
@@ -131,12 +140,17 @@ describe('AdminListingsService (Story 2.4)', () => {
       getListingById: jest.fn(),
     };
 
+    emailTransportService = {
+      sendEmail: jest.fn().mockResolvedValue({ delivered: true }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AdminListingsService,
         { provide: PrismaService, useValue: prisma },
         { provide: ClockService, useValue: clockService },
         { provide: ListingsService, useValue: listingsService },
+        { provide: EmailTransportService, useValue: emailTransportService },
       ],
     }).compile();
 
@@ -589,6 +603,154 @@ describe('AdminListingsService (Story 2.4)', () => {
       });
       expect(res.status).toBe(ListingStatus.REJECTED);
       expect(res.rejectionReason).toBe('صورة صك الملكية غير واضحة ولا يظهر رقم الصك بالكامل');
+    });
+  });
+
+  describe('suggestListingPrice (Story 2.5 - AC #1, #2)', () => {
+    it('creates a PENDING PriceSuggestion, supersedes prior PENDING suggestions, never modifies askPrice (BR-16), logs LISTING_PRICE_SUGGESTED, and notifies seller', async () => {
+      const listingWithEmail = makeMockListing({
+        askPrice: 4200000,
+        status: ListingStatus.PENDING_REVIEW,
+        sellerProfile: {
+          id: 'profile-1',
+          role: UserRole.MARKETER,
+          user: {
+            id: 'user-1',
+            fullName: 'عبدالله العقاري',
+            username: 'abdullah_broker',
+            email: 'abdullah@broker.sa',
+          },
+        },
+      });
+
+      prisma.listing.findUnique.mockResolvedValue(listingWithEmail);
+      prisma.priceSuggestion.updateMany.mockResolvedValue({ count: 1 });
+      prisma.priceSuggestion.create.mockResolvedValue({
+        id: 'suggestion-uuid-1',
+        listingId: mockListingId,
+        currentAskPrice: 4200000,
+        suggestedPrice: 3850000,
+        reason: 'متوسط سعر الفلل المماثلة في حي الملقا هو 3,850,000 ريال بناءً على الصفقات المعتمدة',
+        status: PriceSuggestionStatus.PENDING,
+        suggestedByAdminId: adminA.id,
+        suggestedByAdminName: adminA.fullName,
+        sellerResponseNote: null,
+        respondedAt: null,
+        createdAt: baseNow,
+      });
+
+      const result = await service.suggestListingPrice(mockListingId, adminA, {
+        suggestedPrice: 3850000,
+        reason: 'متوسط سعر الفلل المماثلة في حي الملقا هو 3,850,000 ريال بناءً على الصفقات المعتمدة',
+      });
+
+      // Verify prior PENDING suggestions are marked SUPERSEDED
+      expect(prisma.priceSuggestion.updateMany).toHaveBeenCalledWith({
+        where: {
+          listingId: mockListingId,
+          status: PriceSuggestionStatus.PENDING,
+        },
+        data: {
+          status: PriceSuggestionStatus.SUPERSEDED,
+          respondedAt: baseNow,
+        },
+      });
+
+      // Verify BR-16: listing.update is NEVER called to alter askPrice
+      expect(prisma.listing.update).not.toHaveBeenCalled();
+      expect(prisma.listing.updateMany).not.toHaveBeenCalled();
+
+      // Verify PriceSuggestion creation
+      expect(prisma.priceSuggestion.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          listingId: mockListingId,
+          status: PriceSuggestionStatus.PENDING,
+          suggestedByAdminId: adminA.id,
+          suggestedByAdminName: adminA.fullName,
+          reason: 'متوسط سعر الفلل المماثلة في حي الملقا هو 3,850,000 ريال بناءً على الصفقات المعتمدة',
+          createdAt: baseNow,
+        }),
+      });
+
+      // Verify AuditLog entry
+      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          actorId: adminA.id,
+          actorType: 'ADMIN',
+          action: 'LISTING_PRICE_SUGGESTED',
+          entityType: 'Listing',
+          entityId: mockListingId,
+          payload: expect.objectContaining({
+            currentAskPrice: 4200000,
+            suggestedPrice: 3850000,
+            suggestedByAdminId: adminA.id,
+          }),
+        }),
+      });
+
+      // Verify seller email notification dispatched
+      expect(emailTransportService.sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'abdullah@broker.sa',
+        }),
+      );
+
+      expect(result.id).toBe('suggestion-uuid-1');
+      expect(result.suggestedPrice).toBe(3850000);
+      expect(result.currentAskPrice).toBe(4200000);
+      expect(result.status).toBe(PriceSuggestionStatus.PENDING);
+    });
+
+    it('rejects with 400 PRICE_SUGGESTION_SAME_AS_CURRENT when suggestedPrice equals current askPrice', async () => {
+      prisma.listing.findUnique.mockResolvedValue(makeMockListing({ askPrice: 4200000 }));
+
+      await expect(
+        service.suggestListingPrice(mockListingId, adminA, {
+          suggestedPrice: 4200000,
+          reason: 'اقتراح مطابق للسعر الحالي لاختبار التحقق',
+        }),
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({ code: PRICE_SUGGESTION_SAME_AS_CURRENT }),
+      });
+    });
+
+    it('rejects with 409 LISTING_LOCK_CONFLICT when listing is actively locked by another admin', async () => {
+      prisma.listing.findUnique.mockResolvedValue(
+        makeMockListing({
+          lockedByAdminId: adminB.id,
+          lockedAt: baseNow,
+          lockExpiresAt: new Date(baseNow.getTime() + 10 * 60 * 1000),
+        }),
+      );
+      prisma.adminUser.findUnique.mockResolvedValue({
+        id: adminB.id,
+        fullName: adminB.fullName,
+        username: adminB.username,
+      });
+
+      await expect(
+        service.suggestListingPrice(mockListingId, adminA, {
+          suggestedPrice: 3900000,
+          reason: 'اقتراح سعر أثناء قفل الإعلان من قبل مشرف آخر',
+        }),
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({ code: LISTING_LOCK_CONFLICT }),
+      });
+    });
+
+    it('rejects with 409 LISTING_INVALID_STATE_TRANSITION when listing is in REJECTED or SOLD status', async () => {
+      prisma.listing.findUnique.mockResolvedValue(
+        makeMockListing({ status: ListingStatus.REJECTED }),
+      );
+
+      await expect(
+        service.suggestListingPrice(mockListingId, adminA, {
+          suggestedPrice: 3900000,
+          reason: 'اقتراح سعر لإعلان مرفوض غير مسموح',
+        }),
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({ code: LISTING_INVALID_STATE_TRANSITION }),
+      });
     });
   });
 });

@@ -116,4 +116,11 @@ export enum VerificationStatus {
   REJECTED = 'REJECTED'
 }
 
+export enum PriceSuggestionStatus {
+  PENDING = 'PENDING',
+  ACCEPTED = 'ACCEPTED',
+  DECLINED = 'DECLINED',
+  SUPERSEDED = 'SUPERSEDED'
+}
+
 export * from './ui';

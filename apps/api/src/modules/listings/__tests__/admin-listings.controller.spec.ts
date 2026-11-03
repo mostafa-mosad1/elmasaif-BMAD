@@ -20,7 +20,7 @@ describe('AdminListingsController & AdminPermissionGuard (Story 2.4)', () => {
     fullName: 'أحمد المراجع',
     role: AdminRole.MODERATOR,
     isActive: true,
-    permissions: ['Listings.Review', 'Licenses.Review', 'Reviews.Moderate'],
+    permissions: ['Listings.Review', 'Price.Suggest', 'Licenses.Review', 'Reviews.Moderate'],
   };
 
   const mockAdminAuditor = {
@@ -53,6 +53,7 @@ describe('AdminListingsController & AdminPermissionGuard (Story 2.4)', () => {
       forceUnlockListing: jest.fn(),
       approveListing: jest.fn(),
       rejectListing: jest.fn(),
+      suggestListingPrice: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -118,6 +119,20 @@ describe('AdminListingsController & AdminPermissionGuard (Story 2.4)', () => {
       );
       expect(permissionGuard.canActivate(ctx)).toBe(true);
     });
+
+    it('allows MODERATOR with Price.Suggest to access suggestListingPrice and blocks FINANCIAL_AUDITOR', () => {
+      const allowedCtx = createMockContext(
+        mockAdminModerator,
+        controller.suggestListingPrice,
+      );
+      expect(permissionGuard.canActivate(allowedCtx)).toBe(true);
+
+      const blockedCtx = createMockContext(
+        mockAdminAuditor,
+        controller.suggestListingPrice,
+      );
+      expect(() => permissionGuard.canActivate(blockedCtx)).toThrow(ForbiddenException);
+    });
   });
 
   describe('Controller Endpoints', () => {
@@ -177,6 +192,29 @@ describe('AdminListingsController & AdminPermissionGuard (Story 2.4)', () => {
       const res = await controller.rejectListing('l-1', dto, { admin: mockAdminModerator });
       expect(service.rejectListing).toHaveBeenCalledWith('l-1', mockAdminModerator, dto);
       expect(res.data.status).toBe(ListingStatus.REJECTED);
+    });
+
+    it('delegates suggestListingPrice to service (Story 2.5)', async () => {
+      service.suggestListingPrice.mockResolvedValue({
+        id: 'sug-1',
+        listingId: 'l-1',
+        currentAskPrice: 4200000,
+        suggestedPrice: 3850000,
+        status: 'PENDING',
+      });
+      const dto = {
+        suggestedPrice: 3850000,
+        reason: 'متوسط سعر المتر في حي الملقا للفلل المشابهة هو 8,600 ريال',
+      };
+      const res = await controller.suggestListingPrice('l-1', dto, {
+        admin: mockAdminModerator,
+      });
+      expect(service.suggestListingPrice).toHaveBeenCalledWith(
+        'l-1',
+        mockAdminModerator,
+        dto,
+      );
+      expect(res.data.id).toBe('sug-1');
     });
   });
 });

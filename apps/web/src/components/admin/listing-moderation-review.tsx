@@ -9,6 +9,8 @@ import {
   LISTING_LOCK_HEARTBEAT_INTERVAL_MS,
   ListingLockInfo,
   ListingStatus,
+  PriceSuggestionItem,
+  PriceSuggestionStatus,
   PropertyType,
   UserRole,
 } from '@elmasaif/shared';
@@ -84,6 +86,11 @@ export function ListingModerationReview({
   const [showForceUnlockModal, setShowForceUnlockModal] = useState(false);
   const [forceUnlockReason, setForceUnlockReason] = useState('');
 
+  // Price suggestion form state (FR-57, BR-16)
+  const [suggestedPrice, setSuggestedPrice] = useState('');
+  const [suggestionReason, setSuggestionReason] = useState('');
+  const [submittingSuggestion, setSubmittingSuggestion] = useState(false);
+
   // Feedback banner
   const [feedback, setFeedback] = useState<{
     type: 'success' | 'error';
@@ -92,6 +99,11 @@ export function ListingModerationReview({
 
   const canForceUnlock =
     hasPermission('Tasks.ForceUnlock') || admin?.role === AdminRole.SUPER_ADMIN;
+
+  const canSuggestPrice =
+    hasPermission('Price.Suggest') ||
+    admin?.role === AdminRole.SUPER_ADMIN ||
+    admin?.role === AdminRole.MODERATOR;
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
@@ -346,6 +358,77 @@ export function ListingModerationReview({
     }
   };
 
+  const handleSuggestPrice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!detail) return;
+    const priceNum = Number(suggestedPrice);
+    if (!priceNum || priceNum < 1 || priceNum > 50000000) {
+      setFeedback({
+        type: 'error',
+        message: 'السعر المقترح يجب أن يكون بين 1 و 50,000,000 ريال سعودي',
+      });
+      return;
+    }
+    if (Math.abs(priceNum - Number(detail.askPrice)) < 0.005) {
+      setFeedback({
+        type: 'error',
+        message: 'السعر المقترح مطابق للسعر الحالي المطلوب؛ يرجى تحديد سعر مختلف',
+      });
+      return;
+    }
+    if (suggestionReason.trim().length < 10) {
+      setFeedback({
+        type: 'error',
+        message: 'سبب ومبررات اقتراح السعر يجب ألا يقل عن 10 أحرف',
+      });
+      return;
+    }
+
+    setSubmittingSuggestion(true);
+    setFeedback(null);
+    try {
+      const res = await apiClient.post<{
+        statusCode: number;
+        message: string;
+        data: PriceSuggestionItem;
+      }>(`/admin/listings/${listingId}/suggest-price`, {
+        suggestedPrice: priceNum,
+        reason: suggestionReason.trim(),
+      });
+      if (res?.data) {
+        const newSuggestion = res.data;
+        setDetail((prev: any) => {
+          if (!prev) return prev;
+          const oldList = Array.isArray(prev.priceSuggestions) ? prev.priceSuggestions : [];
+          // mark existing pending as superseded in local list
+          const updatedList = oldList.map((s: PriceSuggestionItem) =>
+            s.status === PriceSuggestionStatus.PENDING
+              ? { ...s, status: PriceSuggestionStatus.SUPERSEDED }
+              : s,
+          );
+          return {
+            ...prev,
+            activePriceSuggestion: newSuggestion,
+            priceSuggestions: [newSuggestion, ...updatedList],
+          };
+        });
+        setSuggestedPrice('');
+        setSuggestionReason('');
+        setFeedback({
+          type: 'success',
+          message: 'تم إرسال مقترح تعديل السعر وإشعار البائع بنجاح',
+        });
+      }
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err?.message || 'تعذر تقديم مقترح السعر',
+      });
+    } finally {
+      setSubmittingSuggestion(false);
+    }
+  };
+
   if (loading && !detail) {
     return (
       <div dir="rtl" className="p-12 text-center text-ink-muted text-sm">
@@ -523,6 +606,30 @@ export function ListingModerationReview({
             </button>
           </div>
         )
+      )}
+
+      {/* Active Listing Notice Banner */}
+      {detail.status === ListingStatus.ACTIVE && (
+        <div className="rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-200 text-emerald-900 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-200 text-emerald-950 text-xs font-bold">
+                  منشور في السوق (ACTIVE)
+                </span>
+                <h2 className="text-sm font-bold">
+                  هذا العقار معتمد ومنشور حالياً في المنصة
+                </h2>
+              </div>
+              <p className="text-xs text-emerald-800 mt-1">
+                يمكنك كمسؤول تقييم فحص السعر وتقديم مقترح سعر استرشادي أقل للبائع مع مبررات التقييم من لوحة المقترحات أدناه.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Feedback Banner */}
@@ -766,54 +873,210 @@ export function ListingModerationReview({
               </h2>
             </div>
 
-            {/* Approve Section */}
-            <div className="space-y-2.5">
-              <label className="block text-xs font-semibold text-ink-secondary">
-                ملاحظات الاعتماد الداخلية (اختياري)
-              </label>
-              <textarea
-                rows={2}
-                disabled={!canExecuteDecision}
-                value={approvalNotes}
-                onChange={(e) => setApprovalNotes(e.target.value)}
-                placeholder="تم التحقق من مطابقة الصك ورخصة فال..."
-                className="w-full px-3 py-2 text-xs rounded-xl border border-surface-border bg-white dark:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-              />
-              <button
-                type="button"
-                disabled={!canExecuteDecision}
-                onClick={handleApprove}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1B4332] hover:bg-[#2D6A4F] text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>اعتماد ونشر الإعلان</span>
-              </button>
+            {/* Decision or Active Notice */}
+            {detail.status === ListingStatus.ACTIVE ? (
+              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs space-y-1.5">
+                <div className="font-bold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+                  <span>الإعلان معتمد ونشط حالياً في المنصة</span>
+                </div>
+                <p className="text-[11px] text-emerald-800 leading-relaxed">
+                  الإعلان معروض في السوق. في حال رأيت أن السعر المعروض مبالغ فيه أو غير متوافق مع حركة الصفقات في الحي، يمكنك تقديم مقترح استرشادي عبر لوحة المقترحات أدناه.
+                </p>
+              </div>
+            ) : detail.status === ListingStatus.REJECTED ? (
+              <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs space-y-1.5">
+                <div className="font-bold flex items-center gap-1.5">
+                  <XCircle className="w-4 h-4 text-red-700" />
+                  <span>الإعلان في حالة مرفوض</span>
+                </div>
+                {detail.rejectionReason && (
+                  <p className="text-[11px] text-red-800 leading-relaxed">
+                    {`سبب الرفض: ${detail.rejectionReason}`}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* Approve Section */}
+                <div className="space-y-2.5">
+                  <label className="block text-xs font-semibold text-ink-secondary">
+                    ملاحظات الاعتماد الداخلية (اختياري)
+                  </label>
+                  <textarea
+                    rows={2}
+                    disabled={!canExecuteDecision}
+                    value={approvalNotes}
+                    onChange={(e) => setApprovalNotes(e.target.value)}
+                    placeholder="تم التحقق من مطابقة الصك ورخصة فال..."
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-surface-border bg-white dark:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  />
+                  <button
+                    type="button"
+                    disabled={!canExecuteDecision}
+                    onClick={handleApprove}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1B4332] hover:bg-[#2D6A4F] text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>اعتماد ونشر الإعلان</span>
+                  </button>
+                </div>
+
+                <hr className="border-surface-border dark:border-dark-surface-border" />
+
+                {/* Reject Section */}
+                <form onSubmit={handleReject} className="space-y-2.5">
+                  <label className="block text-xs font-semibold text-red-700">
+                    أسباب وملاحظات الرفض (إلزامي عند الرفض — 10 أحرف على الأقل)
+                  </label>
+                  <textarea
+                    rows={3}
+                    disabled={!canExecuteDecision}
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    placeholder="وضح سبب رفض الإعلان بدقة ليتمكن المالك أو الوسيط من تصحيحه..."
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-red-300 bg-white dark:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-red-600 disabled:opacity-50"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!canExecuteDecision}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-700 hover:bg-red-800 text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    <span>رفض الإعلان مع الملاحظات</span>
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+
+          {/* Price Suggestion Panel & History (Story 2.5 / FR-57 / BR-16) */}
+          <div className="bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border rounded-2xl p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-surface-border dark:border-dark-surface-border pb-3">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-[#1B4332]" />
+                <h2 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
+                  اقتراح تعديل السعر الاسترشادي (FR-57)
+                </h2>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-surface-sunken text-ink-secondary">
+                BR-16: استقلالية تسعير البائع
+              </span>
             </div>
 
-            <hr className="border-surface-border dark:border-dark-surface-border" />
+            <p className="text-xs text-ink-secondary leading-relaxed">
+              يمكنك تقديم مقترح سعر استرشادي للبائع مع توضيح المبررات السوقية. لا يتم تعديل سعر الإعلان مباشرة إلا بموافقة البائع الصريحة.
+            </p>
 
-            {/* Reject Section */}
-            <form onSubmit={handleReject} className="space-y-2.5">
-              <label className="block text-xs font-semibold text-red-700">
-                أسباب وملاحظات الرفض (إلزامي عند الرفض — 10 أحرف على الأقل)
-              </label>
-              <textarea
-                rows={3}
-                disabled={!canExecuteDecision}
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="وضح سبب رفض الإعلان بدقة ليتمكن المالك أو الوسيط من تصحيحه..."
-                className="w-full px-3 py-2 text-xs rounded-xl border border-red-300 bg-white dark:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-red-600 disabled:opacity-50"
-              />
+            {/* Price Suggestion Form */}
+            <form onSubmit={handleSuggestPrice} className="space-y-3 pt-1">
+              <div>
+                <label className="block text-xs font-semibold text-ink-secondary mb-1">
+                  السعر الاسترشادي المقترح (ر.س) *
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min={1}
+                    max={50000000}
+                    step="any"
+                    required
+                    disabled={!canSuggestPrice || isLockedByOther || submittingSuggestion}
+                    value={suggestedPrice}
+                    onChange={(e) => setSuggestedPrice(e.target.value)}
+                    placeholder="مثال: 3850000"
+                    dir="ltr"
+                    className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl border border-surface-border bg-white dark:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  />
+                  <span className="absolute left-3 top-2 text-xs text-ink-muted font-mono">
+                    SAR
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-ink-secondary mb-1">
+                  مبررات التقييم العقاري وتحليل السوق (10 أحرف على الأقل) *
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  disabled={!canSuggestPrice || isLockedByOther || submittingSuggestion}
+                  value={suggestionReason}
+                  onChange={(e) => setSuggestionReason(e.target.value)}
+                  placeholder="بناءً على صفقات الحي الأخيرة ومتوسط سعر المتر المماثل..."
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-surface-border bg-white dark:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                />
+              </div>
+
               <button
                 type="submit"
-                disabled={!canExecuteDecision}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-700 hover:bg-red-800 text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                disabled={!canSuggestPrice || isLockedByOther || submittingSuggestion}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <XCircle className="w-4 h-4" />
-                <span>رفض الإعلان مع الملاحظات</span>
+                <span>إرسال مقترح السعر للبائع</span>
               </button>
             </form>
+
+            {/* Suggestions History List */}
+            {Array.isArray(detail.priceSuggestions) && detail.priceSuggestions.length > 0 && (
+              <div className="space-y-3 pt-3 border-t border-surface-border dark:border-dark-surface-border">
+                <h3 className="text-xs font-bold text-ink-primary dark:text-dark-ink-primary">
+                  سجل مقترحات الأسعار السابقة ({detail.priceSuggestions.length})
+                </h3>
+                <div className="space-y-2.5 max-h-64 overflow-y-auto">
+                  {detail.priceSuggestions.map((s: PriceSuggestionItem) => (
+                    <div
+                      key={s.id}
+                      className="p-3 rounded-xl bg-surface-sunken dark:bg-dark-surface border border-surface-border space-y-1.5 text-xs"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span
+                          dir="ltr"
+                          className="font-mono font-bold text-[#1B4332] dark:text-emerald-400"
+                        >
+                          {`${Number(s.suggestedPrice).toLocaleString('en-US')} SAR`}
+                        </span>
+                        <div>
+                          {s.status === PriceSuggestionStatus.PENDING ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900">
+                              بانتظار رد البائع
+                            </span>
+                          ) : s.status === PriceSuggestionStatus.ACCEPTED ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900">
+                              تم القبول
+                            </span>
+                          ) : s.status === PriceSuggestionStatus.DECLINED ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-900">
+                              تم الرفض
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700">
+                              تم استبداله
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="text-[11px] text-ink-secondary leading-snug">
+                        {s.reason}
+                      </div>
+
+                      {s.sellerResponseNote && (
+                        <div className="text-[11px] text-ink-primary bg-white/70 dark:bg-black/20 p-1.5 rounded-lg">
+                          <span className="font-semibold">رد البائع: </span>
+                          <span>{s.sellerResponseNote}</span>
+                        </div>
+                      )}
+
+                      <div className="text-[10px] text-ink-muted">
+                        {`بواسطة: ${s.suggestedByAdminName}`}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
