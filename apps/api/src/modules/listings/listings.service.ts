@@ -47,6 +47,9 @@ import {
   ListingSearchSort,
   ListingSearchQuery,
   SearchListingsResponse,
+  ListingMapQuery,
+  MapListingItem,
+  MAX_MAP_RESULTS,
   GEO_CITY_INACTIVE,
   GEO_DISTRICT_INACTIVE,
   MAX_LISTING_FILE_SIZE_BYTES,
@@ -390,6 +393,92 @@ export class ListingsService {
     const totalPages = Math.ceil(total / limit);
 
     return { items, meta: { total, page, limit, totalPages } };
+  }
+
+  /**
+   * Bounding-box query for the interactive clustered map (Story 3.2 / FR-16).
+   * Returns up to MAX_MAP_RESULTS lightweight items within the viewport; does NOT presign photos.
+   */
+  async getListingsForMap(query: ListingMapQuery): Promise<{ items: MapListingItem[] }> {
+    const where: Prisma.ListingWhereInput = {
+      status: { in: [ListingStatus.ACTIVE, ListingStatus.RESERVED] },
+      latitude: { gte: query.swLat, lte: query.neLat },
+      longitude: { gte: query.swLng, lte: query.neLng },
+    };
+
+    if (query.q) {
+      where.OR = [
+        { title: { contains: query.q, mode: 'insensitive' } },
+        { description: { contains: query.q, mode: 'insensitive' } },
+      ];
+    }
+    if (query.cityId) where.cityId = query.cityId;
+    if (query.districtId) where.districtId = query.districtId;
+    if (query.propertyType) where.propertyType = query.propertyType;
+    if (query.priceMin != null || query.priceMax != null) {
+      where.askPrice = {
+        ...(query.priceMin != null && { gte: query.priceMin }),
+        ...(query.priceMax != null && { lte: query.priceMax }),
+      };
+    }
+    if (query.areaMin != null || query.areaMax != null) {
+      where.areaSquareMeters = {
+        ...(query.areaMin != null && { gte: query.areaMin }),
+        ...(query.areaMax != null && { lte: query.areaMax }),
+      };
+    }
+    if (query.bedroomsMin != null) where.bedrooms = { gte: query.bedroomsMin };
+    if (query.falOnly) where.sellerProfile = { is: { role: UserRole.MARKETER } };
+
+    const listings = await this.prisma.listing.findMany({
+      where,
+      take: MAX_MAP_RESULTS,
+      select: {
+        id: true,
+        title: true,
+        propertyType: true,
+        latitude: true,
+        longitude: true,
+        askPrice: true,
+        areaSquareMeters: true,
+        status: true,
+        sellerProfile: { select: { role: true } },
+        documents: {
+          where: { documentType: 'PHOTO', visibility: DocumentVisibility.PUBLIC },
+          select: { fileUrl: true },
+          take: 1,
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+
+    const items: MapListingItem[] = await Promise.all(
+      listings.map(async (l: any) => {
+        let primaryPhotoUrl: string | null = null;
+        const photoDoc = l.documents?.[0];
+        if (photoDoc?.fileUrl) {
+          try {
+            primaryPhotoUrl = await this.storageService.getPresignedDownloadUrl(photoDoc.fileUrl, 300);
+          } catch {
+            primaryPhotoUrl = photoDoc.fileUrl;
+          }
+        }
+        return {
+          id: l.id,
+          title: l.title,
+          propertyType: l.propertyType,
+          latitude: l.latitude,
+          longitude: l.longitude,
+          askPrice: Number(l.askPrice),
+          areaSquareMeters: l.areaSquareMeters,
+          status: l.status,
+          isFalVerified: l.sellerProfile?.role === UserRole.MARKETER,
+          primaryPhotoUrl,
+        };
+      }),
+    );
+
+    return { items };
   }
 
   /**

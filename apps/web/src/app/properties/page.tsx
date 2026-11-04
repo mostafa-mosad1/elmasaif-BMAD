@@ -16,8 +16,9 @@ import { Card, Button, EmptyState } from '../../components/ui';
 import { PropertyCard } from '../../components/listings';
 import { CityDistrictSelector } from '../../components/geo';
 import { apiClient } from '../../lib/api-client';
+import { PropertiesSplitView } from './properties-split-view';
 
-type Filters = {
+export type Filters = {
   q: string;
   cityId: string | null;
   districtId: string | null;
@@ -107,6 +108,7 @@ export interface PropertiesSearchViewProps {
   onFilterChange: (patch: Partial<Filters>) => void;
   onReset: () => void;
   onPageChange: (page: number) => void;
+  onCardHover?: (id: string | null) => void;
 }
 
 const inputClass =
@@ -122,6 +124,7 @@ export function PropertiesSearchView({
   onFilterChange,
   onReset,
   onPageChange,
+  onCardHover,
 }: PropertiesSearchViewProps) {
   const total = meta?.total ?? 0;
   const totalPages = meta?.totalPages ?? 0;
@@ -349,7 +352,13 @@ export function PropertiesSearchView({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {items.map((item) => (
-            <PropertyCard key={item.id} listing={item} href={`/properties/${item.id}`} />
+            <div
+              key={item.id}
+              onMouseEnter={() => onCardHover?.(item.id)}
+              onMouseLeave={() => onCardHover?.(null)}
+            >
+              <PropertyCard listing={item} href={`/properties/${item.id}`} />
+            </div>
           ))}
         </div>
       )}
@@ -400,6 +409,7 @@ export default function PropertiesSearchPage() {
   const [items, setItems] = useState<ListingSummaryItem[]>([]);
   const [meta, setMeta] = useState<SearchListingsResponse['meta'] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeListingId, setActiveListingId] = useState<string | null>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -427,6 +437,13 @@ export default function PropertiesSearchPage() {
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  }, []);
+
+  const handleMarkerClick = useCallback((id: string) => {
+    setActiveListingId(id);
+    // Scroll the matching card into view
+    const el = document.querySelector(`[data-listing-id="${id}"]`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, []);
 
   // Fetch whenever committed filters change.
@@ -468,17 +485,24 @@ export default function PropertiesSearchPage() {
 
   return (
     <LayoutShell>
-      <PropertiesSearchView
+      <PropertiesSplitView
         filters={filters}
-        queryValue={queryValue}
-        onQueryChange={handleQueryChange}
-        loading={loading}
-        items={items}
-        meta={meta}
-        onFilterChange={updateFilters}
-        onReset={resetFilters}
-        onPageChange={changePage}
-      />
+        activeListingId={activeListingId}
+        onMarkerClick={handleMarkerClick}
+      >
+        <PropertiesSearchView
+          filters={filters}
+          queryValue={queryValue}
+          onQueryChange={handleQueryChange}
+          loading={loading}
+          items={items}
+          meta={meta}
+          onFilterChange={updateFilters}
+          onReset={resetFilters}
+          onPageChange={changePage}
+          onCardHover={setActiveListingId}
+        />
+      </PropertiesSplitView>
     </LayoutShell>
   );
 }

@@ -230,6 +230,7 @@ export function PropertyCard({
     <Card
       ref={cardRef}
       hoverEffect
+      data-listing-id={listing.id}
       className={twMerge('overflow-hidden flex flex-col p-0 group', className)}
     >
       <div className="relative">

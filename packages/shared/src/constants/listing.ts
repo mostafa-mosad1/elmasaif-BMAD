@@ -92,4 +92,16 @@ export const SUSPENSION_CATEGORY_LABELS_AR: Record<SuspensionCategory, string> =
   [SuspensionCategory.OTHER]: 'أسباب أخرى',
 };
 
+// Interactive Map Constants (Story 3.2 / FR-16)
+export const MAX_MAP_RESULTS = 200;
+export const SAUDI_CENTER: [number, number] = [24.7136, 46.6753]; // Riyadh, default map viewport
+export const MAP_DEFAULT_ZOOM = 6;
 
+export const PROPERTY_TYPE_MAP_COLORS: Record<PropertyType, string> = {
+  [PropertyType.APARTMENT]: '#2563EB', // blue
+  [PropertyType.VILLA]:     '#059669', // green (emerald)
+  [PropertyType.LAND]:      '#D97706', // amber/orange
+  [PropertyType.BUILDING]:  '#7C3AED', // purple
+  [PropertyType.COMMERCIAL]: '#DC2626', // red
+  [PropertyType.FARM]:      '#0D9488', // teal
+};

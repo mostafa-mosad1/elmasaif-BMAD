@@ -44,6 +44,8 @@ import {
   ListingAnalyticsQuery,
   listingSearchQuerySchema,
   ListingSearchQuery,
+  listingMapQuerySchema,
+  ListingMapQuery,
   SESSION_COOKIE_NAME,
   ADMIN_SESSION_COOKIE_NAME,
 } from '@elmasaif/shared';
@@ -175,6 +177,22 @@ export class ListingsController {
   @ApiOperation({ summary: 'List current authenticated seller (Owner/Marketer) listings with moderation status' })
   async getMyListings(@Req() req: any) {
     const result = await this.listingsService.getMyListings(req.user.id);
+    return {
+      statusCode: HttpStatus.OK,
+      data: result,
+    };
+  }
+
+  @Get('map')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Bounding-box query for the interactive clustered map (Story 3.2)',
+  })
+  async getListingsForMap(
+    @Query(new ZodValidationPipe(listingMapQuerySchema)) query: ListingMapQuery,
+  ) {
+    const result = await this.listingsService.getListingsForMap(query);
     return {
       statusCode: HttpStatus.OK,
       data: result,

@@ -17,6 +17,7 @@ import {
   listingEngagementEventSchema,
   batchListingEngagementSchema,
   listingAnalyticsQuerySchema,
+  listingMapQuerySchema,
 } from '../schemas/listing.schema';
 import {
   PropertyType,
@@ -33,6 +34,7 @@ export type ListingPhotoItem = z.infer<typeof listingPhotoItemSchema>;
 export type ListingDocumentItem = z.infer<typeof listingDocumentItemSchema>;
 export type ListingModerationQueueQuery = z.infer<typeof listingModerationQueueQuerySchema>;
 export type ListingSearchQuery = z.infer<typeof listingSearchQuerySchema>;
+export type ListingMapQuery = z.infer<typeof listingMapQuerySchema>;
 export type ApproveListingInput = z.infer<typeof approveListingSchema>;
 export type RejectListingInput = z.infer<typeof rejectListingSchema>;
 export type ForceUnlockListingInput = z.infer<typeof forceUnlockListingSchema>;
@@ -242,5 +244,24 @@ export interface ListingSummaryItem {
   isFavorited?: boolean;
   offersCount?: number;
   createdAt: string;
+}
+
+/** Lightweight map-point record returned by GET /listings/map (Story 3.2 / FR-16). */
+export interface MapListingItem {
+  id: string;
+  title: string;
+  propertyType: PropertyType;
+  latitude: number;
+  longitude: number;
+  askPrice: number;
+  areaSquareMeters: number;
+  status: ListingStatus;
+  isFalVerified?: boolean;
+  primaryPhotoUrl?: string | null;
+}
+
+/** Response shape for GET /listings/map bounding-box query. */
+export interface MapListingsResponse {
+  items: MapListingItem[];
 }
 

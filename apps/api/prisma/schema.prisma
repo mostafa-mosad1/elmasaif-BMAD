@@ -387,6 +387,7 @@ model Listing {
   @@index([status, propertyType, cityId, districtId])
   @@index([status, createdAt])
   @@index([status, askPrice])
+  @@index([status, latitude, longitude])
   @@index([lockExpiresAt])
   @@map("listings")
 }

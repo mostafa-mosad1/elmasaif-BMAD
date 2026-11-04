@@ -162,6 +162,67 @@ export const listingSearchQuerySchema = z.object({
     .default(DEFAULT_PAGE_SIZE),
 });
 
+/**
+ * Bounding-box query for the interactive clustered map (Story 3.2 / FR-16).
+ * Requires sw/ne corner coordinates within Saudi bounds; carries the same
+ * optional filter criteria as listingSearchQuerySchema (without page/limit/sort).
+ */
+export const listingMapQuerySchema = z
+  .object({
+    swLat: z.coerce
+      .number()
+      .min(SAUDI_BOUNDS.minLat, `خط العرض الجنوبي يجب ألا يقل عن ${SAUDI_BOUNDS.minLat}`)
+      .max(SAUDI_BOUNDS.maxLat, `خط العرض الجنوبي يجب ألا يتجاوز ${SAUDI_BOUNDS.maxLat}`),
+    swLng: z.coerce
+      .number()
+      .min(SAUDI_BOUNDS.minLng, `خط الطول الغربي يجب ألا يقل عن ${SAUDI_BOUNDS.minLng}`)
+      .max(SAUDI_BOUNDS.maxLng, `خط الطول الغربي يجب ألا يتجاوز ${SAUDI_BOUNDS.maxLng}`),
+    neLat: z.coerce
+      .number()
+      .min(SAUDI_BOUNDS.minLat, `خط العرض الشمالي يجب ألا يقل عن ${SAUDI_BOUNDS.minLat}`)
+      .max(SAUDI_BOUNDS.maxLat, `خط العرض الشمالي يجب ألا يتجاوز ${SAUDI_BOUNDS.maxLat}`),
+    neLng: z.coerce
+      .number()
+      .min(SAUDI_BOUNDS.minLng, `خط الطول الشرقي يجب ألا يقل عن ${SAUDI_BOUNDS.minLng}`)
+      .max(SAUDI_BOUNDS.maxLng, `خط الطول الشرقي يجب ألا يتجاوز ${SAUDI_BOUNDS.maxLng}`),
+    q: z
+      .string()
+      .trim()
+      .max(150, 'نص البحث الحر يجب ألا يتجاوز 150 حرفا')
+      .optional()
+      .transform((value) => (value && value.length > 0 ? value : undefined)),
+    cityId: z.string().uuid('معرف المدينة يجب أن يكون بصيغة UUID صالحة').optional(),
+    districtId: z.string().uuid('معرف الحي يجب أن يكون بصيغة UUID صالحة').optional(),
+    propertyType: z
+      .nativeEnum(PropertyType, {
+        errorMap: () => ({ message: 'نوع العقار غير صالح' }),
+      })
+      .optional(),
+    priceMin: z.coerce.number().min(0, 'الحد الأدنى للسعر يجب ألا يكون سالباً').optional(),
+    priceMax: z.coerce.number().min(0, 'الحد الأقصى للسعر يجب ألا يكون سالباً').optional(),
+    areaMin: z.coerce.number().min(0, 'الحد الأدنى للمساحة يجب ألا يكون سالباً').optional(),
+    areaMax: z.coerce.number().min(0, 'الحد الأقصى للمساحة يجب ألا يكون سالباً').optional(),
+    bedroomsMin: z.coerce.number().int('عدد الغرف يجب أن يكون عدداً صحيحاً').min(0, 'عدد الغرف يجب ألا يكون سالباً').optional(),
+    falOnly: z
+      .preprocess(
+        (value) => {
+          if (value === undefined || value === null || value === '') return false;
+          if (value === 'true' || value === true) return true;
+          if (value === 'false' || value === false) return false;
+          return value;
+        },
+        z.boolean(),
+      )
+      .default(false),
+  })
+  .refine((data) => data.neLat > data.swLat, {
+    message: 'الحد الشمالي لخط العرض يجب أن يكون أكبر من الحد الجنوبي',
+    path: ['neLat'],
+  }).refine((data) => data.neLng > data.swLng, {
+    message: 'الحد الشرقي لخط الطول يجب أن يكون أكبر من الحد الغربي',
+    path: ['neLng'],
+  });
+
 export const approveListingSchema = z.object({
   version: z.number().int().positive('رقم النسخة (version) مطلوب للتأكد من عدم تعارض التعديلات'),
   notes: z.string().trim().max(1000, 'الملاحظات يجب ألا تتجاوز 1000 حرف').optional(),
