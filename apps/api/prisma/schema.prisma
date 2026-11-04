@@ -385,6 +385,8 @@ model Listing {
   favorites        ListingFavorite[]
 
   @@index([status, propertyType, cityId, districtId])
+  @@index([status, createdAt])
+  @@index([status, askPrice])
   @@index([lockExpiresAt])
   @@map("listings")
 }

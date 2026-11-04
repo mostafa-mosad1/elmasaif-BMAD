@@ -44,9 +44,13 @@ import {
   ListingEngagementEventType,
   BatchListingEngagementInput,
   ListingAnalyticsSummary,
+  ListingSearchSort,
+  ListingSearchQuery,
+  SearchListingsResponse,
   GEO_CITY_INACTIVE,
   GEO_DISTRICT_INACTIVE,
   MAX_LISTING_FILE_SIZE_BYTES,
+  DEFAULT_PAGE_SIZE,
 } from '@elmasaif/shared';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { UploadListingMediaResponse } from './dto/upload-listing-media.dto';
@@ -310,42 +314,158 @@ export class ListingsService {
       },
       orderBy: { createdAt: 'desc' },
       take: Math.min(100, Math.max(1, Number(limit) || 24)),
-      include: {
-        city: true,
-        district: true,
-        documents: {
-          where: {
-            documentType: 'PHOTO',
-            visibility: DocumentVisibility.PUBLIC,
-          },
-        },
-        sellerProfile: {
-          select: {
-            id: true,
-            role: true,
-          },
-        },
-        _count: {
-          select: {
-            offers: true,
-          },
-        },
-      },
+      include: this.getPublicListingInclude(),
     });
 
-    let favoritedListingIds = new Set<string>();
-    if (requesterUserId && this.prisma.listingFavorite) {
-      const userFavorites = await this.prisma.listingFavorite.findMany({
-        where: {
-          userId: requesterUserId,
-          listingId: { in: listings.map((l: any) => l.id) },
-        },
-        select: { listingId: true },
-      });
-      favoritedListingIds = new Set(userFavorites.map((f: any) => f.listingId));
-    }
+    const favoritedListingIds = await this.resolveFavoritedListingIds(
+      requesterUserId,
+      listings.map((listing: any) => listing.id),
+    );
+    const items = await this.toSummaryItems(listings, favoritedListingIds);
 
-    const items = await Promise.all(
+    return { items };
+  }
+
+  /**
+   * Multi-criteria public search over active sale listings (Story 3.1).
+   * Returns ONLY `ACTIVE` or `RESERVED` listings; every other status is always excluded.
+   * Filters are combined with AND across fields; free text matches title OR description
+   * case-insensitively. Results are paginated and sortable.
+   */
+  async searchListings(
+    query: ListingSearchQuery,
+    requesterUserId?: string,
+  ): Promise<SearchListingsResponse> {
+    const where: Prisma.ListingWhereInput = {
+      status: { in: [ListingStatus.ACTIVE, ListingStatus.RESERVED] },
+    };
+
+    if (query.q) {
+      where.OR = [
+        { title: { contains: query.q, mode: 'insensitive' } },
+        { description: { contains: query.q, mode: 'insensitive' } },
+      ];
+    }
+    if (query.cityId) where.cityId = query.cityId;
+    if (query.districtId) where.districtId = query.districtId;
+    if (query.propertyType) where.propertyType = query.propertyType;
+    if (query.priceMin != null || query.priceMax != null) {
+      where.askPrice = {
+        ...(query.priceMin != null && { gte: query.priceMin }),
+        ...(query.priceMax != null && { lte: query.priceMax }),
+      };
+    }
+    if (query.areaMin != null || query.areaMax != null) {
+      where.areaSquareMeters = {
+        ...(query.areaMin != null && { gte: query.areaMin }),
+        ...(query.areaMax != null && { lte: query.areaMax }),
+      };
+    }
+    if (query.bedroomsMin != null) where.bedrooms = { gte: query.bedroomsMin };
+    // NOTE (Story 3.1 limitation): isFalVerified is currently derived from seller role.
+    // True Fal-license validity is owned by Epic 6. We filter MARKETER profiles to match
+    // the badge behavior and do NOT fabricate a license check here.
+    if (query.falOnly) where.sellerProfile = { is: { role: UserRole.MARKETER } };
+
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(query.limit) || DEFAULT_PAGE_SIZE));
+    const skip = (page - 1) * limit;
+
+    const [total, listings] = await Promise.all([
+      this.prisma.listing.count({ where }),
+      this.prisma.listing.findMany({
+        where,
+        orderBy: this.buildSearchOrderBy(query.sort),
+        skip,
+        take: limit,
+        include: this.getPublicListingInclude(),
+      }),
+    ]);
+
+    const favoritedListingIds = await this.resolveFavoritedListingIds(
+      requesterUserId,
+      listings.map((listing: any) => listing.id),
+    );
+    const items = await this.toSummaryItems(listings, favoritedListingIds);
+    const totalPages = Math.ceil(total / limit);
+
+    return { items, meta: { total, page, limit, totalPages } };
+  }
+
+  /**
+   * Shared include shape for public listing reads (city, district, public PHOTO docs,
+   * seller role, offers count). Used by both the home feed and multi-criteria search.
+   */
+  private getPublicListingInclude(): Prisma.ListingInclude {
+    return {
+      city: true,
+      district: true,
+      documents: {
+        where: {
+          documentType: 'PHOTO',
+          visibility: DocumentVisibility.PUBLIC,
+        },
+      },
+      sellerProfile: {
+        select: {
+          id: true,
+          role: true,
+        },
+      },
+      _count: {
+        select: {
+          offers: true,
+        },
+      },
+    };
+  }
+
+  /**
+   * Maps a validated sort token to a stable Prisma orderBy (tie-break on id for consistent paging).
+   */
+  private buildSearchOrderBy(
+    sort?: ListingSearchSort,
+  ): Prisma.ListingOrderByWithRelationInput[] {
+    switch (sort) {
+      case ListingSearchSort.PRICE_ASC:
+        return [{ askPrice: 'asc' }, { id: 'asc' }];
+      case ListingSearchSort.PRICE_DESC:
+        return [{ askPrice: 'desc' }, { id: 'asc' }];
+      case ListingSearchSort.NEWEST:
+      default:
+        return [{ createdAt: 'desc' }, { id: 'asc' }];
+    }
+  }
+
+  /**
+   * Resolves the set of listing IDs the requester has favorited (single query, no-op when anonymous).
+   */
+  private async resolveFavoritedListingIds(
+    requesterUserId: string | undefined,
+    listingIds: string[],
+  ): Promise<Set<string>> {
+    if (!requesterUserId || !this.prisma.listingFavorite || listingIds.length === 0) {
+      return new Set<string>();
+    }
+    const userFavorites = await this.prisma.listingFavorite.findMany({
+      where: {
+        userId: requesterUserId,
+        listingId: { in: listingIds },
+      },
+      select: { listingId: true },
+    });
+    return new Set(userFavorites.map((favorite: any) => favorite.listingId));
+  }
+
+  /**
+   * Maps raw Prisma listing rows to `ListingSummaryItem` shapes: presigned photos, Fal badge,
+   * favorite flag, and engagement counters. Shared by the home feed and search to avoid duplication.
+   */
+  private async toSummaryItems(
+    listings: any[],
+    favoritedListingIds: Set<string>,
+  ): Promise<any[]> {
+    return Promise.all(
       listings.map(async (listing: any) => {
         const photoDocs = Array.isArray(listing.documents) ? listing.documents : [];
         const photos: string[] = await Promise.all(
@@ -392,8 +512,6 @@ export class ListingsService {
         };
       }),
     );
-
-    return { items };
   }
 
   /**

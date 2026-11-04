@@ -4,6 +4,7 @@ import {
   listingPhotoItemSchema,
   listingDocumentItemSchema,
   listingModerationQueueQuerySchema,
+  listingSearchQuerySchema,
   approveListingSchema,
   rejectListingSchema,
   forceUnlockListingSchema,
@@ -31,6 +32,7 @@ export type CreateListingInput = z.infer<typeof createListingSchema>;
 export type ListingPhotoItem = z.infer<typeof listingPhotoItemSchema>;
 export type ListingDocumentItem = z.infer<typeof listingDocumentItemSchema>;
 export type ListingModerationQueueQuery = z.infer<typeof listingModerationQueueQuerySchema>;
+export type ListingSearchQuery = z.infer<typeof listingSearchQuerySchema>;
 export type ApproveListingInput = z.infer<typeof approveListingSchema>;
 export type RejectListingInput = z.infer<typeof rejectListingSchema>;
 export type ForceUnlockListingInput = z.infer<typeof forceUnlockListingSchema>;
@@ -139,6 +141,16 @@ export interface ModerationQueueItem {
 
 export interface ModerationQueueResponse {
   items: ModerationQueueItem[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export interface SearchListingsResponse {
+  items: ListingSummaryItem[];
   meta: {
     total: number;
     page: number;

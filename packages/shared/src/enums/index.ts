@@ -139,4 +139,10 @@ export enum ListingEngagementEventType {
   DETAIL_VIEW = 'DETAIL_VIEW',
 }
 
+export enum ListingSearchSort {
+  NEWEST = 'newest',
+  PRICE_ASC = 'price_asc',
+  PRICE_DESC = 'price_desc',
+}
+
 export * from './ui';

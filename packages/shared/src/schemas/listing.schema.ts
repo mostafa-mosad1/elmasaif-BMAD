@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PropertyType, DocumentVisibility, ListingStatus, SuspensionCategory, ListingEngagementEventType } from '../enums';
+import { PropertyType, DocumentVisibility, ListingStatus, SuspensionCategory, ListingEngagementEventType, ListingSearchSort } from '../enums';
 import { saudiIbanSchema } from './index';
 import {
   MAX_LISTING_FILE_SIZE_BYTES,
@@ -109,6 +109,57 @@ export const listingModerationQueueQuerySchema = z.object({
       errorMap: () => ({ message: 'نوع العقار غير صالح' }),
     })
     .optional(),
+});
+
+/**
+ * Public multi-criteria search query for active sale listings (Story 3.1).
+ * Mirrors listingModerationQueueQuerySchema style: coerced numbers, UUID filters,
+ * nativeEnum filters, Arabic messages, and defaults from shared constants.
+ */
+export const listingSearchQuerySchema = z.object({
+  q: z
+    .string()
+    .trim()
+    .max(150, 'نص البحث الحر يجب ألا يتجاوز 150 حرفاً')
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : undefined)),
+  cityId: z.string().uuid('معرف المدينة يجب أن يكون بصيغة UUID صالحة').optional(),
+  districtId: z.string().uuid('معرف الحي يجب أن يكون بصيغة UUID صالحة').optional(),
+  propertyType: z
+    .nativeEnum(PropertyType, {
+      errorMap: () => ({ message: 'نوع العقار غير صالح' }),
+    })
+    .optional(),
+  priceMin: z.coerce.number().min(0, 'الحد الأدنى للسعر يجب ألا يكون سالباً').optional(),
+  priceMax: z.coerce.number().min(0, 'الحد الأقصى للسعر يجب ألا يكون سالباً').optional(),
+  areaMin: z.coerce.number().min(0, 'الحد الأدنى للمساحة يجب ألا يكون سالباً').optional(),
+  areaMax: z.coerce.number().min(0, 'الحد الأقصى للمساحة يجب ألا يكون سالباً').optional(),
+  bedroomsMin: z.coerce.number().int('عدد الغرف يجب أن يكون عدداً صحيحاً').min(0, 'عدد الغرف يجب ألا يكون سالباً').optional(),
+  falOnly: z
+    .preprocess(
+      (value) => {
+        if (value === undefined || value === null || value === '') return false;
+        if (value === 'true' || value === true) return true;
+        if (value === 'false' || value === false) return false;
+        return value;
+      },
+      z.boolean(),
+    )
+    .default(false),
+  sort: z
+    .nativeEnum(ListingSearchSort, {
+      errorMap: () => ({ message: 'تصنيف نتائج البحث غير صالح' }),
+    })
+    .optional()
+    .default(ListingSearchSort.NEWEST),
+  page: z.coerce.number().int('رقم الصفحة يجب أن يكون عدداً صحيحاً').min(1, 'رقم الصفحة يجب أن يكون 1 أو أكثر').optional().default(1),
+  limit: z.coerce
+    .number()
+    .int('عدد العناصر في الصفحة يجب أن يكون عدداً صحيحاً')
+    .min(1, 'عدد العناصر في الصفحة يجب أن يكون 1 على الأقل')
+    .max(MAX_PAGE_SIZE, `الحد الأقصى لعدد العناصر في الصفحة هو ${MAX_PAGE_SIZE}`)
+    .optional()
+    .default(DEFAULT_PAGE_SIZE),
 });
 
 export const approveListingSchema = z.object({

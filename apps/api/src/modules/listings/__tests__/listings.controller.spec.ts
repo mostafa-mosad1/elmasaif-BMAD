@@ -26,6 +26,8 @@ describe('ListingsController', () => {
       createListing: jest.fn(),
       uploadMediaOrDocument: jest.fn(),
       getListingById: jest.fn(),
+      searchListings: jest.fn(),
+      getPublicActiveListings: jest.fn(),
     };
 
     prisma = {
@@ -204,6 +206,41 @@ describe('ListingsController', () => {
 
       expect(result).toEqual(mockListing);
       expect(service.getListingById).toHaveBeenCalledWith(mockListingId, undefined, true);
+    });
+  });
+
+  describe('GET /listings/search', () => {
+    it('should delegate the validated query to listingsService.searchListings anonymously', async () => {
+      const req = { cookies: {}, headers: {} };
+      const query: any = { page: 1, limit: 20, sort: 'newest', falOnly: false };
+      const mockResult = { items: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } };
+
+      (service.searchListings as jest.Mock).mockResolvedValue(mockResult);
+
+      const result = await controller.searchListings(req, query);
+
+      expect(result).toEqual({ statusCode: 200, data: mockResult });
+      expect(service.searchListings).toHaveBeenCalledWith(query, undefined);
+    });
+
+    it('should extract an optional user session and pass requesterUserId for favorites', async () => {
+      const req = {
+        cookies: { elmasaif_session: 'valid-session-token' },
+        headers: {},
+      };
+      prisma.session.findUnique.mockResolvedValue({
+        userId: mockUserId,
+        expiresAt: new Date('2026-11-02T14:00:00.000Z'),
+      });
+      const query: any = { page: 2, limit: 20, sort: 'price_asc', falOnly: true };
+      const mockResult = { items: [], meta: { total: 0, page: 2, limit: 20, totalPages: 0 } };
+
+      (service.searchListings as jest.Mock).mockResolvedValue(mockResult);
+
+      const result = await controller.searchListings(req, query);
+
+      expect(result).toEqual({ statusCode: 200, data: mockResult });
+      expect(service.searchListings).toHaveBeenCalledWith(query, mockUserId);
     });
   });
 });

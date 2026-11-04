@@ -42,6 +42,8 @@ import {
   BatchListingEngagementInput,
   listingAnalyticsQuerySchema,
   ListingAnalyticsQuery,
+  listingSearchQuerySchema,
+  ListingSearchQuery,
   SESSION_COOKIE_NAME,
   ADMIN_SESSION_COOKIE_NAME,
 } from '@elmasaif/shared';
@@ -131,6 +133,35 @@ export class ListingsController {
       limit ? Number(limit) : 24,
       requesterUserId,
     );
+    return {
+      statusCode: HttpStatus.OK,
+      data: result,
+    };
+  }
+
+  @Get('search')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Search ACTIVE/RESERVED sale listings by multi-criteria filters with pagination and sorting',
+  })
+  async searchListings(@Req() req: any, @Query(new ZodValidationPipe(listingSearchQuerySchema)) query: ListingSearchQuery) {
+    let requesterUserId: string | undefined;
+    const userToken =
+      req.cookies?.[SESSION_COOKIE_NAME] ||
+      req.headers?.authorization?.replace(/^Bearer\s+/i, '');
+
+    if (userToken) {
+      const session = await this.prisma.session.findUnique({
+        where: { token: userToken },
+        select: { userId: true, expiresAt: true },
+      });
+      if (session && session.expiresAt > this.clockService.now()) {
+        requesterUserId = session.userId;
+      }
+    }
+
+    const result = await this.listingsService.searchListings(query, requesterUserId);
     return {
       statusCode: HttpStatus.OK,
       data: result,

@@ -220,10 +220,105 @@ export async function seedAdminUsers() {
   console.log(`✅ Admin accounts seeded: ${INITIAL_ADMIN_ACCOUNTS.length} isolated staff accounts.`);
 }
 
+// Demo listings to verify the Story 3.1 public search surface renders visible results.
+// At least one ACTIVE and one RESERVED listing are required (AC #2 status gating).
+const DEMO_SELLER = {
+  id: '77777777-0000-4000-8000-000000000001',
+  profileId: '77777777-0000-4000-8000-000000000101',
+  username: 'demo-marketer',
+  fullName: 'وسيط تجريبي - المصايف',
+  mobileNumber: '0500000099',
+  nationalId: '1000000099',
+  iban: 'SA0380000000608010167519',
+};
+
+export async function seedDemoListings() {
+  console.log('🏠 Seeding Demo ACTIVE/RESERVED Listings (Story 3.1)...');
+
+  const cityId = '11111111-0000-4000-8000-000000000001'; // الرياض
+  const districtId = '22222222-0001-4000-8000-000000000002'; // النرجس
+
+  await prisma.user.upsert({
+    where: { id: DEMO_SELLER.id },
+    update: {},
+    create: {
+      id: DEMO_SELLER.id,
+      username: DEMO_SELLER.username,
+      fullName: DEMO_SELLER.fullName,
+      mobileNumber: DEMO_SELLER.mobileNumber,
+      nationalId: DEMO_SELLER.nationalId,
+      passwordHash: await argon2.hash('Demo@Elmasaif2026', { type: argon2.argon2id }),
+    },
+  });
+
+  await prisma.userProfile.upsert({
+    where: { id: DEMO_SELLER.profileId },
+    update: {},
+    create: {
+      id: DEMO_SELLER.profileId,
+      userId: DEMO_SELLER.id,
+      role: 'MARKETER',
+      payoutIban: DEMO_SELLER.iban,
+    },
+  });
+
+  const demoListings = [
+    {
+      id: '88888888-0000-4000-8000-000000000001',
+      title: 'فيلا مودرن مع مسبح في النرجس',
+      description: 'فيلا سكنية بتصميم حديث في حي النرجس شمال الرياض، تشطيب سوبر ديلوكس.',
+      propertyType: 'VILLA',
+      askPrice: 3200000,
+      areaSquareMeters: 450,
+      bedrooms: 5,
+      yearBuilt: 2024,
+      status: 'ACTIVE',
+    },
+    {
+      id: '88888888-0000-4000-8000-000000000002',
+      title: 'شقة فاخرة محجوزة قيد التقييم',
+      description: 'شقة راقية في حي النرجس بإطلالة مفتوحة، حالتها محجوزة حالياً.',
+      propertyType: 'APARTMENT',
+      askPrice: 1450000,
+      areaSquareMeters: 180,
+      bedrooms: 3,
+      yearBuilt: 2023,
+      status: 'RESERVED',
+    },
+  ];
+
+  for (const listing of demoListings) {
+    await prisma.listing.upsert({
+      where: { id: listing.id },
+      update: { status: listing.status },
+      create: {
+        id: listing.id,
+        title: listing.title,
+        description: listing.description,
+        propertyType: listing.propertyType as any,
+        cityId,
+        districtId,
+        latitude: 24.8133,
+        longitude: 46.6307,
+        askPrice: listing.askPrice,
+        areaSquareMeters: listing.areaSquareMeters,
+        bedrooms: listing.bedrooms,
+        yearBuilt: listing.yearBuilt,
+        status: listing.status as any,
+        sellerProfileId: DEMO_SELLER.profileId,
+        payoutIban: DEMO_SELLER.iban,
+      },
+    });
+  }
+
+  console.log(`✅ Demo listings seeded: ${demoListings.length} (1 ACTIVE, 1 RESERVED).`);
+}
+
 async function main() {
   try {
     await seedGeographicData();
     await seedAdminUsers();
+    await seedDemoListings();
   } catch (error) {
     console.error('❌ Failed to seed database:', error);
     process.exit(1);
