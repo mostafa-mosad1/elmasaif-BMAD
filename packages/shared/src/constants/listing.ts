@@ -105,3 +105,8 @@ export const PROPERTY_TYPE_MAP_COLORS: Record<PropertyType, string> = {
   [PropertyType.COMMERCIAL]: '#DC2626', // red
   [PropertyType.FARM]:      '#0D9488', // teal
 };
+
+// Similar Listings Engine Constants (Story 3.4 / FR-18)
+export const SIMILAR_LISTINGS_MAX = 6;
+export const SIMILAR_LISTINGS_MIN = 4;
+export const SIMILAR_LISTINGS_PRICE_TOLERANCE = 0.2;

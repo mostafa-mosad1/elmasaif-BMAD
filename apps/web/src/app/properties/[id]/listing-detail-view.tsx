@@ -24,6 +24,7 @@ import {
   ContactShieldingCallout,
   ListingStatusBadge,
   PropertyMediaCarousel,
+  SimilarListingsSection,
 } from '../../../components/listings';
 import { ApiError } from '../../../lib/api-client';
 
@@ -264,6 +265,8 @@ export function ListingDetailView({
               </p>
             </div>
           </Card>
+
+          <SimilarListingsSection listingId={detail.id} />
         </div>
 
         {/* Sticky rail — price, commission, seller identity, shielding, intent */}

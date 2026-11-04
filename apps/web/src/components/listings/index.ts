@@ -8,3 +8,4 @@ export * from './listing-status-badge';
 export * from './seller-listing-engagement';
 export * from './commission-calculator';
 export * from './contact-shielding-callout';
+export * from './similar-listings-section';

@@ -49,7 +49,10 @@ import {
   SearchListingsResponse,
   ListingMapQuery,
   MapListingItem,
+  ListingSummaryItem,
   MAX_MAP_RESULTS,
+  SIMILAR_LISTINGS_MAX,
+  SIMILAR_LISTINGS_PRICE_TOLERANCE,
   GEO_CITY_INACTIVE,
   GEO_DISTRICT_INACTIVE,
   MAX_LISTING_FILE_SIZE_BYTES,
@@ -477,6 +480,95 @@ export class ListingsService {
         };
       }),
     );
+
+    return { items };
+  }
+
+  /**
+   * Similar listings engine (Story 3.4 / FR-18).
+   * Returns up to SIMILAR_LISTINGS_MAX ACTIVE listings matching the base listing's
+   * propertyType + cityId within ±SIMILAR_LISTINGS_PRICE_TOLERANCE of its askPrice,
+   * always excluding the base listing itself. District matches are preferred; any
+   * remaining capacity fills from city-wide ACTIVE candidates. The base listing must
+   * be ACTIVE or this throws LISTING_NOT_FOUND (same semantics as getListingById).
+   */
+  async getSimilarListings(
+    id: string,
+    requesterUserId?: string,
+  ): Promise<{ items: ListingSummaryItem[] }> {
+    const base = await this.prisma.listing.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        status: true,
+        propertyType: true,
+        cityId: true,
+        districtId: true,
+        askPrice: true,
+      },
+    });
+
+    if (!base || base.status !== ListingStatus.ACTIVE) {
+      throw new NotFoundException({
+        code: LISTING_NOT_FOUND,
+        message: `العقار المطلوب برقم '${id}' غير موجود`,
+      });
+    }
+
+    const priceNumeric = Number(base.askPrice);
+    const priceFloor = priceNumeric * (1 - SIMILAR_LISTINGS_PRICE_TOLERANCE);
+    const priceCeil = priceNumeric * (1 + SIMILAR_LISTINGS_PRICE_TOLERANCE);
+
+    const baseWhere: Prisma.ListingWhereInput = {
+      status: ListingStatus.ACTIVE,
+      propertyType: base.propertyType,
+      cityId: base.cityId,
+      id: { not: id },
+      askPrice: { gte: priceFloor, lte: priceCeil },
+    };
+
+    const orderBy: Prisma.ListingOrderByWithRelationInput[] = [
+      { createdAt: 'desc' },
+      { id: 'asc' },
+    ];
+    const include = this.getPublicListingInclude();
+
+    // Pass 1 — same district (preferred)
+    const districtCandidates: any[] = base.districtId
+      ? await this.prisma.listing.findMany({
+          where: { ...baseWhere, districtId: base.districtId },
+          take: SIMILAR_LISTINGS_MAX,
+          orderBy,
+          include,
+        })
+      : [];
+
+    let collected: any[] = districtCandidates;
+
+    // Pass 2 — city fallback to fill any remaining capacity (never duplicates)
+    if (districtCandidates.length < SIMILAR_LISTINGS_MAX) {
+      const remaining = SIMILAR_LISTINGS_MAX - districtCandidates.length;
+      const alreadyIds = [id, ...districtCandidates.map((l: any) => l.id)];
+      const cityFallback = await this.prisma.listing.findMany({
+        where: {
+          ...baseWhere,
+          id: { notIn: alreadyIds },
+        },
+        take: remaining,
+        orderBy,
+        include,
+      });
+      collected = [...districtCandidates, ...cityFallback];
+    }
+
+    const favoritedListingIds = await this.resolveFavoritedListingIds(
+      requesterUserId,
+      collected.map((listing: any) => listing.id),
+    );
+    const items = (await this.toSummaryItems(
+      collected,
+      favoritedListingIds,
+    )) as ListingSummaryItem[];
 
     return { items };
   }

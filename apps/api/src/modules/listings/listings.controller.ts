@@ -244,6 +244,40 @@ export class ListingsController {
     return this.listingsService.getListingById(id, requesterUserId, requesterIsAdmin);
   }
 
+  @Get(':id/similar')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Similar listings engine (Story 3.4 / FR-18): up to 6 ACTIVE matches within ±20% price, same type + city, district preferred',
+  })
+  @ApiResponse({ status: 200, description: 'Similar listing summaries returned (0-6 items)' })
+  @ApiResponse({ status: 404, description: 'Base listing missing or not ACTIVE' })
+  async getSimilarListings(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: any,
+  ) {
+    let requesterUserId: string | undefined;
+    const userToken =
+      req.cookies?.[SESSION_COOKIE_NAME] ||
+      req.headers?.authorization?.replace(/^Bearer\s+/i, '');
+
+    if (userToken) {
+      const session = await this.prisma.session.findUnique({
+        where: { token: userToken },
+        select: { userId: true, expiresAt: true },
+      });
+      if (session && session.expiresAt > this.clockService.now()) {
+        requesterUserId = session.userId;
+      }
+    }
+
+    const result = await this.listingsService.getSimilarListings(id, requesterUserId);
+    return {
+      statusCode: HttpStatus.OK,
+      data: result,
+    };
+  }
+
   @Post(':id/price-suggestions/:suggestionId/accept')
   @HttpCode(HttpStatus.OK)
   @UseGuards(SessionAuthGuard)
