@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   JOB_DEMAND_EXPIRY_CHECKER,
   DemandStatus,
+  ProposalStatus,
   DEMAND_EXPIRY_DAYS
 } from '@elmasaif/shared';
 import {
@@ -32,6 +33,9 @@ describe('demand-expiry-checker Worker Job (Story 3.6 / FR-21) (AC: 5)', () => {
       },
       auditLog: {
         create: vi.fn()
+      },
+      proposal: {
+        updateMany: vi.fn().mockResolvedValue({ count: 0 })
       }
     };
   });
@@ -114,6 +118,35 @@ describe('demand-expiry-checker Worker Job (Story 3.6 / FR-21) (AC: 5)', () => {
 
   it('keeps the 30-day window shared with the API expiry math', () => {
     expect(DEMAND_EXPIRY_DAYS).toBe(30);
+  });
+
+  it('closes the expired demand\u2019s unaccepted proposals, leaving a selected one for Epic 5 (Story 3.7 / FR-58)', async () => {
+    (mockDb.demand.findMany as any).mockResolvedValueOnce([staleDemand('d1')]);
+    (mockDb.demand.update as any).mockResolvedValue({});
+    (mockDb.auditLog!.create as any).mockResolvedValue({ id: 'audit-1' });
+
+    const logic = createDemandExpiryCheckerLogic(mockDb);
+    const result = await logic([], mockNow);
+
+    expect(result.processedCount).toBe(1);
+    expect(mockDb.proposal!.updateMany).toHaveBeenCalledWith({
+      where: {
+        demandId: 'd1',
+        status: { notIn: [ProposalStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL] },
+      },
+      data: { status: ProposalStatus.CLOSED },
+    });
+  });
+
+  it('skips the proposal sweep when no proposal client is wired (unwired runtime)', async () => {
+    const dbWithoutProposal: DemandExpiryDbClient = {
+      demand: { findMany: vi.fn().mockResolvedValue([staleDemand('d1')]), update: vi.fn().mockResolvedValue({}) },
+    };
+    const logic = createDemandExpiryCheckerLogic(dbWithoutProposal);
+    const result = await logic([], mockNow);
+
+    expect(result.processedCount).toBe(1);
+    expect(dbWithoutProposal.proposal).toBeUndefined();
   });
 
   it('executes cleanly via jobHandler wrapper conforming to JobExecutionResult', async () => {

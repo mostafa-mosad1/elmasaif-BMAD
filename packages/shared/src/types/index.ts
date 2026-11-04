@@ -4,7 +4,10 @@ import {
   counterOfferSchema,
   uploadPaymentProofSchema,
   createDemandSchema,
-  cancelDemandSchema
+  cancelDemandSchema,
+  createProposalSchema,
+  rejectProposalSchema,
+  proposalQueueQuerySchema
 } from '../schemas';
 import { ListingStatus, DealStatus, PropertyType } from '../enums';
 
@@ -13,6 +16,9 @@ export type CounterOfferInput = z.infer<typeof counterOfferSchema>;
 export type UploadPaymentProofInput = z.infer<typeof uploadPaymentProofSchema>;
 export type CreateDemandInput = z.infer<typeof createDemandSchema>;
 export type CancelDemandInput = z.infer<typeof cancelDemandSchema>;
+export type CreateProposalInput = z.infer<typeof createProposalSchema>;
+export type RejectProposalInput = z.infer<typeof rejectProposalSchema>;
+export type ProposalQueueQuery = z.infer<typeof proposalQueueQuerySchema>;
 
 export interface ApiResponse<T> {
   statusCode: number;

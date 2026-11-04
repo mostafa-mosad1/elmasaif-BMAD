@@ -25,3 +25,4 @@ export * from './auth';
 export * from './geo';
 export * from './listing';
 export * from './demand';
+export * from './proposal';

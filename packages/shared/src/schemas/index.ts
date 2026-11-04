@@ -130,3 +130,5 @@ export const cancelDemandSchema = z.object({
     .min(5, 'سبب الإلغاء يجب ألا يقل عن 5 أحرف')
     .max(500, 'سبب الإلغاء يجب ألا يتجاوز 500 حرف'),
 });
+
+export * from './proposal.schema';

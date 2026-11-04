@@ -12,6 +12,7 @@ import {
   UserRole,
   ProfileStatus,
   DemandStatus,
+  ProposalStatus,
   CreateDemandInput,
   DEMAND_EXPIRY_DAYS,
   DEMAND_NOT_FOUND,
@@ -20,6 +21,7 @@ import {
   GEO_CITY_INACTIVE,
   GEO_DISTRICT_INACTIVE,
 } from '@elmasaif/shared';
+import { ProposalMatcherService } from '../proposals/proposal-matcher.service';
 import { DemandItem } from './dto/demand-item.dto';
 
 const MILLISECONDS_PER_DAY = 86400000;
@@ -31,6 +33,7 @@ export class DemandsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clockService: ClockService,
+    private readonly matcher: ProposalMatcherService,
   ) {}
 
   /**
@@ -110,7 +113,24 @@ export class DemandsService {
     });
 
     this.logger.log(`Demand ${demand.id} created ACTIVE for buyer profile ${profile.id}`);
-    return this.toDemandItem(demand);
+
+    // Story 3.7 / FR-22: fire the automated matcher inline. It runs API-side (worker is
+    // Prisma-free) and MUST NEVER fail demand creation (3.6 AC#1 "immediately ACTIVE"), so the
+    // call is wrapped in a log-and-swallow try/catch. When it finds ≥1 match the demand is now
+    // MATCHED and we reflect that on the returned item.
+    let status = demand.status;
+    try {
+      const { matchCount } = await this.matcher.matchDemand(demand.id);
+      if (matchCount > 0) {
+        status = DemandStatus.MATCHED;
+      }
+    } catch (err) {
+      this.logger.warn(
+        `Matcher failed for demand ${demand.id}; leaving it ACTIVE: ${(err as Error).message}`,
+      );
+    }
+
+    return this.toDemandItem({ ...demand, status });
   }
 
   /**
@@ -212,7 +232,17 @@ export class DemandsService {
         },
       });
 
-      // TODO(3.7): close unselected proposals on cancel — no Proposal model exists yet.
+      // Story 3.7 / FR-58 (AD-7 job #3 closing half): close this demand's not-selected proposals.
+      await tx.proposal.updateMany({
+        where: {
+          demandId,
+          status: {
+            in: [ProposalStatus.PENDING_ADMIN_REVIEW, ProposalStatus.APPROVED_FOR_BUYER],
+          },
+        },
+        data: { status: ProposalStatus.CLOSED },
+      });
+
       return updated;
     });
 

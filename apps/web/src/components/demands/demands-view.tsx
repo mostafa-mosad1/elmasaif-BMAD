@@ -6,12 +6,13 @@ import {
   PROPERTY_TYPE_LABELS_AR,
   DEMAND_NOT_CANCELLABLE,
 } from '@elmasaif/shared';
-import { FileQuestion, Plus, MapPin, X } from 'lucide-react';
+import { FileQuestion, Plus, MapPin, X, HandCoins } from 'lucide-react';
 import { Button, Card, EmptyState } from '../ui';
 import { apiClient, ApiError } from '../../lib/api-client';
 import { BuyerDemandItem } from './demand-item';
 import { DemandStatusBadge } from './demand-status-badge';
 import { DemandSubmitForm } from './demand-submit-form';
+import { BuyerProposalsSection } from '../proposals';
 
 interface DemandsPayload {
   items?: BuyerDemandItem[];
@@ -55,6 +56,7 @@ export interface DemandsGridProps {
 function DemandCard({ item, onCancel }: { item: BuyerDemandItem; onCancel: DemandsGridProps['onCancel'] }) {
   const [promptOpen, setPromptOpen] = useState(false);
   const [reason, setReason] = useState('');
+  const [proposalsOpen, setProposalsOpen] = useState(false);
 
   const cancellable = CANCELLABLE_STATUSES.includes(item.status);
 
@@ -97,6 +99,22 @@ function DemandCard({ item, onCancel }: { item: BuyerDemandItem; onCancel: Deman
             </dd>
           </div>
         </dl>
+
+        {item.status === DemandStatus.MATCHED || item.status === DemandStatus.ACTIVE ? (
+          <div className="space-y-3" data-testid={`demand-proposals-section-${item.id}`}>
+            <Button
+              variant={proposalsOpen ? 'secondary' : 'outline'}
+              size="sm"
+              onClick={() => setProposalsOpen((open) => !open)}
+              className="text-xs gap-1.5"
+              data-testid={`demand-proposals-toggle-${item.id}`}
+            >
+              <HandCoins className="w-3.5 h-3.5" />
+              <span>{proposalsOpen ? 'إخفاء العروض' : 'العروض المتاحة'}</span>
+            </Button>
+            {proposalsOpen ? <BuyerProposalsSection demandId={item.id} /> : null}
+          </div>
+        ) : null}
 
         {item.notes ? (
           <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary line-clamp-2">

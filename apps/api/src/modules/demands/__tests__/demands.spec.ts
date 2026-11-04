@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DemandsService } from '../demands.service';
+import { ProposalMatcherService } from '../../proposals/proposal-matcher.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { ClockService } from '../../../common/clock/clock.service';
 import {
@@ -13,6 +14,7 @@ import {
   ProfileStatus,
   PropertyType,
   DemandStatus,
+  ProposalStatus,
   DEMAND_EXPIRY_DAYS,
   DEMAND_NOT_FOUND,
   DEMAND_NOT_CANCELLABLE,
@@ -83,8 +85,15 @@ describe('DemandsService — Buyer Demand Lifecycle (Story 3.6 / FR-21, FR-58)',
         create: jest.fn(),
         findMany: jest.fn(),
         findFirst: jest.fn(),
+        findUnique: jest.fn(),
         update: jest.fn(),
       },
+      // Story 3.7: createDemand now fires the matcher inline, and cancelDemand closes proposals.
+      // These mock prisma surfaces keep the 3.6 assertions valid (listing.findMany -> [] means
+      // zero matches, so the created demand stays ACTIVE and the matcher never flips it).
+      listing: { findMany: jest.fn().mockResolvedValue([]) },
+      demandMatch: { create: jest.fn() },
+      proposal: { updateMany: jest.fn() },
       auditLog: { create: jest.fn() },
       $transaction: jest.fn((callback: any) => callback(prisma)),
     };
@@ -92,6 +101,7 @@ describe('DemandsService — Buyer Demand Lifecycle (Story 3.6 / FR-21, FR-58)',
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DemandsService,
+        ProposalMatcherService,
         { provide: PrismaService, useValue: prisma },
         { provide: ClockService, useValue: clockService },
       ],
@@ -321,6 +331,16 @@ describe('DemandsService — Buyer Demand Lifecycle (Story 3.6 / FR-21, FR-58)',
           }),
         }),
       );
+      // Story 3.7 / AC#6: cancel closes the demand's open (not-selected) proposals.
+      expect(prisma.proposal.updateMany).toHaveBeenCalledWith({
+        where: {
+          demandId: mockDemandId,
+          status: {
+            in: [ProposalStatus.PENDING_ADMIN_REVIEW, ProposalStatus.APPROVED_FOR_BUYER],
+          },
+        },
+        data: { status: ProposalStatus.CLOSED },
+      });
       expect(item.status).toBe(DemandStatus.CANCELLED);
       expect(item.cancelReason).toBe('تم الشراء خارج المنصة');
     });

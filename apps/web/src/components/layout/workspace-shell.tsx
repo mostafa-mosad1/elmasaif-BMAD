@@ -29,7 +29,8 @@ import {
   Globe,
   Menu,
   X,
-  MapPin
+  MapPin,
+  Sparkles
 } from 'lucide-react';
 
 interface WorkspaceShellProps {
@@ -91,6 +92,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
       { href: '/app/marketer', label: 'لوحة تحكم الوسيط', icon: LayoutDashboard },
       { href: '/app/marketer/listings', label: 'إدارة العقارات', icon: Building },
       { href: '/app/marketer/listings/new', label: 'إضافة عقار جديد', icon: PlusCircle },
+      { href: '/app/marketer/demands', label: 'مطابقات طلبات الشراء', icon: Sparkles },
       { href: '/app/marketer/fal-license', label: 'رخصة فال العقارية', icon: ShieldCheck },
       { href: '/app/settings/payout', label: 'حسابات التحويل (IBAN)', icon: CreditCard },
       { href: '/app/settings/profile', label: 'إعدادات الحساب', icon: User },
@@ -103,6 +105,9 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         : []),
       ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Geo.Manage')
         ? [{ href: '/admin/geo', label: 'إدارة المدن والأحياء', icon: MapPin }]
+        : []),
+      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Offers.Review')
+        ? [{ href: '/admin/proposals', label: 'طابور مراجعة عروض المزودين', icon: HandCoins }]
         : [])
     ]
   };

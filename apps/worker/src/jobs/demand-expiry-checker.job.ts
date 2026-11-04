@@ -1,4 +1,4 @@
-import { JOB_DEMAND_EXPIRY_CHECKER, DemandStatus } from '@elmasaif/shared';
+import { JOB_DEMAND_EXPIRY_CHECKER, DemandStatus, ProposalStatus } from '@elmasaif/shared';
 import { createJobHandler } from './job-wrapper';
 
 export interface DemandExpiryDbClient {
@@ -8,6 +8,9 @@ export interface DemandExpiryDbClient {
   };
   auditLog?: {
     create: (args: any) => Promise<any>;
+  };
+  proposal?: {
+    updateMany: (args: any) => Promise<any>;
   };
 }
 
@@ -37,6 +40,19 @@ export function createDemandExpiryCheckerLogic(db?: DemandExpiryDbClient) {
           where: { id: demand.id },
           data: { status: DemandStatus.EXPIRED },
         });
+
+        // Story 3.7 / FR-58 (AD-7 job #3 closing half): on expiry, close the demand's
+        // unaccepted proposals. A selected proposal (SELECTED_PENDING_FINAL_ADMIN_APPROVAL)
+        // is left for Epic 5, so only every OTHER status transitions to CLOSED.
+        if (db.proposal) {
+          await db.proposal.updateMany({
+            where: {
+              demandId: demand.id,
+              status: { notIn: [ProposalStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL] },
+            },
+            data: { status: ProposalStatus.CLOSED },
+          });
+        }
 
         if (db.auditLog) {
           await db.auditLog.create({

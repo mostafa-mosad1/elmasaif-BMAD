@@ -96,6 +96,14 @@ enum DemandStatus {
   CLOSED
 }
 
+enum ProposalStatus {
+  PENDING_ADMIN_REVIEW
+  APPROVED_FOR_BUYER
+  REJECTED
+  SELECTED_PENDING_FINAL_ADMIN_APPROVAL
+  CLOSED
+}
+
 enum OwnerContractStatus {
   DRAFT
   PENDING_SIGNATURE
@@ -242,6 +250,8 @@ model UserProfile {
   buyerDeals           Deal[]                @relation("BuyerDeals")
   sellerDeals          Deal[]                @relation("SellerDeals")
   demands              Demand[]
+  demandMatches        DemandMatch[]         @relation("ProviderDemandMatches")
+  proposals            Proposal[]            @relation("ProviderProposals")
   contracts            OwnerContract[]
   ownerListingRequests OwnerListingRequest[]
 
@@ -386,6 +396,8 @@ model Listing {
   ownerContract    OwnerContract?
   dailyMetrics     ListingDailyMetric[]
   favorites        ListingFavorite[]
+  demandMatches    DemandMatch[] @relation("DemandMatchListing")
+  proposals        Proposal[]    @relation("ProposalListing")
 
   @@index([status, propertyType, cityId, districtId])
   @@index([status, createdAt])
@@ -717,10 +729,53 @@ model Demand {
   buyerProfile UserProfile @relation(fields: [buyerProfileId], references: [id], onDelete: Cascade)
   city         City        @relation(fields: [cityId], references: [id])
   district     District?   @relation(fields: [districtId, cityId], references: [id, cityId])
+  matches      DemandMatch[]
+  proposals    Proposal[]
 
   @@index([status, cityId, propertyType])
   @@index([cityId, districtId])
   @@map("demands")
+}
+
+model DemandMatch {
+  id                String   @id @default(uuid())
+  demandId          String
+  listingId         String
+  providerProfileId String
+  createdAt         DateTime @default(now())
+
+  demand          Demand     @relation(fields: [demandId], references: [id], onDelete: Cascade)
+  listing         Listing    @relation("DemandMatchListing", fields: [listingId], references: [id], onDelete: Cascade)
+  providerProfile UserProfile @relation("ProviderDemandMatches", fields: [providerProfileId], references: [id])
+
+  @@unique([demandId, listingId])
+  @@index([providerProfileId, createdAt])
+  @@index([demandId])
+  @@map("demand_matches")
+}
+
+model Proposal {
+  id                String         @id @default(uuid())
+  demandId          String
+  listingId         String
+  providerProfileId String
+  proposedPrice     Decimal        @db.Decimal(12, 2)
+  status            ProposalStatus @default(PENDING_ADMIN_REVIEW)
+  note              String?
+  rejectReason      String?        @map("reject_reason")
+  selectedAt        DateTime?      @map("selected_at")
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  demand          Demand      @relation(fields: [demandId], references: [id], onDelete: Cascade)
+  listing         Listing     @relation("ProposalListing", fields: [listingId], references: [id])
+  providerProfile UserProfile @relation("ProviderProposals", fields: [providerProfileId], references: [id])
+
+  @@unique([demandId, listingId])
+  @@index([status])
+  @@index([demandId, status])
+  @@index([providerProfileId])
+  @@map("proposals")
 }
 
 model OwnerContract {
