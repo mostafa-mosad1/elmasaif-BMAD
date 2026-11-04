@@ -183,6 +183,21 @@ export class ListingsController {
     };
   }
 
+  @Get('favorites')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(SessionAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'List the authenticated buyer\'s favorited listings, newest-saved first (Story 3.5)',
+  })
+  async getBuyerFavorites(@Req() req: any) {
+    const result = await this.listingsService.getBuyerFavorites(req.user.id);
+    return {
+      statusCode: HttpStatus.OK,
+      data: result,
+    };
+  }
+
   @Get('map')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

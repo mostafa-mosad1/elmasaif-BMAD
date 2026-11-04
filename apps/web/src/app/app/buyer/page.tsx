@@ -8,11 +8,22 @@ import { Badge } from '../../../components/ui/badge';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { HandCoins, Heart, FileQuestion, Search, ArrowLeft, Building2, ShieldCheck, X } from 'lucide-react';
 import { useAuth } from '../../../components/providers/auth-provider';
+import { apiClient } from '../../../lib/api-client';
+import { unwrapFavoritesPayload } from '../../../components/listings';
 
 export default function BuyerDashboardPage() {
   const { identityStatus, refreshIdentityStatus } = useAuth();
   const [identityPromptDismissed, setIdentityPromptDismissed] = useState(false);
   const [identityStatusError, setIdentityStatusError] = useState<string | null>(null);
+  const [favoritesCount, setFavoritesCount] = useState(0);
+
+  useEffect(() => {
+    // Dashboard must never break on a favorites failure — silent catch keeps 0.
+    apiClient
+      .get('/listings/favorites')
+      .then((payload) => setFavoritesCount(unwrapFavoritesPayload(payload).length))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     refreshIdentityStatus().catch((error: unknown) => {
@@ -32,7 +43,7 @@ export default function BuyerDashboardPage() {
     },
     {
       title: 'العقارات المفضلة',
-      count: 0,
+      count: favoritesCount,
       description: 'عقارات محفوظة للمتابعة السريعة',
       icon: Heart,
       href: '/app/buyer/favorites'

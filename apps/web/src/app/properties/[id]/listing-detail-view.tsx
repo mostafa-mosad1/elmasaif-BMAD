@@ -22,6 +22,7 @@ import { Badge, Button, Card, EmptyState } from '../../../components/ui';
 import {
   CommissionCalculator,
   ContactShieldingCallout,
+  ListingFavoriteButton,
   ListingStatusBadge,
   PropertyMediaCarousel,
   SimilarListingsSection,
@@ -208,6 +209,12 @@ export function ListingDetailView({
                   ) : null}
                 </div>
               </div>
+
+              <ListingFavoriteButton
+                listingId={detail.id}
+                initialFavorited={detail.isFavorited}
+                initialTotalFavorites={detail.totalFavorites}
+              />
             </div>
 
             {/* Strict specs strip — the schema has no bathrooms or amenities, so none are rendered */}

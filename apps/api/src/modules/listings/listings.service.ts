@@ -53,6 +53,8 @@ import {
   MAX_MAP_RESULTS,
   SIMILAR_LISTINGS_MAX,
   SIMILAR_LISTINGS_PRICE_TOLERANCE,
+  FAVORITES_LIMIT_REACHED,
+  MAX_FAVORITES_PER_USER,
   GEO_CITY_INACTIVE,
   GEO_DISTRICT_INACTIVE,
   MAX_LISTING_FILE_SIZE_BYTES,
@@ -568,6 +570,33 @@ export class ListingsService {
     const items = (await this.toSummaryItems(
       collected,
       favoritedListingIds,
+    )) as ListingSummaryItem[];
+
+    return { items };
+  }
+
+  /**
+   * Returns every listing the authenticated buyer has favorited, newest-saved first,
+   * joined to the LIVE listing row (no status filter) so RESERVED/SOLD/ARCHIVED
+   * favorites surface their current status badge. Capped at MAX_FAVORITES_PER_USER by
+   * construction; photos presign through the shared `toSummaryItems` mapper.
+   */
+  async getBuyerFavorites(userId: string): Promise<{ items: ListingSummaryItem[] }> {
+    const favorites = await this.prisma.listingFavorite.findMany({
+      where: { userId },
+      orderBy: [{ createdAt: 'desc' }, { listingId: 'asc' }],
+      include: {
+        listing: {
+          include: this.getPublicListingInclude(),
+        },
+      },
+    });
+
+    const listings = favorites.map((favorite: any) => favorite.listing).filter(Boolean);
+    const favoritedIds = new Set<string>(listings.map((listing: any) => listing.id));
+    const items = (await this.toSummaryItems(
+      listings,
+      favoritedIds,
     )) as ListingSummaryItem[];
 
     return { items };
@@ -1698,6 +1727,15 @@ export class ListingsService {
 
         return { isFavorited: false, totalFavorites: newTotal };
       } else {
+        const count = await tx.listingFavorite.count({ where: { userId } });
+        if (count >= MAX_FAVORITES_PER_USER) {
+          throw new ConflictException({
+            code: FAVORITES_LIMIT_REACHED,
+            message:
+              'لقد بلغت الحد الأقصى للمفضلة (100 عقار). إزالة عقار آخر للإضافة.',
+          });
+        }
+
         await tx.listingFavorite.create({
           data: {
             userId,

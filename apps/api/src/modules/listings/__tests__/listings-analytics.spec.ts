@@ -37,6 +37,7 @@ describe('Listings Analytics & Engagement', () => {
         findUnique: jest.fn(),
         create: jest.fn(),
         delete: jest.fn(),
+        count: jest.fn().mockResolvedValue(0),
       },
       session: {
         findUnique: jest.fn(),

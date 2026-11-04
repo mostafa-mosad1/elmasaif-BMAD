@@ -1,6 +1,7 @@
 import { PropertyType, ListingStatus, SuspensionCategory } from '../enums';
 
 export const LISTING_NOT_FOUND = 'LISTING_NOT_FOUND';
+export const FAVORITES_LIMIT_REACHED = 'FAVORITES_LIMIT_REACHED';
 export const LISTING_TITLE_INVALID = 'LISTING_TITLE_INVALID';
 export const LISTING_PRICE_OUT_OF_RANGE = 'LISTING_PRICE_OUT_OF_RANGE';
 export const LISTING_AREA_INVALID = 'LISTING_AREA_INVALID';
@@ -110,3 +111,6 @@ export const PROPERTY_TYPE_MAP_COLORS: Record<PropertyType, string> = {
 export const SIMILAR_LISTINGS_MAX = 6;
 export const SIMILAR_LISTINGS_MIN = 4;
 export const SIMILAR_LISTINGS_PRICE_TOLERANCE = 0.2;
+
+// Buyer Favorites Collection Constants (Story 3.5 / FR-20)
+export const MAX_FAVORITES_PER_USER = 100;
