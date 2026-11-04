@@ -91,6 +91,7 @@ export enum DemandStatus {
   ACTIVE = 'ACTIVE',
   MATCHED = 'MATCHED',
   EXPIRED = 'EXPIRED',
+  CANCELLED = 'CANCELLED',
   CLOSED = 'CLOSED'
 }
 

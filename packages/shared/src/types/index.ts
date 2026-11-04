@@ -3,7 +3,8 @@ import {
   submitOfferSchema,
   counterOfferSchema,
   uploadPaymentProofSchema,
-  createDemandSchema
+  createDemandSchema,
+  cancelDemandSchema
 } from '../schemas';
 import { ListingStatus, DealStatus, PropertyType } from '../enums';
 
@@ -11,6 +12,7 @@ export type SubmitOfferInput = z.infer<typeof submitOfferSchema>;
 export type CounterOfferInput = z.infer<typeof counterOfferSchema>;
 export type UploadPaymentProofInput = z.infer<typeof uploadPaymentProofSchema>;
 export type CreateDemandInput = z.infer<typeof createDemandSchema>;
+export type CancelDemandInput = z.infer<typeof cancelDemandSchema>;
 
 export interface ApiResponse<T> {
   statusCode: number;

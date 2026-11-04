@@ -8,6 +8,7 @@ import { GeoModule } from './modules/geo/geo.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ListingsModule } from './modules/listings/listings.module';
+import { DemandsModule } from './modules/demands/demands.module';
 import { ClockModule } from './common/clock/clock.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 
@@ -28,7 +29,8 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
     GeoModule,
     AuthModule,
     UsersModule,
-    ListingsModule
+    ListingsModule,
+    DemandsModule
   ]
 })
 export class AppModule implements NestModule {

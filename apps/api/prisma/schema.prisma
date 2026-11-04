@@ -92,6 +92,7 @@ enum DemandStatus {
   ACTIVE
   MATCHED
   EXPIRED
+  CANCELLED
   CLOSED
 }
 
@@ -136,33 +137,33 @@ enum PriceSuggestionStatus {
 }
 
 model User {
-  id                   String               @id @default(uuid())
-  username             String               @unique
-  fullName             String
-  mobileNumber         String               @unique
-  nationalId           String               @unique
-  passwordHash         String
-  status               ProfileStatus        @default(ACTIVE)
-  email                String?              @unique
-  pendingEmail         String?
-  emailVerifiedAt      DateTime?
-  deletionRequestedAt  DateTime?
-  deletionDueAt        DateTime?
-  failedLoginAttempts  Int                  @default(0) @map("failed_login_attempts")
-  lockedUntil          DateTime?            @map("locked_until")
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @updatedAt
+  id                  String        @id @default(uuid())
+  username            String        @unique
+  fullName            String
+  mobileNumber        String        @unique
+  nationalId          String        @unique
+  passwordHash        String
+  status              ProfileStatus @default(ACTIVE)
+  email               String?       @unique
+  pendingEmail        String?
+  emailVerifiedAt     DateTime?
+  deletionRequestedAt DateTime?
+  deletionDueAt       DateTime?
+  failedLoginAttempts Int           @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime?     @map("locked_until")
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 
-  profiles             UserProfile[]
-  sessions             Session[]
-  consentRecords       ConsentRecord[]
-  phoneChangeRequests  PhoneChangeRequest[]
-  authoredRatings      Rating[]             @relation("AuthoredRatings")
-  receivedRatings      Rating[]             @relation("ReceivedRatings")
-  knownDevices         KnownDevice[]
-  identityDocuments    IdentityDocument[]
-  preferences          UserPreference?
-  favorites            ListingFavorite[]
+  profiles            UserProfile[]
+  sessions            Session[]
+  consentRecords      ConsentRecord[]
+  phoneChangeRequests PhoneChangeRequest[]
+  authoredRatings     Rating[]             @relation("AuthoredRatings")
+  receivedRatings     Rating[]             @relation("ReceivedRatings")
+  knownDevices        KnownDevice[]
+  identityDocuments   IdentityDocument[]
+  preferences         UserPreference?
+  favorites           ListingFavorite[]
 
   @@map("users")
 }
@@ -178,7 +179,7 @@ model ConsentRecord {
   source           String
   createdAt        DateTime @default(now())
 
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("consent_records")
@@ -201,7 +202,7 @@ model PhoneChangeRequest {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
   @@map("phone_change_requests")
@@ -219,19 +220,19 @@ model UserPreference {
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_preferences")
 }
 
 model UserProfile {
-  id                   String                @id @default(uuid())
-  userId               String
-  role                 UserRole
-  status               ProfileStatus         @default(ACTIVE)
-  payoutIban           String?
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
+  id         String        @id @default(uuid())
+  userId     String
+  role       UserRole
+  status     ProfileStatus @default(ACTIVE)
+  payoutIban String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
 
   user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   falLicense           FalLicense?
@@ -263,119 +264,121 @@ model FalLicense {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  profile         UserProfile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@index([lockExpiresAt])
   @@map("fal_licenses")
 }
 
 model PayoutAccount {
-  id                        String      @id @default(uuid())
-  profileId                 String      @map("profile_id")
-  accountHolderName         String      @map("account_holder_name")
-  bankName                  String?     @map("bank_name")
-  ibanEncrypted             String      @map("iban_encrypted")
-  ibanMasked                String      @map("iban_masked")
-  ibanLast4                 String      @map("iban_last4")
-  isDefault                 Boolean     @default(true) @map("is_default")
-  hasCommercialNameMismatch Boolean     @default(false) @map("has_commercial_name_mismatch")
-  createdAt                 DateTime    @default(now()) @map("created_at")
-  updatedAt                 DateTime    @updatedAt @map("updated_at")
+  id                        String   @id @default(uuid())
+  profileId                 String   @map("profile_id")
+  accountHolderName         String   @map("account_holder_name")
+  bankName                  String?  @map("bank_name")
+  ibanEncrypted             String   @map("iban_encrypted")
+  ibanMasked                String   @map("iban_masked")
+  ibanLast4                 String   @map("iban_last4")
+  isDefault                 Boolean  @default(true) @map("is_default")
+  hasCommercialNameMismatch Boolean  @default(false) @map("has_commercial_name_mismatch")
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
 
-  profile                   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@index([profileId])
   @@map("payout_accounts")
 }
 
 model AdminUser {
-  id                     String         @id @default(uuid())
-  username               String         @unique
-  email                  String         @unique
+  id                     String    @id @default(uuid())
+  username               String    @unique
+  email                  String    @unique
   fullName               String
   passwordHash           String
-  role                   AdminRole      @default(MODERATOR)
-  isActive               Boolean        @default(true)
+  role                   AdminRole @default(MODERATOR)
+  isActive               Boolean   @default(true)
   lastLoginAt            DateTime?
-  failedLoginAttempts    Int            @default(0) @map("failed_login_attempts")
-  lockedUntil            DateTime?      @map("locked_until")
-  passwordResetTokenHash String?        @map("password_reset_token_hash")
-  passwordResetExpiresAt DateTime?      @map("password_reset_expires_at")
-  createdAt              DateTime       @default(now())
-  updatedAt              DateTime       @updatedAt
+  failedLoginAttempts    Int       @default(0) @map("failed_login_attempts")
+  lockedUntil            DateTime? @map("locked_until")
+  passwordResetTokenHash String?   @map("password_reset_token_hash")
+  passwordResetExpiresAt DateTime? @map("password_reset_expires_at")
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
-  sessions               AdminSession[]
+  sessions AdminSession[]
 
   @@map("admin_users")
 }
 
 model City {
-  id        String     @id @default(uuid())
+  id        String   @id @default(uuid())
   nameAr    String
   nameEn    String
-  isActive  Boolean    @default(true)
-  createdAt DateTime   @default(now())
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
 
   districts District[]
   listings  Listing[]
+  demands   Demand[]
 
   @@map("cities")
 }
 
 model District {
-  id        String    @id @default(uuid())
+  id        String   @id @default(uuid())
   cityId    String
   nameAr    String
   nameEn    String
-  isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
 
-  city      City      @relation(fields: [cityId], references: [id])
-  listings  Listing[]
+  city     City      @relation(fields: [cityId], references: [id])
+  listings Listing[]
+  demands  Demand[]
 
   @@unique([id, cityId])
   @@map("districts")
 }
 
 model Listing {
-  id               String             @id @default(uuid())
-  title            String
-  description      String
-  propertyType     PropertyType
-  cityId           String
-  districtId       String
-  streetName       String?
-  latitude         Float
-  longitude        Float
-  askPrice         Decimal            @db.Decimal(12, 2)
-  areaSquareMeters Float
-  bedrooms         Int?
-  yearBuilt        Int?
-  status           ListingStatus      @default(DRAFT)
-  sellerProfileId  String
-  payoutIban       String
-  version          Int                @default(1)
-  lockedByAdminId  String?
-  lockedAt         DateTime?
-  lockExpiresAt    DateTime?
-  rejectionReason  String?            @map("rejection_reason")
-  reviewedByAdminId String?           @map("reviewed_by_admin_id")
-  reviewedAt       DateTime?          @map("reviewed_at")
-  complianceReason  String?            @map("compliance_reason")
-  complianceCategory String?           @map("compliance_category")
-  complianceActionAt DateTime?         @map("compliance_action_at")
-  complianceOfficerId String?          @map("compliance_officer_id")
-  archivedAt        DateTime?          @map("archived_at")
-  archiveReason     String?            @map("archive_reason")
-  totalViews        Int                @default(0) @map("total_views")
-  totalImpressions  Int                @default(0) @map("total_impressions")
-  totalFavorites    Int                @default(0) @map("total_favorites")
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  id                  String        @id @default(uuid())
+  title               String
+  description         String
+  propertyType        PropertyType
+  cityId              String
+  districtId          String
+  streetName          String?
+  latitude            Float
+  longitude           Float
+  askPrice            Decimal       @db.Decimal(12, 2)
+  areaSquareMeters    Float
+  bedrooms            Int?
+  yearBuilt           Int?
+  status              ListingStatus @default(DRAFT)
+  sellerProfileId     String
+  payoutIban          String
+  version             Int           @default(1)
+  lockedByAdminId     String?
+  lockedAt            DateTime?
+  lockExpiresAt       DateTime?
+  rejectionReason     String?       @map("rejection_reason")
+  reviewedByAdminId   String?       @map("reviewed_by_admin_id")
+  reviewedAt          DateTime?     @map("reviewed_at")
+  complianceReason    String?       @map("compliance_reason")
+  complianceCategory  String?       @map("compliance_category")
+  complianceActionAt  DateTime?     @map("compliance_action_at")
+  complianceOfficerId String?       @map("compliance_officer_id")
+  archivedAt          DateTime?     @map("archived_at")
+  archiveReason       String?       @map("archive_reason")
+  totalViews          Int           @default(0) @map("total_views")
+  totalImpressions    Int           @default(0) @map("total_impressions")
+  totalFavorites      Int           @default(0) @map("total_favorites")
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 
-  city             City               @relation(fields: [cityId], references: [id])
-  district         District           @relation(fields: [districtId, cityId], references: [id, cityId])
-  sellerProfile    UserProfile        @relation("ProfileListings", fields: [sellerProfileId], references: [id])
+  city             City                 @relation(fields: [cityId], references: [id])
+  district         District             @relation(fields: [districtId, cityId], references: [id, cityId])
+  sellerProfile    UserProfile          @relation("ProfileListings", fields: [sellerProfileId], references: [id])
   documents        PropertyDocument[]
   priceSuggestions PriceSuggestion[]
   offers           Offer[]
@@ -402,7 +405,7 @@ model ListingDailyMetric {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  listing      Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@unique([listingId, date])
   @@index([date])
@@ -415,8 +418,8 @@ model ListingFavorite {
   listingId String   @map("listing_id")
   createdAt DateTime @default(now()) @map("created_at")
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@unique([userId, listingId])
   @@index([userId])
@@ -427,8 +430,8 @@ model ListingFavorite {
 model PriceSuggestion {
   id                   String                @id @default(uuid())
   listingId            String                @map("listing_id")
-  currentAskPrice      Decimal               @db.Decimal(12, 2) @map("current_ask_price")
-  suggestedPrice       Decimal               @db.Decimal(12, 2) @map("suggested_price")
+  currentAskPrice      Decimal               @map("current_ask_price") @db.Decimal(12, 2)
+  suggestedPrice       Decimal               @map("suggested_price") @db.Decimal(12, 2)
   reason               String
   status               PriceSuggestionStatus @default(PENDING)
   suggestedByAdminId   String                @map("suggested_by_admin_id")
@@ -438,7 +441,7 @@ model PriceSuggestion {
   createdAt            DateTime              @default(now()) @map("created_at")
   updatedAt            DateTime              @updatedAt @map("updated_at")
 
-  listing              Listing               @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@index([listingId, status])
   @@map("price_suggestions")
@@ -456,22 +459,22 @@ model PropertyDocument {
   visibility   DocumentVisibility @default(ADMIN_ONLY)
   createdAt    DateTime           @default(now())
 
-  listing      Listing            @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@index([scanStatus])
   @@map("property_documents")
 }
 
 model FileObject {
-  id         String     @id @default(uuid())
-  bucket     String
-  key        String     @unique
-  mimeType   String
-  fileSize   Int
-  scanStatus ScanStatus @default(PENDING)
-  scannedAt  DateTime?
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id               String            @id @default(uuid())
+  bucket           String
+  key              String            @unique
+  mimeType         String
+  fileSize         Int
+  scanStatus       ScanStatus        @default(PENDING)
+  scannedAt        DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
   identityDocument IdentityDocument?
 
   @@index([scanStatus])
@@ -479,20 +482,20 @@ model FileObject {
 }
 
 model IdentityDocument {
-  id                 String               @id @default(uuid())
-  userId             String               @map("user_id")
-  fileObjectId       String               @unique @map("file_object_id")
-  documentType       IdentityDocumentType @map("document_type")
-  idNumber           String               @map("id_number")
-  status             VerificationStatus   @default(PENDING_REVIEW)
-  verifiedAt         DateTime?            @map("verified_at")
-  verifiedByAdminId  String?              @map("verified_by_admin_id")
-  rejectionReason    String?              @map("rejection_reason")
-  createdAt          DateTime             @default(now()) @map("created_at")
-  updatedAt          DateTime             @updatedAt @map("updated_at")
+  id                String               @id @default(uuid())
+  userId            String               @map("user_id")
+  fileObjectId      String               @unique @map("file_object_id")
+  documentType      IdentityDocumentType @map("document_type")
+  idNumber          String               @map("id_number")
+  status            VerificationStatus   @default(PENDING_REVIEW)
+  verifiedAt        DateTime?            @map("verified_at")
+  verifiedByAdminId String?              @map("verified_by_admin_id")
+  rejectionReason   String?              @map("rejection_reason")
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @updatedAt @map("updated_at")
 
-  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fileObject         FileObject           @relation(fields: [fileObjectId], references: [id])
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileObject FileObject @relation(fields: [fileObjectId], references: [id])
 
   @@index([userId, status])
   @@index([status])
@@ -500,22 +503,22 @@ model IdentityDocument {
 }
 
 model Offer {
-  id              String         @id @default(uuid())
+  id              String      @id @default(uuid())
   listingId       String
   buyerProfileId  String
-  offerPrice      Decimal        @db.Decimal(12, 2)
-  status          OfferStatus    @default(SUBMITTED)
-  version         Int            @default(1)
+  offerPrice      Decimal     @db.Decimal(12, 2)
+  status          OfferStatus @default(SUBMITTED)
+  version         Int         @default(1)
   lockedByAdminId String?
   lockedAt        DateTime?
   lockExpiresAt   DateTime?
   expiresAt       DateTime
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
-  listing         Listing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  buyerProfile    UserProfile    @relation("BuyerOffers", fields: [buyerProfileId], references: [id])
-  history         OfferHistory[]
+  listing      Listing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyerProfile UserProfile    @relation("BuyerOffers", fields: [buyerProfileId], references: [id])
+  history      OfferHistory[]
 
   @@index([listingId, status])
   @@index([lockExpiresAt])
@@ -523,15 +526,15 @@ model Offer {
 }
 
 model OfferHistory {
-  id             String      @id @default(uuid())
+  id             String   @id @default(uuid())
   offerId        String
   actorProfileId String?
   action         String
-  priceSnapshot  Decimal?    @db.Decimal(12, 2)
+  priceSnapshot  Decimal? @db.Decimal(12, 2)
   notes          String?
-  createdAt      DateTime    @default(now())
+  createdAt      DateTime @default(now())
 
-  offer          Offer       @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  offer Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
 
   @@map("offer_history")
 }
@@ -553,12 +556,12 @@ model Deal {
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
 
-  listing            Listing    @relation(fields: [listingId], references: [id])
-  buyerProfile       UserProfile @relation("BuyerDeals", fields: [buyerProfileId], references: [id])
-  sellerProfile      UserProfile @relation("SellerDeals", fields: [sellerProfileId], references: [id])
-  payments           Payment[]
-  disputes           Dispute[]
-  rating             Rating?
+  listing       Listing     @relation(fields: [listingId], references: [id])
+  buyerProfile  UserProfile @relation("BuyerDeals", fields: [buyerProfileId], references: [id])
+  sellerProfile UserProfile @relation("SellerDeals", fields: [sellerProfileId], references: [id])
+  payments      Payment[]
+  disputes      Dispute[]
+  rating        Rating?
 
   @@index([listingId, status])
   @@map("deals")
@@ -583,7 +586,7 @@ model Payment {
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
-  deal              Deal        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
 
   @@index([dealId, paymentType, status])
   @@index([lockExpiresAt])
@@ -604,17 +607,17 @@ model OwnerListingRequest {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
-  ownerProfile    UserProfile  @relation(fields: [ownerProfileId], references: [id])
+  ownerProfile UserProfile @relation(fields: [ownerProfileId], references: [id])
 
   @@index([lockExpiresAt])
   @@map("owner_listing_requests")
 }
 
 model ContractFeePayment {
-  id                String        @id @default(uuid())
+  id                String    @id @default(uuid())
   ownerContractId   String
-  amount            Decimal       @db.Decimal(12, 2)
-  status            String        @default("PENDING")
+  amount            Decimal   @db.Decimal(12, 2)
+  status            String    @default("PENDING")
   proofFileUrl      String?
   bankReferenceCode String?
   senderBankName    String?
@@ -625,10 +628,10 @@ model ContractFeePayment {
   lockedByAdminId   String?
   lockedAt          DateTime?
   lockExpiresAt     DateTime?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  ownerContract     OwnerContract @relation(fields: [ownerContractId], references: [id], onDelete: Cascade)
+  ownerContract OwnerContract @relation(fields: [ownerContractId], references: [id], onDelete: Cascade)
 
   @@index([lockExpiresAt])
   @@map("contract_fee_payments")
@@ -662,7 +665,7 @@ model Dispute {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  deal            Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
 
   @@index([lockExpiresAt])
   @@map("disputes")
@@ -681,56 +684,62 @@ model Rating {
   hiddenReason    String?
   createdAt       DateTime  @default(now())
 
-  deal            Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
-  raterUser       User      @relation("AuthoredRatings", fields: [raterUserId], references: [id])
-  targetUser      User      @relation("ReceivedRatings", fields: [targetUserId], references: [id])
+  deal       Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  raterUser  User @relation("AuthoredRatings", fields: [raterUserId], references: [id])
+  targetUser User @relation("ReceivedRatings", fields: [targetUserId], references: [id])
 
   @@index([targetUserId, isHidden])
   @@map("ratings")
 }
 
 model Demand {
-  id             String       @id @default(uuid())
-  buyerProfileId String
-  propertyType   PropertyType
-  cityId         String?
-  districtId     String?
-  city           String
-  districts      Json
-  minBudget      Decimal      @db.Decimal(12, 2)
-  maxBudget      Decimal      @db.Decimal(12, 2)
-  minArea        Float
-  maxArea        Float
-  notes          String?
-  status         DemandStatus @default(ACTIVE)
-  expiresAt      DateTime
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id              String       @id @default(uuid())
+  buyerProfileId  String
+  propertyType    PropertyType
+  cityId          String
+  districtId      String?
+  // Legacy free-text geography (Story 3.6 / AD-9): retired from the API contract,
+  // columns kept nullable so no data is dropped. The API never writes them.
+  legacyCity      String?      @map("city")
+  legacyDistricts Json?        @map("districts")
+  minBudget       Decimal      @db.Decimal(12, 2)
+  maxBudget       Decimal      @db.Decimal(12, 2)
+  minArea         Float
+  maxArea         Float
+  notes           String?
+  status          DemandStatus @default(ACTIVE)
+  expiresAt       DateTime
+  cancelledAt     DateTime?    @map("cancelled_at")
+  cancelReason    String?      @map("cancel_reason")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
-  buyerProfile   UserProfile  @relation(fields: [buyerProfileId], references: [id], onDelete: Cascade)
+  buyerProfile UserProfile @relation(fields: [buyerProfileId], references: [id], onDelete: Cascade)
+  city         City        @relation(fields: [cityId], references: [id])
+  district     District?   @relation(fields: [districtId, cityId], references: [id, cityId])
 
-  @@index([status, city, propertyType])
+  @@index([status, cityId, propertyType])
   @@index([cityId, districtId])
   @@map("demands")
 }
 
 model OwnerContract {
-  id             String                @id @default(uuid())
-  listingId      String                @unique
+  id             String              @id @default(uuid())
+  listingId      String              @unique
   ownerProfileId String
-  contractFee    Decimal               @default(1000.00) @db.Decimal(12, 2)
+  contractFee    Decimal             @default(1000.00) @db.Decimal(12, 2)
   contractTerms  String
   signatureData  String?
   signedAt       DateTime?
   otpCode        String?
-  status         OwnerContractStatus   @default(DRAFT)
+  status         OwnerContractStatus @default(DRAFT)
   expiresAt      DateTime
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
 
-  listing        Listing               @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  ownerProfile   UserProfile           @relation(fields: [ownerProfileId], references: [id])
-  feePayments    ContractFeePayment[]
+  listing      Listing              @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  ownerProfile UserProfile          @relation(fields: [ownerProfileId], references: [id])
+  feePayments  ContractFeePayment[]
 
   @@map("owner_contracts")
 }
@@ -756,16 +765,16 @@ model InvoiceRecord {
 }
 
 model Session {
-  id        String   @id @default(uuid())
-  userId    String
-  token     String   @unique
-  userAgent String?
-  ipAddress String?
+  id         String   @id @default(uuid())
+  userId     String
+  token      String   @unique
+  userAgent  String?
+  ipAddress  String?
   activeRole UserRole @default(BUYER)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
 }
@@ -779,7 +788,7 @@ model KnownDevice {
   lastSeenAt DateTime @default(now()) @map("last_seen_at")
   createdAt  DateTime @default(now()) @map("created_at")
 
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, deviceHash])
   @@index([userId])
@@ -787,16 +796,16 @@ model KnownDevice {
 }
 
 model AdminSession {
-  id             String    @id @default(uuid())
+  id             String   @id @default(uuid())
   adminId        String
-  token          String    @unique
+  token          String   @unique
   ipAddress      String?
-  userAgent      String?   @map("user_agent")
-  lastActivityAt DateTime  @default(now()) @map("last_activity_at")
+  userAgent      String?  @map("user_agent")
+  lastActivityAt DateTime @default(now()) @map("last_activity_at")
   expiresAt      DateTime
-  createdAt      DateTime  @default(now())
+  createdAt      DateTime @default(now())
 
-  admin          AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  admin AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   @@map("admin_sessions")
 }
@@ -816,7 +825,6 @@ model AuditLog {
   @@index([action, createdAt])
   @@map("audit_logs")
 }
-
 
 model OtpVerification {
   id                String    @id @default(uuid())
