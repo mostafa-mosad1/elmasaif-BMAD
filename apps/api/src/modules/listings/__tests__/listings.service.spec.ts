@@ -512,6 +512,92 @@ describe('ListingsService', () => {
 
       await expect(service.getListingById('non-existent')).rejects.toThrow(NotFoundException);
     });
+
+    it('should pre-sign PUBLIC photo URLs for buyer/public requesters so the gallery renders', async () => {
+      prisma.listing.findUnique.mockResolvedValue(mockListingData);
+
+      const result = await service.getListingById('listing-1', 'other-user-uuid', false);
+
+      expect(result.photos).toHaveLength(1);
+      expect(result.photos[0].fileUrl).toContain('signed=true');
+      expect(storageService.getPresignedDownloadUrl).toHaveBeenCalledWith(
+        'listings/user-1/photo1.jpg',
+        300,
+      );
+    });
+
+    it('should pre-sign PUBLIC photo URLs for anonymous visitors as well', async () => {
+      prisma.listing.findUnique.mockResolvedValue(mockListingData);
+
+      const result = await service.getListingById('listing-1', undefined, false);
+
+      expect(result.photos[0].fileUrl).toBe(
+        'https://s3.local/listings/user-1/photo1.jpg?signed=true',
+      );
+    });
+
+    it('should leave non-photo PUBLIC documents as stored for buyers', async () => {
+      prisma.listing.findUnique.mockResolvedValue(mockListingData);
+
+      const result = await service.getListingById('listing-1', 'other-user-uuid', false);
+
+      const plan = result.documents.find((d: any) => d.documentType === 'FLOOR_PLAN');
+      expect(plan?.fileUrl).toBe('listings/user-1/plan.pdf');
+    });
+
+    it('should fall back to the raw key when pre-signing a public photo fails', async () => {
+      storageService.getPresignedDownloadUrl.mockRejectedValueOnce(
+        new Error('storage unavailable'),
+      );
+      prisma.listing.findUnique.mockResolvedValue(mockListingData);
+
+      const result = await service.getListingById('listing-1', undefined, false);
+
+      expect(result.photos[0].fileUrl).toBe('listings/user-1/photo1.jpg');
+    });
+
+    it('should conceal payout IBAN and national ID from buyers while keeping them for the seller', async () => {
+      const listingWithPayout = {
+        ...mockListingData,
+        payoutIban: mockIban,
+        sellerProfile: {
+          ...mockListingData.sellerProfile,
+          role: UserRole.MARKETER,
+          user: {
+            ...mockListingData.sellerProfile.user,
+            username: 'fahad_sa',
+            nationalId: '1010101010',
+          },
+        },
+      };
+      prisma.listing.findUnique.mockResolvedValue(listingWithPayout);
+
+      const buyerResult = await service.getListingById('listing-1', 'other-user-uuid', false);
+
+      expect(buyerResult.payoutIban).toBeUndefined();
+      expect(buyerResult.sellerProfile.user.nationalId).toBeUndefined();
+      expect(buyerResult.sellerProfile.user.mobileNumber).toBeUndefined();
+      expect(buyerResult.sellerProfile.user.email).toBeUndefined();
+      expect(buyerResult.sellerProfile.role).toBe(UserRole.MARKETER);
+
+      const sellerResult = await service.getListingById('listing-1', mockUserId, false);
+
+      expect(sellerResult.payoutIban).toBe(mockIban);
+      expect(sellerResult.sellerProfile.user.nationalId).toBe('1010101010');
+      expect(sellerResult.sellerProfile.user.mobileNumber).toBe('+966501234567');
+    });
+
+    it('should keep the authorized seller/admin branch fully pre-signed and unchanged (regression)', async () => {
+      prisma.listing.findUnique.mockResolvedValue(mockListingData);
+
+      const result = await service.getListingById('listing-1', mockUserId, false);
+
+      // Every document (including the PUBLIC photo and the ADMIN_ONLY deed) goes through pre-signing
+      expect(result.documents).toHaveLength(2);
+      expect(result.photos).toHaveLength(1);
+      expect(result.photos[0].fileUrl).toContain('signed=true');
+      expect(result.documents.every((d: any) => d.fileUrl.includes('signed=true'))).toBe(true);
+    });
   });
 
   describe('uploadMediaOrDocument', () => {

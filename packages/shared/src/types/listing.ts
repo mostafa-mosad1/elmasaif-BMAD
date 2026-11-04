@@ -265,3 +265,57 @@ export interface MapListingsResponse {
   items: MapListingItem[];
 }
 
+/**
+ * Buyer-facing listing record returned by `GET /api/v1/listings/:id` for public/buyer requesters
+ * (Story 3.3 / FR-17). Sellers and admins receive the same shape plus the private-only fields
+ * below (`payoutIban`, price suggestions), which are absent for buyers.
+ * The platform commission is NOT part of this payload — it is derived client-side from `askPrice`.
+ */
+export interface ListingDetailItem {
+  id: string;
+  title: string;
+  description: string;
+  propertyType: PropertyType;
+  status: ListingStatus;
+  cityName: string;
+  districtName: string;
+  streetName?: string | null;
+  latitude: number;
+  longitude: number;
+  askPrice: number;
+  areaSquareMeters: number;
+  bedrooms: number | null;
+  yearBuilt: number | null;
+  /** Sanitized seller identity — direct contact fields are never present for buyers (BR-06). */
+  sellerProfile: {
+    id: string;
+    role: UserRole;
+    user: {
+      id: string;
+      fullName: string;
+      username: string;
+    };
+  } | null;
+  /** Fal-verified marker; the API derives verification from `sellerProfile.role`, so it may be absent. */
+  isFalVerified?: boolean;
+  /** PUBLIC PHOTO documents with short-lived pre-signed `fileUrl` values. */
+  photos: Array<{ id: string; fileUrl: string; mimeType: string }>;
+  documents: Array<{
+    id: string;
+    fileUrl: string;
+    mimeType: string;
+    documentType: string;
+    visibility: DocumentVisibility;
+  }>;
+  totalViews: number;
+  totalFavorites: number;
+  isFavorited: boolean;
+  offersCount: number;
+  createdAt: string;
+  updatedAt: string;
+  /** Private-viewer only (seller/admin); never returned to buyers. */
+  payoutIban?: string;
+  activePriceSuggestion?: PriceSuggestionItem | null;
+  priceSuggestions?: PriceSuggestionItem[];
+}
+

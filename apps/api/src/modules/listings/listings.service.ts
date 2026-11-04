@@ -804,8 +804,28 @@ export class ListingsService {
     let documentsToReturn = listing.documents;
     if (!canViewPrivate) {
       // Public visitors & buyers: only see PUBLIC documents
-      documentsToReturn = listing.documents.filter(
-        (doc: any) => doc.visibility === DocumentVisibility.PUBLIC,
+      documentsToReturn = await Promise.all(
+        listing.documents
+          .filter((doc: any) => doc.visibility === DocumentVisibility.PUBLIC)
+          .map(async (doc: any) => {
+            // Buyer-facing galleries need real fetchable URLs, so PUBLIC photos are
+            // pre-signed exactly like the feed/search summaries (Story 3.3 / AC#2).
+            if (doc.documentType !== 'PHOTO') {
+              return doc;
+            }
+            try {
+              const presignedUrl = await this.storageService.getPresignedDownloadUrl(
+                doc.fileUrl,
+                300,
+              );
+              return {
+                ...doc,
+                fileUrl: presignedUrl,
+              };
+            } catch {
+              return doc;
+            }
+          }),
       );
     } else {
       // Authorized seller or admin: generate short-lived pre-signed download URLs (<= 300s)
