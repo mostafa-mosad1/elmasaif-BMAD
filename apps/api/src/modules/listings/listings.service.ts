@@ -59,6 +59,7 @@ import {
   GEO_DISTRICT_INACTIVE,
   MAX_LISTING_FILE_SIZE_BYTES,
   DEFAULT_PAGE_SIZE,
+  ACTIVE_OFFER_STATUSES,
 } from '@elmasaif/shared';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { UploadListingMediaResponse } from './dto/upload-listing-media.dto';
@@ -1419,18 +1420,10 @@ export class ListingsService {
 
     // 4. Active Unexpired Approved Offers Guard
     const now = this.clockService.now();
+    // Story 4.2: the open-offer set is the shared constant, so every future status stays covered.
     const activeOffers = listing.offers.filter((offer: any) => {
       const isUnexpired = new Date(offer.expiresAt).getTime() > now.getTime();
-      return (
-        isUnexpired &&
-        [
-          OfferStatus.PENDING_ADMIN_REVIEW,
-          OfferStatus.ACCEPTED_BY_SELLER,
-          OfferStatus.ACCEPTED_BY_BUYER,
-          OfferStatus.RELAYED_TO_SELLER,
-          OfferStatus.IN_REVIEW,
-        ].includes(offer.status as any)
-      );
+      return isUnexpired && ACTIVE_OFFER_STATUSES.includes(offer.status as any);
     });
 
     if (activeOffers.length > 0) {
@@ -1459,15 +1452,7 @@ export class ListingsService {
       await tx.offer.updateMany({
         where: {
           listingId,
-          status: {
-            in: [
-              OfferStatus.PENDING_ADMIN_REVIEW,
-              OfferStatus.SUBMITTED,
-              OfferStatus.IN_REVIEW,
-              OfferStatus.RELAYED_TO_SELLER,
-              OfferStatus.COUNTER_OFFERED,
-            ],
-          },
+          status: { in: [...ACTIVE_OFFER_STATUSES] as any },
         },
         data: {
           status: OfferStatus.WITHDRAWN,

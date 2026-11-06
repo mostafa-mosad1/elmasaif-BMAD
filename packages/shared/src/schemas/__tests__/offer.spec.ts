@@ -2,6 +2,11 @@ import { describe, it, expect } from 'vitest';
 import {
   submitOfferSchema,
   offerListQuerySchema,
+  counterOfferSchema,
+  rejectOfferSchema,
+  adminRejectOfferSchema,
+  offerQueueQuerySchema,
+  DEFAULT_PAGE_SIZE,
   OfferStatus,
 } from '../../../src';
 
@@ -87,5 +92,113 @@ describe('offerListQuerySchema — buyer offer list filter (Story 4.1 / FR-25)',
 
   it('exposes the PENDING_ADMIN_REVIEW intake status on the shared enum', () => {
     expect(OfferStatus.PENDING_ADMIN_REVIEW).toBe('PENDING_ADMIN_REVIEW');
+  });
+});
+
+describe('counterOfferSchema — mediated counter-offer (Story 4.2 / FR-26, FR-55)', () => {
+  it('accepts a numeric price and a 2-decimal string price', () => {
+    expect(counterOfferSchema.parse({ counterPrice: 1200000 }).counterPrice).toBe(1200000);
+    expect(counterOfferSchema.parse({ counterPrice: '1200000.50' }).counterPrice).toBe(
+      1200000.5,
+    );
+  });
+
+  it('keeps the [1, 50,000,000] SAR envelope', () => {
+    expect(counterOfferSchema.safeParse({ counterPrice: 1 }).success).toBe(true);
+    expect(counterOfferSchema.safeParse({ counterPrice: 50_000_000 }).success).toBe(true);
+    expect(counterOfferSchema.safeParse({ counterPrice: 0 }).success).toBe(false);
+    expect(counterOfferSchema.safeParse({ counterPrice: 50_000_001 }).success).toBe(false);
+  });
+
+  it('rejects a non-numeric price string', () => {
+    expect(counterOfferSchema.safeParse({ counterPrice: 'abc' }).success).toBe(false);
+    expect(counterOfferSchema.safeParse({ counterPrice: '' }).success).toBe(false);
+  });
+
+  it('treats the round note as optional/nullable and caps it at 500 characters', () => {
+    expect(counterOfferSchema.safeParse({ counterPrice: 1000, note: null }).success).toBe(true);
+    expect(counterOfferSchema.safeParse({ counterPrice: 1000, note: 'ملاحظة' }).success).toBe(
+      true,
+    );
+    expect(
+      counterOfferSchema.safeParse({ counterPrice: 1000, note: 'ا'.repeat(500) }).success,
+    ).toBe(true);
+    expect(
+      counterOfferSchema.safeParse({ counterPrice: 1000, note: 'ا'.repeat(501) }).success,
+    ).toBe(false);
+  });
+});
+
+describe('rejectOfferSchema — structured seller refusal (Story 4.2 / FR-55)', () => {
+  it('accepts every allowed structured reason', () => {
+    for (const reason of [
+      'PRICE_TOO_LOW',
+      'FINANCING_UNAVAILABLE',
+      'PROPERTY_UNAVAILABLE',
+      'TERMS_MISMATCH',
+      'OTHER',
+    ] as const) {
+      const payload =
+        reason === 'OTHER'
+          ? { reason, note: 'السبب تفصيلي هنا بالكامل' }
+          : { reason };
+      expect(rejectOfferSchema.safeParse(payload).success).toBe(true);
+    }
+  });
+
+  it('rejects an unknown reason', () => {
+    const result = rejectOfferSchema.safeParse({ reason: 'BECAUSE' });
+    expect(result.success).toBe(false);
+  });
+
+  it('requires a note of at least 10 characters when the reason is OTHER', () => {
+    expect(rejectOfferSchema.safeParse({ reason: 'OTHER' }).success).toBe(false);
+    expect(rejectOfferSchema.safeParse({ reason: 'OTHER', note: 'قصير' }).success).toBe(false);
+    expect(
+      rejectOfferSchema.safeParse({ reason: 'OTHER', note: 'ا'.repeat(10) }).success,
+    ).toBe(true);
+  });
+
+  it('keeps the note optional for every other reason', () => {
+    expect(rejectOfferSchema.safeParse({ reason: 'PRICE_TOO_LOW' }).success).toBe(true);
+    expect(
+      rejectOfferSchema.safeParse({ reason: 'PRICE_TOO_LOW', note: null }).success,
+    ).toBe(true);
+  });
+});
+
+describe('adminRejectOfferSchema — administrative veto (Story 4.2 / AC#6)', () => {
+  it('requires a reason between 5 and 500 characters', () => {
+    expect(adminRejectOfferSchema.safeParse({ reason: 'أقل' }).success).toBe(false);
+    expect(adminRejectOfferSchema.safeParse({ reason: 'غير مطابق' }).success).toBe(true);
+    expect(adminRejectOfferSchema.safeParse({ reason: 'ا'.repeat(500) }).success).toBe(true);
+    expect(adminRejectOfferSchema.safeParse({ reason: 'ا'.repeat(501) }).success).toBe(false);
+  });
+});
+
+describe('offerQueueQuerySchema — admin mediation queue (Story 4.2 / AC#9)', () => {
+  it('defaults page/limit to the shared pagination constants', () => {
+    const parsed = offerQueueQuerySchema.parse({});
+    expect(parsed.page).toBe(1);
+    expect(parsed.limit).toBe(DEFAULT_PAGE_SIZE);
+    expect(parsed.status).toBeUndefined();
+  });
+
+  it('coerces string page/limit from the query string', () => {
+    const parsed = offerQueueQuerySchema.parse({ page: '2', limit: '50' });
+    expect(parsed.page).toBe(2);
+    expect(parsed.limit).toBe(50);
+  });
+
+  it('accepts an OfferStatus filter and rejects an unknown one', () => {
+    expect(
+      offerQueueQuerySchema.safeParse({ status: OfferStatus.COUNTER_OFFERED }).success,
+    ).toBe(true);
+    expect(offerQueueQuerySchema.safeParse({ status: 'NOPE' }).success).toBe(false);
+  });
+
+  it('rejects page < 1 and limit above the shared maximum', () => {
+    expect(offerQueueQuerySchema.safeParse({ page: '0' }).success).toBe(false);
+    expect(offerQueueQuerySchema.safeParse({ limit: '101' }).success).toBe(false);
   });
 });

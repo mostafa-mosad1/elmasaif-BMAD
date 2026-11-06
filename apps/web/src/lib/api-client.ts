@@ -139,3 +139,28 @@ apiClient.delete = function <T>(
     method: 'DELETE',
   });
 };
+
+/**
+ * Narrows an unknown `catch` value into the standard error envelope, without `any`.
+ * Use it whenever a component needs `ApiError.code` / `details` inside a `try…catch`.
+ */
+export function describeApiError(err: unknown): StandardErrorEnvelope {
+  const failure = (err ?? {}) as { code?: unknown; message?: unknown; details?: unknown; requestId?: unknown };
+
+  return {
+    code: typeof failure.code === 'string' ? failure.code : undefined,
+    message: typeof failure.message === 'string' ? failure.message : undefined,
+    details: failure.details,
+    requestId: typeof failure.requestId === 'string' ? failure.requestId : undefined,
+  };
+}
+
+/**
+ * Reads the administrator currently holding an AD-10 claim lock out of a conflict `details`
+ * payload, so a second admin sees the holder's name instead of a generic error.
+ */
+export function readLockHolderName(details: unknown): string | null {
+  const lockInfo = (details as { lockInfo?: { lockedByAdminName?: unknown } } | undefined)?.lockInfo;
+  const holder = lockInfo?.lockedByAdminName;
+  return typeof holder === 'string' && holder ? holder : null;
+}

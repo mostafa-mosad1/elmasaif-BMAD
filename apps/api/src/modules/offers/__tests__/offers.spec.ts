@@ -9,13 +9,22 @@ import {
   ProfileStatus,
   PropertyType,
   UserRole,
+  ACTIVE_OFFER_STATUSES,
+  MAX_COUNTER_ROUNDS,
   OFFER_ACTIVE_EXISTS,
+  OFFER_ALREADY_EXPIRED,
   OFFER_BUYER_PROFILE_REQUIRED,
   OFFER_EXPIRY_HOURS,
+  OFFER_INVALID_STATE_TRANSITION,
   OFFER_LISTING_NOT_FOUND,
   OFFER_LISTING_NOT_OFFERABLE,
   OFFER_LOW_PRICE_CONFIRMATION_REQUIRED,
+  OFFER_MAX_ROUNDS_REACHED,
+  OFFER_NOT_FOUND,
+  OFFER_NOT_PARTY,
   OFFER_PRICE_OUT_OF_RANGE,
+  OFFER_REJECTION_NOTE_REQUIRED,
+  OFFER_SELLER_PROFILE_REQUIRED,
   OFFER_SELF_SUBMISSION_FORBIDDEN,
 } from '@elmasaif/shared';
 
@@ -131,6 +140,7 @@ describe('OffersService (Story 4.1 / FR-25, A-07, BR-11)', () => {
           action: 'OFFER_SUBMITTED',
           priceSnapshot: 1150000,
           notes: null,
+          roundNumber: 0,
         },
       });
       expect(prisma.auditLog.create).toHaveBeenCalledWith({
@@ -400,6 +410,490 @@ describe('OffersService (Story 4.1 / FR-25, A-07, BR-11)', () => {
       await expect(service.listMyOffers(userId, UserRole.BUYER, {})).rejects.toMatchObject({
         response: { code: OFFER_BUYER_PROFILE_REQUIRED },
       });
+    });
+  });
+});
+
+describe('OffersService — mediated negotiation (Story 4.2 / FR-26, FR-55)', () => {
+  let service: OffersService;
+  let prisma: any;
+  let clockService: any;
+
+  const userId = 'user-uuid-1';
+  const buyerProfileId = 'buyer-profile-1';
+  const sellerProfileId = 'seller-profile-1';
+  const sellerUserId = 'seller-user-2';
+  const otherUserId = 'other-user-3';
+  const listingId = '22222222-2222-2222-2222-222222222222';
+  const offerId = 'offer-1';
+  const mockNow = new Date('2026-11-06T09:00:00.000Z');
+  const askPrice = 1200000;
+
+  const buyerProfile = () => ({
+    id: buyerProfileId,
+    userId,
+    role: UserRole.BUYER,
+    status: ProfileStatus.ACTIVE,
+  });
+
+  const sellerProfile = () => ({
+    id: sellerProfileId,
+    userId: sellerUserId,
+    role: UserRole.MARKETER,
+    status: ProfileStatus.ACTIVE,
+  });
+
+  const listingRow = (overrides: Partial<any> = {}) => ({
+    id: listingId,
+    title: 'فيلا شمال الطائف',
+    propertyType: PropertyType.VILLA,
+    status: ListingStatus.ACTIVE,
+    askPrice: String(askPrice),
+    areaSquareMeters: 300,
+    sellerProfileId,
+    sellerProfile: {
+      id: sellerProfileId,
+      userId: sellerUserId,
+      user: { fullName: 'بائع العقار' },
+    },
+    city: { id: 'city-1', nameAr: 'الطائف' },
+    district: { id: 'district-1', nameAr: 'الشهداء الشمالية' },
+    ...overrides,
+  });
+
+  const offerRow = (overrides: Partial<any> = {}) => ({
+    id: offerId,
+    listingId,
+    buyerProfileId,
+    offerPrice: '1150000.00',
+    status: OfferStatus.RELAYED_TO_SELLER,
+    isBackup: false,
+    isLowPrice: false,
+    note: null,
+    negotiationRound: 0,
+    rejectionReason: null,
+    rejectionNote: null,
+    lockedByAdminId: null,
+    lockedAt: null,
+    lockExpiresAt: null,
+    expiresAt: new Date(mockNow.getTime() + OFFER_EXPIRY_HOURS * 3_600_000),
+    createdAt: mockNow,
+    listing: listingRow(),
+    buyerProfile: { id: buyerProfileId, user: { fullName: 'مشتري العقار' } },
+    history: [],
+    ...overrides,
+  });
+
+  beforeEach(async () => {
+    clockService = { now: jest.fn(() => mockNow) };
+    prisma = {
+      userProfile: {
+        findUnique: jest.fn(({ where }: any) =>
+          Promise.resolve(
+            where.userId_role.role === UserRole.BUYER ? buyerProfile() : sellerProfile(),
+          ),
+        ),
+      },
+      offer: {
+        findUnique: jest.fn().mockResolvedValue(offerRow()),
+        findMany: jest.fn().mockResolvedValue([]),
+        update: jest.fn().mockResolvedValue(offerRow()),
+      },
+      offerHistory: { create: jest.fn().mockResolvedValue({ id: 'history-1' }) },
+      auditLog: { create: jest.fn().mockResolvedValue({ id: 'audit-1' }) },
+      $queryRaw: jest.fn().mockResolvedValue([{ id: offerId }]),
+      $transaction: jest.fn((callback: any) => callback(prisma)),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        OffersService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: ClockService, useValue: clockService },
+      ],
+    }).compile();
+
+    service = module.get<OffersService>(OffersService);
+  });
+
+  describe('accept-by-seller (AC#2, AC#5)', () => {
+    it('moves RELAYED_TO_SELLER to the mutual-agreement hand-off and clears the admin lock', async () => {
+      const result = await service.acceptBySeller(sellerUserId, UserRole.MARKETER, offerId);
+
+      expect(prisma.$transaction).toHaveBeenCalled();
+      const update = prisma.offer.update.mock.calls[0][0];
+      expect(update.data).toEqual(
+        expect.objectContaining({
+          status: OfferStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL,
+          version: { increment: 1 },
+          lockedByAdminId: null,
+          lockedAt: null,
+          lockExpiresAt: null,
+        }),
+      );
+
+      expect(prisma.offerHistory.create).toHaveBeenCalledWith({
+        data: {
+          offerId,
+          actorProfileId: sellerProfileId,
+          action: 'OFFER_ACCEPTED_BY_SELLER',
+          priceSnapshot: 1150000,
+          notes: null,
+          roundNumber: 0,
+        },
+      });
+      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          actorId: sellerUserId,
+          actorType: 'USER',
+          action: 'OFFER_ACCEPTED_BY_SELLER',
+          entityType: 'Offer',
+          entityId: offerId,
+          payload: expect.objectContaining({
+            fromStatus: OfferStatus.RELAYED_TO_SELLER,
+            toStatus: OfferStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL,
+            price: 1150000,
+            round: 0,
+          }),
+        }),
+      });
+
+      expect(result.status).toBe(OfferStatus.RELAYED_TO_SELLER);
+      expect(result.maxCounterRounds).toBe(MAX_COUNTER_ROUNDS);
+    });
+
+    it('locks the offer row through the text id column (no ::uuid cast)', async () => {
+      await service.acceptBySeller(sellerUserId, UserRole.MARKETER, offerId);
+
+      const sql = (prisma.$queryRaw.mock.calls[0][0] as string[]).join('?');
+      expect(sql).toContain('FROM "offers"');
+      expect(sql).toContain('FOR UPDATE');
+      expect(sql).toContain('::text');
+      expect(sql).not.toContain('::uuid');
+    });
+
+    it('refuses the acceptance from any other source status', async () => {
+      prisma.offer.findUnique.mockResolvedValue(
+        offerRow({ status: OfferStatus.PENDING_ADMIN_REVIEW }),
+      );
+
+      await expect(
+        service.acceptBySeller(sellerUserId, UserRole.MARKETER, offerId),
+      ).rejects.toMatchObject({ response: { code: OFFER_INVALID_STATE_TRANSITION } });
+      expect(prisma.offer.update).not.toHaveBeenCalled();
+    });
+
+    it('refuses a response on an offer whose expiry has passed', async () => {
+      prisma.offer.findUnique.mockResolvedValue(
+        offerRow({ expiresAt: new Date(mockNow.getTime() - 1000) }),
+      );
+
+      await expect(
+        service.acceptBySeller(sellerUserId, UserRole.MARKETER, offerId),
+      ).rejects.toMatchObject({ response: { code: OFFER_ALREADY_EXPIRED } });
+    });
+
+    it('returns 404 for an unknown offer id', async () => {
+      prisma.offer.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.acceptBySeller(sellerUserId, UserRole.MARKETER, offerId),
+      ).rejects.toMatchObject({ response: { code: OFFER_NOT_FOUND } });
+    });
+
+    it('forbids a caller who is not the listing’s seller', async () => {
+      prisma.userProfile.findUnique.mockResolvedValue({
+        id: 'other-profile',
+        userId: otherUserId,
+        role: UserRole.MARKETER,
+        status: ProfileStatus.ACTIVE,
+      });
+
+      await expect(
+        service.acceptBySeller(otherUserId, UserRole.MARKETER, offerId),
+      ).rejects.toMatchObject({ response: { code: OFFER_NOT_PARTY } });
+    });
+
+    it('refuses a caller with no active MARKETER/OWNER profile (FR-3)', async () => {
+      await expect(
+        service.acceptBySeller(sellerUserId, UserRole.BUYER, offerId),
+      ).rejects.toMatchObject({ response: { code: OFFER_SELLER_PROFILE_REQUIRED } });
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('counter-by-seller (AC#2, AC#3)', () => {
+    it('replaces the offer price, increments the round and resets the 7-day expiry', async () => {
+      const result = await service.counterBySeller(sellerUserId, UserRole.MARKETER, offerId, {
+        counterPrice: 1250000,
+        note: 'السعر النهائي',
+      });
+
+      const update = prisma.offer.update.mock.calls[0][0];
+      expect(update.data).toEqual(
+        expect.objectContaining({
+          status: OfferStatus.COUNTER_OFFERED,
+          offerPrice: 1250000,
+          negotiationRound: { increment: 1 },
+          version: { increment: 1 },
+        }),
+      );
+      expect(new Date(update.data.expiresAt).getTime()).toBe(
+        mockNow.getTime() + OFFER_EXPIRY_HOURS * 3_600_000,
+      );
+
+      expect(prisma.offerHistory.create).toHaveBeenCalledWith({
+        data: {
+          offerId,
+          actorProfileId: sellerProfileId,
+          action: 'OFFER_COUNTER_BY_SELLER',
+          priceSnapshot: 1250000,
+          notes: 'السعر النهائي',
+          roundNumber: 1,
+        },
+      });
+      expect(result.maxCounterRounds).toBe(MAX_COUNTER_ROUNDS);
+    });
+
+    it('allows the counter at round 4 and refuses it at the cap (AC#3)', async () => {
+      prisma.offer.findUnique.mockResolvedValue(
+        offerRow({ negotiationRound: MAX_COUNTER_ROUNDS - 1 }),
+      );
+      await expect(
+        service.counterBySeller(sellerUserId, UserRole.MARKETER, offerId, { counterPrice: 1200000 }),
+      ).resolves.toBeDefined();
+
+      prisma.offer.findUnique.mockResolvedValue(
+        offerRow({ negotiationRound: MAX_COUNTER_ROUNDS }),
+      );
+      prisma.offer.update.mockClear();
+      await expect(
+        service.counterBySeller(sellerUserId, UserRole.MARKETER, offerId, { counterPrice: 1200000 }),
+      ).rejects.toMatchObject({ response: { code: OFFER_MAX_ROUNDS_REACHED } });
+      expect(prisma.offer.update).not.toHaveBeenCalled();
+    });
+
+    it('still allows acceptance at the round cap', async () => {
+      prisma.offer.findUnique.mockResolvedValue(
+        offerRow({ negotiationRound: MAX_COUNTER_ROUNDS }),
+      );
+
+      await expect(
+        service.acceptBySeller(sellerUserId, UserRole.MARKETER, offerId),
+      ).resolves.toBeDefined();
+    });
+
+    it('refuses a counter price outside the shared SAR envelope', async () => {
+      await expect(
+        service.counterBySeller(sellerUserId, UserRole.MARKETER, offerId, { counterPrice: 0 }),
+      ).rejects.toMatchObject({
+        response: { code: 'OFFER_COUNTER_PRICE_OUT_OF_RANGE' },
+      });
+    });
+  });
+
+  describe('reject-by-seller (AC#2)', () => {
+    it('records the structured reason and moves the offer to REJECTED_BY_SELLER', async () => {
+      await service.rejectBySeller(sellerUserId, UserRole.MARKETER, offerId, {
+        reason: 'PRICE_TOO_LOW',
+        note: null,
+      });
+
+      const update = prisma.offer.update.mock.calls[0][0];
+      expect(update.data).toEqual(
+        expect.objectContaining({
+          status: OfferStatus.REJECTED_BY_SELLER,
+          rejectionReason: 'PRICE_TOO_LOW',
+          rejectionNote: null,
+        }),
+      );
+      // A terminal target keeps the existing expiry instead of reviving the offer.
+      expect(update.data.expiresAt).toBeUndefined();
+    });
+
+    it('requires a detailed note when the reason is OTHER', async () => {
+      await expect(
+        service.rejectBySeller(sellerUserId, UserRole.MARKETER, offerId, {
+          reason: 'OTHER',
+          note: null,
+        }),
+      ).rejects.toMatchObject({ response: { code: OFFER_REJECTION_NOTE_REQUIRED } });
+      await expect(
+        service.rejectBySeller(sellerUserId, UserRole.MARKETER, offerId, {
+          reason: 'OTHER',
+          note: 'قصير',
+        }),
+      ).rejects.toMatchObject({ response: { code: OFFER_REJECTION_NOTE_REQUIRED } });
+      expect(prisma.offer.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('buyer counter round-trip (AC#4)', () => {
+    it('accepts the relayed counter as mutual agreement', async () => {
+      prisma.offer.findUnique.mockResolvedValue(
+        offerRow({ status: OfferStatus.RELAYED_TO_BUYER, offerPrice: '1250000.00' }),
+      );
+
+      await service.acceptByBuyer(userId, UserRole.BUYER, offerId);
+
+      expect(prisma.offer.update.mock.calls[0][0].data.status).toBe(
+        OfferStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL,
+      );
+      expect(prisma.offerHistory.create.mock.calls[0][0].data).toEqual(
+        expect.objectContaining({
+          actorProfileId: buyerProfileId,
+          action: 'OFFER_ACCEPTED_BY_BUYER',
+          priceSnapshot: 1250000,
+        }),
+      );
+    });
+
+    it('bumps the round when the buyer counters again', async () => {
+      prisma.offer.findUnique.mockResolvedValue(
+        offerRow({ status: OfferStatus.RELAYED_TO_BUYER, negotiationRound: 2 }),
+      );
+
+      await service.counterByBuyer(userId, UserRole.BUYER, offerId, { counterPrice: 1180000 });
+
+      expect(prisma.offerHistory.create.mock.calls[0][0].data).toEqual(
+        expect.objectContaining({
+          actorProfileId: buyerProfileId,
+          action: 'OFFER_COUNTER_BY_BUYER',
+          priceSnapshot: 1180000,
+          roundNumber: 3,
+        }),
+      );
+    });
+
+    it('forbids a buyer who does not own the offer', async () => {
+      prisma.userProfile.findUnique.mockResolvedValue({
+        ...buyerProfile(),
+        id: 'another-buyer-profile',
+      });
+
+      await expect(
+        service.acceptByBuyer(userId, UserRole.BUYER, offerId),
+      ).rejects.toMatchObject({ response: { code: OFFER_NOT_PARTY } });
+    });
+  });
+
+  describe('listReceivedOffers (AC#10)', () => {
+    it('scopes the query to the caller’s own seller profile', async () => {
+      prisma.offer.findMany.mockResolvedValue([offerRow()]);
+
+      const result = await service.listReceivedOffers(sellerUserId, UserRole.MARKETER);
+
+      const arg = prisma.offer.findMany.mock.calls[0][0];
+      expect(arg.where).toEqual({ listing: { sellerProfileId } });
+      expect(arg.orderBy).toEqual({ createdAt: 'desc' });
+
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].sellerName).toBe('بائع العقار');
+      expect(result.items[0].buyerName).toBe('مشتري العقار');
+      expect(result.items[0].awaitingParty).toBe('SELLER');
+    });
+
+    it('rejects a caller browsing in the BUYER workspace (FR-3)', async () => {
+      await expect(
+        service.listReceivedOffers(userId, UserRole.BUYER),
+      ).rejects.toMatchObject({ response: { code: OFFER_SELLER_PROFILE_REQUIRED } });
+    });
+  });
+
+  describe('getOfferThread (AC#10)', () => {
+    it.each([
+      [OfferStatus.PENDING_ADMIN_REVIEW, 'ADMIN'],
+      [OfferStatus.COUNTER_OFFERED, 'ADMIN'],
+      [OfferStatus.RELAYED_TO_SELLER, 'SELLER'],
+      [OfferStatus.RELAYED_TO_BUYER, 'BUYER'],
+      [OfferStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL, null],
+    ])('derives awaitingParty %s → %s', async (status, expected) => {
+      prisma.offer.findUnique.mockResolvedValue(offerRow({ status }));
+
+      const thread = await service.getOfferThread(userId, UserRole.BUYER, offerId);
+
+      expect(thread.status).toBe(status);
+      expect(thread.awaitingParty).toBe(expected);
+    });
+
+    it('maps every history row to its actor role, with admin steps never mislabelled', async () => {
+      prisma.offer.findUnique.mockResolvedValue(
+        offerRow({
+          history: [
+            {
+              id: 'h1',
+              action: 'OFFER_SUBMITTED',
+              actorProfileId: buyerProfileId,
+              actorAdminId: null,
+              priceSnapshot: '1150000.00',
+              notes: null,
+              roundNumber: 0,
+              createdAt: mockNow,
+            },
+            {
+              id: 'h2',
+              action: 'OFFER_RELAYED_TO_SELLER',
+              actorProfileId: null,
+              actorAdminId: 'admin-1',
+              priceSnapshot: '1150000.00',
+              notes: null,
+              roundNumber: 0,
+              createdAt: mockNow,
+            },
+            {
+              id: 'h3',
+              action: 'OFFER_COUNTER_BY_SELLER',
+              actorProfileId: sellerProfileId,
+              actorAdminId: null,
+              priceSnapshot: '1250000.00',
+              notes: 'السعر النهائي',
+              roundNumber: 1,
+              createdAt: mockNow,
+            },
+          ],
+        }),
+      );
+
+      const thread = await service.getOfferThread(userId, UserRole.BUYER, offerId);
+
+      expect(thread.history).toHaveLength(3);
+      expect(thread.history[0].actorRole).toBe('BUYER');
+      expect(thread.history[0].actorName).toBe('مشتري العقار');
+      expect(thread.history[1].actorRole).toBe('ADMIN');
+      expect(thread.history[2].actorRole).toBe('SELLER');
+      expect(thread.history[2].actorName).toBe('بائع العقار');
+      expect(thread.history[2].priceSnapshot).toBe(1250000);
+      expect(thread.history[2].roundNumber).toBe(1);
+      expect(thread.history[2].createdAt).toBe(mockNow.toISOString());
+    });
+
+    it('forbids a third party', async () => {
+      prisma.userProfile.findUnique.mockResolvedValue({
+        ...buyerProfile(),
+        id: 'third-party-profile',
+      });
+
+      await expect(
+        service.getOfferThread(userId, UserRole.BUYER, offerId),
+      ).rejects.toMatchObject({ response: { code: OFFER_NOT_PARTY } });
+    });
+
+    it('returns 404 for an unknown offer id', async () => {
+      prisma.offer.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.getOfferThread(userId, UserRole.BUYER, 'nope'),
+      ).rejects.toMatchObject({ response: { code: OFFER_NOT_FOUND } });
+    });
+  });
+
+  describe('active offer set (AC#12 regression guard)', () => {
+    it('keeps the mediation statuses inside ACTIVE_OFFER_STATUSES', () => {
+      expect(ACTIVE_OFFER_STATUSES).toContain(OfferStatus.RELAYED_TO_BUYER);
+      expect(ACTIVE_OFFER_STATUSES).toContain(OfferStatus.COUNTER_OFFERED);
+      expect(ACTIVE_OFFER_STATUSES).toContain(
+        OfferStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL,
+      );
     });
   });
 });

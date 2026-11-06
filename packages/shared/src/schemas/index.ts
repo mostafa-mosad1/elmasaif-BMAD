@@ -60,10 +60,6 @@ export const otpVerifySchema = z.object({
   code: z.string().length(6, 'رمز التحقق يجب أن يتكون من 6 أرقام')
 });
 
-export const counterOfferSchema = z.object({
-  counterPrice: z.string().regex(/^\d+(\.\d{1,2})?$/, 'قيمة العرض المقابل غير صحيحة')
-});
-
 export const uploadPaymentProofSchema = z.object({
   dealId: z.string().uuid(),
   paymentType: z.enum(['PLATFORM_COMMISSION', 'SELLER_PURCHASE_PRICE', 'OWNER_CONTRACT_FEE']),

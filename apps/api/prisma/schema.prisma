@@ -66,6 +66,9 @@ enum OfferStatus {
   ACCEPTED_BY_BUYER
   EXPIRED
   WITHDRAWN
+  RELAYED_TO_BUYER
+  REJECTED_BY_ADMIN
+  SELECTED_PENDING_FINAL_ADMIN_APPROVAL
 }
 
 enum DealStatus {
@@ -529,6 +532,9 @@ model Offer {
   lockedAt        DateTime?
   lockExpiresAt   DateTime?
   expiresAt       DateTime
+  negotiationRound Int        @default(0) @map("negotiation_round")
+  rejectionReason String?     @map("rejection_reason")
+  rejectionNote   String?     @map("rejection_note")
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -540,6 +546,7 @@ model Offer {
   @@index([listingId, buyerProfileId, status])
   @@index([listingId, isBackup, status])
   @@index([lockExpiresAt])
+  @@index([status, expiresAt])
   @@map("offers")
 }
 
@@ -547,13 +554,15 @@ model OfferHistory {
   id             String   @id @default(uuid())
   offerId        String
   actorProfileId String?
+  actorAdminId   String?  @map("actor_admin_id")
   action         String
   priceSnapshot  Decimal? @db.Decimal(12, 2)
   notes          String?
+  roundNumber    Int?     @map("round_number")
   createdAt      DateTime @default(now())
 
   offer Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
-
+  @@index([offerId, createdAt])
   @@map("offer_history")
 }
 

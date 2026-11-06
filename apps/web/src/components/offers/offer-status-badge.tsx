@@ -13,6 +13,10 @@ const OFFER_STATUS_VARIANTS: Record<OfferStatus, StatusBadgeVariant> = {
   [OfferStatus.ACCEPTED_BY_BUYER]: 'verified',
   [OfferStatus.EXPIRED]: 'neutral',
   [OfferStatus.WITHDRAWN]: 'neutral',
+  // Story 4.2 mediation statuses.
+  [OfferStatus.RELAYED_TO_BUYER]: 'info',
+  [OfferStatus.REJECTED_BY_ADMIN]: 'danger',
+  [OfferStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL]: 'verified',
 };
 
 export interface OfferStatusBadgeProps {

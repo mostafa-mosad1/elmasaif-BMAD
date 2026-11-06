@@ -47,6 +47,7 @@ import {
   PriceSuggestionStatus,
   RejectListingInput,
   UserRole,
+  ACTIVE_OFFER_STATUSES,
 } from '@elmasaif/shared';
 
 export interface AuthenticatedAdminActor {
@@ -1122,15 +1123,7 @@ export class AdminListingsService {
       await tx.offer.updateMany({
         where: {
           listingId,
-          status: {
-            in: [
-              OfferStatus.PENDING_ADMIN_REVIEW,
-              OfferStatus.SUBMITTED,
-              OfferStatus.IN_REVIEW,
-              OfferStatus.RELAYED_TO_SELLER,
-              OfferStatus.COUNTER_OFFERED,
-            ],
-          },
+          status: { in: [...ACTIVE_OFFER_STATUSES] as any },
         },
         data: {
           status: OfferStatus.WITHDRAWN,
@@ -1252,15 +1245,7 @@ export class AdminListingsService {
       await tx.offer.updateMany({
         where: {
           listingId,
-          status: {
-            in: [
-              OfferStatus.PENDING_ADMIN_REVIEW,
-              OfferStatus.SUBMITTED,
-              OfferStatus.IN_REVIEW,
-              OfferStatus.RELAYED_TO_SELLER,
-              OfferStatus.COUNTER_OFFERED,
-            ],
-          },
+          status: { in: [...ACTIVE_OFFER_STATUSES] as any },
         },
         data: {
           status: OfferStatus.WITHDRAWN,

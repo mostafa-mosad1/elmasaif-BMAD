@@ -20,6 +20,7 @@ import {
   PropertyType,
   SuspensionCategory,
   UserRole,
+  ACTIVE_OFFER_STATUSES,
   LISTING_ARCHIVE_BLOCKED_ACTIVE_DEAL,
   LISTING_ARCHIVE_BLOCKED_ACTIVE_OFFERS,
   LISTING_ARCHIVE_BLOCKED_RESERVED,
@@ -225,11 +226,13 @@ describe('Story 2.6: Listing Archiving, Suspension & Compliance Blocking', () =>
     it('successfully archives listing, withdraws open offers, clears locks, and writes audit log', async () => {
       const mockListing = makeMockListing({
         status: ListingStatus.ACTIVE,
+        // Story 4.2 widened the archive guard to every ACTIVE_OFFER_STATUS, so a *live* open
+        // offer now blocks archiving. A lapsed one is still swept by the withdraw UPDATE.
         offers: [
           {
             id: 'offer-open',
             status: OfferStatus.SUBMITTED,
-            expiresAt: new Date(baseNow.getTime() + 86400000),
+            expiresAt: new Date(baseNow.getTime() - 86400000),
           },
         ],
       });
@@ -262,15 +265,8 @@ describe('Story 2.6: Listing Archiving, Suspension & Compliance Blocking', () =>
       expect(prisma.offer.updateMany).toHaveBeenCalledWith({
         where: {
           listingId,
-          status: {
-            in: [
-              OfferStatus.PENDING_ADMIN_REVIEW,
-              OfferStatus.SUBMITTED,
-              OfferStatus.IN_REVIEW,
-              OfferStatus.RELAYED_TO_SELLER,
-              OfferStatus.COUNTER_OFFERED,
-            ],
-          },
+          // Story 4.2: the open-offer set is the shared constant, not a hand-maintained literal.
+          status: { in: [...ACTIVE_OFFER_STATUSES] },
         },
         data: {
           status: OfferStatus.WITHDRAWN,

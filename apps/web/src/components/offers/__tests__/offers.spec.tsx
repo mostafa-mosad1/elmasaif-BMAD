@@ -6,7 +6,10 @@ import { unwrapOffersPayload, countActiveOffers } from '../offers-view';
 import { BuyerOffersList } from '../buyer-offers-list';
 import { OfferStatusBadge } from '../offer-status-badge';
 import { OfferSubmitForm } from '../offer-submit-form';
-import type { OfferItem } from '@elmasaif/shared';
+import { unwrapOfferThreadPayload, resolveOfferActions } from '../offer-negotiation-view';
+import { OfferNegotiationTimeline } from '../offer-negotiation-timeline';
+import { SellerOffersList } from '../seller-offers-list';
+import type { OfferHistoryEntry, OfferItem, OfferThreadItem, OfferThreadSummary } from '@elmasaif/shared';
 
 vi.mock('../../../lib/api-client', async () => {
   const actual = await vi.importActual<typeof import('../../../lib/api-client')>(
@@ -171,3 +174,217 @@ describe('OfferSubmitForm (Story 4.1 / AC#3, AC#4, AC#10)', () => {
     expect(html).toContain('إرسال العرض الاحتياطي');
   });
 });
+
+// ---------------------------------------------------------------------------------------------
+// Story 4.2 — mediated counter-offer rounds & seller responses (FR-26, FR-55, AC#8, AC#10)
+// ---------------------------------------------------------------------------------------------
+
+const historyEntry = (overrides: Partial<OfferHistoryEntry> = {}): OfferHistoryEntry => ({
+  id: 'history-1',
+  action: 'OFFER_SUBMITTED',
+  actorRole: 'BUYER',
+  actorName: 'مشتري',
+  priceSnapshot: 1150000,
+  notes: null,
+  roundNumber: 0,
+  createdAt: inDays(0),
+  ...overrides,
+});
+
+const threadItem = (overrides: Partial<OfferThreadItem> = {}): OfferThreadItem => ({
+  id: 'offer-1',
+  status: OfferStatus.RELAYED_TO_SELLER,
+  offerPrice: 1150000,
+  askPrice: ASK_PRICE,
+  isBackup: false,
+  isLowPrice: false,
+  negotiationRound: 1,
+  maxCounterRounds: 5,
+  awaitingParty: 'SELLER',
+  expiresAt: inDays(7),
+  createdAt: inDays(0),
+  buyerName: 'مشتري العرض',
+  sellerName: 'وسيط معتمد',
+  rejectionReason: null,
+  rejectionNote: null,
+  listing: offerItem().listing,
+  history: [historyEntry()],
+  ...overrides,
+});
+
+const sellerSummary = (overrides: Partial<OfferThreadSummary> = {}): OfferThreadSummary => ({
+  ...threadItem(),
+  ...overrides,
+});
+
+describe('unwrapOfferThreadPayload (Story 4.2 / AC#8)', () => {
+  it('reads the enveloped `{ statusCode, data }` body', () => {
+    const thread = threadItem();
+    expect(unwrapOfferThreadPayload({ statusCode: 200, data: thread })).toEqual(thread);
+  });
+
+  it('reads a bare thread body', () => {
+    const thread = threadItem();
+    expect(unwrapOfferThreadPayload(thread)).toEqual(thread);
+  });
+
+  it('is nullish-safe and rejects bodies without a history array', () => {
+    expect(unwrapOfferThreadPayload(null)).toBeNull();
+    expect(unwrapOfferThreadPayload(undefined)).toBeNull();
+    expect(unwrapOfferThreadPayload({})).toBeNull();
+    expect(unwrapOfferThreadPayload('not-an-object')).toBeNull();
+    expect(unwrapOfferThreadPayload({ id: 'offer-1' })).toBeNull();
+  });
+});
+
+describe('resolveOfferActions (Story 4.2 / AC#2, AC#3)', () => {
+  it('gives the seller accept, reject and counter while the offer waits on them', () => {
+    expect(
+      resolveOfferActions(
+        { awaitingParty: 'SELLER', negotiationRound: 1, maxCounterRounds: 5 },
+        'SELLER',
+      ),
+    ).toEqual({ canAccept: true, canReject: true, canCounter: true });
+  });
+
+  it('never lets the buyer reject (silence is handled by expiry, not a veto)', () => {
+    expect(
+      resolveOfferActions(
+        { awaitingParty: 'BUYER', negotiationRound: 1, maxCounterRounds: 5 },
+        'BUYER',
+      ),
+    ).toEqual({ canAccept: true, canReject: false, canCounter: true });
+  });
+
+  it('offers nothing while the message is with the administration', () => {
+    expect(
+      resolveOfferActions(
+        { awaitingParty: 'ADMIN', negotiationRound: 1, maxCounterRounds: 5 },
+        'SELLER',
+      ),
+    ).toEqual({ canAccept: false, canReject: false, canCounter: false });
+  });
+
+  it('keeps acceptance open at the round cap but drops the counter-offer', () => {
+    expect(
+      resolveOfferActions(
+        { awaitingParty: 'BUYER', negotiationRound: 5, maxCounterRounds: 5 },
+        'BUYER',
+      ),
+    ).toEqual({ canAccept: true, canReject: false, canCounter: false });
+  });
+
+  it('offers nothing on a terminal offer (awaitingParty === null)', () => {
+    expect(
+      resolveOfferActions(
+        { awaitingParty: null, negotiationRound: 3, maxCounterRounds: 5 },
+        'SELLER',
+      ),
+    ).toEqual({ canAccept: false, canReject: false, canCounter: false });
+    expect(resolveOfferActions(null, 'BUYER')).toEqual({
+      canAccept: false,
+      canReject: false,
+      canCounter: false,
+    });
+  });
+});
+
+describe('OfferNegotiationTimeline (Story 4.2 / AC#8)', () => {
+  it('renders every action label, actor chip, round chip and price snapshot', () => {
+    const html = renderToString(
+      <OfferNegotiationTimeline
+        history={[
+          historyEntry({ id: 'h-1', action: 'OFFER_SUBMITTED', notes: 'جاهز للتفاوض' }),
+          historyEntry({
+            id: 'h-2',
+            action: 'OFFER_COUNTER_BY_SELLER',
+            actorRole: 'SELLER',
+            priceSnapshot: 1180000,
+            roundNumber: 1,
+          }),
+          historyEntry({
+            id: 'h-3',
+            action: 'OFFER_RELAYED_TO_BUYER',
+            actorRole: 'ADMIN',
+            priceSnapshot: 1180000,
+            roundNumber: 1,
+          }),
+        ]}
+      />,
+    );
+
+    expect(html).toContain('تقديم العرض');
+    expect(html).toContain('عرض مقابل من البائع');
+    expect(html).toContain('إحالة العرض المضاد إلى المشتري');
+    expect(html).toContain('المشتري');
+    expect(html).toContain('البائع');
+    expect(html).toContain('إدارة المنصة');
+    expect(html).toContain('الجولة 1 من 5');
+    expect(html).toContain('جاهز للتفاوض');
+    expect(html).toContain('1,180,000');
+    expect(html).toContain('offer-timeline-entry-h-2');
+  });
+
+  it('renders the empty placeholder before the first round', () => {
+    const html = renderToString(<OfferNegotiationTimeline history={[]} />);
+    expect(html).toContain('لم يبدأ التفاوض بعد');
+    expect(html).toContain('data-empty="true"');
+  });
+});
+
+describe('SellerOffersList (Story 4.2 / AC#10)', () => {
+  it('renders the buyer, prices, round counter, expiry and the «بانتظار ردك» chip', () => {
+    const html = renderToString(
+      <SellerOffersList
+        offers={[sellerSummary({ id: 'offer-9', awaitingParty: 'SELLER', negotiationRound: 2 })]}
+        detailHrefBase="/app/marketer/offers"
+      />,
+    );
+
+    expect(html).toContain('فيلا شمال الطائف');
+    expect(html).toContain('مشتري العرض');
+    expect(html).toContain('1,150,000');
+    expect(html).toContain('جولة 2 من 5');
+    expect(html).toContain('بانتظار ردك');
+    expect(html).toContain('متبقي');
+    expect(html).toContain('/app/marketer/offers/offer-9');
+    expect(html).toContain('فتح التفاوض');
+  });
+
+  it('shows the awaiting-administration label instead of the reply chip', () => {
+    const html = renderToString(
+      <SellerOffersList offers={[sellerSummary({ awaitingParty: 'ADMIN' })]} />,
+    );
+    expect(html).not.toContain('بانتظار ردك');
+    expect(html).toContain('بانتظار الإدارة');
+    expect(html).not.toContain('فتح التفاوض');
+  });
+
+  it('renders the empty state when no offer has been received', () => {
+    const html = renderToString(<SellerOffersList offers={[]} />);
+    expect(html).toContain('لا توجد عروض واردة بعد');
+  });
+});
+
+describe('BuyerOffersList — Story 4.2 additions', () => {
+  it('renders the round counter, the reply chip and the opt-in detail link', () => {
+    const html = renderToString(
+      <BuyerOffersList
+        offers={[offerItem({ id: 'offer-7', awaitingParty: 'BUYER', negotiationRound: 3 })]}
+        detailHrefBase="/app/buyer/offers"
+      />,
+    );
+
+    expect(html).toContain('بانتظار ردك');
+    expect(html).toContain('جولة 3 من 5');
+    expect(html).toContain('/app/buyer/offers/offer-7');
+  });
+
+  it('omits the link and the new chips when the 4.1 props are all that is passed', () => {
+    const html = renderToString(<BuyerOffersList offers={[offerItem()]} />);
+    expect(html).not.toContain('فتح التفاوض');
+    expect(html).not.toContain('بانتظار ردك');
+    expect(html).not.toContain('جولة ');
+  });
+});
+

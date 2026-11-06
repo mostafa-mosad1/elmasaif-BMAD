@@ -43,7 +43,8 @@ export function countActiveOffers(items: OfferItem[]): number {
 
 /**
  * Buyer offer surface (Story 4.1 / FR-25, FR-59): the caller's own purchase offers, newest
- * first, backed by `GET /offers/my`. Seller responses and counter rounds land in Story 4.2.
+ * first, backed by `GET /offers/my`. Story 4.2 adds the per-row «فتح التفاوض» link into the
+ * mediated negotiation screen; the fetch contract is unchanged.
  */
 export function OffersView() {
   const [offers, setOffers] = useState<OfferItem[]>([]);
@@ -104,7 +105,7 @@ export function OffersView() {
           onAction={load}
         />
       ) : (
-        <BuyerOffersList offers={offers} />
+        <BuyerOffersList offers={offers} detailHrefBase="/app/buyer/offers" />
       )}
     </div>
   );

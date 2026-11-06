@@ -83,6 +83,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
     [UserRole.OWNER]: [
       { href: '/app/owner', label: 'لوحة تحكم المالك', icon: LayoutDashboard },
       { href: '/app/owner/listings/new', label: 'طلب عرض عقار مباشر', icon: PlusCircle },
+      { href: '/app/owner/offers', label: 'العروض الواردة', icon: HandCoins },
       { href: '/app/owner/demands', label: 'مطابقات طلبات الشراء', icon: Sparkles },
       { href: '/app/owner/contracts', label: 'عقود الوساطة الإلكترونية', icon: FileText },
       { href: '/app/settings/payout', label: 'حسابات التحويل (IBAN)', icon: CreditCard },
@@ -93,6 +94,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
       { href: '/app/marketer', label: 'لوحة تحكم الوسيط', icon: LayoutDashboard },
       { href: '/app/marketer/listings', label: 'إدارة العقارات', icon: Building },
       { href: '/app/marketer/listings/new', label: 'إضافة عقار جديد', icon: PlusCircle },
+      { href: '/app/marketer/offers', label: 'العروض الواردة', icon: HandCoins },
       { href: '/app/marketer/demands', label: 'مطابقات طلبات الشراء', icon: Sparkles },
       { href: '/app/marketer/fal-license', label: 'رخصة فال العقارية', icon: ShieldCheck },
       { href: '/app/settings/payout', label: 'حسابات التحويل (IBAN)', icon: CreditCard },
@@ -109,6 +111,9 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         : []),
       ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Offers.Review')
         ? [{ href: '/admin/proposals', label: 'طابور مراجعة عروض المزودين', icon: HandCoins }]
+        : []),
+      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Offers.Review')
+        ? [{ href: '/admin/negotiations', label: 'طابور وساطة عروض الشراء', icon: HandCoins }]
         : [])
     ]
   };
