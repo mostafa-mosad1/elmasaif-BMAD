@@ -6,7 +6,8 @@ export type JobName =
   | 'fal-expiry-warnings'
   | 'owner-fee-reminders'
   | 'notification-retention'
-  | 'account-deletion-expiry';
+  | 'account-deletion-expiry'
+  | 'backup-offer-reconciliation';
 
 export interface JobScheduleConfig {
   name: JobName;

@@ -7,7 +7,8 @@ import {
   JOB_FAL_EXPIRY_WARNINGS,
   JOB_OWNER_FEE_REMINDERS,
   JOB_NOTIFICATION_RETENTION,
-  JOB_ACCOUNT_DELETION_EXPIRY
+  JOB_ACCOUNT_DELETION_EXPIRY,
+  JOB_BACKUP_OFFER_RECONCILIATION
 } from '@elmasaif/shared';
 import {
   paymentDeadlineExpiryHandler,
@@ -18,6 +19,7 @@ import {
   ownerFeeRemindersHandler,
   notificationRetentionHandler,
   accountDeletionExpiryHandler,
+  backupOfferReconciliationHandler,
   jobHandlersMap
 } from '../index';
 import { workerClock } from '../../clock';
@@ -39,11 +41,13 @@ describe('Canonical Background Job Handlers (AC: 3)', () => {
     { name: JOB_FAL_EXPIRY_WARNINGS, handler: falExpiryWarningsHandler },
     { name: JOB_OWNER_FEE_REMINDERS, handler: ownerFeeRemindersHandler },
     { name: JOB_NOTIFICATION_RETENTION, handler: notificationRetentionHandler },
-    { name: JOB_ACCOUNT_DELETION_EXPIRY, handler: accountDeletionExpiryHandler }
+    { name: JOB_ACCOUNT_DELETION_EXPIRY, handler: accountDeletionExpiryHandler },
+    // Story 4.3 / FR-27: the eighth sweep, the only one that can close a backup offer.
+    { name: JOB_BACKUP_OFFER_RECONCILIATION, handler: backupOfferReconciliationHandler }
   ];
 
-  it('exposes all 7 job handlers in the jobHandlersMap', () => {
-    expect(Object.keys(jobHandlersMap)).toHaveLength(8);
+  it('exposes all 9 job handlers in the jobHandlersMap', () => {
+    expect(Object.keys(jobHandlersMap)).toHaveLength(9);
     for (const job of jobs) {
       expect(jobHandlersMap[job.name]).toBe(job.handler);
     }

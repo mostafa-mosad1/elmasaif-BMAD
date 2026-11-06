@@ -6,7 +6,9 @@ import {
   rejectOfferSchema,
   adminRejectOfferSchema,
   offerQueueQuerySchema,
+  backupOfferQueueQuerySchema,
   DEFAULT_PAGE_SIZE,
+  MAX_PAGE_SIZE,
   OfferStatus,
 } from '../../../src';
 
@@ -200,5 +202,35 @@ describe('offerQueueQuerySchema — admin mediation queue (Story 4.2 / AC#9)', (
   it('rejects page < 1 and limit above the shared maximum', () => {
     expect(offerQueueQuerySchema.safeParse({ page: '0' }).success).toBe(false);
     expect(offerQueueQuerySchema.safeParse({ limit: '101' }).success).toBe(false);
+  });
+});
+
+describe('backupOfferQueueQuerySchema — admin backup queue (Story 4.3 / AC#1)', () => {
+  it('defaults page/limit to the shared pagination constants', () => {
+    const parsed = backupOfferQueueQuerySchema.parse({});
+    expect(parsed.page).toBe(1);
+    expect(parsed.limit).toBe(DEFAULT_PAGE_SIZE);
+    expect(parsed).toEqual({ page: 1, limit: DEFAULT_PAGE_SIZE });
+  });
+
+  it('coerces string page/limit from the query string', () => {
+    const parsed = backupOfferQueueQuerySchema.parse({ page: '2', limit: '50' });
+    expect(parsed.page).toBe(2);
+    expect(parsed.limit).toBe(50);
+  });
+
+  it('accepts the maximum limit and rejects anything above it', () => {
+    expect(
+      backupOfferQueueQuerySchema.parse({ limit: String(MAX_PAGE_SIZE) }).limit,
+    ).toBe(MAX_PAGE_SIZE);
+    expect(backupOfferQueueQuerySchema.safeParse({ limit: String(MAX_PAGE_SIZE + 1) }).success).toBe(
+      false,
+    );
+    expect(backupOfferQueueQuerySchema.safeParse({ page: '0' }).success).toBe(false);
+  });
+
+  it('ignores any status filter — queue membership is not an operator choice', () => {
+    const parsed = backupOfferQueueQuerySchema.parse({ status: 'CLOSED_BACKUP' });
+    expect(parsed).toEqual({ page: 1, limit: DEFAULT_PAGE_SIZE });
   });
 });

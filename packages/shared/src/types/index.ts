@@ -11,7 +11,8 @@ import {
   offerListQuerySchema,
   rejectOfferSchema,
   adminRejectOfferSchema,
-  offerQueueQuerySchema
+  offerQueueQuerySchema,
+  backupOfferQueueQuerySchema
 } from '../schemas';
 import { ListingStatus, DealStatus, PropertyType } from '../enums';
 
@@ -27,6 +28,7 @@ export type OfferListQuery = z.infer<typeof offerListQuerySchema>;
 export type RejectOfferInput = z.infer<typeof rejectOfferSchema>;
 export type AdminRejectOfferInput = z.infer<typeof adminRejectOfferSchema>;
 export type OfferQueueQuery = z.infer<typeof offerQueueQuerySchema>;
+export type BackupOfferQueueQuery = z.infer<typeof backupOfferQueueQuerySchema>;
 
 export interface ApiResponse<T> {
   statusCode: number;

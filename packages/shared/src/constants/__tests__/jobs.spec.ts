@@ -8,6 +8,7 @@ import {
   JOB_OWNER_FEE_REMINDERS,
   JOB_NOTIFICATION_RETENTION,
   JOB_ACCOUNT_DELETION_EXPIRY,
+  JOB_BACKUP_OFFER_RECONCILIATION,
   BACKGROUND_JOB_DEFINITIONS,
   BACKGROUND_JOBS,
   JobName,
@@ -24,7 +25,8 @@ describe('Canonical Background Job Contracts & Definitions', () => {
     JOB_FAL_EXPIRY_WARNINGS,
     JOB_OWNER_FEE_REMINDERS,
     JOB_NOTIFICATION_RETENTION,
-    JOB_ACCOUNT_DELETION_EXPIRY
+    JOB_ACCOUNT_DELETION_EXPIRY,
+    JOB_BACKUP_OFFER_RECONCILIATION
   ];
 
   it('defines exact string constants for all cataloged jobs', () => {
@@ -36,11 +38,12 @@ describe('Canonical Background Job Contracts & Definitions', () => {
     expect(JOB_OWNER_FEE_REMINDERS).toBe('owner-fee-reminders');
     expect(JOB_NOTIFICATION_RETENTION).toBe('notification-retention');
     expect(JOB_ACCOUNT_DELETION_EXPIRY).toBe('account-deletion-expiry');
+    expect(JOB_BACKUP_OFFER_RECONCILIATION).toBe('backup-offer-reconciliation');
   });
 
-  it('contains exactly 7 cataloged jobs in BACKGROUND_JOB_DEFINITIONS', () => {
+  it('contains exactly 9 cataloged jobs in BACKGROUND_JOB_DEFINITIONS', () => {
     const keys = Object.keys(BACKGROUND_JOB_DEFINITIONS);
-    expect(keys).toHaveLength(8);
+    expect(keys).toHaveLength(9);
     for (const job of expectedJobs) {
       expect(BACKGROUND_JOB_DEFINITIONS[job]).toBeDefined();
     }
@@ -50,7 +53,7 @@ describe('Canonical Background Job Contracts & Definitions', () => {
     expect(BACKGROUND_JOBS).toBe(BACKGROUND_JOB_DEFINITIONS);
   });
 
-  it('verifies all 7 jobs have valid crons, non-empty singleton keys, and retry backoff', () => {
+  it('verifies all 9 jobs have valid crons, non-empty singleton keys, and retry backoff', () => {
     const cronRegex = /^(@(reboot|yearly|annually|monthly|weekly|daily|midnight|hourly))|((((\d+,)+\d+|(\d+(\/|-)\d+)|\d+|\*) ?){5,7})$/;
 
     for (const jobName of expectedJobs) {
@@ -79,6 +82,8 @@ describe('Canonical Background Job Contracts & Definitions', () => {
     expect(BACKGROUND_JOB_DEFINITIONS[JOB_OWNER_FEE_REMINDERS].cadence).toBe('0 6 * * *');
     expect(BACKGROUND_JOB_DEFINITIONS[JOB_NOTIFICATION_RETENTION].cadence).toBe('0 2 * * *');
     expect(BACKGROUND_JOB_DEFINITIONS[JOB_ACCOUNT_DELETION_EXPIRY].cadence).toBe('0 3 * * *');
+    // Story 4.3 / FR-27: the backup sweep runs every ten minutes.
+    expect(BACKGROUND_JOB_DEFINITIONS[JOB_BACKUP_OFFER_RECONCILIATION].cadence).toBe('*/10 * * * *');
   });
 
   it('supports typing of JobExecutionResult', () => {

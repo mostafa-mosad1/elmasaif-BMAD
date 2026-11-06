@@ -80,6 +80,14 @@ export function SellerOffersList({ offers, detailHrefBase }: SellerOffersListPro
                     {OFFER_AWAITING_PARTY_LABELS_AR[offer.awaitingParty]}
                   </span>
                 ) : null}
+                {offer.isBackup ? (
+                  <span
+                    className="inline-flex items-center rounded-pill bg-[#C69C45]/15 px-2 py-0.5 text-[11px] font-bold text-[#8a6a1f] dark:text-[#D4AF37]"
+                    data-testid={`seller-offer-backup-${offer.id}`}
+                  >
+                    {offer.activatedAt ? 'عرض احتياطي مُفعَّل' : 'عرض احتياطي'}
+                  </span>
+                ) : null}
                 <OfferStatusBadge status={offer.status} />
               </div>
             </div>

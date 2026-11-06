@@ -130,3 +130,23 @@ export const offerQueueQuerySchema = z.object({
     .optional()
     .default(DEFAULT_PAGE_SIZE),
 });
+
+/**
+ * Admin backup queue query (Story 4.3 / AC#1). Mirrors `offerQueueQuerySchema` exactly minus the
+ * `status` filter: queue membership is fixed by the FR-27 predicate, not by an operator choice.
+ */
+export const backupOfferQueueQuerySchema = z.object({
+  page: z.coerce
+    .number()
+    .int('رقم الصفحة يجب أن يكون 1 أو أكثر')
+    .min(1, 'رقم الصفحة يجب أن يكون 1 أو أكثر')
+    .optional()
+    .default(1),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(MAX_PAGE_SIZE, `الحد الأقصى لعدد العناصر هو ${MAX_PAGE_SIZE}`)
+    .optional()
+    .default(DEFAULT_PAGE_SIZE),
+});

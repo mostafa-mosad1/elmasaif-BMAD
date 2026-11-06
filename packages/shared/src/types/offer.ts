@@ -1,5 +1,9 @@
 import { ListingStatus, OfferStatus, PropertyType } from '../enums';
-import type { OfferHistoryAction, OfferRejectionReason } from '../constants/offer';
+import type {
+  BackupOfferQueueState,
+  OfferHistoryAction,
+  OfferRejectionReason,
+} from '../constants/offer';
 
 /**
  * Light listing projection carried by every offer row (Story 4.1 / FR-25, FR-59). Names are
@@ -24,7 +28,8 @@ export type OfferAwaitingParty = 'ADMIN' | 'SELLER' | 'BUYER';
  * by both the API and the web app (AR-10/AD-1) — money is a `number`, instants are ISO strings.
  *
  * Story 4.2 adds `negotiationRound` / `awaitingParty` as **optional** fields so 4.1's submit
- * mapper contract and its SSR specs keep working unchanged.
+ * mapper contract and its SSR specs keep working unchanged. Story 4.3 adds the optional
+ * `activatedAt` stamp for an activated backup offer.
  */
 export interface OfferItem {
   id: string;
@@ -40,6 +45,7 @@ export interface OfferItem {
   listing: OfferListingSummary;
   negotiationRound?: number;
   awaitingParty?: OfferAwaitingParty | null;
+  activatedAt?: string | null;
 }
 
 /** UX-DR-10 / UX-DR-13: one entry of the mediation timeline. */
@@ -88,9 +94,28 @@ export interface OfferThreadSummary {
   rejectionNote: string | null;
   listing: OfferListingSummary;
   lockInfo?: OfferLockInfo;
+  activatedAt?: string | null;
 }
 
 /** The full negotiation thread returned by `GET /offers/:id`. */
 export interface OfferThreadItem extends OfferThreadSummary {
   history: OfferHistoryEntry[];
+}
+
+/**
+ * Story 4.3 / FR-27, OQ-04: one row of a listing's backup queue. The listing projection is
+ * inherited from `OfferThreadSummary.listing` — deliberately not re-declared, and
+ * `item.listing.status` stays the single source of the listing's state.
+ */
+export interface BackupOfferQueueItem extends OfferThreadSummary {
+  /** 1 = next in line (oldest approved backup offer first). */
+  queuePosition: number;
+  queueState: BackupOfferQueueState;
+}
+
+/** One listing that currently holds a backup queue, with its ordered offers. */
+export interface BackupOfferQueueGroup {
+  listing: OfferListingSummary;
+  queueState: BackupOfferQueueState;
+  items: BackupOfferQueueItem[];
 }

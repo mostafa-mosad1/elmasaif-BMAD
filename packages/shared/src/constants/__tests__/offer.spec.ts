@@ -29,6 +29,13 @@ import {
   OFFER_LOCK_CONFLICT,
   OFFER_LOCK_EXPIRED,
   OFFER_FORCE_UNLOCK_REASON_REQUIRED,
+  OFFER_BACKUP_NOT_QUEUED,
+  OFFER_BACKUP_ALREADY_ACTIVATED,
+  OFFER_BACKUP_PRIMARY_DEAL_ACTIVE,
+  OFFER_BACKUP_LISTING_UNAVAILABLE,
+  BACKUP_QUEUE_STATES,
+  BACKUP_QUEUE_STATE_LABELS_AR,
+  BACKUP_QUEUE_STATE_ORDER,
   OFFER_EXPIRY_HOURS,
   OFFER_LOCK_DURATION_MS,
   OFFER_LOCK_HEARTBEAT_INTERVAL_MS,
@@ -67,7 +74,8 @@ describe('Buyer Offer Constants (Story 4.1 / FR-25, BR-11, A-07)', () => {
 
   it('labels every OfferStatus in Arabic with no gaps', () => {
     const statuses = Object.values(OfferStatus);
-    expect(statuses).toHaveLength(13);
+    // Story 4.3 added the terminal CLOSED_BACKUP member (9 active + 5 terminal).
+    expect(statuses).toHaveLength(14);
     for (const status of statuses) {
       expect(OFFER_STATUS_LABELS_AR[status]).toBeTruthy();
     }
@@ -80,6 +88,8 @@ describe('Buyer Offer Constants (Story 4.1 / FR-25, BR-11, A-07)', () => {
     expect(OFFER_STATUS_LABELS_AR[OfferStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL]).toBe(
       'معتمد — بانتظار الموافقة النهائية',
     );
+    // Story 4.3 terminal member.
+    expect(OFFER_STATUS_LABELS_AR[OfferStatus.CLOSED_BACKUP]).toBe('مغلق — اكتملت الصفقة الأساسية');
   });
 
   it('partitions the enum into disjoint active and terminal sets that cover every member', () => {
@@ -106,6 +116,11 @@ describe('Buyer Offer Constants (Story 4.1 / FR-25, BR-11, A-07)', () => {
     expect(active.has(OfferStatus.RELAYED_TO_BUYER)).toBe(true);
     expect(active.has(OfferStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL)).toBe(true);
     expect(terminal.has(OfferStatus.REJECTED_BY_ADMIN)).toBe(true);
+
+    // Story 4.3: a backup closed by the winning deal is terminal — it must never be offerable again.
+    expect(terminal.has(OfferStatus.CLOSED_BACKUP)).toBe(true);
+    expect(active.has(OfferStatus.CLOSED_BACKUP)).toBe(false);
+    expect(EXPIRABLE_OFFER_STATUSES).not.toContain(OfferStatus.CLOSED_BACKUP);
   });
 });
 
@@ -177,5 +192,44 @@ describe('Offer mediation constants (Story 4.2 / FR-26, FR-55, AD-10)', () => {
     expect(OFFER_AWAITING_PARTY_LABELS_AR.ADMIN).toBe('بانتظار الإدارة');
     expect(OFFER_AWAITING_PARTY_LABELS_AR.SELLER).toBe('بانتظار البائع');
     expect(OFFER_AWAITING_PARTY_LABELS_AR.BUYER).toBe('بانتظار المشتري');
+  });
+});
+
+describe('Backup offer queue constants (Story 4.3 / FR-27, OQ-04)', () => {
+  it('exposes the activation refusal codes consumed by the API and the web', () => {
+    expect(OFFER_BACKUP_NOT_QUEUED).toBe('OFFER_BACKUP_NOT_QUEUED');
+    expect(OFFER_BACKUP_ALREADY_ACTIVATED).toBe('OFFER_BACKUP_ALREADY_ACTIVATED');
+    expect(OFFER_BACKUP_PRIMARY_DEAL_ACTIVE).toBe('OFFER_BACKUP_PRIMARY_DEAL_ACTIVE');
+    expect(OFFER_BACKUP_LISTING_UNAVAILABLE).toBe('OFFER_BACKUP_LISTING_UNAVAILABLE');
+  });
+
+  it('labels the new backup history actions', () => {
+    expect(OFFER_HISTORY_ACTIONS.BACKUP_ACTIVATED).toBe('OFFER_BACKUP_ACTIVATED');
+    expect(OFFER_HISTORY_ACTIONS.BACKUP_CLOSED).toBe('OFFER_BACKUP_CLOSED');
+    expect(OFFER_HISTORY_ACTION_LABELS_AR['OFFER_BACKUP_ACTIVATED']).toBe('تفعيل عرض احتياطي');
+    expect(OFFER_HISTORY_ACTION_LABELS_AR['OFFER_BACKUP_CLOSED']).toBe(
+      'إغلاق عرض احتياطي بعد اكتمال الصفقة الأساسية',
+    );
+  });
+
+  it('pins the four queue states and their display order', () => {
+    expect([...BACKUP_QUEUE_STATES]).toEqual(['SURFACED', 'QUEUED', 'FROZEN', 'CLOSABLE']);
+
+    for (const state of BACKUP_QUEUE_STATES) {
+      expect(BACKUP_QUEUE_STATE_LABELS_AR[state]).toBeTruthy();
+    }
+    expect(BACKUP_QUEUE_STATE_LABELS_AR.SURFACED).toBe('جاهز للتفعيل');
+    expect(BACKUP_QUEUE_STATE_LABELS_AR.QUEUED).toBe('في الانتظار');
+    expect(BACKUP_QUEUE_STATE_LABELS_AR.FROZEN).toBe('مجمّد — العقار غير متاح');
+    expect(BACKUP_QUEUE_STATE_LABELS_AR.CLOSABLE).toBe('جاهز للإغلاق');
+
+    // AC 2: the queue reads SURFACED → QUEUED → FROZEN → CLOSABLE, in that order, always.
+    expect(BACKUP_QUEUE_STATE_ORDER.SURFACED).toBe(0);
+    expect(BACKUP_QUEUE_STATE_ORDER.QUEUED).toBe(1);
+    expect(BACKUP_QUEUE_STATE_ORDER.FROZEN).toBe(2);
+    expect(BACKUP_QUEUE_STATE_ORDER.CLOSABLE).toBe(3);
+    expect(BACKUP_QUEUE_STATE_ORDER.SURFACED).toBeLessThan(BACKUP_QUEUE_STATE_ORDER.QUEUED);
+    expect(BACKUP_QUEUE_STATE_ORDER.QUEUED).toBeLessThan(BACKUP_QUEUE_STATE_ORDER.FROZEN);
+    expect(BACKUP_QUEUE_STATE_ORDER.FROZEN).toBeLessThan(BACKUP_QUEUE_STATE_ORDER.CLOSABLE);
   });
 });

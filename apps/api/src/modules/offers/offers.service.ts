@@ -664,6 +664,8 @@ export class OffersService {
       createdAt: toIso(offer.createdAt) as string,
       negotiationRound: Number(offer.negotiationRound ?? 0),
       awaitingParty: resolveAwaitingParty(offer.status),
+      // Story 4.3: an activated backup offer is legible to the buyer without a notification feed.
+      activatedAt: toIso(offer.activatedAt),
       listing: {
         id: listing?.id ?? offer.listingId,
         title: listing?.title ?? '',

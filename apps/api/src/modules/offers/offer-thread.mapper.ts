@@ -75,6 +75,8 @@ export function toOfferThreadSummary(
     sellerName,
     rejectionReason: offer.rejectionReason ?? null,
     rejectionNote: offer.rejectionNote ?? null,
+    // Story 4.3: the traceability stamp of an activated backup offer.
+    activatedAt: toIso(offer.activatedAt),
     listing: {
       id: listing?.id ?? offer.listingId,
       title: listing?.title ?? '',

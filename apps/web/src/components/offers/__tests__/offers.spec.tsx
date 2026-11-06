@@ -388,3 +388,87 @@ describe('BuyerOffersList — Story 4.2 additions', () => {
   });
 });
 
+// ---------------------------------------------------------------------------------------------
+// Story 4.3 — backup offer legibility on the buyer & seller surfaces (FR-27, AC#10)
+// ---------------------------------------------------------------------------------------------
+
+describe('OfferStatusBadge — CLOSED_BACKUP (Story 4.3 / AC#10)', () => {
+  it('renders the closed-backup label instead of a blank badge', () => {
+    const html = renderToString(<OfferStatusBadge status={OfferStatus.CLOSED_BACKUP} />);
+    expect(html).toContain('مغلق — اكتملت الصفقة الأساسية');
+  });
+});
+
+describe('BuyerOffersList — backup chips (Story 4.3 / AC#10)', () => {
+  it('marks an activated backup separately from a reserve bid', () => {
+    const html = renderToString(
+      <BuyerOffersList
+        offers={[
+          offerItem({ id: 'offer-b1', isBackup: true, activatedAt: null }),
+          offerItem({ id: 'offer-b2', isBackup: true, activatedAt: inDays(1) }),
+        ]}
+      />,
+    );
+
+    expect(html).toContain('data-testid="buyer-offer-backup-offer-b1"');
+    expect(html).not.toContain('buyer-offer-backup-activated-offer-b1');
+    expect(html).toContain('data-testid="buyer-offer-backup-activated-offer-b2"');
+    expect(html).toContain('عرض احتياطي مُفعَّل');
+  });
+
+  it('never shows an activated chip on a regular offer', () => {
+    const html = renderToString(
+      <BuyerOffersList offers={[offerItem({ activatedAt: inDays(1) })]} />,
+    );
+    expect(html).not.toContain('buyer-offer-backup-activated');
+  });
+});
+
+describe('SellerOffersList — backup chip (Story 4.3 / AC#10)', () => {
+  it('tells a reserve bid from an activated one', () => {
+    const reserve = renderToString(
+      <SellerOffersList offers={[sellerSummary({ id: 'offer-s1', isBackup: true })]} />,
+    );
+    expect(reserve).toContain('data-testid="seller-offer-backup-offer-s1"');
+    expect(reserve).toContain('عرض احتياطي');
+    expect(reserve).not.toContain('عرض احتياطي مُفعَّل');
+
+    const activated = renderToString(
+      <SellerOffersList
+        offers={[sellerSummary({ id: 'offer-s2', isBackup: true, activatedAt: inDays(1) })]}
+      />,
+    );
+    expect(activated).toContain('عرض احتياطي مُفعَّل');
+  });
+
+  it('omits the chip for a regular offer', () => {
+    const html = renderToString(<SellerOffersList offers={[sellerSummary()]} />);
+    expect(html).not.toContain('seller-offer-backup');
+  });
+});
+
+describe('OfferNegotiationTimeline — backup history rows (Story 4.3 / AC#10)', () => {
+  it('labels the backup activation and closure instead of rendering a blank row', () => {
+    const html = renderToString(
+      <OfferNegotiationTimeline
+        history={[
+          historyEntry({ id: 'h-10', action: 'OFFER_BACKUP_ACTIVATED', actorRole: 'ADMIN' }),
+          historyEntry({
+            id: 'h-11',
+            action: 'OFFER_BACKUP_CLOSED',
+            actorRole: 'SYSTEM',
+            actorName: null,
+            notes: 'PRIMARY_DEAL_COMPLETED',
+          }),
+        ]}
+      />,
+    );
+
+    expect(html).toContain('تفعيل عرض احتياطي');
+    expect(html).toContain('إغلاق عرض احتياطي بعد اكتمال الصفقة الأساسية');
+    expect(html).toContain('offer-timeline-entry-h-10');
+    expect(html).toContain('offer-timeline-entry-h-11');
+    expect(html).not.toContain('غير معروف');
+  });
+});
+

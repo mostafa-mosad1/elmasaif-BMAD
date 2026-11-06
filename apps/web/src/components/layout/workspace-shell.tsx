@@ -114,6 +114,9 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         : []),
       ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Offers.Review')
         ? [{ href: '/admin/negotiations', label: 'طابور وساطة عروض الشراء', icon: HandCoins }]
+        : []),
+      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Offers.Review')
+        ? [{ href: '/admin/backup-offers', label: 'طابور العروض الاحتياطية', icon: HandCoins }]
         : [])
     ]
   };

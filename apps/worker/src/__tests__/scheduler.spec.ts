@@ -8,6 +8,7 @@ import {
   JOB_OWNER_FEE_REMINDERS,
   JOB_NOTIFICATION_RETENTION,
   JOB_ACCOUNT_DELETION_EXPIRY,
+  JOB_BACKUP_OFFER_RECONCILIATION,
   BACKGROUND_JOB_DEFINITIONS
 } from '@elmasaif/shared';
 import { WorkerScheduler } from '../scheduler';
@@ -61,7 +62,7 @@ describe('WorkerScheduler (AC: 1, 2)', () => {
     expect(boss.on).toHaveBeenCalledWith('error', expect.any(Function));
   });
 
-  it('registers all 7 cataloged jobs with exact crons and singleton keys', async () => {
+  it('registers all 9 cataloged jobs with exact crons and singleton keys', async () => {
     await scheduler.start();
 
     const boss = scheduler.getBossInstance();
@@ -73,10 +74,11 @@ describe('WorkerScheduler (AC: 1, 2)', () => {
       JOB_FAL_EXPIRY_WARNINGS,
       JOB_OWNER_FEE_REMINDERS,
       JOB_NOTIFICATION_RETENTION,
-      JOB_ACCOUNT_DELETION_EXPIRY
+      JOB_ACCOUNT_DELETION_EXPIRY,
+      JOB_BACKUP_OFFER_RECONCILIATION
     ];
 
-    expect(boss.schedule).toHaveBeenCalledTimes(8);
+    expect(boss.schedule).toHaveBeenCalledTimes(9);
 
     for (const jobName of expectedJobNames) {
       const def = BACKGROUND_JOB_DEFINITIONS[jobName];
@@ -95,7 +97,7 @@ describe('WorkerScheduler (AC: 1, 2)', () => {
     }
   });
 
-  it('registers workers for all 7 cataloged queues', async () => {
+  it('registers workers for all 9 cataloged queues', async () => {
     await scheduler.start();
 
     const boss = scheduler.getBossInstance();
@@ -107,10 +109,11 @@ describe('WorkerScheduler (AC: 1, 2)', () => {
       JOB_FAL_EXPIRY_WARNINGS,
       JOB_OWNER_FEE_REMINDERS,
       JOB_NOTIFICATION_RETENTION,
-      JOB_ACCOUNT_DELETION_EXPIRY
+      JOB_ACCOUNT_DELETION_EXPIRY,
+      JOB_BACKUP_OFFER_RECONCILIATION
     ];
 
-    expect(boss.work).toHaveBeenCalledTimes(8);
+    expect(boss.work).toHaveBeenCalledTimes(9);
     for (const jobName of expectedJobNames) {
       expect(boss.work).toHaveBeenCalledWith(jobName, expect.any(Function));
     }

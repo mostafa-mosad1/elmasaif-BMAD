@@ -3,7 +3,6 @@ import {
   ConflictException,
   Injectable,
   Logger,
-  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClockService } from '../../common/clock/clock.service';
@@ -17,9 +16,6 @@ import {
   OFFER_INVALID_STATE_TRANSITION,
   OFFER_LOCK_CONFLICT,
   OFFER_LOCK_DURATION_MS,
-  OFFER_LOCK_EXPIRED,
-  OFFER_LOCK_REQUIRED,
-  OFFER_NOT_FOUND,
   OfferLockInfo,
   OfferQueueQuery,
   OfferStatus,
@@ -32,15 +28,34 @@ import {
   OFFER_THREAD_INCLUDE,
   toOfferThreadSummary,
 } from './offer-thread.mapper';
+import {
+  assertLockHeld,
+  buildLockInfo,
+  offerNotFound,
+  resolveLockHolderNames,
+} from './offer-lock';
 import type { AuthenticatedAdminActor } from '../listings/admin-listings.service';
 
 /**
  * AC#9: the mediable statuses — an offer is in the queue exactly while the platform owes the
  * conversation a decision (relay it to the seller, or relay the seller's counter to the buyer).
+ *
+ * This constant doubles as the `GET /admin/offers` filter, so it must **not** be widened: backup
+ * offers live in their own queue (Story 4.3) and would flood the mediation queue.
  */
 const AWAITING_MEDIATION_STATUSES: readonly OfferStatus[] = [
   OfferStatus.PENDING_ADMIN_REVIEW,
   OfferStatus.COUNTER_OFFERED,
+];
+
+/**
+ * Story 4.3 / AC#5: what an administrator may claim. Claim legality is a superset of the
+ * mediation queue because an approved backup offer is locked, activated and released through the
+ * same canonical `/admin/offers/:id/{claim,heartbeat,release}` lease (one lease implementation).
+ */
+const CLAIMABLE_OFFER_STATUSES: readonly OfferStatus[] = [
+  ...AWAITING_MEDIATION_STATUSES,
+  OfferStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL,
 ];
 
 export interface AdminOfferQueueResponse {
@@ -115,14 +130,14 @@ export class AdminOffersService {
     ]);
 
     // One lookup for every holder name — never an N+1 per row.
-    const adminNameMap = await this.resolveLockHolderNames(offers, now);
+    const adminNameMap = await resolveLockHolderNames(this.prisma, offers, now);
 
     return {
       items: (offers as any[]).map((offer) => ({
         ...(toOfferThreadSummary(offer, {
           includeHistory: false,
         }) as OfferThreadSummary),
-        lockInfo: this.buildLockInfo(offer, now, currentAdminId, adminNameMap),
+        lockInfo: buildLockInfo(offer, now, currentAdminId, adminNameMap),
       })),
       meta: {
         total,
@@ -142,16 +157,16 @@ export class AdminOffersService {
       include: OFFER_THREAD_INCLUDE as any,
     });
     if (!offer) {
-      throw this.notFound();
+      throw offerNotFound();
     }
 
-    const adminNameMap = await this.resolveLockHolderNames([offer], now);
+    const adminNameMap = await resolveLockHolderNames(this.prisma, [offer], now);
 
     return {
       ...(toOfferThreadSummary(offer, {
         includeHistory: true,
       }) as OfferThreadItem),
-      lockInfo: this.buildLockInfo(offer, now, currentAdminId, adminNameMap),
+      lockInfo: buildLockInfo(offer, now, currentAdminId, adminNameMap),
     };
   }
 
@@ -166,13 +181,14 @@ export class AdminOffersService {
     return this.prisma.$transaction(async (tx: any) => {
       const offer = await tx.offer.findUnique({ where: { id: offerId } });
       if (!offer) {
-        throw this.notFound();
+        throw offerNotFound();
       }
 
-      if (!AWAITING_MEDIATION_STATUSES.includes(offer.status)) {
+      if (!CLAIMABLE_OFFER_STATUSES.includes(offer.status)) {
         throw new BadRequestException({
           code: OFFER_INVALID_STATE_TRANSITION,
-          message: 'لا يمكن استلام مهمة الوساطة إلا للعروض التي بانتظار قرار الإدارة',
+          message:
+            'لا يمكن استلام المهمة إلا للعروض التي بانتظار قرار الإدارة أو العروض الاحتياطية المعتمدة',
         });
       }
 
@@ -194,7 +210,7 @@ export class AdminOffersService {
 
       if (count === 0) {
         const holder = await this.loadLockHolder(tx, offer.lockedByAdminId);
-        const lockInfo = this.buildLockInfo(
+        const lockInfo = buildLockInfo(
           offer,
           now,
           admin.id,
@@ -228,7 +244,7 @@ export class AdminOffersService {
       return {
         id: offerId,
         status: offer.status,
-        lockInfo: this.buildLockInfo(
+        lockInfo: buildLockInfo(
           { lockedByAdminId: admin.id, lockedAt: now, lockExpiresAt },
           now,
           admin.id,
@@ -246,10 +262,10 @@ export class AdminOffersService {
     return this.prisma.$transaction(async (tx: any) => {
       const offer = await tx.offer.findUnique({ where: { id: offerId } });
       if (!offer) {
-        throw this.notFound();
+        throw offerNotFound();
       }
 
-      this.assertLockHeld(offer, admin.id, now);
+      assertLockHeld(offer, admin.id, now);
 
       const updated = await tx.offer.update({
         where: { id: offerId },
@@ -259,7 +275,7 @@ export class AdminOffersService {
       return {
         id: updated.id,
         status: updated.status,
-        lockInfo: this.buildLockInfo(
+        lockInfo: buildLockInfo(
           updated,
           now,
           admin.id,
@@ -276,10 +292,10 @@ export class AdminOffersService {
     return this.prisma.$transaction(async (tx: any) => {
       const offer = await tx.offer.findUnique({ where: { id: offerId } });
       if (!offer) {
-        throw this.notFound();
+        throw offerNotFound();
       }
 
-      this.assertLockHeld(offer, admin.id, now);
+      assertLockHeld(offer, admin.id, now);
 
       const updated = await tx.offer.update({
         where: { id: offerId },
@@ -305,7 +321,7 @@ export class AdminOffersService {
       return {
         id: updated.id,
         status: updated.status,
-        lockInfo: this.buildLockInfo(updated, now, admin.id),
+        lockInfo: buildLockInfo(updated, now, admin.id),
       };
     });
   }
@@ -329,7 +345,7 @@ export class AdminOffersService {
     return this.prisma.$transaction(async (tx: any) => {
       const offer = await tx.offer.findUnique({ where: { id: offerId } });
       if (!offer) {
-        throw this.notFound();
+        throw offerNotFound();
       }
 
       const previousLockHolderId = offer.lockedByAdminId ?? null;
@@ -362,7 +378,7 @@ export class AdminOffersService {
       return {
         id: updated.id,
         status: updated.status,
-        lockInfo: this.buildLockInfo(updated, now, admin.id),
+        lockInfo: buildLockInfo(updated, now, admin.id),
       };
     });
   }
@@ -427,11 +443,11 @@ export class AdminOffersService {
         include: OFFER_THREAD_INCLUDE as any,
       });
       if (!offer) {
-        throw this.notFound();
+        throw offerNotFound();
       }
 
       // AD-10: validate the lease in-transaction so a stale decision cannot commit.
-      this.assertLockHeld(offer, admin.id, now);
+      assertLockHeld(offer, admin.id, now);
 
       if (!decision.allowedFrom.includes(offer.status)) {
         throw new ConflictException({
@@ -521,107 +537,9 @@ export class AdminOffersService {
         ...(toOfferThreadSummary(refreshed, {
           includeHistory: true,
         }) as OfferThreadItem),
-        lockInfo: this.buildLockInfo(refreshed, now, admin.id),
+        lockInfo: buildLockInfo(refreshed, now, admin.id),
       };
     });
-  }
-
-  /**
-   * Mirrors `AdminListingsService.buildLockInfo`: reads an expired lease as unlocked (lazy
-   * expiry), so a dead lock never blocks the queue view.
-   */
-  private buildLockInfo(
-    offer: {
-      lockedByAdminId?: string | null;
-      lockedAt?: Date | string | null;
-      lockExpiresAt?: Date | string | null;
-    },
-    now: Date,
-    currentAdminId: string,
-    adminNameMap?: Map<string, string>,
-  ): OfferLockInfo {
-    const expiresAt = offer.lockExpiresAt ? new Date(offer.lockExpiresAt) : null;
-    const lockedAt = offer.lockedAt ? new Date(offer.lockedAt) : null;
-    const isActivelyLocked = Boolean(
-      offer.lockedByAdminId && expiresAt && expiresAt.getTime() > now.getTime(),
-    );
-
-    if (!isActivelyLocked || !offer.lockedByAdminId || !expiresAt) {
-      return {
-        isLocked: false,
-        isLockedByCurrentAdmin: false,
-        lockedByAdminId: null,
-        lockedByAdminName: null,
-        lockedAt: null,
-        lockExpiresAt: null,
-        remainingSeconds: 0,
-      };
-    }
-
-    const remainingMs = Math.max(0, expiresAt.getTime() - now.getTime());
-
-    return {
-      isLocked: true,
-      isLockedByCurrentAdmin: offer.lockedByAdminId === currentAdminId,
-      lockedByAdminId: offer.lockedByAdminId,
-      lockedByAdminName: adminNameMap?.get(offer.lockedByAdminId) ?? null,
-      lockedAt: lockedAt ? lockedAt.toISOString() : null,
-      lockExpiresAt: expiresAt.toISOString(),
-      remainingSeconds: Math.ceil(remainingMs / 1000),
-    };
-  }
-
-  /**
-   * Order matters and mirrors `heartbeatListingLock`: "nothing held" → "someone else holds it"
-   * → "mine but expired". Callers get one deterministic code per situation.
-   */
-  private assertLockHeld(offer: any, adminId: string, now: Date): void {
-    if (!offer.lockedByAdminId) {
-      throw new ConflictException({
-        code: OFFER_LOCK_REQUIRED,
-        message: 'يجب استلام مهمة الوساطة قبل اتخاذ قرار على العرض',
-      });
-    }
-    if (offer.lockedByAdminId !== adminId) {
-      throw new ConflictException({
-        code: OFFER_LOCK_CONFLICT,
-        message: 'قفل الوساطة مملوك لمشرف آخر؛ يجب إلغاء القفل قبل اتخاذ قرار',
-      });
-    }
-    if (!offer.lockExpiresAt || new Date(offer.lockExpiresAt).getTime() <= now.getTime()) {
-      throw new ConflictException({
-        code: OFFER_LOCK_EXPIRED,
-        message: 'انتهت مهلة قفل الوساطة (15 دقيقة). يرجى إعادة استلام المهمة',
-      });
-    }
-  }
-
-  private async resolveLockHolderNames(
-    offers: any[],
-    now: Date,
-  ): Promise<Map<string, string>> {
-    const ids = Array.from(
-      new Set(
-        offers
-          .filter(
-            (offer) =>
-              offer.lockedByAdminId &&
-              offer.lockExpiresAt &&
-              new Date(offer.lockExpiresAt).getTime() > now.getTime(),
-          )
-          .map((offer) => offer.lockedByAdminId as string),
-      ),
-    );
-    if (ids.length === 0) return new Map();
-
-    const holders = await this.prisma.adminUser.findMany({
-      where: { id: { in: ids } },
-      select: { id: true, fullName: true, username: true },
-    });
-
-    return new Map(
-      (holders as any[]).map((holder) => [holder.id, holder.fullName || holder.username]),
-    );
   }
 
   private async loadLockHolder(
@@ -635,12 +553,5 @@ export class AdminOffersService {
     });
     if (!holder) return null;
     return { id: holder.id, name: holder.fullName || holder.username };
-  }
-
-  private notFound(): NotFoundException {
-    return new NotFoundException({
-      code: OFFER_NOT_FOUND,
-      message: 'العرض المطلوب غير موجود',
-    });
   }
 }

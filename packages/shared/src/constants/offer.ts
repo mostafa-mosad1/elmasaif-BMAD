@@ -24,6 +24,12 @@ export const OFFER_LOCK_CONFLICT = 'OFFER_LOCK_CONFLICT';
 export const OFFER_LOCK_EXPIRED = 'OFFER_LOCK_EXPIRED';
 export const OFFER_FORCE_UNLOCK_REASON_REQUIRED = 'OFFER_FORCE_UNLOCK_REASON_REQUIRED';
 
+// Backup offer pipeline error codes (Story 4.3 / FR-27, OQ-04)
+export const OFFER_BACKUP_NOT_QUEUED = 'OFFER_BACKUP_NOT_QUEUED';
+export const OFFER_BACKUP_ALREADY_ACTIVATED = 'OFFER_BACKUP_ALREADY_ACTIVATED';
+export const OFFER_BACKUP_PRIMARY_DEAL_ACTIVE = 'OFFER_BACKUP_PRIMARY_DEAL_ACTIVE';
+export const OFFER_BACKUP_LISTING_UNAVAILABLE = 'OFFER_BACKUP_LISTING_UNAVAILABLE';
+
 /** BR-11: an offer below this share of the ask price needs the buyer's explicit acknowledgement. */
 export const LOW_PRICE_THRESHOLD_PERCENT = 0.5;
 
@@ -60,6 +66,7 @@ export const TERMINAL_OFFER_STATUSES: readonly OfferStatus[] = [
   OfferStatus.REJECTED_BY_ADMIN,
   OfferStatus.EXPIRED,
   OfferStatus.WITHDRAWN,
+  OfferStatus.CLOSED_BACKUP,
 ];
 
 /**
@@ -69,6 +76,11 @@ export const TERMINAL_OFFER_STATUSES: readonly OfferStatus[] = [
  * `demand-expiry-checker` applies to selected proposals). Declared as an explicit literal list
  * rather than computed by filtering, so the sweep's target set is greppable and directly
  * assertable in tests.
+ *
+ * FR-27 boundary (Story 4.3): a backup offer sitting in `SELECTED_PENDING_FINAL_ADMIN_APPROVAL`
+ * is held *in reserve* for as long as the primary transaction runs — it is not awaiting a reply —
+ * so it must never be added here: the sweep would silently kill reserve bids on long deals. It
+ * leaves the reserve only through admin activation or closure of the winning deal.
  */
 export const EXPIRABLE_OFFER_STATUSES: readonly OfferStatus[] = [
   OfferStatus.PENDING_ADMIN_REVIEW,
@@ -95,6 +107,7 @@ export const OFFER_STATUS_LABELS_AR: Record<OfferStatus, string> = {
   [OfferStatus.RELAYED_TO_BUYER]: 'معروض على المشتري',
   [OfferStatus.REJECTED_BY_ADMIN]: 'مرفوض إدارياً',
   [OfferStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL]: 'معتمد — بانتظار الموافقة النهائية',
+  [OfferStatus.CLOSED_BACKUP]: 'مغلق — اكتملت الصفقة الأساسية',
 };
 
 /**
@@ -136,6 +149,8 @@ export const OFFER_HISTORY_ACTIONS = {
   COUNTER_BY_BUYER: 'OFFER_COUNTER_BY_BUYER',
   REJECTED_BY_ADMIN: 'OFFER_REJECTED_BY_ADMIN',
   EXPIRED: 'OFFER_EXPIRED',
+  BACKUP_ACTIVATED: 'OFFER_BACKUP_ACTIVATED',
+  BACKUP_CLOSED: 'OFFER_BACKUP_CLOSED',
 } as const;
 
 export type OfferHistoryAction =
@@ -152,6 +167,31 @@ export const OFFER_HISTORY_ACTION_LABELS_AR: Record<OfferHistoryAction, string> 
   OFFER_COUNTER_BY_BUYER: 'عرض مقابل من المشتري',
   OFFER_REJECTED_BY_ADMIN: 'رفض إداري للعرض',
   OFFER_EXPIRED: 'انتهاء صلاحية العرض',
+  OFFER_BACKUP_ACTIVATED: 'تفعيل عرض احتياطي',
+  OFFER_BACKUP_CLOSED: 'إغلاق عرض احتياطي بعد اكتمال الصفقة الأساسية',
+};
+
+/** Story 4.3 / OQ-04: display order of the backup queue groups, surfaced first. */
+export const BACKUP_QUEUE_STATES = ['SURFACED', 'QUEUED', 'FROZEN', 'CLOSABLE'] as const;
+
+export type BackupOfferQueueState = (typeof BACKUP_QUEUE_STATES)[number];
+
+export const BACKUP_QUEUE_STATE_LABELS_AR: Record<BackupOfferQueueState, string> = {
+  SURFACED: 'جاهز للتفعيل',
+  QUEUED: 'في الانتظار',
+  FROZEN: 'مجمّد — العقار غير متاح',
+  CLOSABLE: 'جاهز للإغلاق',
+};
+
+/**
+ * The single sort key shared by the API and the UI, so the two can never disagree about the
+ * order of the groups (FR-27 / OQ-04: the surfaced queue is always read first).
+ */
+export const BACKUP_QUEUE_STATE_ORDER: Record<BackupOfferQueueState, number> = {
+  SURFACED: 0,
+  QUEUED: 1,
+  FROZEN: 2,
+  CLOSABLE: 3,
 };
 
 /** UX-DR-10: the «بانتظار» chip shown next to a live offer. */

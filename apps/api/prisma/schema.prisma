@@ -69,6 +69,7 @@ enum OfferStatus {
   RELAYED_TO_BUYER
   REJECTED_BY_ADMIN
   SELECTED_PENDING_FINAL_ADMIN_APPROVAL
+  CLOSED_BACKUP
 }
 
 enum DealStatus {
@@ -535,6 +536,7 @@ model Offer {
   negotiationRound Int        @default(0) @map("negotiation_round")
   rejectionReason String?     @map("rejection_reason")
   rejectionNote   String?     @map("rejection_note")
+  activatedAt     DateTime?   @map("activated_at")
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 

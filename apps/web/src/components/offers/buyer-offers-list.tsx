@@ -97,6 +97,14 @@ export function BuyerOffersList({ offers, detailHrefBase }: BuyerOffersListProps
                     عرض احتياطي
                   </span>
                 ) : null}
+                {offer.isBackup && offer.activatedAt ? (
+                  <span
+                    className="inline-flex items-center rounded-pill bg-status-infoBg px-2 py-0.5 text-[11px] font-bold text-status-info border border-status-infoBorder"
+                    data-testid={`buyer-offer-backup-activated-${offer.id}`}
+                  >
+                    عرض احتياطي مُفعَّل
+                  </span>
+                ) : null}
                 <OfferStatusBadge status={offer.status} />
               </div>
             </div>

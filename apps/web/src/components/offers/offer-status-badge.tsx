@@ -17,6 +17,8 @@ const OFFER_STATUS_VARIANTS: Record<OfferStatus, StatusBadgeVariant> = {
   [OfferStatus.RELAYED_TO_BUYER]: 'info',
   [OfferStatus.REJECTED_BY_ADMIN]: 'danger',
   [OfferStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL]: 'verified',
+  // Story 4.3: terminal closure of a reserve bid once the primary deal won.
+  [OfferStatus.CLOSED_BACKUP]: 'neutral',
 };
 
 export interface OfferStatusBadgeProps {

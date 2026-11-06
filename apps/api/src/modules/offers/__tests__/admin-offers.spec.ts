@@ -134,6 +134,20 @@ describe('AdminOffersService — mediation queue (Story 4.2 / FR-26, AD-10)', ()
       });
     });
 
+    it('never leaks a backup offer into the mediation queue (Story 4.3 / AC#5)', async () => {
+      await service.getQueue({ page: 1, limit: 20 } as any, admin.id);
+
+      // Widening this filter to the claimable set would surface reserve bids as mediations.
+      const where = prisma.offer.findMany.mock.calls[0][0].where;
+      expect(where.status.in).toEqual([
+        OfferStatus.PENDING_ADMIN_REVIEW,
+        OfferStatus.COUNTER_OFFERED,
+      ]);
+      expect(where.status.in).not.toContain(
+        OfferStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL,
+      );
+    });
+
     it('projects the live lock with the holder name resolved in one lookup', async () => {
       prisma.offer.findMany.mockResolvedValue([
         offerRow({ lockedByAdminId: otherAdmin.id, lockExpiresAt: liveLockExpiry }),
@@ -258,6 +272,39 @@ describe('AdminOffersService — mediation queue (Story 4.2 / FR-26, AD-10)', ()
       await expect(service.claimOffer(offerId, admin)).rejects.toMatchObject({
         response: { code: OFFER_INVALID_STATE_TRANSITION },
       });
+      expect(prisma.offer.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('claims an approved backup offer — the second claim-locked queue (Story 4.3 / AC#5)', async () => {
+      prisma.offer.findUnique.mockResolvedValue(
+        offerRow({
+          status: OfferStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL,
+          isBackup: true,
+          lockedByAdminId: null,
+          lockedAt: null,
+          lockExpiresAt: null,
+        }),
+      );
+
+      const result = await service.claimOffer(offerId, admin);
+
+      expect(prisma.offer.updateMany).toHaveBeenCalledTimes(1);
+      expect(prisma.offer.updateMany.mock.calls[0][0].where.id).toBe(offerId);
+      expect(result.lockInfo.isLockedByCurrentAdmin).toBe(true);
+    });
+
+    it('still refuses a terminal or intra-party status on the backup queue', async () => {
+      for (const status of [
+        OfferStatus.CLOSED_BACKUP,
+        OfferStatus.EXPIRED,
+        OfferStatus.RELAYED_TO_BUYER,
+      ]) {
+        prisma.offer.findUnique.mockResolvedValue(offerRow({ status, isBackup: true }));
+
+        await expect(service.claimOffer(offerId, admin)).rejects.toMatchObject({
+          response: { code: OFFER_INVALID_STATE_TRANSITION },
+        });
+      }
       expect(prisma.offer.updateMany).not.toHaveBeenCalled();
     });
 
