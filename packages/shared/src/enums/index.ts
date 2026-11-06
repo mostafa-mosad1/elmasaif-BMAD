@@ -159,4 +159,25 @@ export enum ListingSearchSort {
   PRICE_DESC = 'price_desc',
 }
 
+/**
+ * Story 4.4 / FR-35: the mediated inquiry thread lifecycle. Every buyer↔seller message is
+ * withheld until an administrator relays it, so the statuses name the relay hop rather than the
+ * speaker: `PENDING_ADMIN_REVIEW` → `RELAYED_TO_SELLER` → `SELLER_RESPONDED` →
+ * `RELAYED_TO_BUYER` → (buyer follow-up) `PENDING_ADMIN_REVIEW`. `CLOSED` is terminal.
+ */
+export enum InquiryStatus {
+  PENDING_ADMIN_REVIEW = 'PENDING_ADMIN_REVIEW',
+  RELAYED_TO_SELLER = 'RELAYED_TO_SELLER',
+  SELLER_RESPONDED = 'SELLER_RESPONDED',
+  RELAYED_TO_BUYER = 'RELAYED_TO_BUYER',
+  CLOSED = 'CLOSED',
+}
+
+/** Who authored an inquiry message. Administrators relay, they never speak as a party. */
+export enum InquiryAuthorRole {
+  BUYER = 'BUYER',
+  SELLER = 'SELLER',
+  ADMIN = 'ADMIN',
+}
+
 export * from './ui';

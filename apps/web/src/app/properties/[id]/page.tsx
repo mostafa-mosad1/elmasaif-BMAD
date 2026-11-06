@@ -13,6 +13,8 @@ import {
 import { apiClient } from '../../../lib/api-client';
 import { useAuth } from '../../../components/providers/auth-provider';
 import { OfferSubmitForm } from '../../../components/offers';
+import { InquirySubmitForm } from '../../../components/inquiries';
+import { Button } from '../../../components/ui';
 
 export default function ListingDetailPage() {
   const params = useParams<{ id: string }>();
@@ -25,6 +27,7 @@ export default function ListingDetailPage() {
   const [error, setError] = useState<ListingDetailError | null>(null);
   const [ctaNotice, setCtaNotice] = useState<string | null>(null);
   const [offerOpen, setOfferOpen] = useState(false);
+  const [inquiryOpen, setInquiryOpen] = useState(false);
 
   useEffect(() => {
     if (!listingId) return;
@@ -67,6 +70,20 @@ export default function ListingDetailPage() {
     setOfferOpen((open) => !open);
   }, [user]);
 
+  // The inquiry form mirrors the offer CTA: an anonymous visitor is sent to login first, because
+  // the submission is party-scoped to an active BUYER profile (Story 4.4 / AC-1).
+  const handleInquiryToggle = useCallback(() => {
+    if (!user) {
+      if (typeof window !== 'undefined') {
+        window.location.href = `/auth/login?redirect=${encodeURIComponent(
+          window.location.pathname,
+        )}`;
+      }
+      return;
+    }
+    setInquiryOpen((open) => !open);
+  }, [user]);
+
   return (
     <LayoutShell>
       <ListingDetailView
@@ -85,6 +102,25 @@ export default function ListingDetailPage() {
             onSubmitted={() => setOfferOpen(false)}
             onCancel={() => setOfferOpen(false)}
           />
+        </div>
+      ) : null}
+      {detail ? (
+        <div className="mt-6 space-y-4">
+          <Button
+            type="button"
+            variant="ghost"
+            size="md"
+            onClick={handleInquiryToggle}
+            data-testid="inquiry-toggle"
+          >
+            <span>{inquiryOpen ? 'إغلاق نموذج الاستفسار' : 'إرسال استفسار عن العقار'}</span>
+          </Button>
+          {inquiryOpen ? (
+            <InquirySubmitForm
+              listingId={detail.id}
+              onCancel={() => setInquiryOpen(false)}
+            />
+          ) : null}
         </div>
       ) : null}
     </LayoutShell>

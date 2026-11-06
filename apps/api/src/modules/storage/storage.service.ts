@@ -24,7 +24,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ScanStatus } from '@elmasaif/shared';
 
-export type StoragePartition = 'quarantine' | 'identity' | 'payments' | 'contracts' | 'licenses' | 'listings' | 'listing';
+export type StoragePartition = 'quarantine' | 'identity' | 'payments' | 'contracts' | 'licenses' | 'listings' | 'listing' | 'inquiries';
 
 export interface StorageContext {
   userId?: string;
@@ -272,6 +272,12 @@ export class StorageService {
           throw new BadRequestException('userId is required in context for listings partition');
         }
         return `listings/${context.userId}/${leafFilename}`;
+
+      case 'inquiries':
+        if (!context?.userId) {
+          throw new BadRequestException('userId is required in context for inquiries partition');
+        }
+        return `inquiries/${context.userId}/${leafFilename}`;
 
       default:
         throw new BadRequestException(`Unsupported storage partition: ${partition}`);

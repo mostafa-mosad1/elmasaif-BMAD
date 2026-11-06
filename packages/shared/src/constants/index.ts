@@ -27,3 +27,5 @@ export * from './listing';
 export * from './demand';
 export * from './proposal';
 export * from './offer';
+export * from './masking';
+export * from './inquiry';

@@ -4,6 +4,7 @@ import type {
   OfferHistoryAction,
   OfferRejectionReason,
 } from '../constants/offer';
+import type { OfferLockInfo } from './locks';
 
 /**
  * Light listing projection carried by every offer row (Story 4.1 / FR-25, FR-59). Names are
@@ -58,17 +59,6 @@ export interface OfferHistoryEntry {
   notes: string | null;
   roundNumber: number | null;
   createdAt: string;
-}
-
-/** AD-10: the 15-minute claim lease, projected exactly like `ListingLockInfo`. */
-export interface OfferLockInfo {
-  isLocked: boolean;
-  isLockedByCurrentAdmin: boolean;
-  lockedByAdminId: string | null;
-  lockedByAdminName: string | null;
-  lockedAt: string | null;
-  lockExpiresAt: string | null;
-  remainingSeconds: number;
 }
 
 /**

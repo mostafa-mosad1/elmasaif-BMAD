@@ -149,6 +149,22 @@ enum PriceSuggestionStatus {
   SUPERSEDED
 }
 
+/// Story 4.4 / FR-35: the mediated conversation funnel. CLOSED is terminal and reachable from
+/// every non-terminal state.
+enum InquiryStatus {
+  PENDING_ADMIN_REVIEW
+  RELAYED_TO_SELLER
+  SELLER_RESPONDED
+  RELAYED_TO_BUYER
+  CLOSED
+}
+
+enum InquiryAuthorRole {
+  BUYER
+  SELLER
+  ADMIN
+}
+
 model User {
   id                  String        @id @default(uuid())
   username            String        @unique
@@ -259,6 +275,8 @@ model UserProfile {
   proposals            Proposal[]            @relation("ProviderProposals")
   contracts            OwnerContract[]
   ownerListingRequests OwnerListingRequest[]
+  buyerInquiries       ListingInquiry[]      @relation("BuyerInquiries")
+  sellerInquiries      ListingInquiry[]      @relation("SellerInquiries")
 
   @@unique([userId, role])
   @@map("user_profiles")
@@ -403,6 +421,7 @@ model Listing {
   favorites        ListingFavorite[]
   demandMatches    DemandMatch[] @relation("DemandMatchListing")
   proposals        Proposal[]    @relation("ProposalListing")
+  inquiries        ListingInquiry[] @relation("InquiryListing")
 
   @@index([status, propertyType, cityId, districtId])
   @@index([status, createdAt])
@@ -566,6 +585,77 @@ model OfferHistory {
   offer Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
   @@index([offerId, createdAt])
   @@map("offer_history")
+}
+
+/// Story 4.4 / FR-35, FR-51: a listing-scoped, admin-mediated inquiry thread. Deliberately a new
+/// entity rather than an extension of the pre-deal `Conversation` placeholder (D1).
+model ListingInquiry {
+  id               String        @id @default(uuid())
+  listingId        String        @map("listing_id")
+  buyerProfileId   String        @map("buyer_profile_id")
+  sellerProfileId  String        @map("seller_profile_id")
+  status           InquiryStatus @default(PENDING_ADMIN_REVIEW)
+  subject          String?
+  version          Int           @default(1)
+  lockedByAdminId  String?       @map("locked_by_admin_id")
+  lockedAt         DateTime?     @map("locked_at")
+  lockExpiresAt    DateTime?     @map("lock_expires_at")
+  lastMessageAt    DateTime      @map("last_message_at")
+  closedAt         DateTime?     @map("closed_at")
+  closedByAdminId  String?       @map("closed_by_admin_id")
+  closeReason      String?       @map("close_reason")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  listing       Listing          @relation("InquiryListing", fields: [listingId], references: [id], onDelete: Cascade)
+  buyerProfile  UserProfile      @relation("BuyerInquiries", fields: [buyerProfileId], references: [id])
+  sellerProfile UserProfile      @relation("SellerInquiries", fields: [sellerProfileId], references: [id])
+  messages      InquiryMessage[]
+
+  @@index([status, createdAt])
+  @@index([listingId, buyerProfileId, status])
+  @@index([lockExpiresAt])
+  @@map("listing_inquiries")
+}
+
+/// One relayed message. `relayedAt` is what makes the buyer↔seller block enforceable: a message
+/// the platform has not relayed stays invisible to the counterparty (AC-4).
+model InquiryMessage {
+  id               String            @id @default(uuid())
+  inquiryId        String            @map("inquiry_id")
+  authorRole       InquiryAuthorRole @map("author_role")
+  authorProfileId  String?           @map("author_profile_id")
+  authorAdminId    String?           @map("author_admin_id")
+  body             String
+  maskingApplied   Boolean           @default(false) @map("masking_applied")
+  maskedTypes      String?           @map("masked_types")
+  relayedAt        DateTime?         @map("relayed_at")
+  relayedByAdminId String?           @map("relayed_by_admin_id")
+  createdAt        DateTime          @default(now()) @map("created_at")
+
+  inquiry     ListingInquiry      @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  attachments InquiryAttachment[]
+
+  @@index([inquiryId, createdAt])
+  @@map("inquiry_messages")
+}
+
+/// A scanned attachment. `messageId = null` means the draft was uploaded but never linked to a
+/// message, so it is invisible everywhere (AC-2, D7).
+model InquiryAttachment {
+  id                  String   @id @default(uuid())
+  fileObjectId        String   @unique @map("file_object_id")
+  uploadedByProfileId String   @map("uploaded_by_profile_id")
+  messageId           String?  @map("message_id")
+  fileName            String   @map("file_name")
+  mimeType            String   @map("mime_type")
+  fileSize            Int      @map("file_size")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  message InquiryMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("inquiry_attachments")
 }
 
 model Deal {

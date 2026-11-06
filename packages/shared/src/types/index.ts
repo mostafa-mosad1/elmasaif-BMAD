@@ -12,7 +12,12 @@ import {
   rejectOfferSchema,
   adminRejectOfferSchema,
   offerQueueQuerySchema,
-  backupOfferQueueQuerySchema
+  backupOfferQueueQuerySchema,
+  createInquirySchema,
+  appendInquiryMessageSchema,
+  relayInquirySchema,
+  closeInquirySchema,
+  inquiryQueueQuerySchema
 } from '../schemas';
 import { ListingStatus, DealStatus, PropertyType } from '../enums';
 
@@ -29,6 +34,11 @@ export type RejectOfferInput = z.infer<typeof rejectOfferSchema>;
 export type AdminRejectOfferInput = z.infer<typeof adminRejectOfferSchema>;
 export type OfferQueueQuery = z.infer<typeof offerQueueQuerySchema>;
 export type BackupOfferQueueQuery = z.infer<typeof backupOfferQueueQuerySchema>;
+export type CreateInquiryInput = z.infer<typeof createInquirySchema>;
+export type AppendInquiryMessageInput = z.infer<typeof appendInquiryMessageSchema>;
+export type RelayInquiryInput = z.infer<typeof relayInquirySchema>;
+export type CloseInquiryInput = z.infer<typeof closeInquirySchema>;
+export type InquiryQueueQuery = z.infer<typeof inquiryQueueQuerySchema>;
 
 export interface ApiResponse<T> {
   statusCode: number;
@@ -92,4 +102,6 @@ export * from './identity';
 export * from './payout';
 export * from './preferences';
 export * from './listing';
+export * from './locks';
 export * from './offer';
+export * from './inquiry';

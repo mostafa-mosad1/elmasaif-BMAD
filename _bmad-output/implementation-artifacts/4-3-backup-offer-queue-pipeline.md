@@ -4,7 +4,7 @@ baseline_commit: 7ba8e9f
 
 # Story 4.3: Backup Offer Queue Pipeline
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -321,3 +321,4 @@ Qoder (agentic IDE), implementing via the `bmad-dev-story` workflow with red-gre
 | --- | --- | --- | --- |
 | 2026-11-06 | 1.0 | Story created: backup offer queue read surface with derived queue state, claim-locked admin activation, `CLOSED_BACKUP` terminal status, `closeRemainingBackupOffersForListing` hand-off primitive for Story 5.1, and the `backup-offer-reconciliation` sweep. | Story context engine |
 | 2026-11-06 | 1.1 | Implemented: `Offer.activatedAt` + `CLOSED_BACKUP` (14-member enum), shared contracts (states/labels/errors/schema/types/job catalog), `offer-lock.ts` extraction + `backup-offers.service.ts`, `admin-backup-offers.controller.ts`, claim-legality split, `backup-offer-reconciliation` job, web admin backup queue + buyer/seller/status/timeline chips, and 4 new spec files (shared 349, api 623, worker 71, web 273 all green). | Qoder (bmad-dev-story) |
+| 2026-11-06 | 1.2 | Story marked done in sprint tracking. | Mostafa |
