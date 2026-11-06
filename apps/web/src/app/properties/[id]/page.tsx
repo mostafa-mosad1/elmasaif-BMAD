@@ -14,7 +14,8 @@ import { apiClient } from '../../../lib/api-client';
 import { useAuth } from '../../../components/providers/auth-provider';
 import { OfferSubmitForm } from '../../../components/offers';
 import { InquirySubmitForm } from '../../../components/inquiries';
-import { Button } from '../../../components/ui';
+import { Button, Modal } from '../../../components/ui';
+import { MessageSquareText } from 'lucide-react';
 
 export default function ListingDetailPage() {
   const params = useParams<{ id: string }>();
@@ -55,7 +56,7 @@ export default function ListingDetailPage() {
     };
   }, [listingId]);
 
-  // The CTA opens the inline offer form for an authenticated buyer; an anonymous visitor is
+  // The offer CTA opens the offer dialog for an authenticated buyer; an anonymous visitor is
   // sent to login first so the submission always carries a session (FR-25 / Story 4.1).
   const handleCtaClick = useCallback(() => {
     if (!user) {
@@ -67,7 +68,7 @@ export default function ListingDetailPage() {
       return;
     }
     setCtaNotice(null);
-    setOfferOpen((open) => !open);
+    setOfferOpen(true);
   }, [user]);
 
   // The inquiry form mirrors the offer CTA: an anonymous visitor is sent to login first, because
@@ -81,8 +82,25 @@ export default function ListingDetailPage() {
       }
       return;
     }
-    setInquiryOpen((open) => !open);
+    setInquiryOpen(true);
   }, [user]);
+
+  const handleInquiryClose = useCallback(() => setInquiryOpen(false), []);
+  const handleOfferClose = useCallback(() => setOfferOpen(false), []);
+
+  // Kept on the results line so the inquiry entry point is visible without scrolling to the end.
+  const inquiryTrigger = detail ? (
+    <Button
+      type="button"
+      variant="primary"
+      size="md"
+      onClick={handleInquiryToggle}
+      data-testid="inquiry-toggle"
+    >
+      <MessageSquareText className="w-4 h-4" />
+      <span>إرسال استفسار عن العقار</span>
+    </Button>
+  ) : null;
 
   return (
     <LayoutShell>
@@ -92,36 +110,35 @@ export default function ListingDetailPage() {
         error={error}
         onCtaClick={handleCtaClick}
         ctaNotice={ctaNotice}
+        headerAction={inquiryTrigger}
       />
       {offerOpen && detail ? (
-        <div className="mt-6">
+        <Modal
+          open
+          onClose={handleOfferClose}
+          ariaLabel="نموذج تقديم عرض الشراء"
+          testId="offer-modal"
+          closeTestId="offer-modal-close"
+        >
           <OfferSubmitForm
             listingId={detail.id}
             askPrice={detail.askPrice}
             listingStatus={detail.status}
-            onSubmitted={() => setOfferOpen(false)}
-            onCancel={() => setOfferOpen(false)}
+            onSubmitted={handleOfferClose}
+            onCancel={handleOfferClose}
           />
-        </div>
+        </Modal>
       ) : null}
-      {detail ? (
-        <div className="mt-6 space-y-4">
-          <Button
-            type="button"
-            variant="ghost"
-            size="md"
-            onClick={handleInquiryToggle}
-            data-testid="inquiry-toggle"
-          >
-            <span>{inquiryOpen ? 'إغلاق نموذج الاستفسار' : 'إرسال استفسار عن العقار'}</span>
-          </Button>
-          {inquiryOpen ? (
-            <InquirySubmitForm
-              listingId={detail.id}
-              onCancel={() => setInquiryOpen(false)}
-            />
-          ) : null}
-        </div>
+      {inquiryOpen && detail ? (
+        <Modal
+          open
+          onClose={handleInquiryClose}
+          ariaLabel="نموذج الاستفسار عن العقار"
+          testId="inquiry-modal"
+          closeTestId="inquiry-modal-close"
+        >
+          <InquirySubmitForm listingId={detail.id} onCancel={handleInquiryClose} />
+        </Modal>
       ) : null}
     </LayoutShell>
   );

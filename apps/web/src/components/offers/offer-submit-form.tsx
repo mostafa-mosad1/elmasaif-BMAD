@@ -123,7 +123,7 @@ export function OfferSubmitForm({
   if (submitted) {
     return (
       <Card data-testid="offer-submit-success">
-        <CardContent className="p-5 space-y-2" dir="rtl">
+        <CardContent className="space-y-2 p-5 sm:p-6" dir="rtl">
           <div className="flex items-center gap-2 text-status-verified font-bold text-sm">
             <ShieldCheck className="w-4 h-4" />
             <span>{isBackup ? 'تم تسجيل عرضك الاحتياطي' : 'تم تسجيل عرض الشراء'}</span>
@@ -137,13 +137,13 @@ export function OfferSubmitForm({
   }
 
   return (
-    <Card data-testid="offer-submit-form">
-      <CardHeader>
+    <Card className="p-5 sm:p-6" data-testid="offer-submit-form">
+      <CardHeader className="mb-5 border-b border-surface-border pb-4 dark:border-dark-surface-border">
         <CardTitle className="flex items-center gap-2 text-base">
           <HandCoins className="w-4 h-4 text-primary" />
           <span>{isBackup ? 'تقديم عرض احتياطي' : 'تقديم عرض شراء'}</span>
         </CardTitle>
-        <p className="text-xs text-ink-muted dark:text-dark-ink-muted leading-relaxed">
+        <p className="text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
           {isBackup
             ? 'العقار محجوز حالياً ويُسجَّل عرضك كعرض احتياطي في حال انتهاء الحجز الحالي.'
             : 'تقديم عرض شراء ملزم خاضع لتدقيق المنصة قبل عرضه على البائع.'}
@@ -226,7 +226,7 @@ export function OfferSubmitForm({
             </div>
           ) : null}
 
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex items-center justify-end gap-3 border-t border-surface-border pt-4 dark:border-dark-surface-border">
             {onCancel ? (
               <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
                 إلغاء

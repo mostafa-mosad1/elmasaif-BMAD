@@ -440,7 +440,7 @@ Qoder — BMAD Dev Story agent (Agent mode).
 - **Task 5** — `InquiriesModule` exposes buyer (`POST /inquiries`, `/inquiries/my`, `/inquiries/attachments`, `/inquiries/attachments/:id/download`) and seller (`/inquiries/received`, `POST /inquiries/:id/messages`) surfaces; one viewer-aware mapper (`inquiry-thread.mapper.ts`) is the only projection, so no pre-mask text or contact columns can leak. Persisted bodies/masked types/relay stamps come from `inquiry-message-writer.ts`; masking is always re-applied server-side.
 - **Task 6** — Admin queue + workspace endpoints (`getQueue`, `getInquiry`, `claim`, `heartbeat`, `release`, `force-unlock`, `relay-to-seller`, `relay-to-buyer`, `close`) under `Conversations.Handle`; every transition runs in one `$transaction` behind a `::text` `FOR UPDATE` lock, validates the lease in-transaction, releases it on commit and writes the `AuditLog` in the same transaction (AC-6/AD-10/AD-11).
 - **Task 7** — `StoragePartition` gained `'inquiries'` → `inquiries/${context.userId}/${leafFilename}` with the same `userId` guard style as `identity`; quarantine/scan gating reused unchanged.
-- **Task 8** — Buyer submit form (live masked preview, ≤5 attachment picker, inline errors, RTL), thread view, status badge, buyer and seller lists, `InquiriesView` fetch wrapper, plus the property-page toggle (separate from the offer block — `ListingDetailView` untouched) and 6 thin workspace routes. Covered by 27 SSR tests.
+- **Task 8** — Buyer submit form (live masked preview, ≤5 attachment picker, inline errors, RTL), thread view, status badge, buyer and seller lists, `InquiriesView` fetch wrapper, plus the property-page entry point (top-of-page trigger → modal dialog, separate from the offer block) and 6 thin workspace routes. Covered by 27 SSR tests.
 - **Task 9** — Admin queue (claim → workspace, holder-name conflict banner via `readLockHolderName`) and workspace (lock banner + countdown, heartbeat every 5 min, read-only mode, relay/close actions, force-unlock with reason). Covered by 15 SSR tests; `next/navigation` is mocked in the spec because `useRouter` is a client hook.
 - **Task 10** — Sidebar entries added for buyer/owner/marketer/admin (admin gated on `Conversations.Handle`); all four suites + API typecheck green; the live relay loop (AC-1, AC-3, AC-4, AC-5) passed end-to-end against the dev API.
 - Pre-existing issues found but deliberately **not** fixed (out of scope): the seeded demo seller stores a non-normalised mobile (`0500000099`) so phone-based login/step-up cannot match, and has no FAL licence so it cannot switch to the MARKETER workspace; `npm run lint` fails on unrelated files.
@@ -500,6 +500,8 @@ Qoder — BMAD Dev Story agent (Agent mode).
 - `apps/web/src/components/admin/inquiry-queue.tsx`
 - `apps/web/src/components/admin/inquiry-workspace.tsx`
 - `apps/web/src/components/admin/__tests__/inquiry-queue.spec.tsx`
+- `apps/web/src/components/ui/modal.tsx`
+- `apps/web/src/components/ui/__tests__/modal.spec.tsx`
 - `apps/web/src/app/app/buyer/inquiries/page.tsx`
 - `apps/web/src/app/app/buyer/inquiries/[id]/page.tsx`
 - `apps/web/src/app/app/marketer/inquiries/page.tsx`
@@ -511,6 +513,9 @@ Qoder — BMAD Dev Story agent (Agent mode).
 
 **apps/web (modified)**
 - `apps/web/src/app/properties/[id]/page.tsx`
+- `apps/web/src/app/properties/[id]/listing-detail-view.tsx` (optional `headerAction` slot)
+- `apps/web/src/components/ui/index.ts` (`Modal` export)
+- `apps/web/src/components/offers/offer-submit-form.tsx` (inner padding + dividers)
 - `apps/web/src/components/layout/workspace-shell.tsx`
 - `apps/web/tsconfig.tsbuildinfo` (generated build artifact)
 
@@ -524,3 +529,5 @@ Qoder — BMAD Dev Story agent (Agent mode).
 | Date | Change |
 | --- | --- |
 | 2026-11-06 | Implemented Story 4.4 end-to-end: shared masking engine + inquiry contracts, additive Prisma models, shared claim-lock extraction, buyer/seller API surfaces, admin conversation queue, `inquiries` storage partition, web buyer/seller/admin UI, sidebar navigation. Added 69 new tests (410 shared / 675 API / 315 web / 71 worker all green) and verified the full relay loop against the dev API. Status → review. |
+| 2026-11-06 | UX follow-up: the «إرسال استفسار عن العقار» button moved to the top of the property page beside the “back to results” link, and the inquiry form now opens in a modal dialog (backdrop/Escape close, body scroll lock) instead of rendering at the bottom of the page. `ListingDetailView` gained an optional `headerAction` slot. The submit form also gained real inner padding (`p-5 sm:p-6`), a header divider and a footer divider, because `Card`/`CardHeader`/`CardContent` carry no padding of their own. |
+| 2026-11-06 | UX follow-up 2: the offer/backup-offer form also moved into a dialog, and the duplicated overlay markup was extracted into `apps/web/src/components/ui/modal.tsx` (Escape + backdrop close, body scroll lock, shadowed scrollable panel). The offer form gained the same inner padding and header/footer dividers. Added `modal.spec.tsx` (3 SSR tests) — web suite 50 files / 318 tests green. |

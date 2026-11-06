@@ -74,6 +74,8 @@ export interface ListingDetailViewProps {
   error?: ListingDetailError | null;
   onCtaClick?: () => void;
   ctaNotice?: string | null;
+  /** Optional control rendered on the same line as the "back to results" link (top of the page). */
+  headerAction?: React.ReactNode;
 }
 
 export type ListingDetailError = 'not-found' | 'failed';
@@ -97,6 +99,7 @@ export function ListingDetailView({
   error = null,
   onCtaClick,
   ctaNotice = null,
+  headerAction = null,
 }: ListingDetailViewProps) {
   if (loading) {
     return (
@@ -144,7 +147,7 @@ export function ListingDetailView({
 
   return (
     <div className="py-6 sm:py-8" dir="rtl">
-      <div className="mb-5">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
         <Link
           href="/properties"
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-secondary dark:text-dark-ink-secondary hover:text-primary dark:hover:text-primary-light transition-colors"
@@ -152,6 +155,7 @@ export function ListingDetailView({
           <ArrowRight className="w-4 h-4" />
           <span>العودة إلى نتائج البحث</span>
         </Link>
+        {headerAction}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">

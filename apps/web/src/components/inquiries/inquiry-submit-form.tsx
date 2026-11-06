@@ -161,7 +161,7 @@ export function InquirySubmitForm({ listingId, onSubmitted, onCancel }: InquiryS
   if (submitted) {
     return (
       <Card data-testid="inquiry-submit-success">
-        <CardContent className="p-5 space-y-2" dir="rtl">
+        <CardContent className="space-y-2 p-5 sm:p-6" dir="rtl">
           <div className="flex items-center gap-2 text-status-verified font-bold text-sm">
             <ShieldCheck className="w-4 h-4" />
             <span>تم إرسال استفسارك إلى فريق الوساطة</span>
@@ -175,13 +175,13 @@ export function InquirySubmitForm({ listingId, onSubmitted, onCancel }: InquiryS
   }
 
   return (
-    <Card data-testid="inquiry-submit-form">
-      <CardHeader>
+    <Card className="p-5 sm:p-6" data-testid="inquiry-submit-form">
+      <CardHeader className="mb-5 border-b border-surface-border pb-4 dark:border-dark-surface-border">
         <CardTitle className="flex items-center gap-2 text-base">
           <MessageSquareText className="w-4 h-4 text-primary" />
           <span>الاستفسار عن العقار</span>
         </CardTitle>
-        <p className="text-xs text-ink-muted dark:text-dark-ink-muted leading-relaxed">
+        <p className="text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
           {INQUIRY_MEDIATION_NOTICE_AR}
         </p>
       </CardHeader>
@@ -312,7 +312,7 @@ export function InquirySubmitForm({ listingId, onSubmitted, onCancel }: InquiryS
             </div>
           ) : null}
 
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex items-center justify-end gap-3 border-t border-surface-border pt-4 dark:border-dark-surface-border">
             {onCancel ? (
               <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
                 إلغاء
