@@ -290,7 +290,7 @@ export async function seedDemoListings() {
   for (const listing of demoListings) {
     await prisma.listing.upsert({
       where: { id: listing.id },
-      update: { status: listing.status },
+      update: { status: listing.status as any },
       create: {
         id: listing.id,
         title: listing.title,

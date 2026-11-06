@@ -270,7 +270,8 @@ export function DemandsView() {
     setBanner('تم نشر طلب الشراء وهو الآن نشط لمدة 30 يوماً.');
   };
 
-  const activeCount = items.filter((item) => item.status === DemandStatus.ACTIVE).length;
+  // MATCHED demands are still live — they accept proposals and stay cancellable.
+  const activeCount = items.filter((item) => CANCELLABLE_STATUSES.includes(item.status)).length;
 
   return (
     <div className="space-y-6" dir="rtl">
