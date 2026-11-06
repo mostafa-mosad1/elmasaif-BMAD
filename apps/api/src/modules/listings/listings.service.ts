@@ -16,7 +16,7 @@ import {
   ProfileStatus,
   ListingStatus,
   OfferStatus,
-  DealStatus,
+  ACTIVE_DEAL_STATUSES,
   DocumentVisibility,
   ScanStatus,
   PriceSuggestionStatus,
@@ -1402,13 +1402,9 @@ export class ListingsService {
       });
     }
 
-    // 3. Active Deal Guard (non-terminal deals)
+    // 3. Active Deal Guard (non-terminal deals) — Story 5.1: the shared predicate.
     const activeDeals = listing.deals.filter((deal: any) =>
-      [
-        DealStatus.AWAITING_PAYMENT_PROOF,
-        DealStatus.UNDER_ADMIN_AUDIT,
-        DealStatus.PAYMENT_REJECTED,
-      ].includes(deal.status as any),
+      ACTIVE_DEAL_STATUSES.includes(deal.status),
     );
 
     if (activeDeals.length > 0) {

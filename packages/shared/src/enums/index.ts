@@ -68,7 +68,13 @@ export enum OfferStatus {
   RELAYED_TO_BUYER = 'RELAYED_TO_BUYER',
   REJECTED_BY_ADMIN = 'REJECTED_BY_ADMIN',
   SELECTED_PENDING_FINAL_ADMIN_APPROVAL = 'SELECTED_PENDING_FINAL_ADMIN_APPROVAL',
-  CLOSED_BACKUP = 'CLOSED_BACKUP'
+  CLOSED_BACKUP = 'CLOSED_BACKUP',
+  /**
+   * Story 5.1: the winning offer has been bound to a `Deal`. Terminal on purpose — the deal now
+   * owns the transaction, so the offer must stop blocking `OFFER_ACTIVE_EXISTS` and stop being
+   * claimable in the mediation queue.
+   */
+  CONVERTED_TO_DEAL = 'CONVERTED_TO_DEAL'
 }
 
 export enum DealStatus {

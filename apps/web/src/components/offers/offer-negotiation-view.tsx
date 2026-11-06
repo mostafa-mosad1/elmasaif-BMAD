@@ -89,6 +89,13 @@ const OFFER_ERROR_HINTS_AR: Record<string, string> = {
   OFFER_COUNTER_PRICE_OUT_OF_RANGE: 'قيمة العرض المقابل خارج النطاق المسموح.',
   OFFER_REJECTION_NOTE_REQUIRED: 'يجب كتابة سبب الرفض بالتفصيل (10 أحرف على الأقل).',
   OFFER_SELLER_PROFILE_REQUIRED: 'يتطلب هذا الإجراء ملف وسيط أو مالك نشِط.',
+  // Story 5.1: final approval refusals.
+  DEAL_ALREADY_ACTIVE_FOR_LISTING:
+    'يوجد بالفعل صفقة نشطة على هذا الإعلان. لا يمكن إنشاء صفقة ثانية قبل إغلاق الأولى.',
+  DEAL_SELLER_PAYOUT_REQUIRED:
+    'لا يمكن اعتماد الصفقة: على البائع إضافة حساب بنكي للتحصيل أولاً.',
+  DEAL_LISTING_UNAVAILABLE:
+    'الإعلان لم يعد متاحاً لإتمام الصفقة (قد يكون محجوزاً أو مؤرشفاً أو مبيَعاً).',
 };
 
 export function resolveOfferErrorHint(

@@ -67,6 +67,9 @@ export const TERMINAL_OFFER_STATUSES: readonly OfferStatus[] = [
   OfferStatus.EXPIRED,
   OfferStatus.WITHDRAWN,
   OfferStatus.CLOSED_BACKUP,
+  // Story 5.1: the deal now owns the transaction. Terminal, otherwise the winning offer keeps
+  // `OFFER_ACTIVE_EXISTS` rejecting the buyer's next offer and stays claimable for mediation.
+  OfferStatus.CONVERTED_TO_DEAL,
 ];
 
 /**
@@ -108,6 +111,7 @@ export const OFFER_STATUS_LABELS_AR: Record<OfferStatus, string> = {
   [OfferStatus.REJECTED_BY_ADMIN]: 'مرفوض إدارياً',
   [OfferStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL]: 'معتمد — بانتظار الموافقة النهائية',
   [OfferStatus.CLOSED_BACKUP]: 'مغلق — اكتملت الصفقة الأساسية',
+  [OfferStatus.CONVERTED_TO_DEAL]: 'محوَّل إلى صفقة',
 };
 
 /**
@@ -151,6 +155,8 @@ export const OFFER_HISTORY_ACTIONS = {
   EXPIRED: 'OFFER_EXPIRED',
   BACKUP_ACTIVATED: 'OFFER_BACKUP_ACTIVATED',
   BACKUP_CLOSED: 'OFFER_BACKUP_CLOSED',
+  // Story 5.1: the approved offer became a Deal (`Deals.FinalApprove`).
+  CONVERTED_TO_DEAL: 'OFFER_CONVERTED_TO_DEAL',
 } as const;
 
 export type OfferHistoryAction =
@@ -169,6 +175,7 @@ export const OFFER_HISTORY_ACTION_LABELS_AR: Record<OfferHistoryAction, string> 
   OFFER_EXPIRED: 'انتهاء صلاحية العرض',
   OFFER_BACKUP_ACTIVATED: 'تفعيل عرض احتياطي',
   OFFER_BACKUP_CLOSED: 'إغلاق عرض احتياطي بعد اكتمال الصفقة الأساسية',
+  OFFER_CONVERTED_TO_DEAL: 'تحويل العرض المعتمد إلى صفقة',
 };
 
 /** Story 4.3 / OQ-04: display order of the backup queue groups, surfaced first. */

@@ -12,7 +12,7 @@ import { CryptoService } from '../../common/crypto/crypto.service';
 import { OtpService } from '../auth/otp/otp.service';
 import {
   UserRole,
-  DealStatus,
+  ACTIVE_DEAL_STATUSES,
   validateSaudiIban,
   getSaudiBankName,
   formatSaudiIban,
@@ -71,17 +71,12 @@ export class PayoutService {
   }
 
   async isAccountBoundToActiveDeal(profileId: string): Promise<boolean> {
+    // Story 5.1: one shared "active deal" predicate instead of a fourth inline copy.
     const activeDeal = await this.prisma.deal.findFirst({
       where: {
         sellerProfileId: profileId,
-        status: {
-          in: [
-            DealStatus.AWAITING_PAYMENT_PROOF,
-            DealStatus.UNDER_ADMIN_AUDIT,
-            DealStatus.PAYMENT_REJECTED
-          ]
-        }
-      }
+        status: { in: [...ACTIVE_DEAL_STATUSES] as any },
+      },
     });
 
     return Boolean(activeDeal);

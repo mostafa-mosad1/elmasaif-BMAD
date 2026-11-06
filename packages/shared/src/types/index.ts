@@ -105,3 +105,4 @@ export * from './listing';
 export * from './locks';
 export * from './offer';
 export * from './inquiry';
+export * from './deal';

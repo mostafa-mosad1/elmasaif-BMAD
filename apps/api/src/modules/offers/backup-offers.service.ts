@@ -342,7 +342,8 @@ export class BackupOffersService {
         },
       });
 
-      // TODO(5.1): Deals.FinalApprove binds this activated offer into a Deal (no Deals module yet).
+      // `Deals.FinalApprove` binds this activated offer into a Deal — see
+      // `DealsService.finalApprove` (Story 5.1). The reserve queue itself stays open until 5.4.
       // TODO(8.8): notify the buyer that their backup offer was activated (no Notification model).
 
       this.logger.log(

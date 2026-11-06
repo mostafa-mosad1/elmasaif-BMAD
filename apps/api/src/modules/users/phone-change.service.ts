@@ -11,7 +11,7 @@ import { ClockService } from '../../common/clock/clock.service';
 import { OtpService } from '../auth/otp/otp.service';
 import {
   AdminRole,
-  DealStatus,
+  ACTIVE_DEAL_STATUSES,
   ProfileStatus,
   InitiatePhoneChangeInput,
   VerifyPhoneChangeOtpInput,
@@ -72,14 +72,9 @@ export class PhoneChangeService {
           },
           {
             OR: [
-              {
-                status: {
-                  in: [
-                    DealStatus.AWAITING_PAYMENT_PROOF,
-                    DealStatus.UNDER_ADMIN_AUDIT
-                  ]
-                }
-              },
+              // Story 5.1: the shared predicate. This guard previously omitted PAYMENT_REJECTED,
+              // so a buyer under a rejected-payment deal could still move their mobile number.
+              { status: { in: [...ACTIVE_DEAL_STATUSES] as any } },
               {
                 disputes: {
                   some: { status: 'OPEN' }

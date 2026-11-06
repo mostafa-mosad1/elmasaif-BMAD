@@ -524,7 +524,8 @@ export class OffersService {
       });
 
       // TODO(8.8): notify the opposite party (no Notification model exists).
-      // TODO(5.1): bind SELECTED_PENDING_FINAL_ADMIN_APPROVAL into a Deal.
+      // The SELECTED_PENDING_FINAL_ADMIN_APPROVAL offer is bound into a Deal by
+      // `DealsService.finalApprove` (Story 5.1) — never here.
 
       const refreshed = await tx.offer.findUnique({
         where: { id: offerId },

@@ -6,6 +6,7 @@ import { ClockService } from '../../../common/clock/clock.service';
 import { OtpService } from '../../auth/otp/otp.service';
 import {
   AdminRole,
+  ACTIVE_DEAL_STATUSES,
   DealStatus,
   AUTH_PHONE_IN_USE,
   AUTH_PHONE_SAME_AS_CURRENT,
@@ -217,6 +218,33 @@ describe('PhoneChangeService (Story 1.7 Dual-OTP Mobile Update) (AC: 1, 2, 3, 4,
           })
         })
       );
+    });
+
+    it('also blocks a PAYMENT_REJECTED deal — the predicate drifted before Story 5.1', async () => {
+      prisma.user.findUnique
+        .mockResolvedValueOnce(mockUser)
+        .mockResolvedValueOnce(null);
+
+      prisma.deal.findFirst.mockResolvedValueOnce({
+        id: 'deal-1',
+        status: DealStatus.PAYMENT_REJECTED
+      });
+
+      await expect(
+        service.initiatePhoneChange(
+          mockUser.id,
+          { newMobileNumber: '+966598765432' },
+          '192.168.1.1',
+          'agent'
+        )
+      ).rejects.toThrow(ConflictException);
+
+      // The query itself must carry the whole shared predicate, not just the statuses that
+      // happened to be listed here in Story 1.7.
+      const where = prisma.deal.findFirst.mock.calls[0][0].where;
+      const statusPredicate = where.AND[1].OR[0].status.in;
+      expect(statusPredicate).toEqual([...ACTIVE_DEAL_STATUSES]);
+      expect(statusPredicate).toContain(DealStatus.PAYMENT_REJECTED);
     });
   });
 

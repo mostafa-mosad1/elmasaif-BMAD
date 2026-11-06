@@ -1,5 +1,8 @@
 import { PrismaClient, AdminRole } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
+import { getSaudiBankName, maskSaudiIban } from '@elmasaif/shared';
+import { CryptoService } from '../src/common/crypto/crypto.service';
 
 const prisma = new PrismaClient();
 
@@ -232,6 +235,9 @@ const DEMO_SELLER = {
   iban: 'SA0380000000608010167519',
 };
 
+// Story 5.1: a stable id keeps the payout-account upsert idempotent across seed runs.
+const DEMO_PAYOUT_ACCOUNT_ID = '99999999-0000-4000-8000-000000000101';
+
 export async function seedDemoListings() {
   console.log('🏠 Seeding Demo ACTIVE/RESERVED Listings (Story 3.1)...');
 
@@ -259,6 +265,26 @@ export async function seedDemoListings() {
       userId: DEMO_SELLER.id,
       role: 'MARKETER',
       payoutIban: DEMO_SELLER.iban,
+    },
+  });
+
+  // Story 5.1 / AC-5: `DealsService.finalApprove` refuses with DEAL_SELLER_PAYOUT_REQUIRED when
+  // the seller has no `PayoutAccount`, and `UserProfile.payoutIban` is a masked display string, so
+  // no seeded listing could ever be bound into a deal without this row. Idempotent: an existing
+  // account keeps its ciphertext (re-encrypting would churn a random IV on every seed run).
+  const cryptoService = new CryptoService(new ConfigService());
+  await prisma.payoutAccount.upsert({
+    where: { id: DEMO_PAYOUT_ACCOUNT_ID },
+    update: {},
+    create: {
+      id: DEMO_PAYOUT_ACCOUNT_ID,
+      profileId: DEMO_SELLER.profileId,
+      accountHolderName: DEMO_SELLER.fullName,
+      bankName: getSaudiBankName(DEMO_SELLER.iban),
+      ibanEncrypted: cryptoService.encrypt(DEMO_SELLER.iban),
+      ibanMasked: maskSaudiIban(DEMO_SELLER.iban),
+      ibanLast4: DEMO_SELLER.iban.slice(-4),
+      isDefault: true,
     },
   });
 

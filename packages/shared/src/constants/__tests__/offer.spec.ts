@@ -74,8 +74,9 @@ describe('Buyer Offer Constants (Story 4.1 / FR-25, BR-11, A-07)', () => {
 
   it('labels every OfferStatus in Arabic with no gaps', () => {
     const statuses = Object.values(OfferStatus);
-    // Story 4.3 added the terminal CLOSED_BACKUP member (9 active + 5 terminal).
-    expect(statuses).toHaveLength(14);
+    // Story 4.3 added the terminal CLOSED_BACKUP member; Story 5.1 the terminal CONVERTED_TO_DEAL
+    // (9 active + 6 terminal).
+    expect(statuses).toHaveLength(15);
     for (const status of statuses) {
       expect(OFFER_STATUS_LABELS_AR[status]).toBeTruthy();
     }
@@ -90,6 +91,8 @@ describe('Buyer Offer Constants (Story 4.1 / FR-25, BR-11, A-07)', () => {
     );
     // Story 4.3 terminal member.
     expect(OFFER_STATUS_LABELS_AR[OfferStatus.CLOSED_BACKUP]).toBe('مغلق — اكتملت الصفقة الأساسية');
+    // Story 5.1: the winning offer became a deal.
+    expect(OFFER_STATUS_LABELS_AR[OfferStatus.CONVERTED_TO_DEAL]).toBe('محوَّل إلى صفقة');
   });
 
   it('partitions the enum into disjoint active and terminal sets that cover every member', () => {
@@ -121,6 +124,12 @@ describe('Buyer Offer Constants (Story 4.1 / FR-25, BR-11, A-07)', () => {
     expect(terminal.has(OfferStatus.CLOSED_BACKUP)).toBe(true);
     expect(active.has(OfferStatus.CLOSED_BACKUP)).toBe(false);
     expect(EXPIRABLE_OFFER_STATUSES).not.toContain(OfferStatus.CLOSED_BACKUP);
+
+    // Story 5.1: the deal owns the transaction now, so the winner leaves every live set — otherwise
+    // it keeps `OFFER_ACTIVE_EXISTS` rejecting the buyer and stays claimable for mediation (D2).
+    expect(terminal.has(OfferStatus.CONVERTED_TO_DEAL)).toBe(true);
+    expect(active.has(OfferStatus.CONVERTED_TO_DEAL)).toBe(false);
+    expect(EXPIRABLE_OFFER_STATUSES).not.toContain(OfferStatus.CONVERTED_TO_DEAL);
   });
 });
 
@@ -186,6 +195,8 @@ describe('Offer mediation constants (Story 4.2 / FR-26, FR-55, AD-10)', () => {
     expect(OFFER_HISTORY_ACTIONS.RELAYED_TO_SELLER).toBe('OFFER_RELAYED_TO_SELLER');
     expect(OFFER_HISTORY_ACTIONS.RELAYED_TO_BUYER).toBe('OFFER_RELAYED_TO_BUYER');
     expect(OFFER_HISTORY_ACTIONS.EXPIRED).toBe('OFFER_EXPIRED');
+    // Story 5.1 hands the offer over to the Deal.
+    expect(OFFER_HISTORY_ACTIONS.CONVERTED_TO_DEAL).toBe('OFFER_CONVERTED_TO_DEAL');
   });
 
   it('labels the three awaiting-party chips', () => {

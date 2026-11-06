@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 10-27-2026 15:27
-last_updated: 11-06-2026 18:25
+last_updated: 11-06-2026 20:15
 project: elmasaif
 project_key: NOKEY
 tracking_system: file-system
@@ -79,15 +79,15 @@ development_status:
   3-7-automated-demand-matching-proposal-review-pipeline: done
   epic-3-retrospective: optional
 
-  epic-4: in-progress
+  epic-4: done
   4-1-offer-submission-price-guardrail-validation: done
   4-2-mediated-counter-offer-rounds-seller-responses: done
   4-3-backup-offer-queue-pipeline: done
-  4-4-mediated-listing-inquiries-automated-sensitive-contact-maski: review
+  4-4-mediated-listing-inquiries-automated-sensitive-contact-maski: done
   epic-4-retrospective: optional
 
-  epic-5: backlog
-  5-1-deal-creation-state-machine-binding-financial-snapshot-freez: backlog
+  epic-5: in-progress
+  5-1-deal-creation-state-machine-binding-financial-snapshot-freez: review
   5-2-dual-wire-transfer-interface-48-hour-countdown-banner: backlog
   5-3-administrative-proof-review-task-claim-locking-grace-period: backlog
   5-4-atomic-deal-completion-contact-release: backlog

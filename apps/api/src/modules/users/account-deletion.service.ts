@@ -12,7 +12,7 @@ import { ClockService } from '../../common/clock/clock.service';
 import { OtpService } from '../auth/otp/otp.service';
 import {
   ProfileStatus,
-  DealStatus,
+  ACTIVE_DEAL_STATUSES,
   ListingStatus,
   OwnerContractStatus,
   AUTH_DELETION_INITIATED,
@@ -146,13 +146,7 @@ export class AccountDeletionService {
               ]
             },
             {
-              status: {
-                in: [
-                  DealStatus.AWAITING_PAYMENT_PROOF,
-                  DealStatus.UNDER_ADMIN_AUDIT,
-                  DealStatus.PAYMENT_REJECTED
-                ]
-              }
+              status: { in: [...ACTIVE_DEAL_STATUSES] as any },
             }
           ]
         }

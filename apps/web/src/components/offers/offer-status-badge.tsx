@@ -19,6 +19,8 @@ const OFFER_STATUS_VARIANTS: Record<OfferStatus, StatusBadgeVariant> = {
   [OfferStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL]: 'verified',
   // Story 4.3: terminal closure of a reserve bid once the primary deal won.
   [OfferStatus.CLOSED_BACKUP]: 'neutral',
+  // Story 5.1: terminal — the deal now owns the transaction.
+  [OfferStatus.CONVERTED_TO_DEAL]: 'verified',
 };
 
 export interface OfferStatusBadgeProps {

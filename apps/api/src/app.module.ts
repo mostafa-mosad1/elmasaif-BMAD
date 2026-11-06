@@ -12,6 +12,7 @@ import { DemandsModule } from './modules/demands/demands.module';
 import { ProposalsModule } from './modules/proposals/proposals.module';
 import { OffersModule } from './modules/offers/offers.module';
 import { InquiriesModule } from './modules/inquiries/inquiries.module';
+import { DealsModule } from './modules/deals/deals.module';
 import { ClockModule } from './common/clock/clock.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 
@@ -36,7 +37,8 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
     DemandsModule,
     ProposalsModule,
     OffersModule,
-    InquiriesModule
+    InquiriesModule,
+    DealsModule
   ]
 })
 export class AppModule implements NestModule {
