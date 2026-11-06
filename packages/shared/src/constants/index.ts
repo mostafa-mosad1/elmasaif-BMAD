@@ -3,7 +3,7 @@ export const OWNER_CONTRACT_FEE_SAR = '1000.00';
 export const DEAL_PAYMENT_DEADLINE_HOURS = 48;
 export const DEAL_ADMIN_REVIEW_GRACE_PERIOD_HOURS = 12;
 export const DEMAND_EXPIRY_DAYS = 30;
-export const OFFER_EXPIRY_HOURS = 72;
+export const OFFER_EXPIRY_HOURS = 168;
 export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 export const ALLOWED_IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 export const ALLOWED_DOCUMENT_MIME_TYPES = ['application/pdf'];
@@ -26,3 +26,4 @@ export * from './geo';
 export * from './listing';
 export * from './demand';
 export * from './proposal';
+export * from './offer';

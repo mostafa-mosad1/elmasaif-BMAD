@@ -56,6 +56,7 @@ enum ListingStatus {
 }
 
 enum OfferStatus {
+  PENDING_ADMIN_REVIEW
   SUBMITTED
   IN_REVIEW
   RELAYED_TO_SELLER
@@ -519,7 +520,10 @@ model Offer {
   listingId       String
   buyerProfileId  String
   offerPrice      Decimal     @db.Decimal(12, 2)
-  status          OfferStatus @default(SUBMITTED)
+  status          OfferStatus @default(PENDING_ADMIN_REVIEW)
+  isBackup        Boolean     @default(false) @map("is_backup")
+  isLowPrice      Boolean     @default(false) @map("is_low_price")
+  note            String?
   version         Int         @default(1)
   lockedByAdminId String?
   lockedAt        DateTime?
@@ -533,6 +537,8 @@ model Offer {
   history      OfferHistory[]
 
   @@index([listingId, status])
+  @@index([listingId, buyerProfileId, status])
+  @@index([listingId, isBackup, status])
   @@index([lockExpiresAt])
   @@map("offers")
 }

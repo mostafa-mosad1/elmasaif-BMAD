@@ -11,6 +11,7 @@ import { useAuth } from '../../../components/providers/auth-provider';
 import { apiClient } from '../../../lib/api-client';
 import { unwrapFavoritesPayload } from '../../../components/listings';
 import { unwrapDemandsPayload } from '../../../components/demands';
+import { countActiveOffers, unwrapOffersPayload } from '../../../components/offers';
 import { DemandStatus } from '@elmasaif/shared';
 
 export default function BuyerDashboardPage() {
@@ -19,6 +20,7 @@ export default function BuyerDashboardPage() {
   const [identityStatusError, setIdentityStatusError] = useState<string | null>(null);
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [demandsCount, setDemandsCount] = useState(0);
+  const [offersCount, setOffersCount] = useState(0);
 
   useEffect(() => {
     // Dashboard must never break on a demands failure — silent catch keeps 0.
@@ -42,6 +44,14 @@ export default function BuyerDashboardPage() {
   }, []);
 
   useEffect(() => {
+    // Dashboard must never break on an offers failure — silent catch keeps 0.
+    apiClient
+      .get('/offers/my')
+      .then((payload) => setOffersCount(countActiveOffers(unwrapOffersPayload(payload))))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     refreshIdentityStatus().catch((error: unknown) => {
       setIdentityStatusError(
         error instanceof Error ? error.message : 'تعذر التحقق من حالة الهوية حالياً.'
@@ -52,7 +62,7 @@ export default function BuyerDashboardPage() {
   const stats = [
     {
       title: 'عروضي النشطة',
-      count: 0,
+      count: offersCount,
       description: 'عروض شراء قيد التفاوض والمراجعة',
       icon: HandCoins,
       href: '/app/buyer/offers'
@@ -194,6 +204,8 @@ export default function BuyerDashboardPage() {
             icon={<HandCoins className="w-7 h-7" />}
             actionLabel="تصفح العقارات المتاحة"
             actionHref="/"
+            secondaryActionLabel="متابعة عروضي"
+            secondaryActionHref="/app/buyer/offers"
           />
         </CardContent>
       </Card>

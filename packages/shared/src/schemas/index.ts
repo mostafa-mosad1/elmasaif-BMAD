@@ -53,15 +53,11 @@ export * from './identity.schema';
 export * from './payout.schema';
 export * from './preferences.schema';
 export * from './listing.schema';
+export * from './offer.schema';
 
 export const otpVerifySchema = z.object({
   mobileNumber: saudiMobileSchema,
   code: z.string().length(6, 'رمز التحقق يجب أن يتكون من 6 أرقام')
-});
-
-export const submitOfferSchema = z.object({
-  listingId: z.string().uuid('معرف العقار غير صالح'),
-  offerPrice: z.string().regex(/^\d+(\.\d{1,2})?$/, 'قيمة العرض غير صحيحة')
 });
 
 export const counterOfferSchema = z.object({

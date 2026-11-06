@@ -1124,6 +1124,7 @@ export class AdminListingsService {
           listingId,
           status: {
             in: [
+              OfferStatus.PENDING_ADMIN_REVIEW,
               OfferStatus.SUBMITTED,
               OfferStatus.IN_REVIEW,
               OfferStatus.RELAYED_TO_SELLER,
@@ -1253,6 +1254,7 @@ export class AdminListingsService {
           listingId,
           status: {
             in: [
+              OfferStatus.PENDING_ADMIN_REVIEW,
               OfferStatus.SUBMITTED,
               OfferStatus.IN_REVIEW,
               OfferStatus.RELAYED_TO_SELLER,

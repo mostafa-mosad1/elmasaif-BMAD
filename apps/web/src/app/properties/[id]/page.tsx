@@ -12,6 +12,7 @@ import {
 } from './listing-detail-view';
 import { apiClient } from '../../../lib/api-client';
 import { useAuth } from '../../../components/providers/auth-provider';
+import { OfferSubmitForm } from '../../../components/offers';
 
 export default function ListingDetailPage() {
   const params = useParams<{ id: string }>();
@@ -23,6 +24,7 @@ export default function ListingDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ListingDetailError | null>(null);
   const [ctaNotice, setCtaNotice] = useState<string | null>(null);
+  const [offerOpen, setOfferOpen] = useState(false);
 
   useEffect(() => {
     if (!listingId) return;
@@ -50,7 +52,8 @@ export default function ListingDetailPage() {
     };
   }, [listingId]);
 
-  // Offer intake is Epic 4 — this screen only routes or queues the buyer's intent.
+  // The CTA opens the inline offer form for an authenticated buyer; an anonymous visitor is
+  // sent to login first so the submission always carries a session (FR-25 / Story 4.1).
   const handleCtaClick = useCallback(() => {
     if (!user) {
       if (typeof window !== 'undefined') {
@@ -60,9 +63,8 @@ export default function ListingDetailPage() {
       }
       return;
     }
-    setCtaNotice(
-      'تم تسجيل اهتمامك بهذا العقار. تفتح منصة المصايف استقبال العروض الرسمية مع إطلاق مرحلة التفاوض بإشراف إداري.',
-    );
+    setCtaNotice(null);
+    setOfferOpen((open) => !open);
   }, [user]);
 
   return (
@@ -74,6 +76,17 @@ export default function ListingDetailPage() {
         onCtaClick={handleCtaClick}
         ctaNotice={ctaNotice}
       />
+      {offerOpen && detail ? (
+        <div className="mt-6">
+          <OfferSubmitForm
+            listingId={detail.id}
+            askPrice={detail.askPrice}
+            listingStatus={detail.status}
+            onSubmitted={() => setOfferOpen(false)}
+            onCancel={() => setOfferOpen(false)}
+          />
+        </div>
+      ) : null}
     </LayoutShell>
   );
 }

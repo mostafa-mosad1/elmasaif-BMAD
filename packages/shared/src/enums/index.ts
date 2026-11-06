@@ -55,6 +55,7 @@ export enum SuspensionCategory {
 }
 
 export enum OfferStatus {
+  PENDING_ADMIN_REVIEW = 'PENDING_ADMIN_REVIEW',
   SUBMITTED = 'SUBMITTED',
   IN_REVIEW = 'IN_REVIEW',
   RELAYED_TO_SELLER = 'RELAYED_TO_SELLER',

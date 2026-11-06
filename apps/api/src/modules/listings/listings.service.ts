@@ -1424,6 +1424,7 @@ export class ListingsService {
       return (
         isUnexpired &&
         [
+          OfferStatus.PENDING_ADMIN_REVIEW,
           OfferStatus.ACCEPTED_BY_SELLER,
           OfferStatus.ACCEPTED_BY_BUYER,
           OfferStatus.RELAYED_TO_SELLER,
@@ -1460,6 +1461,7 @@ export class ListingsService {
           listingId,
           status: {
             in: [
+              OfferStatus.PENDING_ADMIN_REVIEW,
               OfferStatus.SUBMITTED,
               OfferStatus.IN_REVIEW,
               OfferStatus.RELAYED_TO_SELLER,

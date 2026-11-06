@@ -264,6 +264,7 @@ describe('Story 2.6: Listing Archiving, Suspension & Compliance Blocking', () =>
           listingId,
           status: {
             in: [
+              OfferStatus.PENDING_ADMIN_REVIEW,
               OfferStatus.SUBMITTED,
               OfferStatus.IN_REVIEW,
               OfferStatus.RELAYED_TO_SELLER,
