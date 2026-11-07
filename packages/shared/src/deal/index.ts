@@ -13,3 +13,4 @@ export * from './money';
 export * from './identity';
 export * from './countdown';
 export * from './payment';
+export * from './invoice';

@@ -4,8 +4,10 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, RefreshCw, ShieldCheck } from 'lucide-react';
 import {
+  DEAL_ALREADY_RATED,
   DEAL_BUYER_PROFILE_REQUIRED,
   DEAL_IDENTITY_REQUIRED,
+  DEAL_NOT_COMPLETED,
   DEAL_NOT_FOUND,
   DEAL_NOT_PARTY,
   DEAL_PAYMENT_DEADLINE_PASSED,
@@ -19,13 +21,18 @@ import {
   DEAL_PAYMENT_TYPES,
   DEAL_PAYMENT_TYPE_INVALID,
   DEAL_PLATFORM_ACCOUNT_UNAVAILABLE,
+  DEAL_RATING_COMMENT_TOO_LONG,
+  DEAL_RATING_NOT_PARTY,
+  DEAL_RATING_SCORE_INVALID,
   DEAL_TERMINAL,
+  INVOICE_NOT_FOUND,
   TERMINAL_DEAL_STATUSES,
   type DealPaymentProofDownload,
   type DealPaymentSlot,
   type DealPaymentType,
   type DealPaymentView as DealPaymentViewData,
   type DealStatus,
+  type SubmitDealRatingInput,
 } from '@elmasaif/shared';
 import { Button, Card, CardContent, EmptyState } from '../ui';
 import { apiClient, describeApiError } from '../../lib/api-client';
@@ -37,6 +44,10 @@ import {
   monotonicNow,
   useDealCountdownElapsed,
 } from './deal-countdown-banner';
+import { DealCompletedBanner } from './deal-completed-banner';
+import { DealSellerContactCard } from './deal-seller-contact-card';
+import { DealInvoiceCard } from './deal-invoice-card';
+import { DealRatingCard } from './deal-rating-card';
 import { DealPaymentCard, formatDealAmount } from './dual-wire-transfer-cards';
 import { DealStatusBadge } from './deal-status-badge';
 import { buildDealProofFormData, type DealProofFormValues } from './payment-proof-dropzone';
@@ -75,6 +86,12 @@ export const DEAL_PAYMENT_ERROR_HINTS_AR: Record<string, string> = {
   [DEAL_PAYMENT_PROOF_INFECTED]: 'تم رفض الملف بعد فحص أمني. أعد رفع إيصال آخر.',
   [DEAL_PAYMENT_PROOF_NOT_FOUND]: 'لم يتم العثور على إيصال التحويل المطلوب.',
   [DEAL_PAYMENT_PROOF_SCAN_FAILED]: 'تعذر إتمام الفحص الأمني للملف. أعد المحاولة بعد قليل.',
+  [DEAL_NOT_COMPLETED]: 'لا يمكن تقييم الصفقة إلا بعد اكتمالها بنجاح.',
+  [DEAL_ALREADY_RATED]: 'تم تقييم هذه الصفقة مسبقاً.',
+  [DEAL_RATING_SCORE_INVALID]: 'تقييم الصفقة يجب أن يكون بين 1 و 5 نجوم.',
+  [DEAL_RATING_COMMENT_TOO_LONG]: 'التعليق يجب ألا يتجاوز 500 حرف.',
+  [DEAL_RATING_NOT_PARTY]: 'يحق لمشتري الصفقة فقط تقديم التقييم.',
+  [INVOICE_NOT_FOUND]: 'فاتورة الصفقة غير موجودة أو لم تصدر بعد.',
   FILE_QUARANTINED: 'الإيصال قيد الفحص الأمني. أعد المحاولة بعد قليل.',
 };
 
@@ -352,6 +369,24 @@ export function DealPaymentView({ dealId }: DealPaymentViewProps) {
   const sellerSlot =
     view.payments.find((payment) => payment.paymentType === DEAL_PAYMENT_TYPES[1]) ?? null;
   const sharedCardProps = { deal: { status: view.status, isExpired: countdown.isExpired } };
+  const isCompleted = view.status === 'COMPLETED';
+
+  const handleRatingSubmit = async (input: SubmitDealRatingInput) => {
+    try {
+      setActionError(null);
+      await apiClient.post(`/deals/${dealId}/rating`, input);
+      setBanner('تم تسجيل تقييمك بنجاح');
+      await load();
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { code?: string; message?: string } } } | undefined;
+      const code = errorObj?.response?.data?.code;
+      const message =
+        code && DEAL_PAYMENT_ERROR_HINTS_AR[code]
+          ? DEAL_PAYMENT_ERROR_HINTS_AR[code]
+          : errorObj?.response?.data?.message || 'تعذر إرسال التقييم. أعد المحاولة بعد قليل.';
+      throw new Error(message);
+    }
+  };
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -386,11 +421,28 @@ export function DealPaymentView({ dealId }: DealPaymentViewProps) {
         </div>
       </div>
 
-      <DealCountdownBanner state={countdown} />
+      {isCompleted ? (
+        <DealCompletedBanner completedAt={view.completedAt} />
+      ) : (
+        <DealCountdownBanner state={countdown} />
+      )}
 
-      <p className="text-sm text-ink-secondary dark:text-dark-ink-secondary">
-        {DEAL_PAYMENT_SECTION_INTRO_AR}
-      </p>
+      {isCompleted ? (
+        <div className="space-y-6">
+          <DealSellerContactCard sellerContact={view.sellerContact} />
+          <DealInvoiceCard invoice={view.invoice} />
+          <DealRatingCard
+            dealId={view.id}
+            rating={view.rating}
+            canRate={view.canRate}
+            onSubmitRating={handleRatingSubmit}
+          />
+        </div>
+      ) : (
+        <p className="text-sm text-ink-secondary dark:text-dark-ink-secondary">
+          {DEAL_PAYMENT_SECTION_INTRO_AR}
+        </p>
+      )}
 
       {identityBlocked ? (
         <section

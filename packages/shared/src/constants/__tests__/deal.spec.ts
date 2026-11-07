@@ -43,13 +43,23 @@ import {
   PAYMENT_LOCK_FORCE_UNLOCKED,
   PAYMENT_REJECTION_NOTE_REQUIRED,
   PAYMENT_SELF_APPROVAL_FORBIDDEN,
+  // Story 5.4 — completion, invoice & rating vocabulary
+  DEAL_NOT_COMPLETED,
+  DEAL_ALREADY_RATED,
+  DEAL_RATING_SCORE_INVALID,
+  DEAL_RATING_COMMENT_TOO_LONG,
+  DEAL_RATING_NOT_PARTY,
+  INVOICE_NOT_FOUND,
+  DEAL_COMPLETED,
+  INVOICE_GENERATED,
+  RATING_SUBMITTED,
 } from '../deal';
 import { OFFER_LOCK_DURATION_MS, OFFER_LOCK_HEARTBEAT_INTERVAL_MS } from '../offer';
 import { LISTING_LOCK_DURATION_MS, LISTING_LOCK_HEARTBEAT_INTERVAL_MS } from '../listing';
 import { INQUIRY_LOCK_DURATION_MS, INQUIRY_LOCK_HEARTBEAT_INTERVAL_MS } from '../inquiry';
 import { DEAL_ADMIN_REVIEW_GRACE_PERIOD_HOURS } from '../index';
 import { ERROR_FILE_QUARANTINED } from '../storage';
-import { DealStatus } from '../../enums';
+import { DealStatus, OwnerContractStatus } from '../../enums';
 
 /** Story 5.2 / AC-13, trap T-8: every member is labelled, and no set silently drifted. */
 describe('Deal payment vocabulary (Story 5.2)', () => {
@@ -203,5 +213,36 @@ describe('Admin payment-review vocabulary (Story 5.3)', () => {
     for (const status of Object.values(DEAL_PAYMENT_STATUS)) {
       expect(DEAL_PAYMENT_STATUS_LABELS_AR[status]).toBeTruthy();
     }
+  });
+});
+
+describe('Deal completion, invoice & rating vocabulary (Story 5.4)', () => {
+  it('defines COMPLETED on OwnerContractStatus enum', () => {
+    expect(OwnerContractStatus.COMPLETED).toBe('COMPLETED');
+  });
+
+  it('exports every Story 5.4 refusal code with a distinct value', () => {
+    const codes = [
+      DEAL_NOT_COMPLETED,
+      DEAL_ALREADY_RATED,
+      DEAL_RATING_SCORE_INVALID,
+      DEAL_RATING_COMMENT_TOO_LONG,
+      DEAL_RATING_NOT_PARTY,
+      INVOICE_NOT_FOUND,
+    ];
+
+    expect(new Set(codes).size).toBe(codes.length);
+    expect(DEAL_NOT_COMPLETED).toBe('DEAL_NOT_COMPLETED');
+    expect(DEAL_ALREADY_RATED).toBe('DEAL_ALREADY_RATED');
+    expect(DEAL_RATING_SCORE_INVALID).toBe('DEAL_RATING_SCORE_INVALID');
+    expect(DEAL_RATING_COMMENT_TOO_LONG).toBe('DEAL_RATING_COMMENT_TOO_LONG');
+    expect(DEAL_RATING_NOT_PARTY).toBe('DEAL_RATING_NOT_PARTY');
+    expect(INVOICE_NOT_FOUND).toBe('INVOICE_NOT_FOUND');
+  });
+
+  it('exports audit log action constants for deal completion and ratings', () => {
+    expect(DEAL_COMPLETED).toBe('DEAL_COMPLETED');
+    expect(INVOICE_GENERATED).toBe('INVOICE_GENERATED');
+    expect(RATING_SUBMITTED).toBe('RATING_SUBMITTED');
   });
 });

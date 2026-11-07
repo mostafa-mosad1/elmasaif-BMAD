@@ -1,14 +1,17 @@
 import {
   DEAL_PAYMENT_STATUS,
   DEAL_PAYMENT_TYPES,
+  DealInvoiceSummary,
   DealPaymentSlot,
   DealPaymentStatus,
   DealPaymentType,
   DealPaymentView,
   DealPlatformAccount,
+  DealRatingSummary,
   DealStatus,
   DealSummary,
   PaymentType,
+  ReleasedPartyContact,
   formatSaudiIban,
   isPaymentProofUploaded,
 } from '@elmasaif/shared';
@@ -75,12 +78,36 @@ export function toDealSummary(
   };
 }
 
+export function toDealInvoiceSummary(invoice: any): DealInvoiceSummary | null {
+  if (!invoice) return null;
+  return {
+    id: invoice.id,
+    invoiceNumber: invoice.invoiceNumber,
+    subtotalAmount: String(invoice.subtotalAmount),
+    vatAmount: String(invoice.vatAmount),
+    vatRate: String(invoice.vatRate),
+    totalAmount: String(invoice.totalAmount),
+    vatTreatment: invoice.vatTreatment,
+    createdAt: toIso(invoice.createdAt) as string,
+  };
+}
+
+export function toDealRatingSummary(rating: any): DealRatingSummary | null {
+  if (!rating) return null;
+  return {
+    id: rating.id,
+    score: rating.score,
+    comment: rating.comment ?? null,
+    createdAt: toIso(rating.createdAt) as string,
+  };
+}
+
 /**
  * `GET /deals/:id` — the payment screen.
  *
  * `sellerIbanPlain` is the decrypted IBAN, produced only for the buyer of that deal: they are
  * wiring money to it, so masking it would be absurd. The ciphertext never leaves the server
- * (trap T-11), and the seller's contacts are Story 5.4's release (FR-32).
+ * (trap T-11), and the seller's contacts are released strictly when status is COMPLETED (FR-32).
  */
 export function toDealPaymentView(
   deal: any,
@@ -88,7 +115,15 @@ export function toDealPaymentView(
   platformAccount: DealPlatformAccount,
   sellerIbanPlain: string,
   now: Date,
+  extra?: {
+    sellerContact?: ReleasedPartyContact | null;
+    invoiceRecord?: any;
+    rating?: any;
+  },
 ): DealPaymentView {
+  const isCompleted = deal.status === DealStatus.COMPLETED;
+  const ratingData = extra?.rating ?? deal.rating;
+
   return {
     id: deal.id,
     dealNumber: deal.dealNumber,
@@ -103,6 +138,7 @@ export function toDealPaymentView(
     paymentWindowHoursSnapshot: Number(deal.paymentWindowHoursSnapshot),
     paymentDeadline: toIso(deal.paymentDeadline) as string,
     createdAt: toIso(deal.createdAt) as string,
+    completedAt: isCompleted ? toIso(deal.completedAt) : null,
     serverNow: now.toISOString(),
     platformAccount,
     sellerPayout: {
@@ -112,6 +148,10 @@ export function toDealPaymentView(
       ibanFormatted: formatSaudiIban(sellerIbanPlain),
       ibanMasked: deal.sellerPayoutIbanMasked,
     },
+    sellerContact: isCompleted ? (extra?.sellerContact ?? null) : null,
+    invoice: isCompleted ? toDealInvoiceSummary(extra?.invoiceRecord) : null,
+    rating: isCompleted ? toDealRatingSummary(ratingData) : null,
+    canRate: isCompleted && !ratingData,
     payments: sortSlots(payments).map((payment) => toDealPaymentSlot(payment)),
   };
 }

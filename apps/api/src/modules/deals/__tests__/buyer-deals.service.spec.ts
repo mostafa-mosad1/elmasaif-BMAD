@@ -27,6 +27,7 @@ import {
   MAX_FILE_SIZE_BYTES,
   PaymentType,
   ProfileStatus,
+  RATING_SUBMITTED,
   UserRole,
 } from '@elmasaif/shared';
 import { BuyerDealsService } from '../buyer-deals.service';
@@ -168,6 +169,8 @@ describe('BuyerDealsService (Story 5.2) (AC: 1, 2, 6, 8, 9, 10, 11, 12)', () => 
         }),
       },
       auditLog: { create: jest.fn().mockResolvedValue({ id: 'audit-1' }) },
+      invoiceRecord: { findFirst: jest.fn().mockResolvedValue(null) },
+      rating: { create: jest.fn().mockImplementation(({ data }: any) => Promise.resolve({ id: 'rating-1', ...data })) },
       $queryRaw: jest.fn().mockResolvedValue([]),
       $transaction: jest.fn((callback: any) => callback(prisma)),
     };
@@ -702,6 +705,214 @@ describe('BuyerDealsService (Story 5.2) (AC: 1, 2, 6, 8, 9, 10, 11, 12)', () => 
         expectCode(error, DEAL_PAYMENT_TYPE_INVALID);
       }
       expect(prisma.deal.findUnique).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Contact release & completed deal projection (Story 5.4 / AC-3)', () => {
+    it('withholds seller contact info when deal is not COMPLETED (BR-06, FR-32)', async () => {
+      prisma.deal.findUnique.mockResolvedValue(
+        dealRow({
+          status: DealStatus.AWAITING_PAYMENT_PROOF,
+          sellerProfile: {
+            user: {
+              fullName: 'سارة البائعة',
+              mobileNumber: '+966559876543',
+              email: 'sara@example.com',
+            },
+          },
+        }),
+      );
+
+      const view = await service.getDealPayment(userId, UserRole.BUYER, dealId);
+      expect(view.sellerContact).toBeNull();
+      expect(view.completedAt).toBeNull();
+      expect(view.canRate).toBe(false);
+    });
+
+    it('releases verified seller contact details when deal is COMPLETED (FR-32)', async () => {
+      const completedAtDate = new Date('2026-11-07T12:00:00.000Z');
+      prisma.deal.findUnique.mockResolvedValue(
+        dealRow({
+          status: DealStatus.COMPLETED,
+          completedAt: completedAtDate,
+          sellerProfile: {
+            user: {
+              fullName: 'سارة البائعة',
+              mobileNumber: '+966559876543',
+              email: 'sara@example.com',
+            },
+          },
+        }),
+      );
+      prisma.invoiceRecord.findFirst.mockResolvedValue({
+        id: 'inv-1',
+        invoiceNumber: 'INV-20261107-DL-1',
+        subtotalAmount: '43478.26',
+        vatAmount: '6521.74',
+        vatRate: '0.15',
+        totalAmount: '50000.00',
+        vatTreatment: 'STANDARD_RATE_15',
+        createdAt: completedAtDate,
+      });
+
+      const view = await service.getDealPayment(userId, UserRole.BUYER, dealId);
+      expect(view.sellerContact).toEqual({
+        fullName: 'سارة البائعة',
+        mobileNumber: '+966559876543',
+        email: 'sara@example.com',
+      });
+      expect(view.completedAt).toBe(completedAtDate.toISOString());
+      expect(view.canRate).toBe(true);
+      expect(view.invoice).toEqual(
+        expect.objectContaining({
+          invoiceNumber: 'INV-20261107-DL-1',
+          totalAmount: '50000.00',
+        }),
+      );
+    });
+  });
+
+  describe('getDealInvoice (Story 5.4 / AC-5)', () => {
+    it('returns invoice summary for completed deal party', async () => {
+      const invoiceDate = new Date('2026-11-07T12:00:00.000Z');
+      prisma.deal.findUnique.mockResolvedValue({
+        id: dealId,
+        status: DealStatus.COMPLETED,
+        buyerProfile: { id: buyerProfileId, userId },
+        sellerProfile: { id: 'seller-profile-1', userId: 'user-seller-1' },
+      });
+      prisma.invoiceRecord.findFirst.mockResolvedValue({
+        id: 'inv-1',
+        invoiceNumber: 'INV-20261107-DL-1',
+        subtotalAmount: '43478.26',
+        vatAmount: '6521.74',
+        vatRate: '0.15',
+        totalAmount: '50000.00',
+        vatTreatment: 'STANDARD_RATE_15',
+        createdAt: invoiceDate,
+      });
+
+      const invoice = await service.getDealInvoice(userId, UserRole.BUYER, dealId);
+      expect(invoice.invoiceNumber).toBe('INV-20261107-DL-1');
+      expect(invoice.subtotalAmount).toBe('43478.26');
+      expect(invoice.vatAmount).toBe('6521.74');
+    });
+
+    it('throws 404 INVOICE_NOT_FOUND when deal is not completed', async () => {
+      prisma.deal.findUnique.mockResolvedValue({
+        id: dealId,
+        status: DealStatus.UNDER_ADMIN_AUDIT,
+        buyerProfile: { id: buyerProfileId, userId },
+        sellerProfile: { id: 'seller-profile-1', userId: 'user-seller-1' },
+      });
+
+      await expect(service.getDealInvoice(userId, UserRole.BUYER, dealId)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('throws 403 DEAL_NOT_PARTY when caller is not buyer or seller', async () => {
+      prisma.deal.findUnique.mockResolvedValue({
+        id: dealId,
+        status: DealStatus.COMPLETED,
+        buyerProfile: { id: buyerProfileId, userId: 'other-user' },
+        sellerProfile: { id: 'seller-profile-1', userId: 'user-seller-1' },
+      });
+
+      await expect(service.getDealInvoice(userId, UserRole.BUYER, dealId)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+  });
+
+  describe('submitDealRating (Story 5.4 / AC-4)', () => {
+    it('creates immutable Rating row and AuditLog entry when buyer rates completed deal', async () => {
+      prisma.deal.findUnique.mockResolvedValue(
+        dealRow({
+          status: DealStatus.COMPLETED,
+          sellerProfile: { userId: 'seller-user-id-1' },
+          rating: null,
+        }),
+      );
+
+      const rating = await service.submitDealRating(userId, UserRole.BUYER, dealId, {
+        score: 5,
+        comment: 'تجربة بيع ممتازة وسريعة',
+      });
+
+      expect(rating.score).toBe(5);
+      expect(rating.comment).toBe('تجربة بيع ممتازة وسريعة');
+      expect(prisma.rating.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            dealId,
+            raterUserId: userId,
+            targetUserId: 'seller-user-id-1',
+            score: 5,
+            comment: 'تجربة بيع ممتازة وسريعة',
+          }),
+        }),
+      );
+      expect(prisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: RATING_SUBMITTED,
+            entityType: 'Rating',
+          }),
+        }),
+      );
+    });
+
+    it('throws 409 DEAL_NOT_COMPLETED if deal is not COMPLETED', async () => {
+      prisma.deal.findUnique.mockResolvedValue(
+        dealRow({
+          status: DealStatus.UNDER_ADMIN_AUDIT,
+          sellerProfile: { userId: 'seller-user-id-1' },
+          rating: null,
+        }),
+      );
+
+      await expect(
+        service.submitDealRating(userId, UserRole.BUYER, dealId, { score: 5 }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('throws 409 DEAL_ALREADY_RATED if deal was already rated', async () => {
+      prisma.deal.findUnique.mockResolvedValue(
+        dealRow({
+          status: DealStatus.COMPLETED,
+          sellerProfile: { userId: 'seller-user-id-1' },
+          rating: { id: 'existing-rating', score: 4 },
+        }),
+      );
+
+      await expect(
+        service.submitDealRating(userId, UserRole.BUYER, dealId, { score: 5 }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('throws 403 DEAL_RATING_NOT_PARTY if caller is not the buyer', async () => {
+      prisma.deal.findUnique.mockResolvedValue(
+        dealRow({
+          buyerProfileId: 'different-buyer-profile',
+          status: DealStatus.COMPLETED,
+          sellerProfile: { userId: 'seller-user-id-1' },
+          rating: null,
+        }),
+      );
+
+      await expect(
+        service.submitDealRating(userId, UserRole.BUYER, dealId, { score: 5 }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('throws 400 DEAL_RATING_SCORE_INVALID for invalid score', async () => {
+      await expect(
+        service.submitDealRating(userId, UserRole.BUYER, dealId, { score: 0 }),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.submitDealRating(userId, UserRole.BUYER, dealId, { score: 6 }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

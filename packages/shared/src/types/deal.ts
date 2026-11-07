@@ -90,14 +90,51 @@ export interface DealPlatformAccount {
   bankName: string | null;
 }
 
+/** Released verified contact details upon deal completion (Story 5.4 / FR-32, BR-06). */
+export interface ReleasedPartyContact {
+  fullName: string;
+  mobileNumber: string;
+  email: string | null;
+}
+
+/** Invoice summary projected for completed deal view and invoice endpoints (Story 5.4 / FR-68). */
+export interface DealInvoiceSummary {
+  id: string;
+  invoiceNumber: string;
+  subtotalAmount: string;
+  vatAmount: string;
+  vatRate: string;
+  totalAmount: string;
+  vatTreatment: string;
+  createdAt: string;
+}
+
+/** Rating summary for completed deals (Story 5.4 / FR-54). */
+export interface DealRatingSummary {
+  id: string;
+  score: number;
+  comment: string | null;
+  createdAt: string;
+}
+
+/** Request payload for submitting a buyer deal rating (Story 5.4 / FR-54). */
+export interface SubmitDealRatingInput {
+  score: number;
+  comment?: string;
+}
+
 /**
  * `GET /api/v1/deals/:id` (Story 5.2 / AC-1, AC-3, AC-4, AC-5) — the buyer's payment screen.
+ *
+ * Extended in Story 5.4 to project seller contact details, tax invoice summary, and rating summary
+ * once the deal status is `COMPLETED`.
  *
  * `serverNow` is the authority the countdown measures against (UX-DR5, trap T-5): the client
  * never compares `paymentDeadline` to `Date.now()`.
  *
  * The seller's *plaintext* IBAN is present because the buyer is the paying party (NFR-3). The
- * ciphertext, the seller's mobile number and their email are never part of this payload (FR-32).
+ * ciphertext, the seller's mobile number and their email are never part of this payload until
+ * the deal status reaches COMPLETED (FR-32).
  */
 export interface DealPaymentView {
   id: string;
@@ -113,6 +150,8 @@ export interface DealPaymentView {
   paymentWindowHoursSnapshot: number;
   paymentDeadline: string;
   createdAt: string;
+  /** ISO timestamp when deal was marked COMPLETED. */
+  completedAt?: string | null;
   /** The API clock, ISO — always present, even when the countdown has expired. */
   serverNow: string;
   platformAccount: DealPlatformAccount;
@@ -123,6 +162,14 @@ export interface DealPaymentView {
     ibanFormatted: string;
     ibanMasked: string;
   };
+  /** Released only when deal.status === COMPLETED, else null/undefined. */
+  sellerContact?: ReleasedPartyContact | null;
+  /** Tax invoice record summary generated upon completion. */
+  invoice?: DealInvoiceSummary | null;
+  /** Submitted rating if already rated. */
+  rating?: DealRatingSummary | null;
+  /** Whether the authenticated buyer can submit a rating. */
+  canRate?: boolean;
   /** Exactly two slots, `PLATFORM_COMMISSION` first (RTL reading order). */
   payments: DealPaymentSlot[];
 }

@@ -5,6 +5,7 @@ import { CryptoModule } from '../../common/crypto/crypto.module';
 import { AuthModule } from '../auth/auth.module';
 import { StorageModule } from '../storage/storage.module';
 import { UsersModule } from '../users/users.module';
+import { OffersModule } from '../offers/offers.module';
 import { AdminSessionAuthGuard } from '../auth/guards/admin-session-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
@@ -15,26 +16,28 @@ import { BuyerDealsController } from './buyer-deals.controller';
 import { AdminPaymentsService } from './admin-payments.service';
 import { BuyerDealsService } from './buyer-deals.service';
 import { DealsService } from './deals.service';
+import { DealCompletionService } from './deal-completion.service';
 import { PlatformAccountService } from './platform-account';
 
 /**
- * Story 5.1: the deal binding module. Story 5.2 adds the buyer payment surface (D7 — buyer routes
- * live here rather than in a `payments` module, because the proof upload is part of the same deal
- * state machine).
- *
- * `OffersModule` is deliberately **not** imported. Its `exports` carry a stale comment claiming
- * this story injects `BackupOffersService` to close the reserve queue, but closing backups belongs
- * to Story 5.4 (trap T-6) — importing it here would only invite the mistake. The one thing this
- * module needs from the offers module is `offer-lock.ts`, which is a plain function, not a provider.
- *
- * `UsersModule` is imported for `IdentityService` and `ActiveRoleGuard` (the FR-30 identity gate).
- * There is no cycle: `UsersModule` does not import `DealsModule`.
+ * Story 5.1: the deal binding module.
+ * Story 5.2: adds the buyer payment surface.
+ * Story 5.4: imports OffersModule for BackupOffersService to close queued backup offers upon deal completion.
  */
 @Module({
-  imports: [PrismaModule, ClockModule, AuthModule, CryptoModule, StorageModule, UsersModule],
+  imports: [
+    PrismaModule,
+    ClockModule,
+    AuthModule,
+    CryptoModule,
+    StorageModule,
+    UsersModule,
+    OffersModule,
+  ],
   controllers: [AdminDealsController, AdminPaymentsController, BuyerDealsController],
   providers: [
     DealsService,
+    DealCompletionService,
     AdminPaymentsService,
     BuyerDealsService,
     PlatformAccountService,
@@ -43,6 +46,6 @@ import { PlatformAccountService } from './platform-account';
     SessionAuthGuard,
     ActiveRoleGuard,
   ],
-  exports: [DealsService, BuyerDealsService],
+  exports: [DealsService, DealCompletionService, BuyerDealsService],
 })
 export class DealsModule {}

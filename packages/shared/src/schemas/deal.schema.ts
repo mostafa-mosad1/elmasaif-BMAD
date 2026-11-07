@@ -113,3 +113,21 @@ export const paymentForceUnlockSchema = z.object({
     .max(500, 'سبب إلغاء القفل يجب ألا يتجاوز 500 حرف'),
 });
 
+/**
+ * Story 5.4 / FR-54, UC-30: Buyer rating submission schema.
+ * Score must be integer 1..5. Comment is optional, max 500 characters.
+ */
+export const submitDealRatingSchema = z.object({
+  score: z
+    .number({ required_error: 'التقييم مطلوب', invalid_type_error: 'التقييم يجب أن يكون رقماً' })
+    .int('التقييم يجب أن يكون رقماً صحيحاً')
+    .min(1, 'التقييم يجب أن يكون بين 1 و 5 نجوم')
+    .max(5, 'التقييم يجب أن يكون بين 1 و 5 نجوم'),
+  comment: z
+    .string()
+    .trim()
+    .max(500, 'التعليق يجب ألا يتجاوز 500 حرف')
+    .optional(),
+});
+
+

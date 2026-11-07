@@ -15,6 +15,7 @@ import {
   DEFAULT_FIXED_COMMISSION_SAR,
   DEFAULT_PAYMENT_WINDOW_HOURS,
   computeDealAmounts,
+  computeVatBreakdown,
   getSaudiBankName,
   maskSaudiIban,
 } from '@elmasaif/shared';
@@ -327,6 +328,17 @@ export async function seedDemoListings() {
       yearBuilt: 2023,
       status: 'RESERVED',
     },
+    {
+      id: '88888888-0000-4000-8000-000000000003',
+      title: 'دوبلكس فاخر مكتمل الإفراغ في النرجس',
+      description: 'دوبلكس راقي تم بيعه واكتمال صفقة الشراء بنجاح.',
+      propertyType: 'VILLA',
+      askPrice: 2000000,
+      areaSquareMeters: 300,
+      bedrooms: 4,
+      yearBuilt: 2024,
+      status: 'SOLD',
+    },
   ];
 
   for (const listing of demoListings) {
@@ -590,12 +602,155 @@ export async function seedDemoDeal() {
   );
 }
 
+// Story 5.4: Seed scenario for a completed deal with generated invoice and released contacts for manual QA.
+const DEMO_COMPLETED_DEAL_ID = '99999999-0000-4000-8000-000000000205';
+const DEMO_COMPLETED_OFFER_ID = '99999999-0000-4000-8000-000000000206';
+const DEMO_COMPLETED_LISTING_ID = '88888888-0000-4000-8000-000000000003';
+
+export async function seedDemoCompletedDeal() {
+  console.log('🎉 Seeding Demo Completed Deal, Invoice & Rating (Story 5.4)...');
+  const now = new Date();
+
+  await prisma.offer.upsert({
+    where: { id: DEMO_COMPLETED_OFFER_ID },
+    update: {},
+    create: {
+      id: DEMO_COMPLETED_OFFER_ID,
+      listingId: DEMO_COMPLETED_LISTING_ID,
+      buyerProfileId: DEMO_BUYER.profileId,
+      amount: 2000000,
+      status: OfferStatus.CONVERTED_TO_DEAL,
+      expiresAt: new Date(Date.now() + 30 * 24 * 3_600_000),
+    },
+  });
+
+  const amounts = computeDealAmounts({
+    dealPrice: '2000000',
+    commissionRate: DEFAULT_COMMISSION_RATE,
+    fixedCommission: DEFAULT_FIXED_COMMISSION_SAR,
+  });
+
+  const dealNumber = `DL-20261107-DEMO000002`;
+
+  await prisma.deal.upsert({
+    where: { id: DEMO_COMPLETED_DEAL_ID },
+    update: {},
+    create: {
+      id: DEMO_COMPLETED_DEAL_ID,
+      dealNumber,
+      dealReferenceCode: 'ELM-DEMO000002-C',
+      offerId: DEMO_COMPLETED_OFFER_ID,
+      listingId: DEMO_COMPLETED_LISTING_ID,
+      buyerProfileId: DEMO_BUYER.profileId,
+      sellerProfileId: DEMO_SELLER.profileId,
+      dealPrice: amounts.finalDealPrice,
+      platformCommission: amounts.finalCommission,
+      totalAmount: amounts.finalTotal,
+      commissionRateSnapshot: DEFAULT_COMMISSION_RATE.toFixed(4),
+      fixedCommissionSnapshot: amounts.fixedCommission,
+      paymentWindowHoursSnapshot: 48,
+      sellerPayoutAccountId: DEMO_PAYOUT_ACCOUNT_ID,
+      sellerPayoutHolderName: DEMO_SELLER.fullName,
+      sellerPayoutBankName: getSaudiBankName(DEMO_SELLER.iban),
+      sellerPayoutIbanEncrypted: 'mock-ciphertext',
+      sellerPayoutIbanMasked: maskSaudiIban(DEMO_SELLER.iban),
+      approvedByAdminId: '00000000-0000-0000-0000-000000000001',
+      status: DealStatus.COMPLETED,
+      paymentDeadline: new Date(now.getTime() - 24 * 3_600_000),
+      completedAt: now,
+      createdAt: new Date(now.getTime() - 48 * 3_600_000),
+    },
+  });
+
+  await prisma.payment.upsert({
+    where: {
+      dealId_paymentType: {
+        dealId: DEMO_COMPLETED_DEAL_ID,
+        paymentType: PaymentType.PLATFORM_COMMISSION,
+      },
+    },
+    update: {},
+    create: {
+      dealId: DEMO_COMPLETED_DEAL_ID,
+      paymentType: PaymentType.PLATFORM_COMMISSION,
+      amount: amounts.finalCommission,
+      status: 'CONFIRMED',
+      proofFileUrl: 'mock-proof-url-1',
+      bankReferenceCode: 'REF-COMM-COMPL-01',
+      senderBankName: 'مصرف الراجحي',
+      uploadedAt: now,
+      verifiedAt: now,
+    },
+  });
+
+  await prisma.payment.upsert({
+    where: {
+      dealId_paymentType: {
+        dealId: DEMO_COMPLETED_DEAL_ID,
+        paymentType: PaymentType.SELLER_PURCHASE_PRICE,
+      },
+    },
+    update: {},
+    create: {
+      dealId: DEMO_COMPLETED_DEAL_ID,
+      paymentType: PaymentType.SELLER_PURCHASE_PRICE,
+      amount: amounts.finalDealPrice,
+      status: 'CONFIRMED',
+      proofFileUrl: 'mock-proof-url-2',
+      bankReferenceCode: 'REF-PRICE-COMPL-02',
+      senderBankName: 'البنك الأهلي السعودي',
+      uploadedAt: now,
+      verifiedAt: now,
+    },
+  });
+
+  const vat = computeVatBreakdown(String(amounts.finalCommission), 0.15);
+  await prisma.invoiceRecord.upsert({
+    where: { invoiceNumber: `INV-20261107-${dealNumber}` },
+    update: {},
+    create: {
+      invoiceNumber: `INV-20261107-${dealNumber}`,
+      dealId: DEMO_COMPLETED_DEAL_ID,
+      sellerId: DEMO_SELLER.profileId,
+      buyerId: DEMO_BUYER.profileId,
+      subtotalAmount: vat.subtotalAmount,
+      vatAmount: vat.vatAmount,
+      vatRate: 0.15,
+      totalAmount: vat.totalAmount,
+      vatTreatment: vat.vatTreatment,
+      partyDetails: {
+        buyer: {
+          profileId: DEMO_BUYER.profileId,
+          userId: DEMO_BUYER.id,
+          fullName: DEMO_BUYER.fullName,
+          mobileNumber: DEMO_BUYER.mobileNumber,
+        },
+        seller: {
+          profileId: DEMO_SELLER.profileId,
+          userId: DEMO_SELLER.id,
+          fullName: DEMO_SELLER.fullName,
+          mobileNumber: DEMO_SELLER.mobileNumber,
+        },
+        deal: {
+          dealNumber,
+          dealPrice: amounts.finalDealPrice,
+          platformCommission: amounts.finalCommission,
+        },
+      },
+      createdAt: now,
+    },
+  });
+
+  console.log(`✅ Demo completed deal seeded: ${dealNumber} with confirmed payments and invoice.`);
+}
+
 async function main() {
   try {
     await seedGeographicData();
     await seedAdminUsers();
     await seedDemoListings();
     await seedDemoDeal();
+    await seedDemoCompletedDeal();
   } catch (error) {
     console.error('❌ Failed to seed database:', error);
     process.exit(1);

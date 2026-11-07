@@ -27,6 +27,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClockService } from '../../common/clock/clock.service';
 import { StorageService } from '../storage/storage.service';
+import { DealCompletionService } from './deal-completion.service';
 import type { AuthenticatedAdminActor } from '../listings/admin-listings.service';
 import {
   assertLockHeld,
@@ -59,6 +60,7 @@ export class AdminPaymentsService {
     private readonly prisma: PrismaService,
     private readonly clockService: ClockService,
     private readonly storageService: StorageService,
+    private readonly dealCompletionService: DealCompletionService,
   ) {}
 
   /**
@@ -477,6 +479,27 @@ export class AdminPaymentsService {
       });
 
       this.logger.log(`Payment ${id} confirmed by admin ${admin.id}`);
+
+      // Story 5.4 / AC-1: Check if all deal payments are now confirmed.
+      // If both legs are confirmed, complete the deal atomically within this transaction.
+      const dealPayments = await tx.payment.findMany({
+        where: { dealId: payment.dealId },
+      });
+      const allConfirmed =
+        dealPayments.length === 2 &&
+        dealPayments.every(
+          (p: any) =>
+            p.status === DEAL_PAYMENT_STATUS.CONFIRMED ||
+            (p.id === id && DEAL_PAYMENT_STATUS.CONFIRMED),
+        );
+
+      if (allConfirmed) {
+        await this.dealCompletionService.completeDealInTransaction(
+          payment.dealId,
+          admin,
+          tx,
+        );
+      }
 
       const nameMap = new Map([[admin.id, admin.fullName]]);
       return toAdminPaymentDetail(

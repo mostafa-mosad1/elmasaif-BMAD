@@ -213,3 +213,31 @@ export const PAYMENT_DECIDABLE_STATUSES: readonly DealPaymentStatus[] = [
 /** FR-31 / AD-3: one correction window of 12 hours after an at/after-deadline rejection. */
 export const PAYMENT_CORRECTION_GRACE_HOURS = DEAL_ADMIN_REVIEW_GRACE_PERIOD_HOURS;
 
+/*
+ * Story 5.4 — Atomic Deal Completion, VAT Invoicing & Ratings (AC-1..AC-5).
+ */
+
+// Refusal codes
+export const DEAL_NOT_COMPLETED = 'DEAL_NOT_COMPLETED';
+export const DEAL_ALREADY_RATED = 'DEAL_ALREADY_RATED';
+export const DEAL_RATING_SCORE_INVALID = 'DEAL_RATING_SCORE_INVALID';
+export const DEAL_RATING_COMMENT_TOO_LONG = 'DEAL_RATING_COMMENT_TOO_LONG';
+export const DEAL_RATING_NOT_PARTY = 'DEAL_RATING_NOT_PARTY';
+export const INVOICE_NOT_FOUND = 'INVOICE_NOT_FOUND';
+
+// Audit log action constants
+export const DEAL_COMPLETED = 'DEAL_COMPLETED';
+export const INVOICE_GENERATED = 'INVOICE_GENERATED';
+export const RATING_SUBMITTED = 'RATING_SUBMITTED';
+
+/** Arabic error messages for Deal completion and rating operations. */
+export const DEAL_ERROR_MESSAGES_AR: Record<string, string> = {
+  [DEAL_NOT_COMPLETED]: 'الصفقة ليست في حالة اكتمال',
+  [DEAL_ALREADY_RATED]: 'تم تقييم هذه الصفقة مسبقاً',
+  [DEAL_RATING_SCORE_INVALID]: 'تقييم الصفقة يجب أن يكون بين 1 و 5 نجوم',
+  [DEAL_RATING_COMMENT_TOO_LONG]: 'التعليق يجب ألا يتجاوز 500 حرف',
+  [DEAL_RATING_NOT_PARTY]: 'يحق لمشتري الصفقة فقط تقديم التقييم',
+  [INVOICE_NOT_FOUND]: 'فاتورة الصفقة غير موجودة أو لم تصدر بعد',
+};
+
+

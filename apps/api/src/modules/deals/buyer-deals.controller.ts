@@ -26,11 +26,17 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { DEAL_PAYMENT_PROOF_TOO_LARGE, UserRole } from '@elmasaif/shared';
+import {
+  DEAL_PAYMENT_PROOF_TOO_LARGE,
+  SubmitDealRatingInput,
+  UserRole,
+  submitDealRatingSchema,
+} from '@elmasaif/shared';
 import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
 import { ActiveRoleGuard } from '../users/guards/active-role.guard';
 import { RequireRole } from '../users/decorators/require-role.decorator';
 import { MAX_FILE_SIZE_BYTES } from '../storage/storage.service';
+import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { BuyerDealsService } from './buyer-deals.service';
 import { DealProofUploadFile } from './dto/upload-payment-proof.dto';
 
@@ -176,6 +182,63 @@ export class BuyerDealsController {
     return {
       statusCode: HttpStatus.OK,
       message: 'تم استلام إيصال التحويل وهو قيد المراجعة الإدارية',
+      data,
+    };
+  }
+
+  @Get(':id/invoice')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Platform commission tax invoice view (AC-5, FR-68)' })
+  @ApiParam({ name: 'id', description: 'Deal id' })
+  @ApiResponse({ status: 200, description: 'Invoice summary returned' })
+  @ApiResponse({ status: 404, description: 'INVOICE_NOT_FOUND' })
+  @ApiResponse({ status: 403, description: 'DEAL_NOT_PARTY' })
+  async getInvoice(@Param('id') id: string, @Req() req: any) {
+    const data = await this.buyerDealsService.getDealInvoice(
+      req.user.id,
+      req.user.activeRole || req.user.role,
+      id,
+    );
+    return { statusCode: HttpStatus.OK, data };
+  }
+
+  @Post(':id/rating')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Submit buyer rating on a completed deal (AC-4, FR-54)' })
+  @ApiParam({ name: 'id', description: 'Deal id' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['score'],
+      properties: {
+        score: { type: 'integer', minimum: 1, maximum: 5 },
+        comment: { type: 'string', maxLength: 500 },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Rating recorded' })
+  @ApiResponse({
+    status: 400,
+    description: 'DEAL_RATING_SCORE_INVALID / DEAL_RATING_COMMENT_TOO_LONG',
+  })
+  @ApiResponse({ status: 403, description: 'DEAL_NOT_PARTY / DEAL_RATING_NOT_PARTY' })
+  @ApiResponse({ status: 409, description: 'DEAL_NOT_COMPLETED / DEAL_ALREADY_RATED' })
+  async submitRating(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(submitDealRatingSchema)) body: SubmitDealRatingInput,
+    @Req() req: any,
+  ) {
+    const data = await this.buyerDealsService.submitDealRating(
+      req.user.id,
+      req.user.activeRole || req.user.role,
+      id,
+      body,
+    );
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'تم تسجيل تقييمك بنجاح',
       data,
     };
   }

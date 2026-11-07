@@ -4,7 +4,7 @@ baseline_commit: a9e609f
 
 # Story 5.3: Administrative Proof Review, Task Claim Locking & Grace Period Handling
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

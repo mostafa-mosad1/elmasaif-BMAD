@@ -30,12 +30,14 @@ import { AdminPaymentsService } from '../admin-payments.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { ClockService } from '../../../common/clock/clock.service';
 import { StorageService } from '../../storage/storage.service';
+import { DealCompletionService } from '../deal-completion.service';
 
 describe('AdminPaymentsService (Story 5.3) (AC: 1, 2, 3, 4, 5, 6, 7, 8, 9)', () => {
   let service: AdminPaymentsService;
   let prisma: any;
   let clockService: any;
   let storageService: any;
+  let dealCompletionService: any;
 
   const mockNow = new Date('2026-11-07T12:00:00.000Z');
   const admin = {
@@ -100,6 +102,9 @@ describe('AdminPaymentsService (Story 5.3) (AC: 1, 2, 3, 4, 5, 6, 7, 8, 9)', () 
     storageService = {
       getVerifiedDownloadUrl: jest.fn().mockResolvedValue('https://signed-s3.example.com/receipt.pdf'),
     };
+    dealCompletionService = {
+      completeDealInTransaction: jest.fn().mockResolvedValue({ id: dealId, status: DealStatus.COMPLETED }),
+    };
 
     prisma = {
       $transaction: jest.fn((cb: any) => cb(prisma)),
@@ -139,6 +144,7 @@ describe('AdminPaymentsService (Story 5.3) (AC: 1, 2, 3, 4, 5, 6, 7, 8, 9)', () 
         { provide: PrismaService, useValue: prisma },
         { provide: ClockService, useValue: clockService },
         { provide: StorageService, useValue: storageService },
+        { provide: DealCompletionService, useValue: dealCompletionService },
       ],
     }).compile();
 
@@ -450,6 +456,29 @@ describe('AdminPaymentsService (Story 5.3) (AC: 1, 2, 3, 4, 5, 6, 7, 8, 9)', () 
         }),
       });
       expect(result.status).toBe(DEAL_PAYMENT_STATUS.CONFIRMED);
+    });
+
+    it('triggers atomic deal completion when both deal payments are confirmed (Story 5.4 / AC-1)', async () => {
+      prisma.payment.findUnique.mockResolvedValue(
+        makePayment({
+          status: DEAL_PAYMENT_STATUS.UNDER_REVIEW,
+          lockedByAdminId: admin.id,
+          lockExpiresAt: new Date(mockNow.getTime() + 10 * 60 * 1000),
+        }),
+      );
+      // Both payments are confirmed
+      prisma.payment.findMany.mockResolvedValue([
+        { id: paymentId, paymentType: 'PLATFORM_COMMISSION', status: DEAL_PAYMENT_STATUS.CONFIRMED },
+        { id: 'payment-2', paymentType: 'SELLER_PURCHASE_PRICE', status: DEAL_PAYMENT_STATUS.CONFIRMED },
+      ]);
+
+      await service.confirmPayment(paymentId, admin as any);
+
+      expect(dealCompletionService.completeDealInTransaction).toHaveBeenCalledWith(
+        dealId,
+        admin,
+        prisma,
+      );
     });
 
     it('throws 403 PAYMENT_SELF_APPROVAL_FORBIDDEN when verifying admin approved the deal (FR-51)', async () => {

@@ -41,6 +41,8 @@ describe('BuyerDealsController (Story 5.2) (AC: 1, 2, 7, 12)', () => {
       getProofDownloadUrl: jest
         .fn()
         .mockResolvedValue({ downloadUrl: 'https://signed.example', expiresInSeconds: 300 }),
+      getDealInvoice: jest.fn().mockResolvedValue({ id: 'inv-1', invoiceNumber: 'INV-01' }),
+      submitDealRating: jest.fn().mockResolvedValue({ id: 'rating-1', score: 5 }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -147,6 +149,36 @@ describe('BuyerDealsController (Story 5.2) (AC: 1, 2, 7, 12)', () => {
       expect(res).toEqual({
         statusCode: HttpStatus.OK,
         data: { downloadUrl: 'https://signed.example', expiresInSeconds: 300 },
+      });
+    });
+
+    it('GET /deals/:id/invoice → 200 { statusCode, data }', async () => {
+      const res = await controller.getInvoice(dealId, { user: buyer });
+
+      expect(service.getDealInvoice).toHaveBeenCalledWith(
+        buyer.id,
+        UserRole.BUYER,
+        dealId,
+      );
+      expect(res).toEqual({
+        statusCode: HttpStatus.OK,
+        data: { id: 'inv-1', invoiceNumber: 'INV-01' },
+      });
+    });
+
+    it('POST /deals/:id/rating → 201 { statusCode, message, data }', async () => {
+      const res = await controller.submitRating(dealId, { score: 5, comment: 'رائع' }, { user: buyer });
+
+      expect(service.submitDealRating).toHaveBeenCalledWith(
+        buyer.id,
+        UserRole.BUYER,
+        dealId,
+        { score: 5, comment: 'رائع' },
+      );
+      expect(res).toEqual({
+        statusCode: HttpStatus.CREATED,
+        message: 'تم تسجيل تقييمك بنجاح',
+        data: { id: 'rating-1', score: 5 },
       });
     });
   });

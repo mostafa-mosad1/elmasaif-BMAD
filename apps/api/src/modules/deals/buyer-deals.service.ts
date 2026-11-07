@@ -5,6 +5,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -14,8 +15,10 @@ import { IdentityService } from '../users/identity.service';
 import { QuarantineService } from '../storage/quarantine.service';
 import { MAX_EXPIRATION_SECONDS, StorageService } from '../storage/storage.service';
 import {
+  DEAL_ALREADY_RATED,
   DEAL_BUYER_PROFILE_REQUIRED,
   DEAL_IDENTITY_REQUIRED,
+  DEAL_NOT_COMPLETED,
   DEAL_NOT_FOUND,
   DEAL_NOT_PARTY,
   DEAL_PAYMENT_DEADLINE_PASSED,
@@ -29,16 +32,24 @@ import {
   DEAL_PAYMENT_STATUS,
   DEAL_PAYMENT_TYPES,
   DEAL_PAYMENT_TYPE_INVALID,
+  DEAL_RATING_COMMENT_TOO_LONG,
+  DEAL_RATING_NOT_PARTY,
+  DEAL_RATING_SCORE_INVALID,
   DEAL_TERMINAL,
+  DealInvoiceSummary,
   DealPaymentProofDownload,
   DealPaymentSlot,
   DealPaymentType,
   DealPaymentView,
+  DealRatingSummary,
   DealStatus,
   DealSummary,
   ERROR_FILE_QUARANTINED,
+  INVOICE_NOT_FOUND,
   PaymentType,
   ProfileStatus,
+  RATING_SUBMITTED,
+  SubmitDealRatingInput,
   TERMINAL_DEAL_STATUSES,
   UserRole,
   dealPaymentTypeSchema,
@@ -48,11 +59,30 @@ import {
 } from '@elmasaif/shared';
 import { DealProofUploadFile } from './dto/upload-payment-proof.dto';
 import { PlatformAccountService } from './platform-account';
-import { toDealPaymentSlot, toDealPaymentView, toDealSummary } from './deal-payment.mapper';
+import { DealCompletionService } from './deal-completion.service';
+import {
+  toDealInvoiceSummary,
+  toDealPaymentSlot,
+  toDealPaymentView,
+  toDealRatingSummary,
+  toDealSummary,
+} from './deal-payment.mapper';
 
-/** The listing title is the only listing column the buyer screens render. */
+/** The listing title and counterparty profiles are loaded for buyer screens. */
 const DEAL_INCLUDE = {
   listing: { select: { id: true, title: true } },
+  sellerProfile: {
+    include: {
+      user: {
+        select: {
+          fullName: true,
+          mobileNumber: true,
+          email: true,
+        },
+      },
+    },
+  },
+  rating: true,
 } as const;
 
 const PAYMENT_SELECT = {
@@ -97,6 +127,7 @@ export class BuyerDealsService {
     private readonly identityService: IdentityService,
     private readonly quarantineService: QuarantineService,
     private readonly storageService: StorageService,
+    @Optional() private readonly dealCompletionService?: DealCompletionService,
   ) {}
 
   /** `GET /deals/my` — the buyer's own deals, newest first. No payment rows are created here. */
@@ -129,17 +160,227 @@ export class BuyerDealsService {
     const account = this.platformAccount.getAccount();
     const now = this.clockService.now();
 
-    const { deal, payments } = await this.prisma.$transaction(async (tx: any) => {
-      const row = await tx.deal.findUnique({ where: { id: dealId }, include: DEAL_INCLUDE });
+    const { deal, payments, invoiceRecord } = await this.prisma.$transaction(async (tx: any) => {
+      let row = await tx.deal.findUnique({ where: { id: dealId }, include: DEAL_INCLUDE });
       this.assertOwnership(row, profile.id);
 
       // D1: the first read of the payment plan is what creates it. `upsert` + the
       // `(dealId, paymentType)` unique key make two concurrent readers idempotent.
-      const slots = await this.ensureDealPayments(tx, row);
-      return { deal: row, payments: slots };
+      let slots = await this.ensureDealPayments(tx, row);
+
+      // Self-healing / reconciliation: if all required payment legs are CONFIRMED
+      // but the deal status has not transitioned to COMPLETED yet, finalize it atomically now.
+      const allConfirmed =
+        slots.length === 2 &&
+        slots.every((s: any) => s.status === DEAL_PAYMENT_STATUS.CONFIRMED);
+
+      if (allConfirmed && row.status !== DealStatus.COMPLETED && this.dealCompletionService) {
+        const actor = {
+          id: row.approvedByAdminId || 'system',
+          fullName: 'مدقق العمليات',
+        };
+        await this.dealCompletionService.completeDealInTransaction(dealId, actor, tx);
+        row = await tx.deal.findUnique({ where: { id: dealId }, include: DEAL_INCLUDE });
+        slots = await tx.payment.findMany({ where: { dealId } });
+      }
+
+      const invoice = await tx.invoiceRecord.findFirst({ where: { dealId } });
+      return { deal: row, payments: slots, invoiceRecord: invoice };
     });
 
-    return toDealPaymentView(deal, payments, account, this.decryptSellerIban(deal), now);
+    const isCompleted = deal.status === DealStatus.COMPLETED;
+    const sellerContact =
+      isCompleted && deal.sellerProfile?.user
+        ? {
+            fullName: deal.sellerProfile.user.fullName,
+            mobileNumber: deal.sellerProfile.user.mobileNumber,
+            email: deal.sellerProfile.user.email ?? null,
+          }
+        : null;
+
+    return toDealPaymentView(
+      deal,
+      payments,
+      account,
+      this.decryptSellerIban(deal),
+      now,
+      {
+        sellerContact,
+        invoiceRecord,
+        rating: deal.rating,
+      },
+    );
+  }
+
+  /**
+   * `GET /api/v1/deals/:id/invoice` (Story 5.4 / AC-5)
+   * Returns statutory VAT invoice summary for completed deal. Accessible by buyer or seller party.
+   */
+  async getDealInvoice(
+    userId: string,
+    activeRole: UserRole,
+    dealId: string,
+  ): Promise<DealInvoiceSummary> {
+    const deal = await this.prisma.deal.findUnique({
+      where: { id: dealId },
+      include: {
+        buyerProfile: true,
+        sellerProfile: true,
+      },
+    });
+
+    if (!deal) {
+      throw new NotFoundException({
+        code: DEAL_NOT_FOUND,
+        message: 'الصفقة غير موجودة',
+      });
+    }
+
+    const isParty =
+      deal.buyerProfile.userId === userId || deal.sellerProfile.userId === userId;
+    if (!isParty) {
+      throw new ForbiddenException({
+        code: DEAL_NOT_PARTY,
+        message: 'لا يحق لغير أطراف الصفقة الاطلاع على الفاتورة',
+      });
+    }
+
+    if (deal.status !== DealStatus.COMPLETED) {
+      throw new NotFoundException({
+        code: INVOICE_NOT_FOUND,
+        message: 'فاتورة الصفقة غير موجودة أو لم تصدر بعد',
+      });
+    }
+
+    const invoice = await this.prisma.invoiceRecord.findFirst({
+      where: { dealId },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException({
+        code: INVOICE_NOT_FOUND,
+        message: 'فاتورة الصفقة غير موجودة أو لم تصدر بعد',
+      });
+    }
+
+    return toDealInvoiceSummary(invoice)!;
+  }
+
+  /**
+   * `POST /api/v1/deals/:id/rating` (Story 5.4 / AC-4)
+   * Submits buyer 1..5 star rating on a completed deal. Immutable once created.
+   */
+  async submitDealRating(
+    userId: string,
+    activeRole: UserRole,
+    dealId: string,
+    input: SubmitDealRatingInput,
+  ): Promise<DealRatingSummary> {
+    const profile = await this.resolveBuyerProfile(userId, activeRole);
+    const now = this.clockService.now();
+
+    if (
+      typeof input?.score !== 'number' ||
+      !Number.isInteger(input.score) ||
+      input.score < 1 ||
+      input.score > 5
+    ) {
+      throw new BadRequestException({
+        code: DEAL_RATING_SCORE_INVALID,
+        message: 'تقييم الصفقة يجب أن يكون رقماً صحيحاً بين 1 و 5',
+      });
+    }
+
+    if (input.comment && input.comment.trim().length > 500) {
+      throw new BadRequestException({
+        code: DEAL_RATING_COMMENT_TOO_LONG,
+        message: 'التعليق يجب ألا يتجاوز 500 حرف',
+      });
+    }
+
+    return this.prisma.$transaction(async (tx: any) => {
+      await tx.$queryRaw`SELECT "id" FROM "deals" WHERE "id" = ${dealId}::text FOR UPDATE`;
+
+      const deal = await tx.deal.findUnique({
+        where: { id: dealId },
+        include: {
+          sellerProfile: {
+            select: { userId: true },
+          },
+          rating: true,
+        },
+      });
+
+      if (!deal) {
+        throw new NotFoundException({
+          code: DEAL_NOT_FOUND,
+          message: 'الصفقة غير موجودة',
+        });
+      }
+
+      if (deal.buyerProfileId !== profile.id) {
+        throw new ForbiddenException({
+          code: DEAL_RATING_NOT_PARTY,
+          message: 'يحق لمشتري الصفقة فقط تقديم التقييم',
+        });
+      }
+
+      if (deal.status !== DealStatus.COMPLETED) {
+        throw new ConflictException({
+          code: DEAL_NOT_COMPLETED,
+          message: 'لا يمكن تقييم الصفقة إلا بعد اكتمالها بنجاح',
+        });
+      }
+
+      if (deal.rating) {
+        throw new ConflictException({
+          code: DEAL_ALREADY_RATED,
+          message: 'تم تقييم هذه الصفقة مسبقاً',
+        });
+      }
+
+      try {
+        const rating = await tx.rating.create({
+          data: {
+            dealId: deal.id,
+            raterUserId: userId,
+            targetUserId: deal.sellerProfile.userId,
+            score: input.score,
+            comment: input.comment?.trim() ? input.comment.trim() : null,
+            isHidden: false,
+            createdAt: now,
+          },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            actorId: userId,
+            actorType: 'USER',
+            action: RATING_SUBMITTED,
+            entityType: 'Rating',
+            entityId: rating.id,
+            payload: {
+              dealId: deal.id,
+              raterUserId: userId,
+              targetUserId: deal.sellerProfile.userId,
+              score: input.score,
+              createdAt: now.toISOString(),
+            },
+          },
+        });
+
+        this.logger.log(`Deal ${dealId} rated by buyer ${userId} with score ${input.score}`);
+        return toDealRatingSummary(rating)!;
+      } catch (error: any) {
+        if (error?.code === 'P2002') {
+          throw new ConflictException({
+            code: DEAL_ALREADY_RATED,
+            message: 'تم تقييم هذه الصفقة مسبقاً',
+          });
+        }
+        throw error;
+      }
+    });
   }
 
   /**
