@@ -17,7 +17,11 @@ import {
   appendInquiryMessageSchema,
   relayInquirySchema,
   closeInquirySchema,
-  inquiryQueueQuerySchema
+  inquiryQueueQuerySchema,
+  paymentQueueQuerySchema,
+  adminRejectPaymentSchema,
+  adminRejectPaymentBodySchema,
+  paymentForceUnlockSchema
 } from '../schemas';
 import { ListingStatus, DealStatus, PropertyType } from '../enums';
 
@@ -39,6 +43,10 @@ export type AppendInquiryMessageInput = z.infer<typeof appendInquiryMessageSchem
 export type RelayInquiryInput = z.infer<typeof relayInquirySchema>;
 export type CloseInquiryInput = z.infer<typeof closeInquirySchema>;
 export type InquiryQueueQuery = z.infer<typeof inquiryQueueQuerySchema>;
+export type PaymentQueueQuery = z.infer<typeof paymentQueueQuerySchema>;
+export type AdminRejectPaymentInput = z.infer<typeof adminRejectPaymentSchema>;
+export type AdminRejectPaymentBodyInput = z.infer<typeof adminRejectPaymentBodySchema>;
+export type PaymentForceUnlockInput = z.infer<typeof paymentForceUnlockSchema>;
 
 export interface ApiResponse<T> {
   statusCode: number;

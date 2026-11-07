@@ -10,7 +10,9 @@ import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
 import { ActiveRoleGuard } from '../users/guards/active-role.guard';
 import { AdminDealsController } from './admin-deals.controller';
+import { AdminPaymentsController } from './admin-payments.controller';
 import { BuyerDealsController } from './buyer-deals.controller';
+import { AdminPaymentsService } from './admin-payments.service';
 import { BuyerDealsService } from './buyer-deals.service';
 import { DealsService } from './deals.service';
 import { PlatformAccountService } from './platform-account';
@@ -30,9 +32,10 @@ import { PlatformAccountService } from './platform-account';
  */
 @Module({
   imports: [PrismaModule, ClockModule, AuthModule, CryptoModule, StorageModule, UsersModule],
-  controllers: [AdminDealsController, BuyerDealsController],
+  controllers: [AdminDealsController, AdminPaymentsController, BuyerDealsController],
   providers: [
     DealsService,
+    AdminPaymentsService,
     BuyerDealsService,
     PlatformAccountService,
     AdminSessionAuthGuard,

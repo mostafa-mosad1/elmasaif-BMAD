@@ -4,6 +4,7 @@ import {
   DealStatus,
   IdentityDocumentType,
   OfferStatus,
+  PaymentType,
   ScanStatus,
   VerificationStatus,
 } from '@prisma/client';
@@ -495,18 +496,97 @@ export async function seedDemoDeal() {
       sellerPayoutIbanEncrypted: payout.ibanEncrypted,
       sellerPayoutIbanMasked: payout.ibanMasked,
       approvedByAdminId: INITIAL_ADMIN_ACCOUNTS[0].id,
-      status: DealStatus.AWAITING_PAYMENT_PROOF,
+      status: DealStatus.UNDER_ADMIN_AUDIT,
       paymentDeadline,
       createdAt: now,
-      // Deliberately no `Payment` rows: `BuyerDealsService.ensureDealPayments` materializes the
-      // two slots on first read, which is exactly the behaviour under test.
+    },
+  });
+
+  // Story 5.3: seed two reviewable payment slots with CLEAN FileObjects so the audit queue is demonstrable
+  const DEMO_COMMISSION_PROOF_FILE_ID = '77777777-0000-4000-8000-000000000301';
+  const DEMO_PURCHASE_PROOF_FILE_ID = '77777777-0000-4000-8000-000000000302';
+  const DEMO_COMMISSION_PAYMENT_ID = '99999999-0000-4000-8000-000000000301';
+  const DEMO_PURCHASE_PAYMENT_ID = '99999999-0000-4000-8000-000000000302';
+
+  await prisma.fileObject.upsert({
+    where: { id: DEMO_COMMISSION_PROOF_FILE_ID },
+    update: {},
+    create: {
+      id: DEMO_COMMISSION_PROOF_FILE_ID,
+      bucket: 'elmasaif-private',
+      key: 'deals/proofs/commission-proof.pdf',
+      fileName: 'commission-proof.pdf',
+      fileSize: 102400,
+      mimeType: 'application/pdf',
+      scanStatus: ScanStatus.CLEAN,
+      scannedAt: now,
+      uploadedBy: DEMO_BUYER.id,
+      uploadedAt: now,
+    },
+  });
+
+  await prisma.fileObject.upsert({
+    where: { id: DEMO_PURCHASE_PROOF_FILE_ID },
+    update: {},
+    create: {
+      id: DEMO_PURCHASE_PROOF_FILE_ID,
+      bucket: 'elmasaif-private',
+      key: 'deals/proofs/purchase-proof.pdf',
+      fileName: 'purchase-proof.pdf',
+      fileSize: 204800,
+      mimeType: 'application/pdf',
+      scanStatus: ScanStatus.CLEAN,
+      scannedAt: now,
+      uploadedBy: DEMO_BUYER.id,
+      uploadedAt: now,
+    },
+  });
+
+  await prisma.payment.upsert({
+    where: {
+      dealId_paymentType: {
+        dealId: DEMO_DEAL_ID,
+        paymentType: PaymentType.PLATFORM_COMMISSION,
+      },
+    },
+    update: {},
+    create: {
+      id: DEMO_COMMISSION_PAYMENT_ID,
+      dealId: DEMO_DEAL_ID,
+      paymentType: PaymentType.PLATFORM_COMMISSION,
+      amount: amounts.finalCommission,
+      status: 'PROOF_UPLOADED',
+      proofFileUrl: DEMO_COMMISSION_PROOF_FILE_ID,
+      bankReferenceCode: 'REF-COMM-DEMO-01',
+      senderBankName: 'مصرف الراجحي',
+      uploadedAt: now,
+    },
+  });
+
+  await prisma.payment.upsert({
+    where: {
+      dealId_paymentType: {
+        dealId: DEMO_DEAL_ID,
+        paymentType: PaymentType.SELLER_PURCHASE_PRICE,
+      },
+    },
+    update: {},
+    create: {
+      id: DEMO_PURCHASE_PAYMENT_ID,
+      dealId: DEMO_DEAL_ID,
+      paymentType: PaymentType.SELLER_PURCHASE_PRICE,
+      amount: amounts.finalDealPrice,
+      status: 'PROOF_UPLOADED',
+      proofFileUrl: DEMO_PURCHASE_PROOF_FILE_ID,
+      bankReferenceCode: 'REF-PRICE-DEMO-02',
+      senderBankName: 'البنك الأهلي السعودي',
+      uploadedAt: now,
     },
   });
 
   console.log(
     `✅ Demo deal seeded: ${dealNumber} (ELM-DEMO000001-C) for ${DEMO_BUYER.username}, ` +
-      `payment deadline ${paymentDeadline.toISOString()} ` +
-      '(an earlier run keeps its original deadline — delete the row to restart the 48-hour window).',
+      `payment deadline ${paymentDeadline.toISOString()} with 2 reviewable payments in PROOF_UPLOADED.`
   );
 }
 

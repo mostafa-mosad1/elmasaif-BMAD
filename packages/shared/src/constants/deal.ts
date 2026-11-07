@@ -1,6 +1,10 @@
 import { DealStatus, PaymentType } from '../enums';
 import type { StatusBadgeVariant } from '../types/ui';
-import { DEAL_PAYMENT_DEADLINE_HOURS, PLATFORM_COMMISSION_PERCENTAGE } from './index';
+import {
+  DEAL_ADMIN_REVIEW_GRACE_PERIOD_HOURS,
+  DEAL_PAYMENT_DEADLINE_HOURS,
+  PLATFORM_COMMISSION_PERCENTAGE,
+} from './index';
 
 /*
  * Deal binding constants (Story 5.1 / FR-28, FR-29, BR-02, BR-07, AD-3, AD-4).
@@ -157,3 +161,55 @@ export const DEAL_PAYMENT_STATUS_VARIANTS: Record<DealPaymentStatus, StatusBadge
   [DEAL_PAYMENT_STATUS.REJECTED]: 'danger',
   [DEAL_PAYMENT_STATUS.EXPIRED]: 'neutral',
 };
+
+/*
+ * Story 5.3 — the administrative proof-review queue (FR-31, FR-51, AD-10).
+ */
+
+// Admin-facing refusal codes — shared so the API, the web hint table and the specs agree.
+// The `PAYMENT_LOCK_*` triple mirrors `OFFER_LOCK_*` / `LISTING_LOCK_*` / `INQUIRY_LOCK_*` byte
+// for byte; `ERROR_FILE_QUARANTINED` (`constants/storage.ts`) is reused as-is for the preview gate.
+export const PAYMENT_NOT_FOUND = 'PAYMENT_NOT_FOUND';
+export const PAYMENT_NOT_CLAIMABLE = 'PAYMENT_NOT_CLAIMABLE';
+export const PAYMENT_LOCK_REQUIRED = 'PAYMENT_LOCK_REQUIRED';
+export const PAYMENT_LOCK_CONFLICT = 'PAYMENT_LOCK_CONFLICT';
+export const PAYMENT_LOCK_EXPIRED = 'PAYMENT_LOCK_EXPIRED';
+export const PAYMENT_FORCE_UNLOCK_REASON_REQUIRED = 'PAYMENT_FORCE_UNLOCK_REASON_REQUIRED';
+export const PAYMENT_REJECTION_NOTE_REQUIRED = 'PAYMENT_REJECTION_NOTE_REQUIRED';
+export const PAYMENT_SELF_APPROVAL_FORBIDDEN = 'PAYMENT_SELF_APPROVAL_FORBIDDEN';
+export const PAYMENT_PROOF_NOT_FOUND = 'PAYMENT_PROOF_NOT_FOUND';
+
+/** Audit log actions for payment proof review (AC-2, AC-3, AC-7). */
+export const PAYMENT_PROOF_CLAIMED = 'PAYMENT_PROOF_CLAIMED';
+export const PAYMENT_PROOF_CONFIRMED = 'PAYMENT_PROOF_CONFIRMED';
+export const PAYMENT_PROOF_REJECTED = 'PAYMENT_PROOF_REJECTED';
+export const PAYMENT_MODERATION_RELEASED = 'PAYMENT_MODERATION_RELEASED';
+export const PAYMENT_LOCK_FORCE_UNLOCKED = 'PAYMENT_LOCK_FORCE_UNLOCKED';
+
+/** AD-10: the proof-audit lease length, identical to every other claim-locked queue. */
+export const PAYMENT_LOCK_DURATION_MS = 15 * 60 * 1000;
+
+/** AD-10: the review workspace renews its claim at this cadence. */
+export const PAYMENT_LOCK_HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000;
+
+/**
+ * AC-1/AC-2: the queue membership and the claimable set are the same two statuses — a proof is
+ * in the audit queue exactly while an admin decision is still owed on it. `PENDING` (nothing
+ * uploaded), `CONFIRMED`, `REJECTED` and `EXPIRED` (5.5's terminal state) are not claimable.
+ */
+export const PAYMENT_CLAIMABLE_STATUSES: readonly DealPaymentStatus[] = [
+  DEAL_PAYMENT_STATUS.PROOF_UPLOADED,
+  DEAL_PAYMENT_STATUS.UNDER_REVIEW,
+];
+
+/**
+ * D1: `claim` advances `PROOF_UPLOADED → UNDER_REVIEW`, so only `UNDER_REVIEW` rows can carry a
+ * Confirmed/Rejected decision. A `PROOF_UPLOADED` decision without a fresh claim is refused.
+ */
+export const PAYMENT_DECIDABLE_STATUSES: readonly DealPaymentStatus[] = [
+  DEAL_PAYMENT_STATUS.UNDER_REVIEW,
+];
+
+/** FR-31 / AD-3: one correction window of 12 hours after an at/after-deadline rejection. */
+export const PAYMENT_CORRECTION_GRACE_HOURS = DEAL_ADMIN_REVIEW_GRACE_PERIOD_HOURS;
+

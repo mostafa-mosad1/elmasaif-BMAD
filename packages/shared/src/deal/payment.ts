@@ -91,3 +91,35 @@ export function resolveDealPaymentAmount(
 export function isPaymentProofUploaded(status: string | null | undefined): boolean {
   return status === DEAL_PAYMENT_STATUS.PROOF_UPLOADED;
 }
+
+/** The rows `computeCorrectionWindowExpiresAt` reads; kept structural so any projection fits. */
+export interface CorrectionWindowPaymentInput {
+  status: string | null | undefined;
+  verifiedAt?: Date | string | null;
+}
+
+/**
+ * Story 5.3 / AC-5, AD-3: the end of the ONE correction window a rejected receipt gets.
+ *
+ * The grace semantics live in state, not in a cron (5.5 owns every `→ EXPIRED` transition):
+ * a proof rejected strictly *before* the deal deadline is simply re-uploadable until that
+ * deadline (window `null` — the deadline itself is the boundary), while a rejection landing
+ * at/after `paymentDeadline` grants exactly `graceHours` from the rejection instant
+ * (`verifiedAt`). Pure and deterministic — the inputs are the only clocks this module reads.
+ */
+export function computeCorrectionWindowExpiresAt(
+  payment: CorrectionWindowPaymentInput,
+  paymentDeadline: Date | string,
+  graceHours: number,
+): string | null {
+  if (payment.status !== DEAL_PAYMENT_STATUS.REJECTED || !payment.verifiedAt) return null;
+
+  const verifiedAt = new Date(payment.verifiedAt);
+  if (Number.isNaN(verifiedAt.getTime())) return null;
+
+  // Rejection before the deadline: the buyer still has the original window (AC-5).
+  if (verifiedAt.getTime() < new Date(paymentDeadline).getTime()) return null;
+
+  return new Date(verifiedAt.getTime() + graceHours * 3_600_000).toISOString();
+}
+

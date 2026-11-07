@@ -1,5 +1,6 @@
 import { DealStatus } from '../enums';
 import type { DealPaymentStatus, DealPaymentType } from '../constants/deal';
+import type { ClaimLockInfo } from './locks';
 
 /**
  * The frozen seller payout snapshot stored on the Deal (Story 5.1 / FR-29 / AC-5).
@@ -134,3 +135,50 @@ export interface DealPaymentProofDownload {
   downloadUrl: string;
   expiresInSeconds: number;
 }
+
+/*
+ * Story 5.3 — the administrative proof-review queue (FR-31, AD-10).
+ */
+
+/**
+ * One row of `GET /api/v1/admin/payments` (AC-1): a proof awaiting an admin decision, its parent
+ * deal summary, and the live AD-10 lease. `ClaimLockInfo` is imported, never redeclared — the
+ * offer/inquiry/listing queues project the exact same shape. `proofFileObjectId` is a
+ * `FileObject.id`, never a URL (NFR-2).
+ */
+export interface AdminPaymentQueueItem {
+  id: string;
+  dealId: string;
+  dealNumber: string;
+  propertyTitle: string;
+  paymentType: DealPaymentType;
+  /** The frozen amount, decimal string (BR-02 / trap T-4) — never recomputed. */
+  amount: string;
+  status: DealPaymentStatus;
+  uploadedAt: string | null;
+  bankReferenceCode: string | null;
+  senderBankName: string | null;
+  rejectionReason: string | null;
+  proofFileObjectId: string | null;
+  /** FR-31 / AC-5: rejection `verifiedAt + 12 h` when the rejection landed at/after the deadline, else null. */
+  correctionWindowExpiresAt: string | null;
+  lockInfo: ClaimLockInfo;
+}
+
+/**
+ * `GET /api/v1/admin/payments/:id` (AC-1, AC-3, AC-6): the queue row plus the deal-level context
+ * the reviewer needs — the audit status, the payment deadline the grace period is measured
+ * against, and `approvedByAdminId` for the FR-51 separation-of-duties gate.
+ */
+export interface AdminPaymentDetail extends Omit<AdminPaymentQueueItem, 'lockInfo'> {
+  dealStatus: DealStatus;
+  paymentDeadline: string;
+  approvedByAdminId: string | null;
+  verifiedByAdminId: string | null;
+  verifiedByAdminName: string | null;
+  verifiedAt: string | null;
+  /** The API clock, ISO — the countdown and the grace banner measure against this, never local time. */
+  serverNow: string;
+  lockInfo: ClaimLockInfo;
+}
+

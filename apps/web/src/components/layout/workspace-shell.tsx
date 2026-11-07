@@ -126,6 +126,9 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         : []),
       ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Offers.Review')
         ? [{ href: '/admin/backup-offers', label: 'طابور العروض الاحتياطية', icon: HandCoins }]
+        : []),
+      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Payments.Review')
+        ? [{ href: '/admin/payments', label: 'الدفع والتسويات', icon: Wallet }]
         : [])
     ]
   };

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   DEAL_PAYMENT_AMOUNT_SOURCES,
+  computeCorrectionWindowExpiresAt,
   isDealPaymentType,
   isPaymentProofUploaded,
   isPaymentUploadable,
@@ -13,6 +14,7 @@ import {
   DEAL_PAYMENT_PROOF_UNSUPPORTED_TYPE,
   DEAL_PAYMENT_STATUS,
   DEAL_PAYMENT_TYPES,
+  PAYMENT_CORRECTION_GRACE_HOURS,
   UPLOADABLE_PAYMENT_STATUSES,
 } from '../../constants/deal';
 import { MAX_FILE_SIZE_BYTES } from '../../constants';
@@ -120,6 +122,79 @@ describe('Deal payment helpers (Story 5.2)', () => {
       expect(isPaymentProofUploaded(DEAL_PAYMENT_STATUS.PENDING)).toBe(false);
       expect(isPaymentProofUploaded(DEAL_PAYMENT_STATUS.CONFIRMED)).toBe(false);
       expect(isPaymentProofUploaded(null)).toBe(false);
+    });
+  });
+
+  /** Story 5.3 / AC-5, AD-3: the 12-hour correction window, computed from state only. */
+  describe('computeCorrectionWindowExpiresAt', () => {
+    const deadline = new Date('2026-11-08T09:00:00.000Z');
+    const grace = PAYMENT_CORRECTION_GRACE_HOURS;
+
+    it('returns null for a rejection that landed strictly before the deal deadline', () => {
+      expect(
+        computeCorrectionWindowExpiresAt(
+          {
+            status: DEAL_PAYMENT_STATUS.REJECTED,
+            verifiedAt: new Date('2026-11-07T09:00:00.000Z'),
+          },
+          deadline,
+          grace,
+        ),
+      ).toBeNull();
+    });
+
+    it('grants exactly one 12-hour window for a rejection at the deadline', () => {
+      expect(
+        computeCorrectionWindowExpiresAt(
+          { status: DEAL_PAYMENT_STATUS.REJECTED, verifiedAt: deadline },
+          deadline,
+          grace,
+        ),
+      ).toBe('2026-11-08T21:00:00.000Z');
+    });
+
+    it('grants exactly one 12-hour window for a rejection after the deadline', () => {
+      expect(
+        computeCorrectionWindowExpiresAt(
+          {
+            status: DEAL_PAYMENT_STATUS.REJECTED,
+            verifiedAt: '2026-11-09T02:00:00.000Z',
+          },
+          deadline,
+          grace,
+        ),
+      ).toBe('2026-11-09T14:00:00.000Z');
+    });
+
+    it('is null for every non-rejected status, even with a verifiedAt stamp', () => {
+      for (const status of [
+        DEAL_PAYMENT_STATUS.PENDING,
+        DEAL_PAYMENT_STATUS.PROOF_UPLOADED,
+        DEAL_PAYMENT_STATUS.UNDER_REVIEW,
+        DEAL_PAYMENT_STATUS.CONFIRMED,
+        DEAL_PAYMENT_STATUS.EXPIRED,
+      ]) {
+        expect(
+          computeCorrectionWindowExpiresAt({ status, verifiedAt: deadline }, deadline, grace),
+        ).toBeNull();
+      }
+    });
+
+    it('is null for a rejected row without a decision timestamp (defensive)', () => {
+      expect(
+        computeCorrectionWindowExpiresAt(
+          { status: DEAL_PAYMENT_STATUS.REJECTED, verifiedAt: null },
+          deadline,
+          grace,
+        ),
+      ).toBeNull();
+      expect(
+        computeCorrectionWindowExpiresAt(
+          { status: DEAL_PAYMENT_STATUS.REJECTED, verifiedAt: 'not-a-date' },
+          deadline,
+          grace,
+        ),
+      ).toBeNull();
     });
   });
 });
