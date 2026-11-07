@@ -31,7 +31,8 @@ import {
   X,
   MapPin,
   Sparkles,
-  MessagesSquare
+  MessagesSquare,
+  Wallet
 } from 'lucide-react';
 
 interface WorkspaceShellProps {
@@ -76,6 +77,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
       { href: '/app/buyer', label: 'لوحة التحكم', icon: LayoutDashboard },
       { href: '/', label: 'تصفح العقارات', icon: Search },
       { href: '/app/buyer/offers', label: 'عروضي النشطة', icon: HandCoins },
+      { href: '/app/buyer/deals', label: 'صفقاتي والدفع', icon: Wallet },
       { href: '/app/buyer/inquiries', label: 'استفساراتي', icon: MessagesSquare },
       { href: '/app/buyer/favorites', label: 'العقارات المفضلة', icon: Heart },
       { href: '/app/buyer/demands', label: 'طلبات الشراء', icon: FileQuestion },

@@ -718,7 +718,13 @@ model Payment {
   dealId            String
   paymentType       PaymentType
   amount            Decimal     @db.Decimal(12, 2)
+  /// Story 5.2: a `String` on purpose. The vocabulary lives in `DEAL_PAYMENT_STATUS`
+  /// (`packages/shared/src/constants/deal.ts`); `db push` cannot convert this column to an enum
+  /// without dropping it, and `deal-invariants.sql` has no such migration.
   status            String      @default("PENDING")
+  /// Story 5.2 (D3): a **`FileObject.id`**, not a URL. NFR-2 forbids persisting a presigned link
+  /// (≤ 5 min); the download is minted on demand through `StorageService.getVerifiedDownloadUrl`.
+  /// The column keeps this name because `db push` cannot rename without dropping its data.
   proofFileUrl      String?
   bankReferenceCode String?
   senderBankName    String?
@@ -734,6 +740,10 @@ model Payment {
 
   deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
 
+  /// Story 5.2 / AC-6, D2: exactly one row per slot. This is what makes `ensureDealPayments`
+  /// idempotent — two concurrent reads cannot insert four rows, and the storage key
+  /// `payments/<dealId>/<paymentId>/…` stays unique per slot.
+  @@unique([dealId, paymentType])
   @@index([dealId, paymentType, status])
   @@index([lockExpiresAt])
   @@map("payments")

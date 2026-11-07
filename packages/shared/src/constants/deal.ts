@@ -1,4 +1,5 @@
-import { DealStatus } from '../enums';
+import { DealStatus, PaymentType } from '../enums';
+import type { StatusBadgeVariant } from '../types/ui';
 import { DEAL_PAYMENT_DEADLINE_HOURS, PLATFORM_COMMISSION_PERCENTAGE } from './index';
 
 /*
@@ -47,3 +48,112 @@ export const DEAL_NUMBER_PREFIX = 'DL';
 export const DEAL_REFERENCE_PREFIX = 'ELM';
 export const DEAL_REFERENCE_SUFFIX = 'C';
 export const DEAL_SHORT_CODE_LENGTH = 10;
+
+/*
+ * Story 5.2 — the buyer payment plan (FR-29, FR-30, NFR-13, UX-DR4, UX-DR5).
+ */
+
+// Buyer-facing refusal codes. Shared so the API, the web hint table and the specs agree.
+export const DEAL_NOT_FOUND = 'DEAL_NOT_FOUND';
+export const DEAL_NOT_PARTY = 'DEAL_NOT_PARTY';
+export const DEAL_BUYER_PROFILE_REQUIRED = 'DEAL_BUYER_PROFILE_REQUIRED';
+export const DEAL_TERMINAL = 'DEAL_TERMINAL';
+export const DEAL_PAYMENT_DEADLINE_PASSED = 'DEAL_PAYMENT_DEADLINE_PASSED';
+export const DEAL_PAYMENT_REVIEW_COMPLETE = 'DEAL_PAYMENT_REVIEW_COMPLETE';
+export const DEAL_PAYMENT_TYPE_INVALID = 'DEAL_PAYMENT_TYPE_INVALID';
+export const DEAL_IDENTITY_REQUIRED = 'DEAL_IDENTITY_REQUIRED';
+export const DEAL_PLATFORM_ACCOUNT_UNAVAILABLE = 'DEAL_PLATFORM_ACCOUNT_UNAVAILABLE';
+export const DEAL_PAYMENT_PROOF_REQUIRED = 'DEAL_PAYMENT_PROOF_REQUIRED';
+export const DEAL_PAYMENT_PROOF_TOO_LARGE = 'DEAL_PAYMENT_PROOF_TOO_LARGE';
+export const DEAL_PAYMENT_PROOF_UNSUPPORTED_TYPE = 'DEAL_PAYMENT_PROOF_UNSUPPORTED_TYPE';
+export const DEAL_PAYMENT_PROOF_INFECTED = 'DEAL_PAYMENT_PROOF_INFECTED';
+export const DEAL_PAYMENT_PROOF_NOT_FOUND = 'DEAL_PAYMENT_PROOF_NOT_FOUND';
+export const DEAL_PAYMENT_PROOF_SCAN_FAILED = 'DEAL_PAYMENT_PROOF_SCAN_FAILED';
+
+/**
+ * The `payments` partition of a deal carries exactly two slots. `OWNER_CONTRACT_FEE` is a Story 7.3
+ * payment type and is never a deal payment — every entry point rejects it with
+ * `DEAL_PAYMENT_TYPE_INVALID`.
+ */
+export const DEAL_PAYMENT_TYPES = [
+  PaymentType.PLATFORM_COMMISSION,
+  PaymentType.SELLER_PURCHASE_PRICE,
+] as const;
+
+export type DealPaymentType = (typeof DEAL_PAYMENT_TYPES)[number];
+
+/**
+ * The canonical `Payment.status` vocabulary (the column is a `String` by an earlier decision, so
+ * nothing type-checks the write — always assert against this object, never a literal).
+ *
+ * `PENDING → PROOF_UPLOADED → (5.3) UNDER_REVIEW → CONFIRMED | REJECTED`; `REJECTED` re-enters
+ * `PROOF_UPLOADED` on a re-upload; `EXPIRED` is 5.5's terminal timeout state.
+ */
+export const DEAL_PAYMENT_STATUS = {
+  PENDING: 'PENDING',
+  PROOF_UPLOADED: 'PROOF_UPLOADED',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  CONFIRMED: 'CONFIRMED',
+  REJECTED: 'REJECTED',
+  EXPIRED: 'EXPIRED',
+} as const;
+
+export type DealPaymentStatus = (typeof DEAL_PAYMENT_STATUS)[keyof typeof DEAL_PAYMENT_STATUS];
+
+/**
+ * FR-30: the only three states in which the buyer may still upload or replace a receipt. The
+ * remaining three are locked while an administrator owns the decision (`UNDER_REVIEW`,
+ * `CONFIRMED`) or the window is gone (`EXPIRED`).
+ */
+export const UPLOADABLE_PAYMENT_STATUSES: readonly DealPaymentStatus[] = [
+  DEAL_PAYMENT_STATUS.PENDING,
+  DEAL_PAYMENT_STATUS.PROOF_UPLOADED,
+  DEAL_PAYMENT_STATUS.REJECTED,
+];
+
+/**
+ * FR-30 lists exactly three receipt formats. `ALLOWED_UPLOAD_MIME_TYPES` additionally accepts
+ * WebP, so a receipt must be re-validated against *this* list before it reaches the storage hook.
+ */
+export const DEAL_PAYMENT_PROOF_MIME_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+] as const;
+
+export type DealPaymentProofMimeType = (typeof DEAL_PAYMENT_PROOF_MIME_TYPES)[number];
+
+/** The Arabic name of each payment slot, as printed on the two wire-transfer cards. */
+export const DEAL_PAYMENT_TYPE_LABELS_AR: Record<DealPaymentType, string> = {
+  [PaymentType.PLATFORM_COMMISSION]: 'سعي المنصة',
+  [PaymentType.SELLER_PURCHASE_PRICE]: 'قيمة العقار للبائع',
+};
+
+/** Exhaustive on purpose: a new `Payment.status` member breaks `tsc` until it is labelled. */
+export const DEAL_PAYMENT_STATUS_LABELS_AR: Record<DealPaymentStatus, string> = {
+  [DEAL_PAYMENT_STATUS.PENDING]: 'بانتظار التحويل',
+  [DEAL_PAYMENT_STATUS.PROOF_UPLOADED]: 'تم رفع الإيصال - قيد المراجعة',
+  [DEAL_PAYMENT_STATUS.UNDER_REVIEW]: 'قيد التدقيق الإداري',
+  [DEAL_PAYMENT_STATUS.CONFIRMED]: 'مؤكد',
+  [DEAL_PAYMENT_STATUS.REJECTED]: 'مرفوض - يلزم إعادة الرفع',
+  [DEAL_PAYMENT_STATUS.EXPIRED]: 'منتهي',
+};
+
+export const DEAL_STATUS_LABELS_AR: Record<DealStatus, string> = {
+  [DealStatus.AWAITING_PAYMENT_PROOF]: 'بانتظار إثبات الدفع',
+  [DealStatus.UNDER_ADMIN_AUDIT]: 'قيد التدقيق الإداري',
+  [DealStatus.PAYMENT_REJECTED]: 'إثبات مرفوض',
+  [DealStatus.COMPLETED]: 'مكتملة',
+  [DealStatus.CANCELLED]: 'ملغاة',
+  [DealStatus.TERMINATED]: 'منتهية',
+};
+
+/** Same guard as `INQUIRY_STATUS_BADGE_VARIANTS`: exhaustive, never `Record<string, …>`. */
+export const DEAL_PAYMENT_STATUS_VARIANTS: Record<DealPaymentStatus, StatusBadgeVariant> = {
+  [DEAL_PAYMENT_STATUS.PENDING]: 'pending',
+  [DEAL_PAYMENT_STATUS.PROOF_UPLOADED]: 'info',
+  [DEAL_PAYMENT_STATUS.UNDER_REVIEW]: 'info',
+  [DEAL_PAYMENT_STATUS.CONFIRMED]: 'verified',
+  [DEAL_PAYMENT_STATUS.REJECTED]: 'danger',
+  [DEAL_PAYMENT_STATUS.EXPIRED]: 'neutral',
+};

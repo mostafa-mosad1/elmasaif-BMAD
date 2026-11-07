@@ -1,7 +1,22 @@
-import { PrismaClient, AdminRole } from '@prisma/client';
+import {
+  PrismaClient,
+  AdminRole,
+  DealStatus,
+  IdentityDocumentType,
+  OfferStatus,
+  ScanStatus,
+  VerificationStatus,
+} from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
-import { getSaudiBankName, maskSaudiIban } from '@elmasaif/shared';
+import {
+  DEFAULT_COMMISSION_RATE,
+  DEFAULT_FIXED_COMMISSION_SAR,
+  DEFAULT_PAYMENT_WINDOW_HOURS,
+  computeDealAmounts,
+  getSaudiBankName,
+  maskSaudiIban,
+} from '@elmasaif/shared';
 import { CryptoService } from '../src/common/crypto/crypto.service';
 
 const prisma = new PrismaClient();
@@ -340,11 +355,167 @@ export async function seedDemoListings() {
   console.log(`✅ Demo listings seeded: ${demoListings.length} (1 ACTIVE, 1 RESERVED).`);
 }
 
+// Story 5.2: one buyer, a verified identity and one `AWAITING_PAYMENT_PROOF` deal, so the dual
+// wire-transfer screen, its 48-hour countdown and the proof upload can be exercised end to end.
+// Stable ids keep every upsert idempotent across seed runs.
+const DEMO_BUYER = {
+  id: '77777777-0000-4000-8000-000000000201',
+  profileId: '77777777-0000-4000-8000-000000000211',
+  username: 'demo-buyer',
+  fullName: 'مشترٍ تجريبي - المصايف',
+  mobileNumber: '0500000088',
+  nationalId: '1000000088',
+  email: 'demo-buyer@elmasaif.sa',
+};
+
+const DEMO_IDENTITY_FILE_ID = '99999999-0000-4000-8000-000000000201';
+const DEMO_IDENTITY_DOCUMENT_ID = '99999999-0000-4000-8000-000000000202';
+const DEMO_OFFER_ID = '99999999-0000-4000-8000-000000000203';
+const DEMO_DEAL_ID = '99999999-0000-4000-8000-000000000204';
+const DEMO_RESERVED_LISTING_ID = '88888888-0000-4000-8000-000000000002';
+
+export async function seedDemoDeal() {
+  console.log('💳 Seeding Demo Buyer, Verified Identity and Deal (Story 5.2)...');
+
+  await prisma.user.upsert({
+    where: { id: DEMO_BUYER.id },
+    update: {},
+    create: {
+      id: DEMO_BUYER.id,
+      username: DEMO_BUYER.username,
+      fullName: DEMO_BUYER.fullName,
+      mobileNumber: DEMO_BUYER.mobileNumber,
+      nationalId: DEMO_BUYER.nationalId,
+      email: DEMO_BUYER.email,
+      passwordHash: await argon2.hash('Demo@Elmasaif2026', { type: argon2.argon2id }),
+    },
+  });
+
+  await prisma.userProfile.upsert({
+    where: { id: DEMO_BUYER.profileId },
+    update: {},
+    create: {
+      id: DEMO_BUYER.profileId,
+      userId: DEMO_BUYER.id,
+      role: 'BUYER',
+      status: 'ACTIVE',
+    },
+  });
+
+  // FR-30 / BR-10: `IdentityService.getIdentityStatus` only sets `canUploadDealPaymentProof`
+  // when the newest document's file object is CLEAN and the document is not REJECTED, so the
+  // demo needs both rows or every proof upload is refused with DEAL_IDENTITY_REQUIRED.
+  await prisma.fileObject.upsert({
+    where: { id: DEMO_IDENTITY_FILE_ID },
+    update: {},
+    create: {
+      id: DEMO_IDENTITY_FILE_ID,
+      bucket: 'elmasaif-private-documents',
+      key: `identity/${DEMO_BUYER.id}/demo-national-id.pdf`,
+      mimeType: 'application/pdf',
+      fileSize: 245_760,
+      scanStatus: ScanStatus.CLEAN,
+      scannedAt: new Date(),
+    },
+  });
+
+  await prisma.identityDocument.upsert({
+    where: { id: DEMO_IDENTITY_DOCUMENT_ID },
+    update: {},
+    create: {
+      id: DEMO_IDENTITY_DOCUMENT_ID,
+      userId: DEMO_BUYER.id,
+      fileObjectId: DEMO_IDENTITY_FILE_ID,
+      documentType: IdentityDocumentType.NATIONAL_ID,
+      // `IdentityService.uploadIdentityDocument` binds the document to the registered national id.
+      idNumber: DEMO_BUYER.nationalId,
+      status: VerificationStatus.VERIFIED,
+      verifiedAt: new Date(),
+    },
+  });
+
+  // `Deal.offerId` is required and unique, so the terminal offer has to exist before the deal.
+  await prisma.offer.upsert({
+    where: { id: DEMO_OFFER_ID },
+    update: {},
+    create: {
+      id: DEMO_OFFER_ID,
+      listingId: DEMO_RESERVED_LISTING_ID,
+      buyerProfileId: DEMO_BUYER.profileId,
+      offerPrice: '1450000.00',
+      status: OfferStatus.CONVERTED_TO_DEAL,
+      expiresAt: new Date(Date.now() + 30 * 24 * 3_600_000),
+    },
+  });
+
+  const payout = await prisma.payoutAccount.findUnique({ where: { id: DEMO_PAYOUT_ACCOUNT_ID } });
+  if (!payout) {
+    throw new Error(
+      'Demo seller payout account is missing — seedDemoListings() must run before seedDemoDeal()',
+    );
+  }
+
+  // Same frozen snapshot the admin approval writes (Story 5.1): fixed-point money, the seller
+  // payout copied (never re-encrypted) and a 48-hour window starting from this instant.
+  const amounts = computeDealAmounts({
+    dealPrice: '1450000',
+    commissionRate: DEFAULT_COMMISSION_RATE,
+    fixedCommission: DEFAULT_FIXED_COMMISSION_SAR,
+  });
+  const paymentWindowHours = DEFAULT_PAYMENT_WINDOW_HOURS;
+  const now = new Date();
+  const paymentDeadline = new Date(now.getTime() + paymentWindowHours * 3_600_000);
+
+  // Documented deviation: `buildDealNumber`/`buildDealReferenceCode` derive a hex short code from
+  // the UUID, which no human-readable demo code can express. The demo deal is recognisable by
+  // design, and both columns stay unique because the suffix is fixed.
+  const utcDate = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const dealNumber = `DL-${utcDate}-DEMO000001`;
+
+  await prisma.deal.upsert({
+    where: { id: DEMO_DEAL_ID },
+    update: {},
+    create: {
+      id: DEMO_DEAL_ID,
+      dealNumber,
+      dealReferenceCode: 'ELM-DEMO000001-C',
+      offerId: DEMO_OFFER_ID,
+      listingId: DEMO_RESERVED_LISTING_ID,
+      buyerProfileId: DEMO_BUYER.profileId,
+      sellerProfileId: DEMO_SELLER.profileId,
+      dealPrice: amounts.finalDealPrice,
+      platformCommission: amounts.finalCommission,
+      totalAmount: amounts.finalTotal,
+      commissionRateSnapshot: DEFAULT_COMMISSION_RATE.toFixed(4),
+      fixedCommissionSnapshot: amounts.fixedCommission,
+      paymentWindowHoursSnapshot: paymentWindowHours,
+      sellerPayoutAccountId: payout.id,
+      sellerPayoutHolderName: payout.accountHolderName,
+      sellerPayoutBankName: payout.bankName,
+      sellerPayoutIbanEncrypted: payout.ibanEncrypted,
+      sellerPayoutIbanMasked: payout.ibanMasked,
+      approvedByAdminId: INITIAL_ADMIN_ACCOUNTS[0].id,
+      status: DealStatus.AWAITING_PAYMENT_PROOF,
+      paymentDeadline,
+      createdAt: now,
+      // Deliberately no `Payment` rows: `BuyerDealsService.ensureDealPayments` materializes the
+      // two slots on first read, which is exactly the behaviour under test.
+    },
+  });
+
+  console.log(
+    `✅ Demo deal seeded: ${dealNumber} (ELM-DEMO000001-C) for ${DEMO_BUYER.username}, ` +
+      `payment deadline ${paymentDeadline.toISOString()} ` +
+      '(an earlier run keeps its original deadline — delete the row to restart the 48-hour window).',
+  );
+}
+
 async function main() {
   try {
     await seedGeographicData();
     await seedAdminUsers();
     await seedDemoListings();
+    await seedDemoDeal();
   } catch (error) {
     console.error('❌ Failed to seed database:', error);
     process.exit(1);

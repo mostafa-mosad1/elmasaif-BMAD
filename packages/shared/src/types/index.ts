@@ -73,21 +73,24 @@ export interface PropertyListingSummary {
   createdAt: string;
 }
 
+/**
+ * `GET /api/v1/deals/my` (Story 5.2 / AC-2, D8) — the buyer's deal list.
+ *
+ * Rewritten, not extended: the previous shape carried `hoursRemaining` and a frozen
+ * `platformIban`, neither of which can be served from a single clock-safe payload (the list is
+ * not the payment screen, so `serverNow` does not travel with every row). The list renders the
+ * title, the frozen amounts, the deadline and whether each receipt has landed.
+ */
 export interface DealSummary {
   id: string;
   dealNumber: string;
   listingId: string;
   propertyTitle: string;
+  status: DealStatus;
   dealPrice: string;
   platformCommission: string;
-  totalPayable: string;
-  platformIban: string;
-  dealReferenceCode: string;
-  sellerVerifiedIban: string;
-  sellerName: string;
-  status: DealStatus;
+  totalAmount: string;
   paymentDeadline: string;
-  hoursRemaining: number;
   platformFeeProofUploaded: boolean;
   sellerPriceProofUploaded: boolean;
 }

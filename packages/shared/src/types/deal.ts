@@ -1,4 +1,5 @@
 import { DealStatus } from '../enums';
+import type { DealPaymentStatus, DealPaymentType } from '../constants/deal';
 
 /**
  * The frozen seller payout snapshot stored on the Deal (Story 5.1 / FR-29 / AC-5).
@@ -57,4 +58,79 @@ export interface DealBinding {
 /** The admin final-approval request body (Story 5.1 / AC-1, AD-2). */
 export interface FinalApproveDealInput {
   offerId: string;
+}
+
+/**
+ * One leg of the dual wire transfer (Story 5.2 / AC-4, AC-5, AC-7).
+ *
+ * `proofFileObjectId` is the `FileObject` id, never a URL and never the ciphertext: NFR-2 forbids
+ * persisting a presigned link, and the download is minted on demand for 300 s.
+ */
+export interface DealPaymentSlot {
+  id: string;
+  paymentType: DealPaymentType;
+  /** The frozen amount, copied from the deal at materialization. Decimal string. */
+  amount: string;
+  status: DealPaymentStatus;
+  hasProof: boolean;
+  proofFileObjectId: string | null;
+  bankReferenceCode: string | null;
+  senderBankName: string | null;
+  uploadedAt: string | null;
+  /** Populated by Story 5.3's rejection; this story only ever clears it. */
+  rejectionReason: string | null;
+}
+
+/** The platform's collection account (D5) — env-backed until Story 8.6 adds the settings table. */
+export interface DealPlatformAccount {
+  iban: string;
+  ibanFormatted: string;
+  accountHolderName: string;
+  bankName: string | null;
+}
+
+/**
+ * `GET /api/v1/deals/:id` (Story 5.2 / AC-1, AC-3, AC-4, AC-5) — the buyer's payment screen.
+ *
+ * `serverNow` is the authority the countdown measures against (UX-DR5, trap T-5): the client
+ * never compares `paymentDeadline` to `Date.now()`.
+ *
+ * The seller's *plaintext* IBAN is present because the buyer is the paying party (NFR-3). The
+ * ciphertext, the seller's mobile number and their email are never part of this payload (FR-32).
+ */
+export interface DealPaymentView {
+  id: string;
+  dealNumber: string;
+  dealReferenceCode: string;
+  status: DealStatus;
+  listingId: string;
+  propertyTitle: string;
+  dealPrice: string;
+  platformCommission: string;
+  totalAmount: string;
+  commissionRateSnapshot: string;
+  paymentWindowHoursSnapshot: number;
+  paymentDeadline: string;
+  createdAt: string;
+  /** The API clock, ISO — always present, even when the countdown has expired. */
+  serverNow: string;
+  platformAccount: DealPlatformAccount;
+  sellerPayout: {
+    accountHolderName: string;
+    bankName: string | null;
+    iban: string;
+    ibanFormatted: string;
+    ibanMasked: string;
+  };
+  /** Exactly two slots, `PLATFORM_COMMISSION` first (RTL reading order). */
+  payments: DealPaymentSlot[];
+}
+
+/** AC-7: the upload response body carries the updated slot, never the whole deal. */
+export type DealPaymentProofUploadResult = DealPaymentSlot;
+
+/** AC-12: a 5-minute, single-use download link — never persisted (NFR-2). */
+export interface DealPaymentProofDownload {
+  downloadUrl: string;
+  expiresInSeconds: number;
 }
