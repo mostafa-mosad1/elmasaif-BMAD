@@ -6,6 +6,7 @@ import { ArrowRight, RefreshCw, ShieldCheck } from 'lucide-react';
 import {
   DEAL_ALREADY_RATED,
   DEAL_BUYER_PROFILE_REQUIRED,
+  DEAL_CANCEL_REASON_PAYMENT_TIMEOUT,
   DEAL_IDENTITY_REQUIRED,
   DEAL_NOT_COMPLETED,
   DEAL_NOT_FOUND,
@@ -45,6 +46,7 @@ import {
   useDealCountdownElapsed,
 } from './deal-countdown-banner';
 import { DealCompletedBanner } from './deal-completed-banner';
+import { DealCancelledBanner } from './deal-cancelled-banner';
 import { DealSellerContactCard } from './deal-seller-contact-card';
 import { DealInvoiceCard } from './deal-invoice-card';
 import { DealRatingCard } from './deal-rating-card';
@@ -87,6 +89,7 @@ export const DEAL_PAYMENT_ERROR_HINTS_AR: Record<string, string> = {
   [DEAL_PAYMENT_PROOF_NOT_FOUND]: 'لم يتم العثور على إيصال التحويل المطلوب.',
   [DEAL_PAYMENT_PROOF_SCAN_FAILED]: 'تعذر إتمام الفحص الأمني للملف. أعد المحاولة بعد قليل.',
   [DEAL_NOT_COMPLETED]: 'لا يمكن تقييم الصفقة إلا بعد اكتمالها بنجاح.',
+  [DEAL_CANCEL_REASON_PAYMENT_TIMEOUT]: 'تم إلغاء الصفقة لانتهاء مهلة السداد.',
   [DEAL_ALREADY_RATED]: 'تم تقييم هذه الصفقة مسبقاً.',
   [DEAL_RATING_SCORE_INVALID]: 'تقييم الصفقة يجب أن يكون بين 1 و 5 نجوم.',
   [DEAL_RATING_COMMENT_TOO_LONG]: 'التعليق يجب ألا يتجاوز 500 حرف.',
@@ -370,6 +373,7 @@ export function DealPaymentView({ dealId }: DealPaymentViewProps) {
     view.payments.find((payment) => payment.paymentType === DEAL_PAYMENT_TYPES[1]) ?? null;
   const sharedCardProps = { deal: { status: view.status, isExpired: countdown.isExpired } };
   const isCompleted = view.status === 'COMPLETED';
+  const isCancelled = view.status === 'CANCELLED';
 
   const handleRatingSubmit = async (input: SubmitDealRatingInput) => {
     try {
@@ -423,6 +427,8 @@ export function DealPaymentView({ dealId }: DealPaymentViewProps) {
 
       {isCompleted ? (
         <DealCompletedBanner completedAt={view.completedAt} />
+      ) : isCancelled ? (
+        <DealCancelledBanner />
       ) : (
         <DealCountdownBanner state={countdown} />
       )}

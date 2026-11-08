@@ -14,3 +14,4 @@ export * from './identity';
 export * from './countdown';
 export * from './payment';
 export * from './invoice';
+export * from './timeout';

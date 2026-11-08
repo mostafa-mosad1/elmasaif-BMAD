@@ -53,6 +53,12 @@ import {
   DEAL_COMPLETED,
   INVOICE_GENERATED,
   RATING_SUBMITTED,
+  // Story 5.5 — automated payment timeout vocabulary
+  DEAL_CANCELLED_BY_TIMEOUT,
+  PAYMENT_EXPIRED,
+  NOTIFICATION_DEAL_TIMEOUT_CANCELLED,
+  DEAL_CANCEL_REASON_PAYMENT_TIMEOUT,
+  DEAL_ERROR_MESSAGES_AR,
 } from '../deal';
 import { OFFER_LOCK_DURATION_MS, OFFER_LOCK_HEARTBEAT_INTERVAL_MS } from '../offer';
 import { LISTING_LOCK_DURATION_MS, LISTING_LOCK_HEARTBEAT_INTERVAL_MS } from '../listing';
@@ -246,3 +252,19 @@ describe('Deal completion, invoice & rating vocabulary (Story 5.4)', () => {
     expect(RATING_SUBMITTED).toBe('RATING_SUBMITTED');
   });
 });
+
+describe('Deal timeout vocabulary (Story 5.5)', () => {
+  it('exports audit log action and notification constants for timeout cancellation', () => {
+    expect(DEAL_CANCELLED_BY_TIMEOUT).toBe('DEAL_CANCELLED_BY_TIMEOUT');
+    expect(PAYMENT_EXPIRED).toBe('PAYMENT_EXPIRED');
+    expect(NOTIFICATION_DEAL_TIMEOUT_CANCELLED).toBe('deal.timeout_cancelled');
+    expect(DEAL_CANCEL_REASON_PAYMENT_TIMEOUT).toBe('PAYMENT_DEADLINE_EXPIRED');
+  });
+
+  it('includes Arabic message hint for PAYMENT_DEADLINE_EXPIRED', () => {
+    expect(DEAL_ERROR_MESSAGES_AR[DEAL_CANCEL_REASON_PAYMENT_TIMEOUT]).toBe(
+      'تم إلغاء الصفقة لانتهاء مهلة السداد',
+    );
+  });
+});
+

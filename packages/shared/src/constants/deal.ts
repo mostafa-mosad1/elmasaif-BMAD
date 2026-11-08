@@ -230,7 +230,15 @@ export const DEAL_COMPLETED = 'DEAL_COMPLETED';
 export const INVOICE_GENERATED = 'INVOICE_GENERATED';
 export const RATING_SUBMITTED = 'RATING_SUBMITTED';
 
-/** Arabic error messages for Deal completion and rating operations. */
+/*
+ * Story 5.5 — Automated Payment Timeout Worker Job (FR-33, BR-07, AD-4, AD-7, AD-11, OQ-13).
+ */
+export const DEAL_CANCELLED_BY_TIMEOUT = 'DEAL_CANCELLED_BY_TIMEOUT';
+export const PAYMENT_EXPIRED = 'PAYMENT_EXPIRED';
+export const NOTIFICATION_DEAL_TIMEOUT_CANCELLED = 'deal.timeout_cancelled';
+export const DEAL_CANCEL_REASON_PAYMENT_TIMEOUT = 'PAYMENT_DEADLINE_EXPIRED';
+
+/** Arabic error messages for Deal completion, rating, and timeout operations. */
 export const DEAL_ERROR_MESSAGES_AR: Record<string, string> = {
   [DEAL_NOT_COMPLETED]: 'الصفقة ليست في حالة اكتمال',
   [DEAL_ALREADY_RATED]: 'تم تقييم هذه الصفقة مسبقاً',
@@ -238,6 +246,8 @@ export const DEAL_ERROR_MESSAGES_AR: Record<string, string> = {
   [DEAL_RATING_COMMENT_TOO_LONG]: 'التعليق يجب ألا يتجاوز 500 حرف',
   [DEAL_RATING_NOT_PARTY]: 'يحق لمشتري الصفقة فقط تقديم التقييم',
   [INVOICE_NOT_FOUND]: 'فاتورة الصفقة غير موجودة أو لم تصدر بعد',
+  [DEAL_CANCEL_REASON_PAYMENT_TIMEOUT]: 'تم إلغاء الصفقة لانتهاء مهلة السداد',
 };
+
 
 

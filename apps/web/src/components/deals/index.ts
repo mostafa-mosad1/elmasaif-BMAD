@@ -6,6 +6,7 @@ export * from './dual-wire-transfer-cards';
 export * from './deal-payment-view';
 export * from './buyer-deals-list';
 export * from './deal-completed-banner';
+export * from './deal-cancelled-banner';
 export * from './deal-seller-contact-card';
 export * from './deal-invoice-card';
 export * from './deal-rating-card';

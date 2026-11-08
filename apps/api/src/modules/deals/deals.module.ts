@@ -17,6 +17,7 @@ import { AdminPaymentsService } from './admin-payments.service';
 import { BuyerDealsService } from './buyer-deals.service';
 import { DealsService } from './deals.service';
 import { DealCompletionService } from './deal-completion.service';
+import { DealTimeoutService } from './deal-timeout.service';
 import { PlatformAccountService } from './platform-account';
 
 /**
@@ -38,6 +39,7 @@ import { PlatformAccountService } from './platform-account';
   providers: [
     DealsService,
     DealCompletionService,
+    DealTimeoutService,
     AdminPaymentsService,
     BuyerDealsService,
     PlatformAccountService,
@@ -46,6 +48,6 @@ import { PlatformAccountService } from './platform-account';
     SessionAuthGuard,
     ActiveRoleGuard,
   ],
-  exports: [DealsService, DealCompletionService, BuyerDealsService],
+  exports: [DealsService, DealCompletionService, DealTimeoutService, BuyerDealsService],
 })
 export class DealsModule {}

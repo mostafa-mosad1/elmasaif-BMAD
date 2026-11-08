@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 10-27-2026 15:27
-last_updated: 11-07-2026 16:37
+last_updated: 11-08-2026 10:22
 project: elmasaif
 project_key: NOKEY
 tracking_system: file-system
@@ -90,8 +90,8 @@ development_status:
   5-1-deal-creation-state-machine-binding-financial-snapshot-freez: done
   5-2-dual-wire-transfer-interface-48-hour-countdown-banner: done
   5-3-administrative-proof-review-task-claim-locking-grace-period: done
-  5-4-atomic-deal-completion-contact-release: review
-  5-5-automated-payment-timeout-worker-job: backlog
+  5-4-atomic-deal-completion-contact-release: done
+  5-5-automated-payment-timeout-worker-job: review
   5-6-pre-payment-cancellations-dispute-adjudication: backlog
   epic-5-retrospective: optional
 

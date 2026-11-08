@@ -135,38 +135,38 @@ export function DealPaymentCard({
 
   return (
     <Card
-      className={`${orderClass} border-2 ${
+      className={`p-5 sm:p-6 shadow-level1 ${orderClass} border-2 ${
         isPlatform
           ? 'border-deal-platform-fee bg-deal-platform-fee-bg'
           : 'border-surface-borderStrong bg-deal-seller-price-bg'
       }`}
       data-testid={`deal-payment-card-${accent}`}
     >
-      <CardHeader className="mb-3">
+      <CardHeader className="mb-4 p-0">
         <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <span
-              className={`flex h-9 w-9 items-center justify-center rounded-xl text-white ${
+              className={`flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-xs ${
                 isPlatform ? 'bg-deal-platform-fee' : 'bg-deal-seller-price'
               }`}
               aria-hidden="true"
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-5 w-5" />
             </span>
-            <CardTitle className="text-base">{title}</CardTitle>
+            <CardTitle className="text-base font-bold">{title}</CardTitle>
           </div>
           {slot ? <DealPaymentStatusBadge status={slot.status} /> : null}
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        <div>
+      <CardContent className="space-y-4 p-0">
+        <div className="rounded-xl border border-surface-border/60 bg-white/70 p-3.5 dark:border-dark-surface-border dark:bg-dark-surface-base/50">
           <p className="text-[11px] font-semibold text-ink-secondary dark:text-dark-ink-secondary">
             المبلغ المطلوب تحويله
           </p>
           <p
             dir="ltr"
-            className={`font-mono text-2xl font-bold ${
+            className={`mt-0.5 font-mono text-2xl sm:text-3xl font-extrabold ${
               isPlatform ? 'text-deal-platform-fee' : 'text-deal-seller-price dark:text-slate-100'
             }`}
             data-testid={`deal-card-amount-${accent}`}
@@ -175,31 +175,33 @@ export function DealPaymentCard({
           </p>
         </div>
 
-        <dl className="space-y-1.5 text-xs">
-          <div className="flex items-center justify-between gap-2">
-            <dt className="text-ink-secondary dark:text-dark-ink-secondary">اسم صاحب الحساب</dt>
-            <dd className="font-semibold text-ink-primary dark:text-dark-ink-primary">
-              {accountHolderName}
-            </dd>
-          </div>
-          {bankName ? (
+        <div className="rounded-xl border border-surface-border/60 bg-white/70 p-3.5 dark:border-dark-surface-border dark:bg-dark-surface-base/50">
+          <dl className="space-y-2 text-xs">
             <div className="flex items-center justify-between gap-2">
-              <dt className="text-ink-secondary dark:text-dark-ink-secondary">البنك</dt>
-              <dd className="font-semibold text-ink-primary dark:text-dark-ink-primary">
-                {bankName}
+              <dt className="text-ink-secondary dark:text-dark-ink-secondary">اسم صاحب الحساب</dt>
+              <dd className="font-semibold text-ink-primary dark:text-dark-ink-primary text-start">
+                {accountHolderName}
               </dd>
             </div>
-          ) : null}
-        </dl>
+            {bankName ? (
+              <div className="flex items-center justify-between gap-2 border-t border-surface-border/40 pt-2 dark:border-dark-surface-border/40">
+                <dt className="text-ink-secondary dark:text-dark-ink-secondary">البنك</dt>
+                <dd className="font-semibold text-ink-primary dark:text-dark-ink-primary">
+                  {bankName}
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        </div>
 
-        <div className="rounded-xl border border-surface-border/70 bg-white/80 p-3 dark:border-dark-surface-border dark:bg-dark-surface-base/60">
+        <div className="rounded-xl border border-surface-border/80 bg-white p-3.5 shadow-xs dark:border-dark-surface-border dark:bg-dark-surface-base">
           <p className="text-[11px] font-semibold text-ink-secondary dark:text-dark-ink-secondary">
             رقم الآيبان (IBAN)
           </p>
           <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
             <span
               dir="ltr"
-              className="font-mono text-sm font-bold text-ink-primary dark:text-dark-ink-primary"
+              className="font-mono text-sm sm:text-base font-bold text-ink-primary dark:text-dark-ink-primary"
               data-testid={`deal-card-iban-${accent}`}
             >
               {ibanFormatted || iban}
@@ -213,7 +215,7 @@ export function DealPaymentCard({
         </div>
 
         {referenceCode ? (
-          <div className="rounded-xl border border-accent/40 bg-accent-light p-3">
+          <div className="rounded-xl border border-accent/40 bg-accent-light p-3.5 shadow-xs">
             <p className="text-[11px] font-semibold text-ink-secondary dark:text-dark-ink-secondary">
               رمز مرجع التحويل (يُكتب في وصف الحوالة البنكية)
             </p>

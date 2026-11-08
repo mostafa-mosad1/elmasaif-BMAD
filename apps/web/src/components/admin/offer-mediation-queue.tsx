@@ -29,6 +29,10 @@ const STATUS_FILTERS: Array<{ value: '' | OfferStatus; label: string }> = [
   { value: '', label: 'الكل' },
   { value: OfferStatus.PENDING_ADMIN_REVIEW, label: 'قيد المراجعة الإدارية' },
   { value: OfferStatus.COUNTER_OFFERED, label: 'عروض مضادة' },
+  {
+    value: OfferStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL,
+    label: 'معتمد — بانتظار الاعتماد النهائي',
+  },
 ];
 
 /**
