@@ -3,8 +3,10 @@ import {
   ACTIVE_DEAL_STATUSES,
   DEAL_CANCEL_REASON_PAYMENT_TIMEOUT,
   DEAL_CANCELLED_BY_TIMEOUT,
+  DEAL_DISPUTE_SYSTEM_ESCALATION,
   DEAL_NOT_FOUND,
   DEAL_PAYMENT_STATUS,
+  DISPUTE_STATUS,
   DealStatus,
   ListingStatus,
   TERMINAL_DEAL_STATUSES,
@@ -239,14 +241,31 @@ export class DealTimeoutService {
       }
 
       if (outcome === 'PRICE_CONFIRMED_COMMISSION_EXPIRED') {
-        // Price confirmed, platform fee missing: flag for review without auto-completing
+        // Story 5.6 / AC-6: Price confirmed, platform fee expired -> auto-escalate to Dispute with status DISPUTED
+        const disputedDeal = await tx.deal.update({
+          where: { id: deal.id },
+          data: {
+            status: DealStatus.DISPUTED,
+            version: { increment: 1 },
+          },
+        });
+
+        const dispute = await tx.dispute.create({
+          data: {
+            dealId: deal.id,
+            initiatorId: 'SYSTEM',
+            reason: 'PRICE_CONFIRMED_COMMISSION_EXPIRED',
+            status: DISPUTE_STATUS.OPEN,
+          },
+        });
+
         await tx.auditLog.create({
           data: {
             actorId: 'SYSTEM',
             actorType: 'SYSTEM',
-            action: 'DEAL_TIMEOUT_ANOMALY',
-            entityType: 'Deal',
-            entityId: deal.id,
+            action: DEAL_DISPUTE_SYSTEM_ESCALATION,
+            entityType: 'Dispute',
+            entityId: dispute.id,
             payload: {
               dealId: deal.id,
               dealNumber: deal.dealNumber,
@@ -258,7 +277,16 @@ export class DealTimeoutService {
           },
         });
 
-        return { cancelled: false, outcome, reason: 'ANOMALY_REQUIRES_SUPER_ADMIN_REVIEW', deal };
+        this.logger.log(
+          `Deal ${deal.dealNumber} automatically escalated to DISPUTED due to PRICE_CONFIRMED_COMMISSION_EXPIRED`,
+        );
+
+        return {
+          cancelled: false,
+          outcome,
+          reason: 'ANOMALY_ESCALATED_TO_DISPUTE',
+          deal: disputedDeal,
+        };
       }
 
       return { cancelled: false, outcome, reason: 'PENDING_REVIEW', deal };

@@ -324,6 +324,48 @@ describe('DealTimeoutService (Story 5.5) (AC: 2, 3, 4, 5, 6, 7)', () => {
       });
     });
 
+    it('Outcome C (AC-6): auto-escalates to Dispute with status DISPUTED when price is CONFIRMED and commission is EXPIRED', async () => {
+      const deal = makeMockDeal({
+        payments: [
+          {
+            id: 'pay-1',
+            paymentType: PaymentType.PLATFORM_COMMISSION,
+            status: DEAL_PAYMENT_STATUS.PENDING,
+          },
+          {
+            id: 'pay-2',
+            paymentType: PaymentType.SELLER_PURCHASE_PRICE,
+            status: DEAL_PAYMENT_STATUS.CONFIRMED,
+          },
+        ],
+      });
+      mockTx.deal.findUnique.mockResolvedValue(deal);
+      mockTx.dispute = { create: jest.fn().mockResolvedValue({ id: 'disp-auto-1' }) };
+
+      const result = await service.cancelDealByTimeout(dealId);
+
+      expect(result.cancelled).toBe(false);
+      expect(result.outcome).toBe('PRICE_CONFIRMED_COMMISSION_EXPIRED');
+      expect(result.reason).toBe('ANOMALY_ESCALATED_TO_DISPUTE');
+
+      expect(mockTx.deal.update).toHaveBeenCalledWith({
+        where: { id: dealId },
+        data: {
+          status: DealStatus.DISPUTED,
+          version: { increment: 1 },
+        },
+      });
+
+      expect(mockTx.dispute.create).toHaveBeenCalledWith({
+        data: {
+          dealId,
+          initiatorId: 'SYSTEM',
+          reason: 'PRICE_CONFIRMED_COMMISSION_EXPIRED',
+          status: 'OPEN',
+        },
+      });
+    });
+
     it('rolls back completely if any sub-operation fails inside transaction', async () => {
       mockTx.deal.findUnique.mockResolvedValue(makeMockDeal());
       mockTx.deal.update.mockRejectedValue(new Error('DB connection failure'));

@@ -21,12 +21,18 @@ import {
   OfferThreadItem,
   OfferHistoryEntry,
   PROPERTY_TYPE_LABELS_AR,
+  DealStatus,
+  TERMINAL_DEAL_STATUSES,
 } from '@elmasaif/shared';
 import { Button, EmptyState } from '../ui';
 import { apiClient, describeApiError } from '../../lib/api-client';
 import { formatSar } from '../listings/commission-calculator';
 import { OfferStatusBadge } from './offer-status-badge';
 import { OfferNegotiationTimeline } from './offer-negotiation-timeline';
+import { DealStatusBadge } from '../deals/deal-status-badge';
+import { DealDisputedBanner } from '../deals/deal-disputed-banner';
+import { SellerCancelRequestModal } from '../deals/seller-cancel-request-modal';
+import { DealDisputeModal } from '../deals/deal-dispute-modal';
 
 /** UX-DR-13 mediation transparency copy, verbatim from `EXPERIENCE.md#Offer Timeline`. */
 export const MEDIATION_TRANSPARENCY_AR =
@@ -132,6 +138,8 @@ export function OfferNegotiationView({ offerId, viewer, backHref }: OfferNegotia
   const [counterNote, setCounterNote] = useState('');
   const [rejectReason, setRejectReason] = useState<OfferRejectionReason>('PRICE_TOO_LOW');
   const [rejectNote, setRejectNote] = useState('');
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isDisputeModalOpen, setIsDisputeModalOpen] = useState(false);
 
   const load = useCallback(
     (showSkeleton = false) => {
@@ -166,6 +174,10 @@ export function OfferNegotiationView({ offerId, viewer, backHref }: OfferNegotia
   }, [isPolling, load]);
 
   const actions = useMemo(() => resolveOfferActions(thread, viewer), [thread, viewer]);
+
+  const isDealTerminal = thread?.dealStatus
+    ? (TERMINAL_DEAL_STATUSES as readonly string[]).includes(thread.dealStatus)
+    : false;
 
   const performer = viewer === 'BUYER' ? 'buyer' : 'seller';
 
@@ -346,6 +358,85 @@ export function OfferNegotiationView({ offerId, viewer, backHref }: OfferNegotia
         </div>
       ) : null}
 
+      {/* Converted Deal Details & Seller Actions (Story 5.6 / AC: 10) */}
+      {thread.status === 'CONVERTED_TO_DEAL' && thread.dealId ? (
+        <div className="space-y-4" data-testid="converted-deal-section">
+          {thread.dealStatus === DealStatus.DISPUTED ? (
+            <DealDisputedBanner />
+          ) : null}
+
+          <div className="rounded-card border border-surface-border dark:border-dark-surface-border bg-surface dark:bg-dark-surface-raised p-5 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-border dark:border-dark-surface-border pb-4">
+              <div>
+                <span className="text-xs text-ink-muted dark:text-dark-ink-muted">الصفقة المعتمدة</span>
+                <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary font-mono">
+                  {thread.dealNumber || thread.dealId}
+                </h3>
+              </div>
+              {thread.dealStatus ? (
+                <DealStatusBadge status={thread.dealStatus as DealStatus} />
+              ) : null}
+            </div>
+
+            {viewer === 'SELLER' ? (
+              <div className="space-y-3">
+                {!thread.hasPaymentProof ? (
+                  thread.sellerCancellationRequestedAt ? (
+                    <div
+                      role="status"
+                      data-testid="seller-cancellation-pending-banner"
+                      className="rounded-xl border border-amber-500/30 bg-amber-50/80 p-4 text-xs text-amber-900 dark:bg-amber-950/20 dark:text-amber-200 space-y-1"
+                    >
+                      <p className="font-bold">طلب إلغاء الصفقة قيد المراجعة الإدارية</p>
+                      <p className="text-amber-800 dark:text-amber-300">
+                        تاريخ الطلب: {new Date(thread.sellerCancellationRequestedAt).toLocaleString('ar-SA')}
+                      </p>
+                      {thread.sellerCancellationReason ? (
+                        <p className="text-amber-800 dark:text-amber-300">
+                          السبب: {thread.sellerCancellationReason}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                      <p className="text-xs text-ink-muted dark:text-dark-ink-muted">
+                        لم يرفع المشتري إثباتات السداد بعد. يمكنك طلب إلغاء الصفقة إذا تعذر المضي بها.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="danger"
+                        data-testid="seller-cancel-deal-button"
+                        onClick={() => setIsCancelModalOpen(true)}
+                        className="text-xs shrink-0"
+                      >
+                        طلب إلغاء الصفقة
+                      </Button>
+                    </div>
+                  )
+                ) : !isDealTerminal ? (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                    <p className="text-xs text-ink-muted dark:text-dark-ink-muted">
+                      قام المشتري برفع إثباتات السداد. في حال وجود أي خلاف أو تعثر، يمكنك رفع نزاع رسمي للإدارة.
+                    </p>
+                    {thread.dealStatus !== DealStatus.DISPUTED ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        data-testid="seller-file-dispute-button"
+                        onClick={() => setIsDisputeModalOpen(true)}
+                        className="text-xs shrink-0 border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                      >
+                        تقديم نزاع
+                      </Button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       {/* Timeline */}
       <div className="rounded-card border border-surface-border dark:border-dark-surface-border bg-surface dark:bg-dark-surface-raised p-5 space-y-4">
         <h2 className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
@@ -361,7 +452,9 @@ export function OfferNegotiationView({ offerId, viewer, backHref }: OfferNegotia
       >
         {!actions.canAccept && !actions.canCounter ? (
           <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary">
-            {awaitingParty
+            {thread.status === 'CONVERTED_TO_DEAL'
+              ? 'تم اعتماد العرض وتحويله إلى صفقة رسمية.'
+              : awaitingParty
               ? OFFER_AWAITING_PARTY_LABELS_AR[awaitingParty]
               : 'لا يوجد إجراء مطلوب منك على هذا العرض حالياً.'}
           </p>
@@ -530,6 +623,31 @@ export function OfferNegotiationView({ offerId, viewer, backHref }: OfferNegotia
           </p>
         ) : null}
       </div>
+
+      {thread.dealId ? (
+        <>
+          <SellerCancelRequestModal
+            isOpen={isCancelModalOpen}
+            onClose={() => setIsCancelModalOpen(false)}
+            dealId={thread.dealId}
+            dealNumber={thread.dealNumber ?? undefined}
+            onSuccess={() => {
+              setBanner('تم إرسال طلب إلغاء الصفقة للإدارة بنجاح');
+              load();
+            }}
+          />
+          <DealDisputeModal
+            isOpen={isDisputeModalOpen}
+            onClose={() => setIsDisputeModalOpen(false)}
+            dealId={thread.dealId}
+            dealNumber={thread.dealNumber ?? undefined}
+            onSuccess={() => {
+              setBanner('تم تقديم النزاع بنجاح وتحويل الملف للإدارة العليا');
+              load();
+            }}
+          />
+        </>
+      ) : null}
     </div>
   );
 }

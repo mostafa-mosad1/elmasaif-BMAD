@@ -10,4 +10,4 @@ export interface ThemeConfig {
   resolvedTheme: 'light' | 'dark';
 }
 
-export type StatusBadgeVariant = 'verified' | 'pending' | 'danger' | 'info' | 'neutral';
+export type StatusBadgeVariant = 'verified' | 'pending' | 'warning' | 'danger' | 'info' | 'neutral';

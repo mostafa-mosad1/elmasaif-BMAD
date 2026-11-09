@@ -47,6 +47,9 @@ import {
 } from './deal-countdown-banner';
 import { DealCompletedBanner } from './deal-completed-banner';
 import { DealCancelledBanner } from './deal-cancelled-banner';
+import { DealDisputedBanner } from './deal-disputed-banner';
+import { DealCancelModal } from './deal-cancel-modal';
+import { DealDisputeModal } from './deal-dispute-modal';
 import { DealSellerContactCard } from './deal-seller-contact-card';
 import { DealInvoiceCard } from './deal-invoice-card';
 import { DealRatingCard } from './deal-rating-card';
@@ -216,6 +219,8 @@ export function DealPaymentView({ dealId }: DealPaymentViewProps) {
   const [uploadingType, setUploadingType] = useState<DealPaymentType | null>(null);
   const [proofErrors, setProofErrors] = useState<ProofFieldState>({});
   const [proofSuccess, setProofSuccess] = useState<ProofFieldState>({});
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isDisputeModalOpen, setIsDisputeModalOpen] = useState(false);
 
   const load = useCallback(() => {
     setError(null);
@@ -371,9 +376,18 @@ export function DealPaymentView({ dealId }: DealPaymentViewProps) {
     view.payments.find((payment) => payment.paymentType === DEAL_PAYMENT_TYPES[0]) ?? null;
   const sellerSlot =
     view.payments.find((payment) => payment.paymentType === DEAL_PAYMENT_TYPES[1]) ?? null;
-  const sharedCardProps = { deal: { status: view.status, isExpired: countdown.isExpired } };
   const isCompleted = view.status === 'COMPLETED';
   const isCancelled = view.status === 'CANCELLED';
+  const isDisputed = view.status === 'DISPUTED';
+  const hasUploadedProof = view.payments.some((p) => p.status !== 'PENDING');
+  const canCancel = view.status === 'AWAITING_PAYMENT_PROOF' && !hasUploadedProof;
+  const canDispute = hasUploadedProof && !isTerminal && !isDisputed;
+  const sharedCardProps = {
+    deal: {
+      status: view.status,
+      isExpired: countdown.isExpired || isDisputed,
+    },
+  };
 
   const handleRatingSubmit = async (input: SubmitDealRatingInput) => {
     try {
@@ -411,6 +425,29 @@ export function DealPaymentView({ dealId }: DealPaymentViewProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {canCancel ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="danger"
+              onClick={() => setIsCancelModalOpen(true)}
+              data-testid="buyer-cancel-deal-btn"
+            >
+              إلغاء الصفقة
+            </Button>
+          ) : null}
+          {canDispute ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setIsDisputeModalOpen(true)}
+              className="text-amber-700 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-700 dark:hover:bg-amber-950/30"
+              data-testid="buyer-file-dispute-btn"
+            >
+              تقديم نزاع
+            </Button>
+          ) : null}
           <DealStatusBadge status={view.status} />
           <Button
             type="button"
@@ -429,6 +466,8 @@ export function DealPaymentView({ dealId }: DealPaymentViewProps) {
         <DealCompletedBanner completedAt={view.completedAt} />
       ) : isCancelled ? (
         <DealCancelledBanner />
+      ) : isDisputed ? (
+        <DealDisputedBanner />
       ) : (
         <DealCountdownBanner state={countdown} />
       )}
@@ -563,6 +602,28 @@ export function DealPaymentView({ dealId }: DealPaymentViewProps) {
           </p>
         </CardContent>
       </Card>
+
+      <DealCancelModal
+        isOpen={isCancelModalOpen}
+        onClose={() => setIsCancelModalOpen(false)}
+        dealId={view.id}
+        dealNumber={view.dealNumber}
+        onSuccess={() => {
+          setBanner('تم إلغاء الصفقة بنجاح');
+          load();
+        }}
+      />
+
+      <DealDisputeModal
+        isOpen={isDisputeModalOpen}
+        onClose={() => setIsDisputeModalOpen(false)}
+        dealId={view.id}
+        dealNumber={view.dealNumber}
+        onSuccess={() => {
+          setBanner('تم تقديم النزاع بنجاح وجارٍ التدقيق الإداري');
+          load();
+        }}
+      />
     </div>
   );
 }

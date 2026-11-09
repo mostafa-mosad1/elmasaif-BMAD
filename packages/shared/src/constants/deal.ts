@@ -28,6 +28,7 @@ export const ACTIVE_DEAL_STATUSES: readonly DealStatus[] = [
   DealStatus.AWAITING_PAYMENT_PROOF,
   DealStatus.UNDER_ADMIN_AUDIT,
   DealStatus.PAYMENT_REJECTED,
+  DealStatus.DISPUTED,
 ];
 
 /** BR-07 / AD-4: a deal in one of these statuses no longer blocks a second deal for the listing. */
@@ -147,6 +148,7 @@ export const DEAL_STATUS_LABELS_AR: Record<DealStatus, string> = {
   [DealStatus.AWAITING_PAYMENT_PROOF]: 'بانتظار إثبات الدفع',
   [DealStatus.UNDER_ADMIN_AUDIT]: 'قيد التدقيق الإداري',
   [DealStatus.PAYMENT_REJECTED]: 'إثبات مرفوض',
+  [DealStatus.DISPUTED]: 'متنازع عليها',
   [DealStatus.COMPLETED]: 'مكتملة',
   [DealStatus.CANCELLED]: 'ملغاة',
   [DealStatus.TERMINATED]: 'منتهية',
@@ -238,6 +240,76 @@ export const PAYMENT_EXPIRED = 'PAYMENT_EXPIRED';
 export const NOTIFICATION_DEAL_TIMEOUT_CANCELLED = 'deal.timeout_cancelled';
 export const DEAL_CANCEL_REASON_PAYMENT_TIMEOUT = 'PAYMENT_DEADLINE_EXPIRED';
 
+/*
+ * Story 5.6 — Pre-Payment Cancellations & Dispute Adjudication (FR-34, FR-36, AD-3, AD-10, UC-29B, UC-29C, UC-46, UC-70C).
+ */
+
+// Refusal codes
+export const DEAL_CANCEL_INVALID_STATE = 'DEAL_CANCEL_INVALID_STATE';
+export const DEAL_CANCEL_PROOF_EXISTS = 'DEAL_CANCEL_PROOF_EXISTS';
+export const DEAL_CANCEL_NOT_PARTY = 'DEAL_CANCEL_NOT_PARTY';
+export const SELLER_CANCEL_REQUEST_PENDING = 'SELLER_CANCEL_REQUEST_PENDING';
+export const SELLER_CANCEL_REQUEST_NOT_FOUND = 'SELLER_CANCEL_REQUEST_NOT_FOUND';
+export const DISPUTE_PROOF_REQUIRED = 'DISPUTE_PROOF_REQUIRED';
+export const DISPUTE_ALREADY_OPEN = 'DISPUTE_ALREADY_OPEN';
+export const DISPUTE_NOT_FOUND = 'DISPUTE_NOT_FOUND';
+export const DISPUTE_NOT_CLAIMABLE = 'DISPUTE_NOT_CLAIMABLE';
+export const DISPUTE_LOCK_REQUIRED = 'DISPUTE_LOCK_REQUIRED';
+export const DISPUTE_LOCK_CONFLICT = 'DISPUTE_LOCK_CONFLICT';
+export const DISPUTE_LOCK_EXPIRED = 'DISPUTE_LOCK_EXPIRED';
+export const DISPUTE_SELF_ADJUDICATION_FORBIDDEN = 'DISPUTE_SELF_ADJUDICATION_FORBIDDEN';
+export const DISPUTE_ADJUDICATION_INVALID_ACTION = 'DISPUTE_ADJUDICATION_INVALID_ACTION';
+export const DISPUTE_DEADLINE_EXTENSION_REQUIRED = 'DISPUTE_DEADLINE_EXTENSION_REQUIRED';
+export const DISPUTE_FORCE_UNLOCK_REASON_REQUIRED = 'DISPUTE_FORCE_UNLOCK_REASON_REQUIRED';
+
+// Audit log action constants
+export const DEAL_CANCELLED_BY_BUYER = 'DEAL_CANCELLED_BY_BUYER';
+export const SELLER_CANCELLATION_REQUESTED = 'SELLER_CANCELLATION_REQUESTED';
+export const DEAL_CANCELLED_BY_SELLER = 'DEAL_CANCELLED_BY_SELLER';
+export const SELLER_CANCELLATION_REJECTED = 'SELLER_CANCELLATION_REJECTED';
+export const DEAL_DISPUTED = 'DEAL_DISPUTED';
+export const DEAL_DISPUTE_CLAIMED = 'DEAL_DISPUTE_CLAIMED';
+export const DEAL_DISPUTE_RESOLVED_COMPLETED = 'DEAL_DISPUTE_RESOLVED_COMPLETED';
+export const DEAL_DISPUTE_RESOLVED_CANCELLED = 'DEAL_DISPUTE_RESOLVED_CANCELLED';
+export const DEAL_DISPUTE_RETURNED_TO_REVIEW = 'DEAL_DISPUTE_RETURNED_TO_REVIEW';
+export const DEAL_DISPUTE_SYSTEM_ESCALATION = 'DEAL_DISPUTE_SYSTEM_ESCALATION';
+export const DEAL_DISPUTE_RELEASED = 'DEAL_DISPUTE_RELEASED';
+export const DEAL_DISPUTE_FORCE_UNLOCKED = 'DEAL_DISPUTE_FORCE_UNLOCKED';
+
+// Notification event constants
+export const NOTIFICATION_DEAL_BUYER_CANCELLED = 'deal.buyer_cancelled';
+export const NOTIFICATION_DEAL_SELLER_CANCELLATION_REQUESTED = 'deal.seller_cancellation_requested';
+export const NOTIFICATION_DEAL_SELLER_CANCELLED = 'deal.seller_cancelled';
+export const NOTIFICATION_DEAL_SELLER_CANCELLATION_REJECTED = 'deal.seller_cancellation_rejected';
+export const NOTIFICATION_DEAL_DISPUTED = 'deal.disputed';
+export const NOTIFICATION_DEAL_DISPUTE_RESOLVED = 'deal.dispute_resolved';
+
+// Lock timing (AD-10)
+export const DISPUTE_LOCK_DURATION_MS = 15 * 60 * 1000;
+export const DISPUTE_LOCK_HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000;
+
+// Dispute status and resolution action vocabularies
+export const DISPUTE_STATUS = {
+  OPEN: 'OPEN',
+  RESOLVED: 'RESOLVED',
+} as const;
+
+export type DisputeStatus = (typeof DISPUTE_STATUS)[keyof typeof DISPUTE_STATUS];
+
+export const DISPUTE_RESOLUTION_ACTION = {
+  COMPLETE: 'COMPLETE',
+  CANCEL: 'CANCEL',
+  RETURN_TO_REVIEW: 'RETURN_TO_REVIEW',
+} as const;
+
+export type DisputeResolutionAction =
+  (typeof DISPUTE_RESOLUTION_ACTION)[keyof typeof DISPUTE_RESOLUTION_ACTION];
+
+// Cancellation reason constants
+export const DEAL_CANCEL_REASON_BUYER = 'CANCELLED_BY_BUYER';
+export const DEAL_CANCEL_REASON_SELLER = 'CANCELLED_BY_SELLER';
+export const DEAL_CANCEL_REASON_ADMIN = 'CANCELLED_BY_ADMIN';
+
 /** Arabic error messages for Deal completion, rating, and timeout operations. */
 export const DEAL_ERROR_MESSAGES_AR: Record<string, string> = {
   [DEAL_NOT_COMPLETED]: 'الصفقة ليست في حالة اكتمال',
@@ -247,6 +319,22 @@ export const DEAL_ERROR_MESSAGES_AR: Record<string, string> = {
   [DEAL_RATING_NOT_PARTY]: 'يحق لمشتري الصفقة فقط تقديم التقييم',
   [INVOICE_NOT_FOUND]: 'فاتورة الصفقة غير موجودة أو لم تصدر بعد',
   [DEAL_CANCEL_REASON_PAYMENT_TIMEOUT]: 'تم إلغاء الصفقة لانتهاء مهلة السداد',
+  [DEAL_CANCEL_INVALID_STATE]: 'لا يمكن إلغاء الصفقة في حالتها الحالية',
+  [DEAL_CANCEL_PROOF_EXISTS]: 'لا يمكن الإلغاء بعد رفع إثبات الدفع، يمكنك تقديم نزاع',
+  [DEAL_CANCEL_NOT_PARTY]: 'غير مصرح لك بإلغاء هذه الصفقة',
+  [SELLER_CANCEL_REQUEST_PENDING]: 'يوجد طلب إلغاء قيد المراجعة الإدارية بالفعل',
+  [SELLER_CANCEL_REQUEST_NOT_FOUND]: 'طلب إلغاء البائع غير موجود',
+  [DISPUTE_PROOF_REQUIRED]: 'لا يمكن تقديم نزاع قبل رفع إثبات دفع واحد على الأقل',
+  [DISPUTE_ALREADY_OPEN]: 'يوجد نزاع مفتوح بالفعل لهذه الصفقة',
+  [DISPUTE_NOT_FOUND]: 'النزاع غير موجود',
+  [DISPUTE_NOT_CLAIMABLE]: 'النزاع غير متاح للحجز حالياً',
+  [DISPUTE_LOCK_REQUIRED]: 'يجب حجز النزاع أولاً قبل اتخاذ القرار',
+  [DISPUTE_LOCK_CONFLICT]: 'النزاع محجوز حالياً بواسطة مسؤول آخر',
+  [DISPUTE_LOCK_EXPIRED]: 'انتهت مدة حجز النزاع، يرجى إعادة الحجز',
+  [DISPUTE_SELF_ADJUDICATION_FORBIDDEN]: 'لا يمكن للمسؤول البت في نزاع هو طرف فيه',
+  [DISPUTE_ADJUDICATION_INVALID_ACTION]: 'إجراء البت في النزاع غير صالح',
+  [DISPUTE_DEADLINE_EXTENSION_REQUIRED]: 'يلزم تحديد ساعات تمديد المهلة عند إعادة الصفقة للتدقيق',
+  [DISPUTE_FORCE_UNLOCK_REASON_REQUIRED]: 'سبب فك الحجز الإجباري مطلوب',
 };
 
 

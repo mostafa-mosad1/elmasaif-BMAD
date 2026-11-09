@@ -30,6 +30,8 @@ export function Badge({
       'bg-status-verifiedBg text-status-verified border border-status-verifiedBorder dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60',
     pending:
       'bg-status-pendingBg text-status-pending border border-status-pendingBorder dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/60',
+    warning:
+      'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/60',
     danger:
       'bg-status-dangerBg text-status-danger border border-status-dangerBorder dark:bg-red-950/40 dark:text-red-400 dark:border-red-800/60',
     info:

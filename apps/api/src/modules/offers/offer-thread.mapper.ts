@@ -53,11 +53,12 @@ export function resolveAwaitingParty(status: OfferStatus): OfferAwaitingParty | 
 
 export function toOfferThreadSummary(
   offer: any,
-  options: { includeHistory: boolean },
+  options: { includeHistory: boolean; deal?: any },
 ): OfferThreadSummary | OfferThreadItem {
   const listing = offer?.listing;
   const buyerName = offer?.buyerProfile?.user?.fullName ?? null;
   const sellerName = listing?.sellerProfile?.user?.fullName ?? null;
+  const deal = options.deal ?? offer?.deal ?? null;
 
   const summary: OfferThreadSummary = {
     id: offer.id,
@@ -87,6 +88,15 @@ export function toOfferThreadSummary(
       areaSquareMeters: listing ? Number(listing.areaSquareMeters) : 0,
       status: listing?.status,
     },
+    // Story 5.6: deal linkage & seller cancellation / dispute flags
+    dealId: deal?.id ?? null,
+    dealNumber: deal?.dealNumber ?? null,
+    dealStatus: deal?.status ?? null,
+    sellerCancellationRequestedAt: toIso(deal?.sellerCancellationRequestedAt),
+    sellerCancellationReason: deal?.sellerCancellationReason ?? null,
+    hasPaymentProof: Array.isArray(deal?.payments)
+      ? deal.payments.some((p: any) => p.status !== 'PENDING')
+      : false,
   };
 
   if (!options.includeHistory) return summary;

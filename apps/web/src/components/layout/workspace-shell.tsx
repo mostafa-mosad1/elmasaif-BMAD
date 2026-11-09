@@ -32,7 +32,8 @@ import {
   MapPin,
   Sparkles,
   MessagesSquare,
-  Wallet
+  Wallet,
+  Scale
 } from 'lucide-react';
 
 interface WorkspaceShellProps {
@@ -129,6 +130,9 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         : []),
       ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Payments.Review')
         ? [{ href: '/admin/payments', label: 'الدفع والتسويات', icon: Wallet }]
+        : []),
+      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Deals.DisputeResolve')
+        ? [{ href: '/admin/disputes', label: 'فض النزاعات', icon: Scale }]
         : [])
     ]
   };
@@ -270,9 +274,9 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
       </aside>
 
       {/* Main Workspace Content Area */}
-      <div className="flex-1 flex flex-col lg:ps-[280px]">
+      <div className="flex-1 flex flex-col min-w-0 w-full lg:ps-[280px]">
         {/* Workspace Top Bar */}
-        <header className="sticky top-0 z-30 h-20 bg-surface/90 dark:bg-dark-surface-raised/90 backdrop-blur-md border-b border-surface-border dark:border-dark-surface-border px-4 sm:px-8 flex items-center justify-between">
+        <header className="sticky top-0 z-30 h-20 w-full min-w-0 bg-surface/90 dark:bg-dark-surface-raised/90 backdrop-blur-md border-b border-surface-border dark:border-dark-surface-border px-4 sm:px-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -325,7 +329,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         </header>
 
         {/* Page Children Container */}
-        <main className="flex-1 p-4 sm:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 min-w-0 p-4 sm:p-8 max-w-7xl w-full mx-auto">
           {children}
         </main>
       </div>

@@ -3,6 +3,7 @@ import {
   Controller,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   Req,
   UseGuards,
@@ -11,20 +12,28 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
+  ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { FinalApproveDealInput, finalApproveDealSchema } from '@elmasaif/shared';
+import {
+  FinalApproveDealInput,
+  RejectSellerCancelInput,
+  finalApproveDealSchema,
+  rejectSellerCancelSchema,
+} from '@elmasaif/shared';
 import { AdminSessionAuthGuard } from '../auth/guards/admin-session-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { RequireAdminPermission } from '../auth/decorators/require-admin-permission.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import type { AuthenticatedAdminActor } from '../listings/admin-listings.service';
 import { DealsService } from './deals.service';
+import { DealsCancellationService } from './deals-cancellation.service';
 import { FinalApproveDealDto } from './dto/final-approve-deal.dto';
 
 /**
  * Final approval of an agreed offer into a `Deal` (Story 5.1 / FR-28, AD-2, AD-12).
+ * Administrative review of seller cancellation requests (Story 5.6 / UC-46, AD-10).
  *
  * Deviation from the architecture spine's illustrative `POST /admin/deals/:id/final-approve`:
  * no deal id exists before approval, so the *offer* is the subject and it travels in the body.
@@ -35,7 +44,10 @@ import { FinalApproveDealDto } from './dto/final-approve-deal.dto';
 @Controller('admin/deals')
 @UseGuards(AdminSessionAuthGuard, AdminPermissionGuard)
 export class AdminDealsController {
-  constructor(private readonly dealsService: DealsService) {}
+  constructor(
+    private readonly dealsService: DealsService,
+    private readonly dealsCancellationService: DealsCancellationService,
+  ) {}
 
   @Post('final-approve')
   @HttpCode(HttpStatus.OK)
@@ -65,4 +77,46 @@ export class AdminDealsController {
       data,
     };
   }
+
+  @Post(':id/seller-cancel/approve')
+  @HttpCode(HttpStatus.OK)
+  @RequireAdminPermission('Deals.DisputeResolve')
+  @ApiOperation({ summary: 'Approve seller deal cancellation request (AC-3)' })
+  @ApiParam({ name: 'id', description: 'Deal UUID' })
+  @ApiResponse({ status: 200, description: 'Seller cancellation approved and listing reverted to ACTIVE' })
+  @ApiResponse({ status: 404, description: 'DEAL_NOT_FOUND' })
+  @ApiResponse({ status: 409, description: 'SELLER_CANCEL_REQUEST_NOT_FOUND / DEAL_CANCEL_INVALID_STATE' })
+  async approveSellerCancel(
+    @Param('id') id: string,
+    @Req() req: { admin: AuthenticatedAdminActor },
+  ) {
+    const data = await this.dealsCancellationService.approveSellerCancellation(req.admin.id, id);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'تم اعتماد إلغاء الصفقة وإعادة العقار للعرض النشط',
+      data,
+    };
+  }
+
+  @Post(':id/seller-cancel/reject')
+  @HttpCode(HttpStatus.OK)
+  @RequireAdminPermission('Deals.DisputeResolve')
+  @ApiOperation({ summary: 'Reject seller deal cancellation request (AC-3)' })
+  @ApiParam({ name: 'id', description: 'Deal UUID' })
+  @ApiResponse({ status: 200, description: 'Seller cancellation request rejected' })
+  @ApiResponse({ status: 404, description: 'DEAL_NOT_FOUND' })
+  @ApiResponse({ status: 409, description: 'SELLER_CANCEL_REQUEST_NOT_FOUND' })
+  async rejectSellerCancel(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(rejectSellerCancelSchema)) body: RejectSellerCancelInput,
+    @Req() req: { admin: AuthenticatedAdminActor },
+  ) {
+    const data = await this.dealsCancellationService.rejectSellerCancellation(req.admin.id, id, body);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'تم رفض طلب إلغاء الصفقة واستمرار المعاملة',
+      data,
+    };
+  }
 }
+

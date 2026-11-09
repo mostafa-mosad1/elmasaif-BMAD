@@ -1,4 +1,4 @@
-import { ListingStatus, OfferStatus, PropertyType } from '../enums';
+import { DealStatus, ListingStatus, OfferStatus, PropertyType } from '../enums';
 import type {
   BackupOfferQueueState,
   OfferHistoryAction,
@@ -85,6 +85,12 @@ export interface OfferThreadSummary {
   listing: OfferListingSummary;
   lockInfo?: OfferLockInfo;
   activatedAt?: string | null;
+  dealId?: string | null;
+  dealNumber?: string | null;
+  dealStatus?: DealStatus | string | null;
+  sellerCancellationRequestedAt?: string | null;
+  sellerCancellationReason?: string | null;
+  hasPaymentProof?: boolean;
 }
 
 /** The full negotiation thread returned by `GET /offers/:id`. */

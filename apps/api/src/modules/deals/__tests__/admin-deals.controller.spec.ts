@@ -9,6 +9,7 @@ import {
 } from '@elmasaif/shared';
 import { AdminDealsController } from '../admin-deals.controller';
 import { DealsService } from '../deals.service';
+import { DealsCancellationService } from '../deals-cancellation.service';
 import { AdminSessionAuthGuard } from '../../auth/guards/admin-session-auth.guard';
 import { AdminPermissionGuard } from '../../auth/guards/admin-permission.guard';
 import {
@@ -69,13 +70,20 @@ describe('AdminDealsController (Story 5.1) (AC: 1, 8)', () => {
     },
   };
 
+  let cancellationService: any;
+
   beforeEach(async () => {
     service = { finalApprove: jest.fn().mockResolvedValue(binding) };
+    cancellationService = {
+      approveSellerCancellation: jest.fn().mockResolvedValue({ dealId: 'deal-1', status: DealStatus.CANCELLED }),
+      rejectSellerCancellation: jest.fn().mockResolvedValue({ dealId: 'deal-1', status: DealStatus.AWAITING_PAYMENT_PROOF }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AdminDealsController],
       providers: [
         { provide: DealsService, useValue: service },
+        { provide: DealsCancellationService, useValue: cancellationService },
         AdminPermissionGuard,
         Reflector,
       ],
@@ -149,6 +157,30 @@ describe('AdminDealsController (Story 5.1) (AC: 1, 8)', () => {
       const res = await controller.finalApprove({ offerId }, { admin: superAdmin });
 
       expect(res.data.dealReferenceCode).toBe('ELM-ABCDEF1234-C');
+    });
+  });
+
+  describe('seller cancellation review endpoints (Story 5.6)', () => {
+    it('approveSellerCancel calls DealsCancellationService and returns success message', async () => {
+      const res = await controller.approveSellerCancel('deal-1', { admin: superAdmin });
+      expect(res.statusCode).toBe(200);
+      expect(cancellationService.approveSellerCancellation).toHaveBeenCalledWith(superAdmin.id, 'deal-1');
+      expect(res.message).toBe('تم اعتماد إلغاء الصفقة وإعادة العقار للعرض النشط');
+    });
+
+    it('rejectSellerCancel calls DealsCancellationService and returns success message', async () => {
+      const res = await controller.rejectSellerCancel(
+        'deal-1',
+        { note: 'Insufficient rationale provided' },
+        { admin: superAdmin },
+      );
+      expect(res.statusCode).toBe(200);
+      expect(cancellationService.rejectSellerCancellation).toHaveBeenCalledWith(
+        superAdmin.id,
+        'deal-1',
+        { note: 'Insufficient rationale provided' },
+      );
+      expect(res.message).toBe('تم رفض طلب إلغاء الصفقة واستمرار المعاملة');
     });
   });
 });

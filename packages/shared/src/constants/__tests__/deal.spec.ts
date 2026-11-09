@@ -59,6 +59,36 @@ import {
   NOTIFICATION_DEAL_TIMEOUT_CANCELLED,
   DEAL_CANCEL_REASON_PAYMENT_TIMEOUT,
   DEAL_ERROR_MESSAGES_AR,
+  // Story 5.6 — pre-payment cancellation & dispute vocabulary
+  DEAL_CANCEL_INVALID_STATE,
+  DEAL_CANCEL_PROOF_EXISTS,
+  DEAL_CANCEL_NOT_PARTY,
+  SELLER_CANCEL_REQUEST_PENDING,
+  DISPUTE_PROOF_REQUIRED,
+  DISPUTE_ALREADY_OPEN,
+  DISPUTE_NOT_FOUND,
+  DISPUTE_LOCK_REQUIRED,
+  DISPUTE_LOCK_CONFLICT,
+  DISPUTE_LOCK_EXPIRED,
+  DISPUTE_SELF_ADJUDICATION_FORBIDDEN,
+  DISPUTE_ADJUDICATION_INVALID_ACTION,
+  DISPUTE_DEADLINE_EXTENSION_REQUIRED,
+  DEAL_CANCELLED_BY_BUYER,
+  SELLER_CANCELLATION_REQUESTED,
+  DEAL_CANCELLED_BY_SELLER,
+  SELLER_CANCELLATION_REJECTED,
+  DEAL_DISPUTED,
+  DEAL_DISPUTE_CLAIMED,
+  DEAL_DISPUTE_RESOLVED_COMPLETED,
+  DEAL_DISPUTE_RESOLVED_CANCELLED,
+  DEAL_DISPUTE_RETURNED_TO_REVIEW,
+  NOTIFICATION_DEAL_BUYER_CANCELLED,
+  NOTIFICATION_DEAL_SELLER_CANCELLATION_REQUESTED,
+  NOTIFICATION_DEAL_SELLER_CANCELLED,
+  NOTIFICATION_DEAL_DISPUTED,
+  NOTIFICATION_DEAL_DISPUTE_RESOLVED,
+  DISPUTE_LOCK_DURATION_MS,
+  DISPUTE_LOCK_HEARTBEAT_INTERVAL_MS,
 } from '../deal';
 import { OFFER_LOCK_DURATION_MS, OFFER_LOCK_HEARTBEAT_INTERVAL_MS } from '../offer';
 import { LISTING_LOCK_DURATION_MS, LISTING_LOCK_HEARTBEAT_INTERVAL_MS } from '../listing';
@@ -118,11 +148,12 @@ describe('Deal payment vocabulary (Story 5.2)', () => {
     ]);
   });
 
-  it('does not disturb the Story 5.1 active-status set (trap T-7)', () => {
+  it('includes DISPUTED in the active-status set (Story 5.6)', () => {
     expect(ACTIVE_DEAL_STATUSES).toEqual([
       DealStatus.AWAITING_PAYMENT_PROOF,
       DealStatus.UNDER_ADMIN_AUDIT,
       DealStatus.PAYMENT_REJECTED,
+      DealStatus.DISPUTED,
     ]);
   });
 
@@ -267,4 +298,55 @@ describe('Deal timeout vocabulary (Story 5.5)', () => {
     );
   });
 });
+
+describe('Pre-payment cancellation and dispute vocabulary (Story 5.6)', () => {
+  it('exports refusal codes with distinct string values and Arabic hints', () => {
+    const refusalCodes = [
+      DEAL_CANCEL_INVALID_STATE,
+      DEAL_CANCEL_PROOF_EXISTS,
+      DEAL_CANCEL_NOT_PARTY,
+      SELLER_CANCEL_REQUEST_PENDING,
+      DISPUTE_PROOF_REQUIRED,
+      DISPUTE_ALREADY_OPEN,
+      DISPUTE_NOT_FOUND,
+      DISPUTE_LOCK_REQUIRED,
+      DISPUTE_LOCK_CONFLICT,
+      DISPUTE_LOCK_EXPIRED,
+      DISPUTE_SELF_ADJUDICATION_FORBIDDEN,
+      DISPUTE_ADJUDICATION_INVALID_ACTION,
+      DISPUTE_DEADLINE_EXTENSION_REQUIRED,
+    ];
+
+    expect(new Set(refusalCodes).size).toBe(refusalCodes.length);
+    for (const code of refusalCodes) {
+      expect(DEAL_ERROR_MESSAGES_AR[code]).toBeTruthy();
+    }
+  });
+
+  it('exports audit log action constants for cancellation and dispute flows', () => {
+    expect(DEAL_CANCELLED_BY_BUYER).toBe('DEAL_CANCELLED_BY_BUYER');
+    expect(SELLER_CANCELLATION_REQUESTED).toBe('SELLER_CANCELLATION_REQUESTED');
+    expect(DEAL_CANCELLED_BY_SELLER).toBe('DEAL_CANCELLED_BY_SELLER');
+    expect(SELLER_CANCELLATION_REJECTED).toBe('SELLER_CANCELLATION_REJECTED');
+    expect(DEAL_DISPUTED).toBe('DEAL_DISPUTED');
+    expect(DEAL_DISPUTE_CLAIMED).toBe('DEAL_DISPUTE_CLAIMED');
+    expect(DEAL_DISPUTE_RESOLVED_COMPLETED).toBe('DEAL_DISPUTE_RESOLVED_COMPLETED');
+    expect(DEAL_DISPUTE_RESOLVED_CANCELLED).toBe('DEAL_DISPUTE_RESOLVED_CANCELLED');
+    expect(DEAL_DISPUTE_RETURNED_TO_REVIEW).toBe('DEAL_DISPUTE_RETURNED_TO_REVIEW');
+  });
+
+  it('exports notification constants for cancellation and disputes', () => {
+    expect(NOTIFICATION_DEAL_BUYER_CANCELLED).toBe('deal.buyer_cancelled');
+    expect(NOTIFICATION_DEAL_SELLER_CANCELLATION_REQUESTED).toBe('deal.seller_cancellation_requested');
+    expect(NOTIFICATION_DEAL_SELLER_CANCELLED).toBe('deal.seller_cancelled');
+    expect(NOTIFICATION_DEAL_DISPUTED).toBe('deal.disputed');
+    expect(NOTIFICATION_DEAL_DISPUTE_RESOLVED).toBe('deal.dispute_resolved');
+  });
+
+  it('matches AD-10 queue lock durations', () => {
+    expect(DISPUTE_LOCK_DURATION_MS).toBe(15 * 60 * 1000);
+    expect(DISPUTE_LOCK_HEARTBEAT_INTERVAL_MS).toBe(5 * 60 * 1000);
+  });
+});
+
 

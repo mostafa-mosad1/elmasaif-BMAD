@@ -393,7 +393,7 @@ export function PropertiesSearchView({
   );
 }
 
-export default function PropertiesSearchPage() {
+function PropertiesSearchPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -504,5 +504,13 @@ export default function PropertiesSearchPage() {
         />
       </PropertiesSplitView>
     </LayoutShell>
+  );
+}
+
+export default function PropertiesSearchPage() {
+  return (
+    <React.Suspense fallback={<LayoutShell><div className="min-h-screen" /></LayoutShell>}>
+      <PropertiesSearchPageContent />
+    </React.Suspense>
   );
 }

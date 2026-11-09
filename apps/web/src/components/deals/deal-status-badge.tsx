@@ -11,6 +11,7 @@ export const DEAL_STATUS_VARIANTS: Record<DealStatus, StatusBadgeVariant> = {
   [DealStatus.AWAITING_PAYMENT_PROOF]: 'pending',
   [DealStatus.UNDER_ADMIN_AUDIT]: 'info',
   [DealStatus.PAYMENT_REJECTED]: 'danger',
+  [DealStatus.DISPUTED]: 'warning',
   [DealStatus.COMPLETED]: 'verified',
   [DealStatus.CANCELLED]: 'neutral',
   [DealStatus.TERMINATED]: 'neutral',

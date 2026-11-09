@@ -78,6 +78,7 @@ enum DealStatus {
   AWAITING_PAYMENT_PROOF
   UNDER_ADMIN_AUDIT
   PAYMENT_REJECTED
+  DISPUTED
   COMPLETED
   CANCELLED
   TERMINATED
@@ -699,6 +700,9 @@ model Deal {
   status             DealStatus @default(AWAITING_PAYMENT_PROOF)
   paymentDeadline    DateTime
   completedAt        DateTime?
+  cancellationReason String?
+  sellerCancellationRequestedAt DateTime?
+  sellerCancellationReason String?
   version            Int        @default(1)
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
@@ -816,6 +820,10 @@ model Dispute {
   initiatorId     String
   reason          String
   status          String    @default("OPEN")
+  resolutionAction String?
+  resolutionNotes String?
+  resolvedByAdminId String?
+  resolvedAt      DateTime?
   lockedByAdminId String?
   lockedAt        DateTime?
   lockExpiresAt   DateTime?
@@ -825,6 +833,7 @@ model Dispute {
   deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
 
   @@index([lockExpiresAt])
+  @@index([dealId, status])
   @@map("disputes")
 }
 

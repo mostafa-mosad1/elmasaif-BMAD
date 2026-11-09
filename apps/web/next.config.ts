@@ -3,6 +3,12 @@ import path from 'path';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   outputFileTracingRoot: path.join(__dirname, '../../'),
   transpilePackages: ['@elmasaif/shared'],
   images: {

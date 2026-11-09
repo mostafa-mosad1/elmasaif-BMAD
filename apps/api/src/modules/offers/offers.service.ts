@@ -291,7 +291,22 @@ export class OffersService {
     const profile = await this.resolvePartyProfile(userId, activeRole);
     this.assertParty(offer, profile);
 
-    return toOfferThreadSummary(offer, { includeHistory: true }) as OfferThreadItem;
+    const deal =
+      offer.status === OfferStatus.CONVERTED_TO_DEAL
+        ? await this.prisma.deal.findUnique({
+            where: { offerId: offer.id },
+            select: {
+              id: true,
+              dealNumber: true,
+              status: true,
+              sellerCancellationRequestedAt: true,
+              sellerCancellationReason: true,
+              payments: { select: { status: true } },
+            },
+          })
+        : null;
+
+    return toOfferThreadSummary(offer, { includeHistory: true, deal }) as OfferThreadItem;
   }
 
   /** `POST /offers/:id/accept-by-seller` — mutual agreement (FR-55). */

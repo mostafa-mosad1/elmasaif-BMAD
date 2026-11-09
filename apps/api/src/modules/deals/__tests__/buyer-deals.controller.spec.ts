@@ -9,6 +9,8 @@ import {
 } from '@elmasaif/shared';
 import { BuyerDealsController, DealProofTooLargeFilter } from '../buyer-deals.controller';
 import { BuyerDealsService } from '../buyer-deals.service';
+import { DealsCancellationService } from '../deals-cancellation.service';
+import { DisputesService } from '../disputes.service';
 import { SessionAuthGuard } from '../../auth/guards/session-auth.guard';
 import { ActiveRoleGuard } from '../../users/guards/active-role.guard';
 import { ROLES_KEY } from '../../users/decorators/require-role.decorator';
@@ -33,6 +35,9 @@ describe('BuyerDealsController (Story 5.2) (AC: 1, 2, 7, 12)', () => {
   const dealId = '33333333-3333-3333-3333-333333333333';
   const paymentType = 'PLATFORM_COMMISSION';
 
+  let cancellationService: any;
+  let disputesService: any;
+
   beforeEach(async () => {
     service = {
       listMyDeals: jest.fn().mockResolvedValue([{ id: dealId }]),
@@ -45,9 +50,23 @@ describe('BuyerDealsController (Story 5.2) (AC: 1, 2, 7, 12)', () => {
       submitDealRating: jest.fn().mockResolvedValue({ id: 'rating-1', score: 5 }),
     };
 
+    cancellationService = {
+      cancelByBuyer: jest.fn().mockResolvedValue({ dealId, status: 'CANCELLED' }),
+      requestSellerCancellation: jest.fn().mockResolvedValue({ dealId, sellerCancellationReason: 'reason' }),
+    };
+
+    disputesService = {
+      fileDispute: jest.fn().mockResolvedValue({ disputeId: 'disp-1', dealId, status: 'DISPUTED' }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [BuyerDealsController],
-      providers: [{ provide: BuyerDealsService, useValue: service }, Reflector],
+      providers: [
+        { provide: BuyerDealsService, useValue: service },
+        { provide: DealsCancellationService, useValue: cancellationService },
+        { provide: DisputesService, useValue: disputesService },
+        Reflector,
+      ],
     })
       .overrideGuard(SessionAuthGuard)
       .useValue({ canActivate: () => true })
@@ -207,6 +226,57 @@ describe('BuyerDealsController (Story 5.2) (AC: 1, 2, 7, 12)', () => {
 
     it('uses a distinct code from the invalid-payment-type refusal', () => {
       expect(DEAL_PAYMENT_PROOF_TOO_LARGE).not.toBe(DEAL_PAYMENT_TYPE_INVALID);
+    });
+  });
+
+  describe('Cancellation and Dispute Endpoints (Story 5.6)', () => {
+    it('cancelByBuyer invokes DealsCancellationService.cancelByBuyer', async () => {
+      const res = await controller.cancelByBuyer(
+        dealId,
+        { reason: 'Buyer cancellation reason' },
+        { user: buyer },
+      );
+      expect(res.statusCode).toBe(200);
+      expect(cancellationService.cancelByBuyer).toHaveBeenCalledWith(
+        buyer.id,
+        buyer.activeRole,
+        dealId,
+        { reason: 'Buyer cancellation reason' },
+      );
+      expect(res.message).toBe('تم إلغاء الصفقة بنجاح');
+    });
+
+    it('requestSellerCancellation invokes DealsCancellationService.requestSellerCancellation', async () => {
+      const seller = { id: 'user-seller-1', role: UserRole.MARKETER, activeRole: UserRole.MARKETER };
+      const res = await controller.requestSellerCancellation(
+        dealId,
+        { reason: 'Unable to proceed with transaction' },
+        { user: seller },
+      );
+      expect(res.statusCode).toBe(200);
+      expect(cancellationService.requestSellerCancellation).toHaveBeenCalledWith(
+        seller.id,
+        seller.activeRole,
+        dealId,
+        { reason: 'Unable to proceed with transaction' },
+      );
+      expect(res.message).toBe('تم تقديم طلب إلغاء الصفقة بنجاح وجارٍ مراجعته إدارياً');
+    });
+
+    it('fileDispute invokes DisputesService.fileDispute', async () => {
+      const res = await controller.fileDispute(
+        dealId,
+        { reason: 'Dispute over bank reference and receipt' },
+        { user: buyer },
+      );
+      expect(res.statusCode).toBe(201);
+      expect(disputesService.fileDispute).toHaveBeenCalledWith(
+        buyer.id,
+        buyer.activeRole,
+        dealId,
+        { reason: 'Dispute over bank reference and receipt' },
+      );
+      expect(res.message).toBe('تم تقديم النزاع بنجاح وجارٍ التدقيق الإداري');
     });
   });
 });

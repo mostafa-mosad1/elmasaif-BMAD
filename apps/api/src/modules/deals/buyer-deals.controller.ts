@@ -27,9 +27,15 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import {
+  CancelDealByBuyerInput,
   DEAL_PAYMENT_PROOF_TOO_LARGE,
+  FileDisputeInput,
+  SellerCancelRequestInput,
   SubmitDealRatingInput,
   UserRole,
+  cancelDealByBuyerSchema,
+  fileDisputeSchema,
+  sellerCancelRequestSchema,
   submitDealRatingSchema,
 } from '@elmasaif/shared';
 import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
@@ -38,6 +44,8 @@ import { RequireRole } from '../users/decorators/require-role.decorator';
 import { MAX_FILE_SIZE_BYTES } from '../storage/storage.service';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { BuyerDealsService } from './buyer-deals.service';
+import { DealsCancellationService } from './deals-cancellation.service';
+import { DisputesService } from './disputes.service';
 import { DealProofUploadFile } from './dto/upload-payment-proof.dto';
 
 /** `multer` rejects the upload before the handler runs, so this filter is the only place that
@@ -70,7 +78,11 @@ export class DealProofTooLargeFilter implements ExceptionFilter<PayloadTooLargeE
 @UseGuards(SessionAuthGuard, ActiveRoleGuard)
 @RequireRole(UserRole.BUYER)
 export class BuyerDealsController {
-  constructor(private readonly buyerDealsService: BuyerDealsService) {}
+  constructor(
+    private readonly buyerDealsService: BuyerDealsService,
+    private readonly dealsCancellationService: DealsCancellationService,
+    private readonly disputesService: DisputesService,
+  ) {}
 
   @Get('my')
   @HttpCode(HttpStatus.OK)
@@ -239,6 +251,87 @@ export class BuyerDealsController {
     return {
       statusCode: HttpStatus.CREATED,
       message: 'تم تسجيل تقييمك بنجاح',
+      data,
+    };
+  }
+
+  @Post(':id/cancel-by-buyer')
+  @HttpCode(HttpStatus.OK)
+  @RequireRole(UserRole.BUYER)
+  @ApiOperation({ summary: 'Pre-payment Buyer cancellation (AC-1, FR-34, BR-07)' })
+  @ApiParam({ name: 'id', description: 'Deal id' })
+  @ApiResponse({ status: 200, description: 'Deal cancelled' })
+  @ApiResponse({ status: 403, description: 'DEAL_CANCEL_NOT_PARTY' })
+  @ApiResponse({ status: 404, description: 'DEAL_NOT_FOUND' })
+  @ApiResponse({ status: 409, description: 'DEAL_CANCEL_INVALID_STATE / DEAL_CANCEL_PROOF_EXISTS' })
+  async cancelByBuyer(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(cancelDealByBuyerSchema)) body: CancelDealByBuyerInput,
+    @Req() req: any,
+  ) {
+    const data = await this.dealsCancellationService.cancelByBuyer(
+      req.user.id,
+      req.user.activeRole || req.user.role,
+      id,
+      body,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'تم إلغاء الصفقة بنجاح',
+      data,
+    };
+  }
+
+  @Post(':id/seller-cancel-request')
+  @HttpCode(HttpStatus.OK)
+  @RequireRole(UserRole.MARKETER, UserRole.OWNER)
+  @ApiOperation({ summary: 'Pre-payment Seller cancellation request (AC-2, UC-46)' })
+  @ApiParam({ name: 'id', description: 'Deal id' })
+  @ApiResponse({ status: 200, description: 'Seller cancellation request submitted' })
+  @ApiResponse({ status: 403, description: 'DEAL_CANCEL_NOT_PARTY' })
+  @ApiResponse({ status: 404, description: 'DEAL_NOT_FOUND' })
+  @ApiResponse({ status: 409, description: 'DEAL_CANCEL_INVALID_STATE / DEAL_CANCEL_PROOF_EXISTS / SELLER_CANCEL_REQUEST_PENDING' })
+  async requestSellerCancellation(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(sellerCancelRequestSchema)) body: SellerCancelRequestInput,
+    @Req() req: any,
+  ) {
+    const data = await this.dealsCancellationService.requestSellerCancellation(
+      req.user.id,
+      req.user.activeRole || req.user.role,
+      id,
+      body,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'تم تقديم طلب إلغاء الصفقة بنجاح وجارٍ مراجعته إدارياً',
+      data,
+    };
+  }
+
+  @Post(':id/dispute')
+  @HttpCode(HttpStatus.CREATED)
+  @RequireRole(UserRole.BUYER, UserRole.MARKETER, UserRole.OWNER)
+  @ApiOperation({ summary: 'Formal Deal Dispute Filing by Counterparties (AC-4, FR-36, UC-29C)' })
+  @ApiParam({ name: 'id', description: 'Deal id' })
+  @ApiResponse({ status: 201, description: 'Dispute filed successfully' })
+  @ApiResponse({ status: 403, description: 'DEAL_NOT_PARTY' })
+  @ApiResponse({ status: 404, description: 'DEAL_NOT_FOUND' })
+  @ApiResponse({ status: 409, description: 'DEAL_TERMINAL / DISPUTE_PROOF_REQUIRED / DISPUTE_ALREADY_OPEN' })
+  async fileDispute(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(fileDisputeSchema)) body: FileDisputeInput,
+    @Req() req: any,
+  ) {
+    const data = await this.disputesService.fileDispute(
+      req.user.id,
+      req.user.activeRole || req.user.role,
+      id,
+      body,
+    );
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'تم تقديم النزاع بنجاح وجارٍ التدقيق الإداري',
       data,
     };
   }
