@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
@@ -9,6 +9,7 @@ import { EmptyState } from '../../../components/ui/empty-state';
 import {
   ShieldCheck,
   Building,
+  Building2,
   PlusCircle,
   MessageSquare,
   TrendingUp,
@@ -22,6 +23,15 @@ import {
   Eye,
   BarChart2,
   Heart,
+  Search,
+  Filter,
+  ExternalLink,
+  ChevronLeft,
+  X,
+  FileCheck2,
+  Sparkles,
+  ArrowUpLeft,
+  Wallet,
 } from 'lucide-react';
 import { ListingStatus, PropertyType } from '@elmasaif/shared';
 import { apiClient } from '../../../lib/api-client';
@@ -41,9 +51,13 @@ const PROPERTY_TYPE_LABELS: Record<string, string> = {
   [PropertyType.FARM]: 'مزرعة / استراحة',
 };
 
+type FilterTab = 'all' | 'active' | 'pending' | 'alerts' | 'archived';
+
 export default function MarketerDashboardPage() {
   const [myListings, setMyListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<FilterTab>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     apiClient
@@ -58,202 +72,578 @@ export default function MarketerDashboardPage() {
   }, []);
 
   const activeCount = myListings.filter((l) => l.status === ListingStatus.ACTIVE).length;
+  const pendingCount = myListings.filter(
+    (l) => !l.status || l.status === 'PENDING' || l.status === 'PENDING_REVIEW',
+  ).length;
+  const alertsCount = myListings.filter((l) =>
+    [ListingStatus.SUSPENDED, ListingStatus.BLOCKED, ListingStatus.REJECTED].includes(l.status),
+  ).length;
+  const archivedCount = myListings.filter((l) => l.status === ListingStatus.ARCHIVED).length;
+
   const totalViews = myListings.reduce((sum, l) => sum + (l.totalViews || 0), 0);
   const totalImpressions = myListings.reduce((sum, l) => sum + (l.totalImpressions || 0), 0);
   const totalFavorites = myListings.reduce((sum, l) => sum + (l.totalFavorites || 0), 0);
 
-  const stats = [
-    {
-      title: 'العقارات المعروضة',
-      count: activeCount,
-      description: 'عقارات نشطة ومعتمدة في المنصة',
-      icon: Building,
-      href: '/app/marketer'
-    },
-    {
-      title: 'إجمالي المشاهدات والتفاعل',
-      count: totalViews,
-      description: `${totalImpressions.toLocaleString('en-US')} ظهور • ${totalFavorites.toLocaleString('en-US')} في المفضلة`,
-      icon: Eye,
-      href: '/app/marketer'
-    },
-    {
-      title: 'استفسارات المشترين',
-      count: 0,
-      description: 'استفسارات واردة عبر نظام الوساطة',
-      icon: MessageSquare,
-      href: '/app/marketer/inquiries'
-    },
-    {
-      title: 'الصفقات المكتملة',
-      count: 0,
-      description: 'صفقات تم إغلاقها وصرف العمولات',
-      icon: TrendingUp,
-      href: '/app/settings/payout'
-    }
-  ];
+  // Filter listings based on active tab and search query
+  const filteredListings = useMemo(() => {
+    return myListings.filter((item) => {
+      // Tab filter
+      if (activeTab === 'active' && item.status !== ListingStatus.ACTIVE) return false;
+      if (
+        activeTab === 'pending' &&
+        item.status &&
+        item.status !== 'PENDING' &&
+        item.status !== 'PENDING_REVIEW'
+      )
+        return false;
+      if (
+        activeTab === 'alerts' &&
+        ![ListingStatus.SUSPENDED, ListingStatus.BLOCKED, ListingStatus.REJECTED].includes(
+          item.status,
+        )
+      )
+        return false;
+      if (activeTab === 'archived' && item.status !== ListingStatus.ARCHIVED) return false;
+
+      // Search query filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.trim().toLowerCase();
+        const titleMatch = (item.title || '').toLowerCase().includes(query);
+        const cityMatch = (item.cityName || '').toLowerCase().includes(query);
+        const districtMatch = (item.districtName || '').toLowerCase().includes(query);
+        const typeMatch = (PROPERTY_TYPE_LABELS[item.propertyType] || '')
+          .toLowerCase()
+          .includes(query);
+        return titleMatch || cityMatch || districtMatch || typeMatch;
+      }
+
+      return true;
+    });
+  }, [myListings, activeTab, searchQuery]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-ink-primary dark:text-dark-ink-primary">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-surface-base dark:bg-dark-surface-base p-6 rounded-2xl border border-surface-border dark:border-dark-surface-border shadow-sm">
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-2xl font-bold text-ink-primary dark:text-dark-ink-primary tracking-tight">
               لوحة تحكم الوسيط العقاري
             </h1>
-            <Badge variant="verified" size="sm" className="gap-1">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>مرخص من فال (REGA)</span>
-            </Badge>
+            <div className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800 shrink-0">
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span className="font-semibold text-xs whitespace-nowrap leading-none">
+                مرخص وموثق من فال (REGA)
+              </span>
+            </div>
           </div>
-          <p className="text-sm text-ink-secondary dark:text-dark-ink-secondary mt-1">
-            إدارة وتوثيق العقارات المسوقة، واستقبال طلبات المشترين، ومتابعة عمولات الوساطة.
+          <p className="text-sm text-ink-secondary dark:text-dark-ink-secondary max-w-2xl">
+            إدارة وتوثيق العقارات المسوقة، واستقبال طلبات المشترين المباشرة، ومتابعة التحليلات والعمولات النظامية.
           </p>
         </div>
 
-        <Link href="/app/marketer/listings/new">
-          <Button variant="primary" className="gap-2">
-            <PlusCircle className="w-4 h-4" />
-            <span>إضافة عقار جديد</span>
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <Link href="/app/marketer/listings/new">
+            <Button
+              variant="primary"
+              className="gap-2 shadow-sm hover:shadow transition-all font-bold px-4 py-2.5"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>إضافة عقار جديد</span>
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Fal License Status Alert Card */}
-      <Card className="bg-[#C69C45]/10 border-[#C69C45]/30">
-        <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#C69C45]/20 text-[#9A7328] dark:text-[#E0B865] flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-5 h-5" />
+      <div className="relative overflow-hidden rounded-2xl border border-[#C69C45]/40 bg-gradient-to-r from-[#C69C45]/15 via-[#C69C45]/5 to-transparent dark:from-[#C69C45]/20 dark:via-[#C69C45]/10 dark:to-transparent p-5 sm:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#9A7328] text-white flex items-center justify-center shrink-0 shadow-md">
+              <ShieldCheck className="w-6 h-6" />
             </div>
-            <div>
-              <div className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
-                رخصة فال للوساطة والتسويق العقاري معتمدة
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
+                  رخصة فال للوساطة والتسويق العقاري معتمدة وسارية
+                </span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-100/80 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-300/40 dark:border-amber-700/50">
+                  <FileCheck2 className="w-3 h-3" />
+                  <span>معتمد نظامياً</span>
+                </span>
               </div>
-              <p className="text-xs text-ink-muted dark:text-dark-ink-muted">
-                حسابك مؤهل نظامياً لإضافة العقارات واستقبال عروض المشترين وفق ضوابط الهيئة العامة للعقار.
+              <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary leading-relaxed">
+                حسابك مؤهل نظامياً لإضافة العقارات واستقبال عروض المشترين وفق اشتراطات وضوابط الهيئة العامة للعقار (REGA).
               </p>
             </div>
           </div>
-          <Link href="/app/marketer/fal-license">
-            <Button variant="outline" size="sm" className="border-[#C69C45]/40 text-xs shrink-0">
-              تفاصيل الرخصة
+          <Link href="/app/marketer/fal-license" className="shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-[#C69C45]/60 hover:bg-[#C69C45]/10 text-ink-primary dark:text-dark-ink-primary text-xs font-semibold px-3.5 py-2 gap-1.5 rounded-xl shadow-xs"
+            >
+              <span>تفاصيل الرخصة والامتثال</span>
+              <ChevronLeft className="w-3.5 h-3.5" />
             </Button>
           </Link>
-        </CardContent>
-      </Card>
-
-      {/* Quick Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-        {stats.map((s) => {
-          const Icon = s.icon;
-          return (
-            <Link key={s.title} href={s.href} className="group">
-              <Card className="h-full transition-all group-hover:border-primary/50 group-hover:shadow-md">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-ink-secondary dark:text-dark-ink-secondary">
-                    {s.title}
-                  </CardTitle>
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                    <Icon className="w-4 h-4" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-extrabold text-ink-primary dark:text-dark-ink-primary font-mono">
-                    {s.count}
-                  </div>
-                  <p className="text-xs text-ink-muted dark:text-dark-ink-muted mt-1">
-                    {s.description}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          );
-        })}
+        </div>
       </div>
 
-      {/* Marketer Listings or Empty State */}
-      {myListings.length > 0 ? (
-        <Card>
-          <CardHeader className="border-b border-surface-border dark:border-dark-surface-border">
-            <CardTitle className="text-lg font-bold">
-              العقارات المسوقة وحالة الاعتماد ({myListings.length})
-            </CardTitle>
-            <CardDescription className="text-xs mt-1">
-              قائمة العقارات المرفوعة وحالتها الحالية في المنصة.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="divide-y divide-surface-border dark:divide-dark-surface-border p-0">
-            {myListings.map((item) => (
-              <div key={item.id} className="p-5 flex flex-col gap-3">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-bold">
-                        {PROPERTY_TYPE_LABELS[item.propertyType] || item.propertyType}
-                      </span>
-                      <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
-                        {item.title}
-                      </h3>
+      {/* Quick Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: العقارات المعروضة */}
+        <Link href="/app/marketer" className="group block focus:outline-none">
+          <div className="relative overflow-hidden rounded-2xl bg-surface-base dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border p-5 h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-500/5 hover:border-emerald-500/40">
+            {/* Top color accent line */}
+            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-400 opacity-80" />
+
+            {/* Header: Title + Icon + Action Arrow */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-xs transition-transform group-hover:scale-110">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-ink-secondary dark:text-dark-ink-secondary">
+                    العقارات المعروضة
+                  </h3>
+                  <span className="text-[11px] text-ink-muted">المحفظة النشطة</span>
+                </div>
+              </div>
+              <div className="w-7 h-7 rounded-lg bg-surface-sunken dark:bg-dark-surface-sunken flex items-center justify-center text-ink-muted group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                <ArrowUpLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5 group-hover:-translate-y-0.5" />
+              </div>
+            </div>
+
+            {/* Metric Value + Badge */}
+            <div className="flex items-baseline justify-between mt-4">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-3xl sm:text-4xl font-extrabold text-ink-primary dark:text-dark-ink-primary font-mono tracking-tight">
+                  {activeCount}
+                </span>
+                <span className="text-xs font-semibold text-ink-muted">عقار</span>
+              </div>
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>نشطة ومعتمدة</span>
+              </span>
+            </div>
+
+            {/* Footer sub-stats */}
+            <div className="mt-4 pt-3 border-t border-surface-border/60 dark:border-dark-surface-border/60 flex items-center justify-between text-xs text-ink-muted">
+              <span>إجمالي العقارات المسجلة</span>
+              <span className="font-mono font-bold text-ink-primary dark:text-dark-ink-primary">
+                {myListings.length} عقارات
+              </span>
+            </div>
+          </div>
+        </Link>
+
+        {/* Card 2: إجمالي التفاعل والمشاهدات */}
+        <Link href="/app/marketer" className="group block focus:outline-none">
+          <div className="relative overflow-hidden rounded-2xl bg-surface-base dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border p-5 h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-sky-500/5 hover:border-sky-500/40">
+            {/* Top color accent line */}
+            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-sky-500 to-blue-500 opacity-80" />
+
+            {/* Header: Title + Icon + Action Arrow */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-sky-500/10 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 shadow-xs transition-transform group-hover:scale-110">
+                  <Eye className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-ink-secondary dark:text-dark-ink-secondary">
+                    المشاهدات والتفاعل
+                  </h3>
+                  <span className="text-[11px] text-ink-muted">إقبال المشترين</span>
+                </div>
+              </div>
+              <div className="w-7 h-7 rounded-lg bg-surface-sunken dark:bg-dark-surface-sunken flex items-center justify-center text-ink-muted group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+                <ArrowUpLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5 group-hover:-translate-y-0.5" />
+              </div>
+            </div>
+
+            {/* Metric Value + Badge */}
+            <div className="flex items-baseline justify-between mt-4">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-3xl sm:text-4xl font-extrabold text-ink-primary dark:text-dark-ink-primary font-mono tracking-tight">
+                  {totalViews.toLocaleString('en-US')}
+                </span>
+                <span className="text-xs font-semibold text-ink-muted">مشاهدة</span>
+              </div>
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 px-2.5 py-1 rounded-full border border-sky-200 dark:border-sky-800">
+                <TrendingUp className="w-3 h-3 text-sky-500" />
+                <span>إجمالي الزيارات</span>
+              </span>
+            </div>
+
+            {/* Footer sub-stats: Impressions & Favorites Chips */}
+            <div className="mt-4 pt-3 border-t border-surface-border/60 dark:border-dark-surface-border/60 flex items-center gap-2 text-xs">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-surface-sunken dark:bg-dark-surface-sunken text-ink-secondary dark:text-dark-ink-secondary text-[11px] font-medium border border-surface-border/60 dark:border-dark-surface-border/60">
+                <BarChart2 className="w-3 h-3 text-sky-500" />
+                <span className="font-mono font-bold">{totalImpressions.toLocaleString('en-US')}</span> ظهور
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-surface-sunken dark:bg-dark-surface-sunken text-ink-secondary dark:text-dark-ink-secondary text-[11px] font-medium border border-surface-border/60 dark:border-dark-surface-border/60">
+                <Heart className="w-3 h-3 text-rose-500 fill-rose-500/20" />
+                <span className="font-mono font-bold text-rose-600 dark:text-rose-400">
+                  {totalFavorites.toLocaleString('en-US')}
+                </span>{' '}
+                مفضلة
+              </span>
+            </div>
+          </div>
+        </Link>
+
+        {/* Card 3: استفسارات المشترين */}
+        <Link href="/app/marketer/inquiries" className="group block focus:outline-none">
+          <div className="relative overflow-hidden rounded-2xl bg-surface-base dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border p-5 h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/5 hover:border-indigo-500/40">
+            {/* Top color accent line */}
+            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-80" />
+
+            {/* Header: Title + Icon + Action Arrow */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-xs transition-transform group-hover:scale-110">
+                  <MessageSquare className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-ink-secondary dark:text-dark-ink-secondary">
+                    استفسارات المشترين
+                  </h3>
+                  <span className="text-[11px] text-ink-muted">طلبات ومحادثات</span>
+                </div>
+              </div>
+              <div className="w-7 h-7 rounded-lg bg-surface-sunken dark:bg-dark-surface-sunken flex items-center justify-center text-ink-muted group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                <ArrowUpLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5 group-hover:-translate-y-0.5" />
+              </div>
+            </div>
+
+            {/* Metric Value + Badge */}
+            <div className="flex items-baseline justify-between mt-4">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-3xl sm:text-4xl font-extrabold text-ink-primary dark:text-dark-ink-primary font-mono tracking-tight">
+                  0
+                </span>
+                <span className="text-xs font-semibold text-ink-muted">محادثة</span>
+              </div>
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 px-2.5 py-1 rounded-full border border-indigo-200 dark:border-indigo-800">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                <span>محادثات فورية</span>
+              </span>
+            </div>
+
+            {/* Footer description */}
+            <div className="mt-4 pt-3 border-t border-surface-border/60 dark:border-dark-surface-border/60 flex items-center justify-between text-xs text-ink-muted">
+              <span>استفسارات عبر المنصة</span>
+              <span className="text-indigo-600 dark:text-indigo-400 font-semibold group-hover:underline">
+                فتح المحادثات
+              </span>
+            </div>
+          </div>
+        </Link>
+
+        {/* Card 4: الصفقات والعمولات */}
+        <Link href="/app/settings/payout" className="group block focus:outline-none">
+          <div className="relative overflow-hidden rounded-2xl bg-surface-base dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border p-5 h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-500/5 hover:border-amber-500/40">
+            {/* Top color accent line */}
+            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-amber-500 to-[#D4AF37] opacity-80" />
+
+            {/* Header: Title + Icon + Action Arrow */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-xs transition-transform group-hover:scale-110">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-ink-secondary dark:text-dark-ink-secondary">
+                    الصفقات والعمولات
+                  </h3>
+                  <span className="text-[11px] text-ink-muted">المحفظة المالية</span>
+                </div>
+              </div>
+              <div className="w-7 h-7 rounded-lg bg-surface-sunken dark:bg-dark-surface-sunken flex items-center justify-center text-ink-muted group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                <ArrowUpLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5 group-hover:-translate-y-0.5" />
+              </div>
+            </div>
+
+            {/* Metric Value + Badge */}
+            <div className="flex items-baseline justify-between mt-4">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-3xl sm:text-4xl font-extrabold text-ink-primary dark:text-dark-ink-primary font-mono tracking-tight">
+                  0
+                </span>
+                <span className="text-xs font-semibold text-ink-muted">صفقة</span>
+              </div>
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 px-2.5 py-1 rounded-full border border-amber-200 dark:border-amber-800">
+                <Wallet className="w-3 h-3 text-amber-500" />
+                <span>0.00 ر.س</span>
+              </span>
+            </div>
+
+            {/* Footer description */}
+            <div className="mt-4 pt-3 border-t border-surface-border/60 dark:border-dark-surface-border/60 flex items-center justify-between text-xs text-ink-muted">
+              <span>مستحقات العمولات والصرف</span>
+              <span className="text-amber-600 dark:text-amber-400 font-semibold group-hover:underline">
+                بيانات السحب
+              </span>
+            </div>
+          </div>
+        </Link>
+      </div>
+
+      {/* Main Content Area: Listings Section */}
+      <div className="space-y-4">
+        {/* Section Header with Tabs & Search */}
+        <div className="bg-surface-base dark:bg-dark-surface-base rounded-2xl border border-surface-border dark:border-dark-surface-border p-4 sm:p-5 shadow-xs space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-bold text-ink-primary dark:text-dark-ink-primary">
+                العقارات المسوقة وحالة الاعتماد ({myListings.length})
+              </h2>
+              <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary mt-0.5">
+                قائمة العقارات المرفوعة، نسب التفاعل، وإجراءات الرقابة والمطابقة.
+              </p>
+            </div>
+
+            {/* Quick Search */}
+            <div className="relative w-full md:w-72">
+              <Search className="w-4 h-4 text-ink-muted absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="بحث بالعقار، المدينة، أو الحي..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pr-9 pl-8 py-1.5 text-xs rounded-xl bg-surface-sunken dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink-primary"
+                  title="مسح البحث"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Filter Tabs */}
+          <div className="flex flex-wrap items-center gap-1.5 border-t border-surface-border dark:border-dark-surface-border pt-3">
+            <button
+              type="button"
+              onClick={() => setActiveTab('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                activeTab === 'all'
+                  ? 'bg-primary text-primary-foreground shadow-xs'
+                  : 'text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-sunken'
+              }`}
+            >
+              الكل ({myListings.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('active')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                activeTab === 'active'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-sunken'
+              }`}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>معتمد ومنشور ({activeCount})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('pending')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                activeTab === 'pending'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-sunken'
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span>قيد المراجعة ({pendingCount})</span>
+            </button>
+            {alertsCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('alerts')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                  activeTab === 'alerts'
+                    ? 'bg-rose-600 text-white shadow-xs'
+                    : 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30'
+                }`}
+              >
+                <Ban className="w-3.5 h-3.5" />
+                <span>ملاحظات وتنبيهات ({alertsCount})</span>
+              </button>
+            )}
+            {archivedCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('archived')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                  activeTab === 'archived'
+                    ? 'bg-slate-700 text-white shadow-xs'
+                    : 'text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-sunken'
+                }`}
+              >
+                <Archive className="w-3.5 h-3.5" />
+                <span>المؤرشفة ({archivedCount})</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Loading Skeleton */}
+        {loading && (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="p-5 rounded-2xl bg-surface-base dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border animate-pulse flex flex-col gap-4"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2 w-1/2">
+                    <div className="h-4 bg-surface-border dark:bg-dark-surface-border rounded w-1/4"></div>
+                    <div className="h-5 bg-surface-border dark:bg-dark-surface-border rounded w-3/4"></div>
+                  </div>
+                  <div className="h-8 bg-surface-border dark:bg-dark-surface-border rounded w-24"></div>
+                </div>
+                <div className="h-10 bg-surface-border dark:bg-dark-surface-border rounded-xl w-full"></div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Listings List */}
+        {!loading && filteredListings.length > 0 && (
+          <div className="space-y-3">
+            {filteredListings.map((item) => (
+              <div
+                key={item.id}
+                className="bg-surface-base dark:bg-dark-surface-base rounded-2xl border border-surface-border dark:border-dark-surface-border p-5 sm:p-6 shadow-xs hover:border-primary/40 dark:hover:border-primary/40 transition-all duration-200 flex flex-col gap-4"
+              >
+                {/* Top Row: Info + Price & Status */}
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  {/* Left: Icon Thumbnail + Details */}
+                  <div className="flex items-start gap-3.5 min-w-0">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 text-primary flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+                      <Building2 className="w-5 h-5" />
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-ink-secondary">
-                      <MapPin className="w-3.5 h-3.5 text-primary" />
-                      <span>{`${item.cityName} — حي ${item.districtName}`}</span>
-                      <span>•</span>
-                      <span className="font-mono">{`${item.areaSquareMeters} م²`}</span>
+
+                    <div className="space-y-1.5 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-bold border border-primary/20">
+                          {PROPERTY_TYPE_LABELS[item.propertyType] || item.propertyType || 'عقار'}
+                        </span>
+                        <h3
+                          className="text-base font-bold text-ink-primary dark:text-dark-ink-primary truncate max-w-xl"
+                          title={item.title}
+                        >
+                          {item.title}
+                        </h3>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-ink-secondary dark:text-dark-ink-secondary">
+                        <span className="inline-flex items-center gap-1 font-medium">
+                          <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span>
+                            {item.cityName ? `${item.cityName} — حي ${item.districtName || ''}` : 'الموقع محدد'}
+                          </span>
+                        </span>
+                        <span>•</span>
+                        <span className="font-mono bg-surface-sunken dark:bg-dark-surface-sunken px-2 py-0.5 rounded-md border border-surface-border dark:border-dark-surface-border text-ink-primary dark:text-dark-ink-primary font-semibold">
+                          {Number(item.areaSquareMeters || 0).toLocaleString('en-US')} م²
+                        </span>
+                        {item.status === ListingStatus.ACTIVE && (
+                          <>
+                            <span>•</span>
+                            <Link
+                              href={`/properties/${item.id}`}
+                              target="_blank"
+                              className="text-primary hover:underline inline-flex items-center gap-1 font-medium"
+                            >
+                              <span>معاينة في السوق</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </Link>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3">
-                    <div dir="ltr" className="font-mono font-bold text-sm text-[#1B4332] dark:text-emerald-400">
-                      {`${Number(item.askPrice).toLocaleString('en-US')} SAR`}
+                  {/* Right: Price + Status Badge + Actions */}
+                  <div className="flex flex-wrap items-center justify-between lg:justify-end gap-3 pt-2 lg:pt-0 border-t lg:border-t-0 border-surface-border dark:border-dark-surface-border">
+                    <div className="flex flex-col items-start lg:items-end">
+                      <span className="text-[10px] text-ink-muted uppercase font-medium">
+                        السعر المطلوب
+                      </span>
+                      <div
+                        dir="ltr"
+                        className="font-mono font-extrabold text-base sm:text-lg text-[#1B4332] dark:text-emerald-400"
+                      >
+                        {`${Number(item.askPrice || 0).toLocaleString('en-US')} SAR`}
+                      </div>
                     </div>
 
-                    <ListingStatusBadge status={item.status} />
+                    <div className="flex items-center gap-2">
+                      <ListingStatusBadge status={item.status} />
 
-                    {(item.status === ListingStatus.ACTIVE ||
-                      item.status === ListingStatus.ARCHIVED) && (
-                      <SellerListingArchiveActions
-                        listingId={item.id}
-                        status={item.status}
-                        archiveReason={item.archiveReason}
-                        onStatusChanged={(newStatus, updatedData) => {
-                          setMyListings((prev) =>
-                            prev.map((l) =>
-                              l.id === item.id
-                                ? {
-                                    ...l,
-                                    status: newStatus,
-                                    ...(updatedData || {}),
-                                  }
-                                : l,
-                            ),
-                          );
-                        }}
-                      />
-                    )}
+                      {(item.status === ListingStatus.ACTIVE ||
+                        item.status === ListingStatus.ARCHIVED) && (
+                        <SellerListingArchiveActions
+                          listingId={item.id}
+                          status={item.status}
+                          archiveReason={item.archiveReason}
+                          onStatusChanged={(newStatus, updatedData) => {
+                            setMyListings((prev) =>
+                              prev.map((l) =>
+                                l.id === item.id
+                                  ? {
+                                      ...l,
+                                      status: newStatus,
+                                      ...(updatedData || {}),
+                                    }
+                                  : l,
+                              ),
+                            );
+                          }}
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* Listing Engagement & Conversion Analytics */}
-                <SellerListingEngagement
-                  listingId={item.id}
-                  totalViews={item.totalViews}
-                  totalImpressions={item.totalImpressions}
-                  totalFavorites={item.totalFavorites}
-                  offersCount={item.offersCount}
-                />
+                <div className="bg-surface-sunken/50 dark:bg-dark-surface-sunken/40 rounded-xl p-3 border border-surface-border/60 dark:border-dark-surface-border/60">
+                  <SellerListingEngagement
+                    listingId={item.id}
+                    totalViews={item.totalViews}
+                    totalImpressions={item.totalImpressions}
+                    totalFavorites={item.totalFavorites}
+                    offersCount={item.offersCount}
+                  />
+                </div>
 
+                {/* Compliance Warnings & Notices */}
                 {item.status === ListingStatus.SUSPENDED && item.complianceReason && (
-                  <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2.5">
+                  <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-950 dark:text-amber-200 text-xs flex items-start gap-3">
                     <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                     <div className="space-y-1">
-                      <div>
-                        <span className="font-bold">إعلان موقوف مؤقتاً للامتثال والرقابة: </span>
-                        <span>{item.complianceReason}</span>
+                      <div className="font-bold flex items-center gap-1.5">
+                        <span>إعلان موقوف مؤقتاً للامتثال والرقابة:</span>
+                        <span className="font-mono font-semibold bg-amber-200/60 dark:bg-amber-900/60 px-1.5 py-0.2 rounded text-[11px]">
+                          {item.complianceReason}
+                        </span>
                       </div>
-                      <p className="text-ink-secondary dark:text-dark-ink-secondary text-[11px]">
+                      <p className="text-ink-secondary dark:text-dark-ink-secondary text-[11px] leading-relaxed">
                         تم إخفاء هذا الإعلان مؤقتاً من نتائج البحث العام لحين استيفاء المتطلبات النظامية وتعديل الملاحظات.
                       </p>
                     </div>
@@ -261,14 +651,16 @@ export default function MarketerDashboardPage() {
                 )}
 
                 {item.status === ListingStatus.BLOCKED && item.complianceReason && (
-                  <div className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 text-red-900 dark:text-red-200 text-xs flex items-start gap-2.5">
-                    <Ban className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                      <div>
-                        <span className="font-bold">إعلان محظور نهائياً بموجب قرار الامتثال: </span>
-                        <span>{item.complianceReason}</span>
+                  <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-950 dark:text-rose-200 text-xs flex items-start gap-3">
+                    <Ban className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="font-bold">إعلان محظور نهائياً بموجب قرار الامتثال:</span>
+                        <span className="font-mono font-semibold bg-rose-200/80 dark:bg-rose-900/60 text-rose-900 dark:text-rose-200 px-2 py-0.5 rounded text-[11px] break-all">
+                          {item.complianceReason}
+                        </span>
                       </div>
-                      <p className="text-red-700 dark:text-red-300 text-[11px]">
+                      <p className="text-rose-800 dark:text-rose-300 text-[11px] leading-relaxed">
                         تم فرض حظر نهائي على هذا العقار لمخالفته لوائح الهيئة العامة للعقار وضوابط المنصة، ولا يمكن تعديله أو إعادة نشره.
                       </p>
                     </div>
@@ -283,14 +675,15 @@ export default function MarketerDashboardPage() {
                 )}
 
                 {item.status === ListingStatus.REJECTED && item.rejectionReason && (
-                  <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs">
+                  <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 text-rose-900 dark:text-rose-200 text-xs">
                     <span className="font-bold">سبب الرفض من الإدارة: </span>
                     <span>{item.rejectionReason}</span>
                   </div>
                 )}
 
+                {/* Price Suggestion Banner if any */}
                 {item.activePriceSuggestion && (
-                  <div className="mt-2">
+                  <div className="mt-1">
                     <SellerPriceSuggestionCard
                       listingId={item.id}
                       suggestion={item.activePriceSuggestion}
@@ -316,23 +709,50 @@ export default function MarketerDashboardPage() {
                 )}
               </div>
             ))}
-          </CardContent>
-        </Card>
-      ) : (
-        !loading && (
-          <Card>
-            <CardContent className="p-6">
+          </div>
+        )}
+
+        {/* Empty Search/Filter State */}
+        {!loading && myListings.length > 0 && filteredListings.length === 0 && (
+          <div className="bg-surface-base dark:bg-dark-surface-base rounded-2xl border border-surface-border dark:border-dark-surface-border p-10 text-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-surface-sunken dark:bg-dark-surface-sunken mx-auto flex items-center justify-center text-ink-muted">
+              <Search className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-sm text-ink-primary dark:text-dark-ink-primary">
+              لا توجد عقارات مطابقة للبحث أو التصفية
+            </h3>
+            <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary max-w-sm mx-auto">
+              جرب تغيير معايير البحث أو اختيار تبويب تصفية آخر لعرض العقارات المسجلة.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setActiveTab('all');
+                setSearchQuery('');
+              }}
+              className="text-xs"
+            >
+              إعادة ضبط الفلاتر
+            </Button>
+          </div>
+        )}
+
+        {/* Global Empty State (when user has 0 listings) */}
+        {!loading && myListings.length === 0 && (
+          <Card className="rounded-2xl">
+            <CardContent className="p-8">
               <EmptyState
                 title="لا توجد عقارات مضافة في محفظتك"
                 description="ابدأ بإضافة أول عقار مسوق لديك، مع إرفاق ترخيص الإعلان وبيانات الصك للنشر المباشر."
-                icon={<Building className="w-7 h-7" />}
+                icon={<Building className="w-8 h-8" />}
                 actionLabel="إضافة عقار جديد"
                 actionHref="/app/marketer/listings/new"
               />
             </CardContent>
           </Card>
-        )
-      )}
+        )}
+      </div>
     </div>
   );
 }
