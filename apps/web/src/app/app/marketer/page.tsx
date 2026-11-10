@@ -32,8 +32,9 @@ import {
   Sparkles,
   ArrowUpLeft,
   Wallet,
+  AlertCircle,
 } from 'lucide-react';
-import { ListingStatus, PropertyType } from '@elmasaif/shared';
+import { ListingStatus, PropertyType, ProfileStatus } from '@elmasaif/shared';
 import { apiClient } from '../../../lib/api-client';
 import { SellerPriceSuggestionCard } from '../../../components/listings/seller-price-suggestion-card';
 import {
@@ -53,30 +54,74 @@ const PROPERTY_TYPE_LABELS: Record<string, string> = {
 
 type FilterTab = 'all' | 'active' | 'pending' | 'alerts' | 'archived';
 
-export default function MarketerDashboardPage() {
-  const [myListings, setMyListings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+export interface MarketerDashboardPageProps {
+  initialLoading?: boolean;
+  initialListings?: any[];
+  initialFalData?: { profile: any; falLicense: any } | null;
+}
+
+export default function MarketerDashboardPage({
+  initialLoading = true,
+  initialListings = [],
+  initialFalData = null,
+}: MarketerDashboardPageProps = {}) {
+  const [myListings, setMyListings] = useState<any[]>(initialListings);
+  const [falData, setFalData] = useState<{ profile: any; falLicense: any } | null>(initialFalData);
+  const [loading, setLoading] = useState(initialLoading);
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    apiClient
-      .get<{ statusCode: number; data: { items: any[] } }>('/listings/my')
-      .then((res) => {
-        if (res?.data?.items) {
-          setMyListings(res.data.items);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    if (initialListings.length === 0 && initialLoading) {
+      apiClient
+        .get<{ statusCode: number; data: { items: any[] } }>('/listings/my')
+        .then((res) => {
+          if (res?.data?.items) {
+            setMyListings(res.data.items);
+          }
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
+
+    if (!initialFalData) {
+      apiClient
+        .get<{ statusCode?: number; profile: any; falLicense: any } | { data: { profile: any; falLicense: any } }>('/users/fal-license')
+        .then((res: any) => {
+          const payload = res?.data || res;
+          if (payload?.falLicense || payload?.profile) {
+            setFalData(payload);
+          }
+        })
+        .catch(() => {});
+    }
   }, []);
+
+  const falLicense = falData?.falLicense;
+  const profileStatus = falData?.profile?.status;
+  const isRestricted =
+    falLicense?.status === ProfileStatus.COMPLIANCE_RESTRICTED ||
+    profileStatus === ProfileStatus.COMPLIANCE_RESTRICTED;
+
+  const daysRemaining = falLicense?.daysRemaining ?? null;
+  const showWarning =
+    !isRestricted &&
+    falLicense?.status === ProfileStatus.ACTIVE &&
+    typeof daysRemaining === 'number' &&
+    daysRemaining <= 30 &&
+    daysRemaining >= 0;
 
   const activeCount = myListings.filter((l) => l.status === ListingStatus.ACTIVE).length;
   const pendingCount = myListings.filter(
     (l) => !l.status || l.status === 'PENDING' || l.status === 'PENDING_REVIEW',
   ).length;
   const alertsCount = myListings.filter((l) =>
-    [ListingStatus.SUSPENDED, ListingStatus.BLOCKED, ListingStatus.REJECTED].includes(l.status),
+    [
+      ListingStatus.SUSPENDED,
+      ListingStatus.UNDER_COMPLIANCE_REVIEW,
+      ListingStatus.BLOCKED,
+      ListingStatus.REJECTED,
+    ].includes(l.status),
   ).length;
   const archivedCount = myListings.filter((l) => l.status === ListingStatus.ARCHIVED).length;
 
@@ -98,9 +143,12 @@ export default function MarketerDashboardPage() {
         return false;
       if (
         activeTab === 'alerts' &&
-        ![ListingStatus.SUSPENDED, ListingStatus.BLOCKED, ListingStatus.REJECTED].includes(
-          item.status,
-        )
+        ![
+          ListingStatus.SUSPENDED,
+          ListingStatus.UNDER_COMPLIANCE_REVIEW,
+          ListingStatus.BLOCKED,
+          ListingStatus.REJECTED,
+        ].includes(item.status)
       )
         return false;
       if (activeTab === 'archived' && item.status !== ListingStatus.ARCHIVED) return false;
@@ -130,16 +178,28 @@ export default function MarketerDashboardPage() {
             <h1 className="text-2xl font-bold text-ink-primary dark:text-dark-ink-primary tracking-tight">
               لوحة تحكم الوسيط العقاري
             </h1>
-            <div className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800 shrink-0">
-              <span className="relative flex h-2 w-2 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span className="font-semibold text-xs whitespace-nowrap leading-none">
-                مرخص وموثق من فال (REGA)
-              </span>
-            </div>
+            {isRestricted ? (
+              <div
+                data-testid="header-restricted-badge"
+                className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800 shrink-0"
+              >
+                <AlertCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
+                <span className="font-semibold text-xs whitespace-nowrap leading-none">
+                  حساب مقيد لانتهاء رخصة فال
+                </span>
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800 shrink-0">
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="font-semibold text-xs whitespace-nowrap leading-none">
+                  مرخص وموثق من فال (REGA)
+                </span>
+              </div>
+            )}
           </div>
           <p className="text-sm text-ink-secondary dark:text-dark-ink-secondary max-w-2xl">
             إدارة وتوثيق العقارات المسوقة، واستقبال طلبات المشترين المباشرة، ومتابعة التحليلات والعمولات النظامية.
@@ -147,52 +207,142 @@ export default function MarketerDashboardPage() {
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0">
-          <Link href="/app/marketer/listings/new">
+          {isRestricted ? (
             <Button
               variant="primary"
-              className="gap-2 shadow-sm hover:shadow transition-all font-bold px-4 py-2.5"
+              disabled
+              data-testid="add-listing-btn"
+              title="لا يمكن إنشاء إعلانات جديدة نظراً لانتهاء صلاحية رخصة فال وتقييد الحساب للامتثال"
+              className="gap-2 shadow-sm font-bold px-4 py-2.5 opacity-50 cursor-not-allowed bg-rose-600 hover:bg-rose-600 text-white"
             >
               <PlusCircle className="w-4 h-4" />
               <span>إضافة عقار جديد</span>
             </Button>
-          </Link>
+          ) : (
+            <Link href="/app/marketer/listings/new">
+              <Button
+                variant="primary"
+                data-testid="add-listing-btn"
+                className="gap-2 shadow-sm hover:shadow transition-all font-bold px-4 py-2.5"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>إضافة عقار جديد</span>
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
       {/* Fal License Status Alert Card */}
-      <div className="relative overflow-hidden rounded-2xl border border-[#C69C45]/40 bg-gradient-to-r from-[#C69C45]/15 via-[#C69C45]/5 to-transparent dark:from-[#C69C45]/20 dark:via-[#C69C45]/10 dark:to-transparent p-5 sm:p-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start sm:items-center gap-3.5">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#9A7328] text-white flex items-center justify-center shrink-0 shadow-md">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
-                  رخصة فال للوساطة والتسويق العقاري معتمدة وسارية
-                </span>
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-100/80 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-300/40 dark:border-amber-700/50">
-                  <FileCheck2 className="w-3 h-3" />
-                  <span>معتمد نظامياً</span>
-                </span>
+      {isRestricted ? (
+        <div
+          data-testid="fal-restriction-card"
+          className="relative overflow-hidden rounded-2xl border-2 border-rose-300 dark:border-rose-800 bg-rose-50/90 dark:bg-rose-950/40 p-5 sm:p-6 shadow-sm"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-md">
+                <AlertCircle className="w-6 h-6" />
               </div>
-              <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary leading-relaxed">
-                حسابك مؤهل نظامياً لإضافة العقارات واستقبال عروض المشترين وفق اشتراطات وضوابط الهيئة العامة للعقار (REGA).
-              </p>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-rose-900 dark:text-rose-100">
+                    تم تقييد حسابك لانتهاء صلاحية رخصة فال
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-800 dark:text-rose-300 bg-rose-100 dark:bg-rose-900/60 px-2 py-0.5 rounded-full border border-rose-300">
+                    <span>مقيد للامتثال</span>
+                  </span>
+                </div>
+                <p className="text-xs text-rose-800/90 dark:text-rose-200/90 leading-relaxed">
+                  تم تقييد حسابك لانتهاء صلاحية رخصة فال. تم تعليق ظهور إعلاناتك النشطة آلياً، بينما تستمر الصفقات الجارية دون انقطاع. يرجى تجديد الرخصة لاستعادة نشاط الحساب.
+                </p>
+              </div>
             </div>
+            <Link href="/app/marketer/fal-license" className="shrink-0">
+              <Button
+                variant="primary"
+                size="sm"
+                className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold px-4 py-2 gap-1.5 rounded-xl shadow-xs"
+                data-testid="renew-fal-btn"
+              >
+                <span>تجديد رخصة فال</span>
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </Button>
+            </Link>
           </div>
-          <Link href="/app/marketer/fal-license" className="shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-[#C69C45]/60 hover:bg-[#C69C45]/10 text-ink-primary dark:text-dark-ink-primary text-xs font-semibold px-3.5 py-2 gap-1.5 rounded-xl shadow-xs"
-            >
-              <span>تفاصيل الرخصة والامتثال</span>
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </Button>
-          </Link>
         </div>
-      </div>
+      ) : showWarning ? (
+        <div
+          data-testid="fal-warning-card"
+          className="relative overflow-hidden rounded-2xl border-2 border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-5 sm:p-6 shadow-sm"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-amber-950 dark:text-amber-100">
+                    تنبيه: اقتراب انتهاء صلاحية رخصة فال
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 px-2 py-0.5 rounded-full border border-amber-300">
+                    <span>{`متبقي ${daysRemaining} يوم`}</span>
+                  </span>
+                </div>
+                <p className="text-xs text-amber-900/90 dark:text-amber-200/90 leading-relaxed">
+                  {`تنبيه: تنتهي صلاحية رخصة فال خلال ${daysRemaining} يوم. يرجى تجديد الرخصة في الوقت المحدد لتفادي تعليق الإعلانات.`}
+                </p>
+              </div>
+            </div>
+            <Link href="/app/marketer/fal-license" className="shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-amber-400 text-amber-900 dark:text-amber-200 hover:bg-amber-100/50 text-xs font-semibold px-4 py-2 gap-1.5 rounded-xl shadow-xs"
+                data-testid="renew-fal-warning-btn"
+              >
+                <span>تجديد رخصة فال</span>
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <div className="relative overflow-hidden rounded-2xl border border-[#C69C45]/40 bg-gradient-to-r from-[#C69C45]/15 via-[#C69C45]/5 to-transparent dark:from-[#C69C45]/20 dark:via-[#C69C45]/10 dark:to-transparent p-5 sm:p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#9A7328] text-white flex items-center justify-center shrink-0 shadow-md">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
+                    رخصة فال للوساطة والتسويق العقاري معتمدة وسارية
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-100/80 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-300/40 dark:border-amber-700/50">
+                    <FileCheck2 className="w-3 h-3" />
+                    <span>معتمد نظامياً</span>
+                  </span>
+                </div>
+                <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary leading-relaxed">
+                  حسابك مؤهل نظامياً لإضافة العقارات واستقبال عروض المشترين وفق اشتراطات وضوابط الهيئة العامة للعقار (REGA).
+                </p>
+              </div>
+            </div>
+            <Link href="/app/marketer/fal-license" className="shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-[#C69C45]/60 hover:bg-[#C69C45]/10 text-ink-primary dark:text-dark-ink-primary text-xs font-semibold px-3.5 py-2 gap-1.5 rounded-xl shadow-xs"
+              >
+                <span>تفاصيل الرخصة والامتثال</span>
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -633,22 +783,29 @@ export default function MarketerDashboardPage() {
                 </div>
 
                 {/* Compliance Warnings & Notices */}
-                {item.status === ListingStatus.SUSPENDED && item.complianceReason && (
-                  <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-950 dark:text-amber-200 text-xs flex items-start gap-3">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                      <div className="font-bold flex items-center gap-1.5">
-                        <span>إعلان موقوف مؤقتاً للامتثال والرقابة:</span>
-                        <span className="font-mono font-semibold bg-amber-200/60 dark:bg-amber-900/60 px-1.5 py-0.2 rounded text-[11px]">
-                          {item.complianceReason}
-                        </span>
+                {(item.status === ListingStatus.SUSPENDED ||
+                  item.status === ListingStatus.UNDER_COMPLIANCE_REVIEW) &&
+                  item.complianceReason && (
+                    <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-950 dark:text-amber-200 text-xs flex items-start gap-3">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <div className="font-bold flex items-center gap-1.5">
+                          <span>إعلان موقوف مؤقتاً للامتثال والرقابة:</span>
+                          {item.complianceCategory && (
+                            <span className="font-mono font-semibold bg-amber-200/60 dark:bg-amber-900/60 px-1.5 py-0.2 rounded text-[11px]">
+                              {item.complianceCategory}
+                            </span>
+                          )}
+                          <span className="font-mono font-semibold bg-amber-200/60 dark:bg-amber-900/60 px-1.5 py-0.2 rounded text-[11px]">
+                            {item.complianceReason}
+                          </span>
+                        </div>
+                        <p className="text-ink-secondary dark:text-dark-ink-secondary text-[11px] leading-relaxed">
+                          تم إخفاء هذا الإعلان مؤقتاً من نتائج البحث العام لحين استيفاء المتطلبات النظامية وتعديل الملاحظات.
+                        </p>
                       </div>
-                      <p className="text-ink-secondary dark:text-dark-ink-secondary text-[11px] leading-relaxed">
-                        تم إخفاء هذا الإعلان مؤقتاً من نتائج البحث العام لحين استيفاء المتطلبات النظامية وتعديل الملاحظات.
-                      </p>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {item.status === ListingStatus.BLOCKED && item.complianceReason && (
                   <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-950 dark:text-rose-200 text-xs flex items-start gap-3">
@@ -744,10 +901,14 @@ export default function MarketerDashboardPage() {
             <CardContent className="p-8">
               <EmptyState
                 title="لا توجد عقارات مضافة في محفظتك"
-                description="ابدأ بإضافة أول عقار مسوق لديك، مع إرفاق ترخيص الإعلان وبيانات الصك للنشر المباشر."
+                description={
+                  isRestricted
+                    ? 'تم تقييد حسابك لانتهاء صلاحية رخصة فال. يرجى تجديد الرخصة لتمكين إضافة الإعلانات العقارية.'
+                    : 'ابدأ بإضافة أول عقار مسوق لديك، مع إرفاق ترخيص الإعلان وبيانات الصك للنشر المباشر.'
+                }
                 icon={<Building className="w-8 h-8" />}
-                actionLabel="إضافة عقار جديد"
-                actionHref="/app/marketer/listings/new"
+                actionLabel={isRestricted ? 'تجديد رخصة فال' : 'إضافة عقار جديد'}
+                actionHref={isRestricted ? '/app/marketer/fal-license' : '/app/marketer/listings/new'}
               />
             </CardContent>
           </Card>

@@ -56,10 +56,14 @@ export default function MarketerOnboardingPage(props?: MarketerOnboardingPagePro
   const [existingLicense, setExistingLicense] = useState<FalLicenseData | null>(initialLicense);
 
   // Form State
-  const [licenseNumber, setLicenseNumber] = useState('');
-  const [commercialName, setCommercialName] = useState('');
-  const [crNumber, setCrNumber] = useState('');
-  const [expiryDate, setExpiryDate] = useState('');
+  const [licenseNumber, setLicenseNumber] = useState(initialLicense?.licenseNumber || '');
+  const [commercialName, setCommercialName] = useState(initialLicense?.commercialName || '');
+  const [crNumber, setCrNumber] = useState(initialLicense?.crNumber || '');
+  const [expiryDate, setExpiryDate] = useState(
+    initialLicense?.expiryDate
+      ? new Date(initialLicense.expiryDate).toISOString().split('T')[0]
+      : '',
+  );
   const [certificateUrl, setCertificateUrl] = useState('');
   const [certificateName, setCertificateName] = useState('');
   const [supportingDocs, setSupportingDocs] = useState<{ url: string; name: string }[]>([]);
@@ -422,7 +426,9 @@ export default function MarketerOnboardingPage(props?: MarketerOnboardingPagePro
           <span>الهيئة العامة للعقار (REGA)</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-ink-primary dark:text-dark-ink-primary tracking-tight">
-          {existingLicense?.status === ProfileStatus.REJECTED
+          {existingLicense?.status === ProfileStatus.COMPLIANCE_RESTRICTED
+            ? 'تجديد رخصة فال العقارية (منتهية الصلاحية)'
+            : existingLicense?.status === ProfileStatus.REJECTED
             ? 'إعادة تقديم طلب اعتماد رخصة فال'
             : 'توثيق واعتماد رخصة فال العقارية'}
         </h1>
@@ -430,6 +436,26 @@ export default function MarketerOnboardingPage(props?: MarketerOnboardingPagePro
           متطلب نظامي إلزامي للمسوقين والوسطاء لنشر وإدارة العروض والطلبات العقارية في منصة المصايف.
         </p>
       </div>
+
+      {/* Compliance Restricted Alert if returning after license expiry */}
+      {existingLicense?.status === ProfileStatus.COMPLIANCE_RESTRICTED && (
+        <div
+          data-testid="compliance-restricted-onboarding-alert"
+          className="mb-6 p-5 sm:p-6 rounded-2xl border-2 border-rose-300 dark:border-rose-800 bg-rose-50/90 dark:bg-rose-950/30 text-rose-900 dark:text-rose-200 shadow-sm"
+        >
+          <div className="flex items-start gap-3.5">
+            <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div className="space-y-1.5 flex-1">
+              <h3 className="font-bold text-base">تم تقييد حسابك لانتهاء صلاحية رخصة فال</h3>
+              <p className="text-sm text-rose-800 dark:text-rose-300 leading-relaxed">
+                انتهت صلاحية رخصة فال السابقة وتم تعليق ظهور إعلاناتك النشطة آلياً. يرجى إرفاق شهادة الترخيص المجددة وتحديث تاريخ الانتهاء لاستعادة نشاط الحساب ورفع التعليق فور الاعتماد.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Rejection Alert if returning after rejection */}
       {existingLicense?.status === ProfileStatus.REJECTED && (

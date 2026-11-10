@@ -173,6 +173,9 @@ describe('LicensesService', () => {
       expect(res.falLicense).toBeDefined();
       expect(res.falLicense.certificateDownloadUrl).toContain('https://s3.local/signed/cert-1');
       expect(res.falLicense.supportingDocumentDownloadUrls).toHaveLength(1);
+      expect(res.falLicense.daysRemaining).toBeDefined();
+      expect(typeof res.falLicense.daysRemaining).toBe('number');
+      expect(res.falLicense.isExpired).toBe(false);
     });
   });
 });

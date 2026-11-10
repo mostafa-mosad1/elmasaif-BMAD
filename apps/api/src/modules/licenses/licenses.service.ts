@@ -13,6 +13,9 @@ import {
   ProfileStatus,
   SubmitFalLicenseInput,
   UserRole,
+  calculateCalendarDaysRemaining,
+  getFalLicenseWarningWindow,
+  isFalLicenseExpired,
 } from '@elmasaif/shared';
 
 @Injectable()
@@ -201,6 +204,11 @@ export class LicensesService {
       }
     }
 
+    const now = this.clockService.now();
+    const daysRemaining = calculateCalendarDaysRemaining(fal.expiryDate, now);
+    const isExpired = isFalLicenseExpired(fal, now);
+    const warningWindow = getFalLicenseWarningWindow(fal.expiryDate, now);
+
     return {
       profile: {
         id: profile.id,
@@ -211,6 +219,9 @@ export class LicensesService {
         ...fal,
         certificateDownloadUrl,
         supportingDocumentDownloadUrls,
+        daysRemaining,
+        isExpired,
+        warningWindow,
       },
     };
   }

@@ -39,6 +39,7 @@ export function ListingStatusBadge({ status, className = '' }: ListingStatusBadg
         </span>
       );
 
+    case ListingStatus.UNDER_COMPLIANCE_REVIEW:
     case ListingStatus.SUSPENDED:
       return (
         <span

@@ -29,6 +29,7 @@ import {
   LISTING_MARKETER_AUTH_DOC_REQUIRED,
   LISTING_OWNER_DEED_REQUIRED,
   LISTING_FAL_LICENSE_REQUIRED,
+  FAL_COMPLIANCE_RESTRICTED,
   LISTING_INVALID_IBAN,
   LISTING_MALWARE_DETECTED,
   LISTING_ARCHIVE_BLOCKED_RESERVED,
@@ -119,6 +120,19 @@ export class ListingsService {
         falLicense: true,
       },
     });
+
+    if (activeRole === UserRole.MARKETER) {
+      if (
+        profile?.status === ProfileStatus.COMPLIANCE_RESTRICTED ||
+        profile?.falLicense?.status === ProfileStatus.COMPLIANCE_RESTRICTED
+      ) {
+        throw new ForbiddenException({
+          code: FAL_COMPLIANCE_RESTRICTED,
+          message:
+            'لا يمكن إنشاء إعلانات جديدة نظراً لانتهاء صلاحية رخصة فال وتقييد الحساب للامتثال',
+        });
+      }
+    }
 
     if (!profile || profile.status !== ProfileStatus.ACTIVE) {
       throw new ForbiddenException({

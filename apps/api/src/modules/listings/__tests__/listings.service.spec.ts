@@ -16,6 +16,7 @@ import {
   ListingStatus,
   DocumentVisibility,
   ScanStatus,
+  FAL_COMPLIANCE_RESTRICTED,
 } from '@elmasaif/shared';
 
 describe('ListingsService', () => {
@@ -261,6 +262,79 @@ describe('ListingsService', () => {
       await expect(
         service.createListing(mockUserId, UserRole.MARKETER, dtoWithoutAuthDoc),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should reject Marketer listing with 403 FAL_COMPLIANCE_RESTRICTED if marketer profile is COMPLIANCE_RESTRICTED', async () => {
+      prisma.userProfile.findUnique.mockResolvedValue({
+        id: mockProfileId,
+        userId: mockUserId,
+        role: UserRole.MARKETER,
+        status: ProfileStatus.COMPLIANCE_RESTRICTED,
+        falLicense: {
+          status: ProfileStatus.COMPLIANCE_RESTRICTED,
+          expiryDate: new Date('2026-01-01'),
+        },
+      });
+
+      const marketerDto = {
+        ...baseDto,
+        documents: [
+          {
+            documentType: 'OWNER_AUTHORIZATION',
+            fileUrl: 'listings/user-1/auth.pdf',
+            mimeType: 'application/pdf',
+            fileSize: 1024 * 50,
+            visibility: DocumentVisibility.ADMIN_ONLY,
+          },
+        ],
+      };
+
+      await expect(
+        service.createListing(mockUserId, UserRole.MARKETER, marketerDto),
+      ).rejects.toThrow(ForbiddenException);
+
+      try {
+        await service.createListing(mockUserId, UserRole.MARKETER, marketerDto);
+      } catch (err: any) {
+        expect(err.getResponse().code).toBe(FAL_COMPLIANCE_RESTRICTED);
+        expect(err.getResponse().message).toContain('تقييد الحساب للامتثال');
+      }
+    });
+
+    it('should reject Marketer listing with 403 FAL_COMPLIANCE_RESTRICTED if Fal license is COMPLIANCE_RESTRICTED', async () => {
+      prisma.userProfile.findUnique.mockResolvedValue({
+        id: mockProfileId,
+        userId: mockUserId,
+        role: UserRole.MARKETER,
+        status: ProfileStatus.ACTIVE,
+        falLicense: {
+          status: ProfileStatus.COMPLIANCE_RESTRICTED,
+          expiryDate: new Date('2026-01-01'),
+        },
+      });
+
+      const marketerDto = {
+        ...baseDto,
+        documents: [
+          {
+            documentType: 'OWNER_AUTHORIZATION',
+            fileUrl: 'listings/user-1/auth.pdf',
+            mimeType: 'application/pdf',
+            fileSize: 1024 * 50,
+            visibility: DocumentVisibility.ADMIN_ONLY,
+          },
+        ],
+      };
+
+      await expect(
+        service.createListing(mockUserId, UserRole.MARKETER, marketerDto),
+      ).rejects.toThrow(ForbiddenException);
+
+      try {
+        await service.createListing(mockUserId, UserRole.MARKETER, marketerDto);
+      } catch (err: any) {
+        expect(err.getResponse().code).toBe(FAL_COMPLIANCE_RESTRICTED);
+      }
     });
 
     it('should reject Owner listing if TITLE_DEED document is missing', async () => {
