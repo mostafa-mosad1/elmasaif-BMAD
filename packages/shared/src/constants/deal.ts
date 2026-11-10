@@ -154,6 +154,16 @@ export const DEAL_STATUS_LABELS_AR: Record<DealStatus, string> = {
   [DealStatus.TERMINATED]: 'منتهية',
 };
 
+export const DEAL_STATUS_DESCRIPTIONS_AR: Record<DealStatus, string> = {
+  [DealStatus.AWAITING_PAYMENT_PROOF]: 'بانتظار قيام المشتري برفع إيصالات السداد البنكي خلال المهلة المحددة',
+  [DealStatus.UNDER_ADMIN_AUDIT]: 'الإيصالات مرفوعة وبانتظار اعتماد ومطابقة التدقيق الإداري للمنصة',
+  [DealStatus.PAYMENT_REJECTED]: 'تم رفض أحد الإيصالات، والمشتري في مهلة تصحيح لإعادة الرفع',
+  [DealStatus.DISPUTED]: 'تم تقديم نزاع رسمي على الصفقة، والمهل الزمنية معلقة لحين البت الإداري',
+  [DealStatus.COMPLETED]: 'تم توثيق السداد بالكامل واعتماد الصفقة بنجاح وإتاحة بيانات الإفراغ',
+  [DealStatus.CANCELLED]: 'تم إلغاء الصفقة قبل السداد أو لانتهاء المهلة الزمنية',
+  [DealStatus.TERMINATED]: 'تم إنهاء الصفقة وإغلاقها بقرار إداري بعد البت في النزاع',
+};
+
 /** Same guard as `INQUIRY_STATUS_BADGE_VARIANTS`: exhaustive, never `Record<string, …>`. */
 export const DEAL_PAYMENT_STATUS_VARIANTS: Record<DealPaymentStatus, StatusBadgeVariant> = {
   [DEAL_PAYMENT_STATUS.PENDING]: 'pending',

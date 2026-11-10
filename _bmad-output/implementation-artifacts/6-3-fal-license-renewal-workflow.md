@@ -4,7 +4,7 @@ baseline_commit: 638f47d
 
 # Story 6.3: Fal License Renewal Workflow
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

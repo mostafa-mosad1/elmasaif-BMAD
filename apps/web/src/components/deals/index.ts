@@ -14,3 +14,4 @@ export * from './deal-disputed-banner';
 export * from './deal-cancel-modal';
 export * from './deal-dispute-modal';
 export * from './seller-cancel-request-modal';
+export * from './seller-deals-pipeline';

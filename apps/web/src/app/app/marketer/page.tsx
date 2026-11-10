@@ -34,7 +34,7 @@ import {
   Wallet,
   AlertCircle,
 } from 'lucide-react';
-import { ListingStatus, PropertyType, ProfileStatus } from '@elmasaif/shared';
+import { ListingStatus, PropertyType, ProfileStatus, SellerDealSummaryDto } from '@elmasaif/shared';
 import { apiClient } from '../../../lib/api-client';
 import { SellerPriceSuggestionCard } from '../../../components/listings/seller-price-suggestion-card';
 import {
@@ -42,6 +42,7 @@ import {
   ListingStatusBadge,
   SellerListingEngagement,
 } from '../../../components/listings';
+import { SellerDealsPipeline } from '../../../components/deals';
 
 const PROPERTY_TYPE_LABELS: Record<string, string> = {
   [PropertyType.VILLA]: 'فيلا',
@@ -58,21 +59,30 @@ export interface MarketerDashboardPageProps {
   initialLoading?: boolean;
   initialListings?: any[];
   initialFalData?: { profile: any; falLicense: any } | null;
+  initialDealsSummary?: SellerDealSummaryDto | null;
+  initialInquiries?: any[] | null;
+  initialOffers?: any[] | null;
 }
 
 export default function MarketerDashboardPage({
   initialLoading = true,
   initialListings = [],
   initialFalData = null,
+  initialDealsSummary = null,
+  initialInquiries = null,
+  initialOffers = null,
 }: MarketerDashboardPageProps = {}) {
   const [myListings, setMyListings] = useState<any[]>(initialListings);
   const [falData, setFalData] = useState<{ profile: any; falLicense: any } | null>(initialFalData);
+  const [dealsSummary, setDealsSummary] = useState<SellerDealSummaryDto | null>(initialDealsSummary);
+  const [inquiries, setInquiries] = useState<any[]>(initialInquiries ?? []);
+  const [offers, setOffers] = useState<any[]>(initialOffers ?? []);
   const [loading, setLoading] = useState(initialLoading);
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    if (initialListings.length === 0 && initialLoading) {
+  const fetchDashboardData = () => {
+    if (initialListings.length === 0) {
       apiClient
         .get<{ statusCode: number; data: { items: any[] } }>('/listings/my')
         .then((res) => {
@@ -82,6 +92,8 @@ export default function MarketerDashboardPage({
         })
         .catch(() => {})
         .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
 
     if (!initialFalData) {
@@ -95,6 +107,42 @@ export default function MarketerDashboardPage({
         })
         .catch(() => {});
     }
+
+    if (!initialDealsSummary) {
+      apiClient
+        .get<{ statusCode: number; data: SellerDealSummaryDto }>('/deals/seller/summary')
+        .then((res: any) => {
+          const payload = res?.data || res;
+          if (payload?.metrics || payload?.activeDeals) {
+            setDealsSummary(payload);
+          }
+        })
+        .catch(() => {});
+    }
+
+    if (!initialInquiries) {
+      apiClient
+        .get<{ statusCode: number; data: any[] }>('/inquiries/received')
+        .then((res: any) => {
+          const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+          setInquiries(items);
+        })
+        .catch(() => {});
+    }
+
+    if (!initialOffers) {
+      apiClient
+        .get<{ statusCode: number; data: any[] }>('/offers/received')
+        .then((res: any) => {
+          const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+          setOffers(items);
+        })
+        .catch(() => {});
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
   }, []);
 
   const falLicense = falData?.falLicense;
@@ -103,9 +151,15 @@ export default function MarketerDashboardPage({
     falLicense?.status === ProfileStatus.COMPLIANCE_RESTRICTED ||
     profileStatus === ProfileStatus.COMPLIANCE_RESTRICTED;
 
+  const isRenewalUnderReview =
+    falLicense?.status === 'RENEWAL_UNDER_REVIEW' ||
+    falLicense?.status === ProfileStatus.RENEWAL_UNDER_REVIEW ||
+    profileStatus === ProfileStatus.RENEWAL_UNDER_REVIEW;
+
   const daysRemaining = falLicense?.daysRemaining ?? null;
   const showWarning =
     !isRestricted &&
+    !isRenewalUnderReview &&
     falLicense?.status === ProfileStatus.ACTIVE &&
     typeof daysRemaining === 'number' &&
     daysRemaining <= 30 &&
@@ -128,6 +182,17 @@ export default function MarketerDashboardPage({
   const totalViews = myListings.reduce((sum, l) => sum + (l.totalViews || 0), 0);
   const totalImpressions = myListings.reduce((sum, l) => sum + (l.totalImpressions || 0), 0);
   const totalFavorites = myListings.reduce((sum, l) => sum + (l.totalFavorites || 0), 0);
+
+  const offersCount = offers.length;
+  const offersAwaitingSellerCount = offers.filter((o) => o?.awaitingParty === 'SELLER').length;
+  const conversionRate = totalViews > 0 ? ((offersCount / totalViews) * 100).toFixed(1) : '0.0';
+
+  const earnedCommissionTotal = dealsSummary?.metrics?.earnedCommissionTotal
+    ? Number(dealsSummary.metrics.earnedCommissionTotal).toLocaleString('en-US')
+    : '0.00';
+  const totalDealsCount = dealsSummary?.metrics?.totalDealsCount ?? 0;
+  const activeDealsCount =
+    dealsSummary?.metrics?.activeDealsCount ?? dealsSummary?.activeDeals?.length ?? 0;
 
   // Filter listings based on active tab and search query
   const filteredListings = useMemo(() => {
@@ -271,6 +336,43 @@ export default function MarketerDashboardPage({
             </Link>
           </div>
         </div>
+      ) : isRenewalUnderReview ? (
+        <div
+          data-testid="fal-renewal-review-card"
+          className="relative overflow-hidden rounded-2xl border-2 border-amber-300 dark:border-amber-800 bg-amber-50/90 dark:bg-amber-950/40 p-5 sm:p-6 shadow-sm"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md">
+                <Clock className="w-6 h-6 animate-pulse" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-amber-950 dark:text-amber-100">
+                    طلب تجديد رخصة فال قيد التدقيق الإداري
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 px-2 py-0.5 rounded-full border border-amber-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    <span>مراجعة إدارية (24 ساعة)</span>
+                  </span>
+                </div>
+                <p className="text-xs text-amber-900/90 dark:text-amber-200/90 leading-relaxed">
+                  تم استلام طلب تجديد رخصتك وجارٍ مطابقتها والتحقق منها لدى الهيئة العامة للعقار (REGA). تستمر صفقاتك وإعلاناتك بشكل طبيعي.
+                </p>
+              </div>
+            </div>
+            <Link href="/app/marketer/fal-license" className="shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-amber-400 text-amber-900 dark:text-amber-200 hover:bg-amber-100/50 text-xs font-semibold px-4 py-2 gap-1.5 rounded-xl shadow-xs"
+              >
+                <span>متابعة حالة الطلب</span>
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </Button>
+            </Link>
+          </div>
+        </div>
       ) : showWarning ? (
         <div
           data-testid="fal-warning-card"
@@ -327,6 +429,11 @@ export default function MarketerDashboardPage({
                 </div>
                 <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary leading-relaxed">
                   حسابك مؤهل نظامياً لإضافة العقارات واستقبال عروض المشترين وفق اشتراطات وضوابط الهيئة العامة للعقار (REGA).
+                  {falLicense?.licenseNumber && (
+                    <span className="font-mono font-bold ms-1">
+                      (رقم الرخصة: {falLicense.licenseNumber})
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
@@ -432,8 +539,8 @@ export default function MarketerDashboardPage({
               </span>
             </div>
 
-            {/* Footer sub-stats: Impressions & Favorites Chips */}
-            <div className="mt-4 pt-3 border-t border-surface-border/60 dark:border-dark-surface-border/60 flex items-center gap-2 text-xs">
+            {/* Footer sub-stats: Impressions & Favorites & Conversion Chips */}
+            <div className="mt-4 pt-3 border-t border-surface-border/60 dark:border-dark-surface-border/60 flex flex-wrap items-center gap-2 text-xs">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-surface-sunken dark:bg-dark-surface-sunken text-ink-secondary dark:text-dark-ink-secondary text-[11px] font-medium border border-surface-border/60 dark:border-dark-surface-border/60">
                 <BarChart2 className="w-3 h-3 text-sky-500" />
                 <span className="font-mono font-bold">{totalImpressions.toLocaleString('en-US')}</span> ظهور
@@ -444,6 +551,13 @@ export default function MarketerDashboardPage({
                   {totalFavorites.toLocaleString('en-US')}
                 </span>{' '}
                 مفضلة
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-surface-sunken dark:bg-dark-surface-sunken text-ink-secondary dark:text-dark-ink-secondary text-[11px] font-medium border border-surface-border/60 dark:border-dark-surface-border/60">
+                <Sparkles className="w-3 h-3 text-amber-500" />
+                <span className="font-mono font-bold text-ink-primary dark:text-dark-ink-primary">
+                  {conversionRate}%
+                </span>{' '}
+                تحويل
               </span>
             </div>
           </div>
@@ -476,13 +590,13 @@ export default function MarketerDashboardPage({
             {/* Metric Value + Badge */}
             <div className="flex items-baseline justify-between mt-4">
               <div className="flex items-baseline gap-1.5">
-                <span className="text-3xl sm:text-4xl font-extrabold text-ink-primary dark:text-dark-ink-primary font-mono tracking-tight">
-                  0
+                <span data-testid="inquiries-count" className="text-3xl sm:text-4xl font-extrabold text-ink-primary dark:text-dark-ink-primary font-mono tracking-tight">
+                  {inquiries.length}
                 </span>
                 <span className="text-xs font-semibold text-ink-muted">محادثة</span>
               </div>
               <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 px-2.5 py-1 rounded-full border border-indigo-200 dark:border-indigo-800">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
                 <span>محادثات فورية</span>
               </span>
             </div>
@@ -524,20 +638,20 @@ export default function MarketerDashboardPage({
             {/* Metric Value + Badge */}
             <div className="flex items-baseline justify-between mt-4">
               <div className="flex items-baseline gap-1.5">
-                <span className="text-3xl sm:text-4xl font-extrabold text-ink-primary dark:text-dark-ink-primary font-mono tracking-tight">
-                  0
+                <span data-testid="deals-count" className="text-3xl sm:text-4xl font-extrabold text-ink-primary dark:text-dark-ink-primary font-mono tracking-tight">
+                  {totalDealsCount}
                 </span>
                 <span className="text-xs font-semibold text-ink-muted">صفقة</span>
               </div>
               <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 px-2.5 py-1 rounded-full border border-amber-200 dark:border-amber-800">
                 <Wallet className="w-3 h-3 text-amber-500" />
-                <span>0.00 ر.س</span>
+                <span data-testid="earned-commission-total">{earnedCommissionTotal} ر.س</span>
               </span>
             </div>
 
             {/* Footer description */}
             <div className="mt-4 pt-3 border-t border-surface-border/60 dark:border-dark-surface-border/60 flex items-center justify-between text-xs text-ink-muted">
-              <span>مستحقات العمولات والصرف</span>
+              <span>{activeDealsCount} صفقات جارية</span>
               <span className="text-amber-600 dark:text-amber-400 font-semibold group-hover:underline">
                 بيانات السحب
               </span>
@@ -545,6 +659,98 @@ export default function MarketerDashboardPage({
           </div>
         </Link>
       </div>
+
+      {/* Quick Action Shortcuts Bar (AC-5, UX-DR4, UX-DR5) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-testid="quick-actions-bar">
+        {/* Shortcut 1: Incoming Offers */}
+        <Link href="/app/marketer/offers" className="group block focus:outline-none">
+          <div className="bg-surface-base dark:bg-dark-surface-base p-4 rounded-2xl border border-surface-border dark:border-dark-surface-border shadow-xs hover:border-emerald-500/40 hover:shadow-md transition-all flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <h4 className="text-xs font-bold text-ink-primary dark:text-dark-ink-primary">العروض الواردة</h4>
+                  {offersAwaitingSellerCount > 0 && (
+                    <span data-testid="offers-awaiting-badge" className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200">
+                      {offersAwaitingSellerCount} بانتظارك
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-ink-muted">مراجعة العروض والتفاوض</p>
+              </div>
+            </div>
+            <ArrowUpLeft className="w-4 h-4 text-ink-muted group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors" />
+          </div>
+        </Link>
+
+        {/* Shortcut 2: Inquiries Inbox */}
+        <Link href="/app/marketer/inquiries" className="group block focus:outline-none">
+          <div className="bg-surface-base dark:bg-dark-surface-base p-4 rounded-2xl border border-surface-border dark:border-dark-surface-border shadow-xs hover:border-indigo-500/40 hover:shadow-md transition-all flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                <MessageSquare className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <h4 className="text-xs font-bold text-ink-primary dark:text-dark-ink-primary">صندوق الاستفسارات</h4>
+                  <span className="text-[11px] font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                    {inquiries.length}
+                  </span>
+                </div>
+                <p className="text-[11px] text-ink-muted">فتح المحادثات والاستفسارات</p>
+              </div>
+            </div>
+            <ArrowUpLeft className="w-4 h-4 text-ink-muted group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+          </div>
+        </Link>
+
+        {/* Shortcut 3: Market Demands */}
+        <Link href="/app/marketer/demands" className="group block focus:outline-none">
+          <div className="bg-surface-base dark:bg-dark-surface-base p-4 rounded-2xl border border-surface-border dark:border-dark-surface-border shadow-xs hover:border-sky-500/40 hover:shadow-md transition-all flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-600 dark:bg-sky-500/20 dark:text-sky-400 flex items-center justify-center shrink-0">
+                <Search className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-ink-primary dark:text-dark-ink-primary">طلبات الشراء المطابقة</h4>
+                <p className="text-[11px] text-ink-muted">استعراض وتلبية طلبات المشترين</p>
+              </div>
+            </div>
+            <ArrowUpLeft className="w-4 h-4 text-ink-muted group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors" />
+          </div>
+        </Link>
+
+        {/* Shortcut 4: Payout IBAN Settings */}
+        <Link href="/app/settings/payout" className="group block focus:outline-none">
+          <div className="bg-surface-base dark:bg-dark-surface-base p-4 rounded-2xl border border-surface-border dark:border-dark-surface-border shadow-xs hover:border-amber-500/40 hover:shadow-md transition-all flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <Wallet className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <h4 className="text-xs font-bold text-ink-primary dark:text-dark-ink-primary">الحساب البنكي للصرف</h4>
+                  <span className="inline-flex items-center text-[10px] text-emerald-700 dark:text-emerald-300 font-semibold">
+                    <ShieldCheck className="w-3 h-3 me-0.5" /> موثق
+                  </span>
+                </div>
+                <p className="text-[11px] text-ink-muted">إدارة الآيبان وعمولات الصفقات</p>
+              </div>
+            </div>
+            <ArrowUpLeft className="w-4 h-4 text-ink-muted group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors" />
+          </div>
+        </Link>
+      </div>
+
+      {/* Deal Pipeline Funnel Component (AC-4, UC-49) */}
+      <SellerDealsPipeline
+        activeDeals={dealsSummary?.activeDeals ?? []}
+        stageBreakdown={dealsSummary?.stageBreakdown}
+        metrics={dealsSummary?.metrics}
+        onRefresh={fetchDashboardData}
+      />
 
       {/* Main Content Area: Listings Section */}
       <div className="space-y-4">

@@ -98,6 +98,36 @@ export class BuyerDealsController {
     return { statusCode: HttpStatus.OK, data };
   }
 
+  @Get('seller/summary')
+  @HttpCode(HttpStatus.OK)
+  @RequireRole(UserRole.MARKETER, UserRole.OWNER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Seller deals pipeline summary & metrics (Story 6.4 / AC-3)' })
+  @ApiResponse({ status: 200, description: 'Summary returned' })
+  @ApiResponse({ status: 403, description: 'AUTH_ROLE_NOT_AUTHORIZED' })
+  async getSellerDealsSummary(@Req() req: any) {
+    const data = await this.buyerDealsService.getSellerDealsSummary(
+      req.user.id,
+      req.user.activeRole || req.user.role,
+    );
+    return { statusCode: HttpStatus.OK, data };
+  }
+
+  @Get('seller')
+  @HttpCode(HttpStatus.OK)
+  @RequireRole(UserRole.MARKETER, UserRole.OWNER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Seller deals list, newest first (Story 6.4 / AC-3)' })
+  @ApiResponse({ status: 200, description: 'Seller deals returned' })
+  @ApiResponse({ status: 403, description: 'AUTH_ROLE_NOT_AUTHORIZED' })
+  async listSellerDeals(@Req() req: any) {
+    const data = await this.buyerDealsService.listSellerDeals(
+      req.user.id,
+      req.user.activeRole || req.user.role,
+    );
+    return { statusCode: HttpStatus.OK, data };
+  }
+
   @Get(':id/payments/:paymentType/proof-url')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()

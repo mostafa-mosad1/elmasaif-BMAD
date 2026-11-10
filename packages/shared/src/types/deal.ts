@@ -229,3 +229,71 @@ export interface AdminPaymentDetail extends Omit<AdminPaymentQueueItem, 'lockInf
   lockInfo: ClaimLockInfo;
 }
 
+/*
+ * Story 6.4 — Marketer Unified Operational Dashboard & Seller Deals (FR-59, UC-31, UC-49).
+ */
+
+/**
+ * Metrics aggregated across all deals for the seller (Story 6.4 / AC-1, AC-3).
+ */
+export interface SellerDealMetrics {
+  totalDealsCount: number;
+  activeDealsCount: number;
+  completedDealsCount: number;
+  disputedDealsCount: number;
+  cancelledDealsCount: number;
+  totalCompletedVolume: string; // decimal string
+  projectedActiveVolume: string; // decimal string
+  earnedCommissionTotal: string; // decimal string
+  pendingCommissionForecast: string; // decimal string
+}
+
+/**
+ * Breakdown of deals across each DealStatus stage (Story 6.4 / AC-3).
+ */
+export interface DealPipelineStageBreakdown {
+  AWAITING_PAYMENT_PROOF: number;
+  UNDER_ADMIN_AUDIT: number;
+  PAYMENT_REJECTED: number;
+  DISPUTED: number;
+  COMPLETED: number;
+  CANCELLED: number;
+  TERMINATED: number;
+}
+
+/**
+ * An individual deal row presented to the marketer/seller in pipeline and deal lists (Story 6.4 / AC-3, AC-4).
+ */
+export interface SellerDealItemDto {
+  id: string;
+  dealNumber: string;
+  dealReferenceCode: string;
+  listingId: string;
+  listingTitle: string;
+  cityName: string;
+  districtName: string;
+  dealPrice: string;
+  platformCommission: string;
+  status: DealStatus;
+  paymentDeadline: string;
+  paymentWindowHours: number;
+  buyer: {
+    fullName: string;
+    phone?: string | null;
+    email?: string | null;
+  };
+  sellerCancellationRequestedAt: string | null;
+  completedAt?: string | null;
+  createdAt: string;
+}
+
+/**
+ * Aggregated summary response payload for GET /api/v1/deals/seller/summary (Story 6.4 / AC-3).
+ */
+export interface SellerDealSummaryDto {
+  metrics: SellerDealMetrics;
+  stageBreakdown: DealPipelineStageBreakdown;
+  activeDeals: SellerDealItemDto[];
+}
+
+

@@ -98,9 +98,9 @@ development_status:
   epic-6: in-progress
   6-1-fal-license-onboarding-administrative-verification: done
   6-2-automated-daily-fal-expiry-enforcement-worker-job: done
-  6-3-fal-license-renewal-workflow: review
-  6-4-marketer-unified-operational-dashboard: backlog
-  6-5-public-broker-profile-moderated-reviews: backlog
+  6-3-fal-license-renewal-workflow: done
+  6-4-marketer-unified-operational-dashboard: done
+  6-5-public-broker-profile-moderated-reviews: in-progress
   epic-6-retrospective: optional
 
   epic-7: backlog

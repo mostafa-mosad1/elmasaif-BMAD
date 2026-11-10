@@ -16,6 +16,8 @@ import { QuarantineService } from '../storage/quarantine.service';
 import { MAX_EXPIRATION_SECONDS, StorageService } from '../storage/storage.service';
 import {
   DEAL_ALREADY_RATED,
+  ACTIVE_DEAL_STATUSES,
+  AUTH_ROLE_NOT_AUTHORIZED,
   DEAL_BUYER_PROFILE_REQUIRED,
   DEAL_IDENTITY_REQUIRED,
   DEAL_NOT_COMPLETED,
@@ -36,11 +38,13 @@ import {
   DEAL_RATING_NOT_PARTY,
   DEAL_RATING_SCORE_INVALID,
   DEAL_TERMINAL,
+  DEFAULT_PAYMENT_WINDOW_HOURS,
   DealInvoiceSummary,
   DealPaymentProofDownload,
   DealPaymentSlot,
   DealPaymentType,
   DealPaymentView,
+  DealPipelineStageBreakdown,
   DealRatingSummary,
   DealStatus,
   DealSummary,
@@ -49,6 +53,9 @@ import {
   PaymentType,
   ProfileStatus,
   RATING_SUBMITTED,
+  SellerDealItemDto,
+  SellerDealMetrics,
+  SellerDealSummaryDto,
   SubmitDealRatingInput,
   TERMINAL_DEAL_STATUSES,
   UserRole,
@@ -67,6 +74,7 @@ import {
   toDealRatingSummary,
   toDealSummary,
 } from './deal-payment.mapper';
+import { toIso } from '../offers/offer-thread.mapper';
 
 /** The listing title and counterparty profiles are loaded for buyer screens. */
 const DEAL_INCLUDE = {
@@ -84,6 +92,78 @@ const DEAL_INCLUDE = {
   },
   rating: true,
 } as const;
+
+/** Includes required for marketer/seller deal pipeline projections (Story 6.4 / AC-3). */
+const SELLER_DEAL_INCLUDE = {
+  listing: {
+    select: {
+      id: true,
+      title: true,
+      propertyType: true,
+      city: { select: { nameAr: true } },
+      district: { select: { nameAr: true } },
+    },
+  },
+  buyerProfile: {
+    include: {
+      user: {
+        select: {
+          fullName: true,
+          mobileNumber: true,
+          email: true,
+        },
+      },
+    },
+  },
+  payments: {
+    select: {
+      id: true,
+      paymentType: true,
+      amount: true,
+      status: true,
+    },
+  },
+} as const;
+
+function maskBuyerName(fullName: string | null | undefined): string {
+  if (!fullName || !fullName.trim()) return 'م*** ش***';
+  return fullName
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => `${part[0]}***`)
+    .join(' ');
+}
+
+function toSellerDealItem(deal: any): SellerDealItemDto {
+  const isCompleted = deal.status === DealStatus.COMPLETED;
+  const buyerUser = deal.buyerProfile?.user;
+
+  return {
+    id: deal.id,
+    dealNumber: deal.dealNumber,
+    dealReferenceCode: deal.dealReferenceCode,
+    listingId: deal.listingId,
+    listingTitle: deal.listing?.title ?? '',
+    cityName: deal.listing?.city?.nameAr ?? '',
+    districtName: deal.listing?.district?.nameAr ?? '',
+    dealPrice: String(deal.dealPrice),
+    platformCommission: String(deal.platformCommission),
+    status: deal.status as DealStatus,
+    paymentDeadline: toIso(deal.paymentDeadline) as string,
+    paymentWindowHours: deal.paymentWindowHoursSnapshot ?? DEFAULT_PAYMENT_WINDOW_HOURS,
+    buyer: {
+      fullName: isCompleted
+        ? buyerUser?.fullName ?? 'مشتري معتمد'
+        : maskBuyerName(buyerUser?.fullName),
+      phone: isCompleted ? buyerUser?.mobileNumber ?? null : undefined,
+      email: isCompleted ? buyerUser?.email ?? null : undefined,
+    },
+    sellerCancellationRequestedAt: toIso(deal.sellerCancellationRequestedAt),
+    completedAt: toIso(deal.completedAt),
+    createdAt: toIso(deal.createdAt) as string,
+  };
+}
 
 const PAYMENT_SELECT = {
   id: true,
@@ -143,6 +223,106 @@ export class BuyerDealsService {
     return deals.map((deal: any) =>
       toDealSummary(deal, deal.listing?.title, deal.payments ?? []),
     );
+  }
+
+  /**
+   * `GET /deals/seller/summary` — aggregate deals metrics, stage breakdown, and active pipeline deals
+   * for the authenticated marketer or owner (Story 6.4 / AC-1, AC-3).
+   */
+  async getSellerDealsSummary(
+    userId: string,
+    activeRole: UserRole,
+  ): Promise<SellerDealSummaryDto> {
+    const profile = await this.resolveSellerProfile(userId, activeRole);
+
+    const deals = await this.prisma.deal.findMany({
+      where: { sellerProfileId: profile.id },
+      orderBy: { createdAt: 'desc' },
+      include: SELLER_DEAL_INCLUDE,
+    });
+
+    const stageBreakdown: DealPipelineStageBreakdown = {
+      [DealStatus.AWAITING_PAYMENT_PROOF]: 0,
+      [DealStatus.UNDER_ADMIN_AUDIT]: 0,
+      [DealStatus.PAYMENT_REJECTED]: 0,
+      [DealStatus.DISPUTED]: 0,
+      [DealStatus.COMPLETED]: 0,
+      [DealStatus.CANCELLED]: 0,
+      [DealStatus.TERMINATED]: 0,
+    };
+
+    let totalCompletedVolume = 0;
+    let projectedActiveVolume = 0;
+    let earnedCommissionTotal = 0;
+    let pendingCommissionForecast = 0;
+    let activeDealsCount = 0;
+    let completedDealsCount = 0;
+    let disputedDealsCount = 0;
+    let cancelledDealsCount = 0;
+
+    const activeDeals: SellerDealItemDto[] = [];
+
+    for (const deal of deals) {
+      const status = deal.status as DealStatus;
+      if (status in stageBreakdown) {
+        stageBreakdown[status]++;
+      }
+
+      const price = Number(deal.dealPrice) || 0;
+      const commission = Number(deal.platformCommission) || 0;
+
+      if (status === DealStatus.COMPLETED) {
+        completedDealsCount++;
+        totalCompletedVolume += price;
+        earnedCommissionTotal += commission;
+      } else if (ACTIVE_DEAL_STATUSES.includes(status)) {
+        activeDealsCount++;
+        projectedActiveVolume += price;
+        pendingCommissionForecast += commission;
+        activeDeals.push(toSellerDealItem(deal));
+        if (status === DealStatus.DISPUTED) {
+          disputedDealsCount++;
+        }
+      } else if (status === DealStatus.CANCELLED || status === DealStatus.TERMINATED) {
+        cancelledDealsCount++;
+      }
+    }
+
+    const metrics: SellerDealMetrics = {
+      totalDealsCount: deals.length,
+      activeDealsCount,
+      completedDealsCount,
+      disputedDealsCount,
+      cancelledDealsCount,
+      totalCompletedVolume: totalCompletedVolume.toFixed(2),
+      projectedActiveVolume: projectedActiveVolume.toFixed(2),
+      earnedCommissionTotal: earnedCommissionTotal.toFixed(2),
+      pendingCommissionForecast: pendingCommissionForecast.toFixed(2),
+    };
+
+    return {
+      metrics,
+      stageBreakdown,
+      activeDeals,
+    };
+  }
+
+  /**
+   * `GET /deals/seller` — all deals for the authenticated marketer or owner, newest first (Story 6.4 / AC-3).
+   */
+  async listSellerDeals(
+    userId: string,
+    activeRole: UserRole,
+  ): Promise<SellerDealItemDto[]> {
+    const profile = await this.resolveSellerProfile(userId, activeRole);
+
+    const deals = await this.prisma.deal.findMany({
+      where: { sellerProfileId: profile.id },
+      orderBy: { createdAt: 'desc' },
+      include: SELLER_DEAL_INCLUDE,
+    });
+
+    return deals.map(toSellerDealItem);
   }
 
   /**
@@ -578,6 +758,30 @@ export class BuyerDealsService {
         message: 'تعذر العثور على ملف الإيصال، يرجى إعادة رفعه',
       });
     }
+  }
+
+  /**
+   * The caller's ACTIVE seller profile (MARKETER or OWNER).
+   * Rejects with AUTH_ROLE_NOT_AUTHORIZED if missing or inactive (AC-3).
+   */
+  private async resolveSellerProfile(userId: string, activeRole: UserRole) {
+    if (activeRole !== UserRole.MARKETER && activeRole !== UserRole.OWNER) {
+      throw new ForbiddenException({
+        code: AUTH_ROLE_NOT_AUTHORIZED,
+        message: 'ليس لديك صلاحية الوصول إلى هذه الخدمة بالدور النشط الحالي. يرجى التبديل إلى مساحة العمل المناسبة',
+      });
+    }
+
+    const profile = await this.prisma.userProfile.findUnique({
+      where: { userId_role: { userId, role: activeRole } },
+    });
+    if (!profile || profile.status !== ProfileStatus.ACTIVE) {
+      throw new ForbiddenException({
+        code: AUTH_ROLE_NOT_AUTHORIZED,
+        message: 'يلزم وجود ملف بائع نشط لعرض صفقاتك وعمولاتك',
+      });
+    }
+    return profile;
   }
 
   /**
