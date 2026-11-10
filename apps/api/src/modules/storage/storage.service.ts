@@ -93,7 +93,12 @@ export class StorageService {
     this.forcePathStyle =
       typeof rawPathStyle === 'string' ? rawPathStyle.toLowerCase() === 'true' : Boolean(rawPathStyle);
 
-    this.localBasePath = path.resolve(process.cwd(), '.storage', this.bucketName);
+    // Standardize root .storage regardless of whether process was started from repo root or apps/api
+    let baseStorage = path.resolve(process.cwd(), '.storage');
+    if (process.cwd().includes('apps' + path.sep + 'api') || process.cwd().endsWith('apps/api') || process.cwd().endsWith('apps\\api')) {
+      baseStorage = path.resolve(process.cwd(), '..', '..', '.storage');
+    }
+    this.localBasePath = path.resolve(baseStorage, this.bucketName);
     try {
       if (!fs.existsSync(this.localBasePath)) {
         fs.mkdirSync(this.localBasePath, { recursive: true });
@@ -115,6 +120,24 @@ export class StorageService {
     this.logger.log(
       `StorageService initialized (driver: ${this.storageDriver}) targeting sovereign bucket '${this.bucketName}' on endpoint '${this.endpoint}' (region: ${this.region}, forcePathStyle: ${this.forcePathStyle})`,
     );
+  }
+
+  public resolveLocalPath(key: string): string {
+    const trimmed = key.trim();
+    const candidatePaths = [
+      path.join(this.localBasePath, trimmed),
+      path.resolve(process.cwd(), '.storage', this.bucketName, trimmed),
+      path.resolve(process.cwd(), '..', '..', '.storage', this.bucketName, trimmed),
+      path.resolve(process.cwd(), 'apps', 'api', '.storage', this.bucketName, trimmed),
+    ];
+
+    for (const p of candidatePaths) {
+      if (fs.existsSync(p)) {
+        return p;
+      }
+    }
+
+    return path.join(this.localBasePath, trimmed);
   }
 
   private isNetworkOrDevError(err: any): boolean {
@@ -147,7 +170,7 @@ export class StorageService {
 
     const clampedExpiry = Math.min(Math.max(1, expiresInSeconds), MAX_EXPIRATION_SECONDS);
 
-    const localPath = path.join(this.localBasePath, key.trim());
+    const localPath = this.resolveLocalPath(key);
     if (this.storageDriver === 'local' || fs.existsSync(localPath)) {
       const apiBase = this.configService.get<string>('API_URL') || 'http://localhost:4000';
       return `${apiBase}/api/v1/storage/raw?key=${encodeURIComponent(key.trim())}`;
@@ -292,7 +315,7 @@ export class StorageService {
       throw new BadRequestException('Object key is required');
     }
 
-    const localPath = path.join(this.localBasePath, key.trim());
+    const localPath = this.resolveLocalPath(key);
     if (fs.existsSync(localPath)) {
       return true;
     }
@@ -329,7 +352,7 @@ export class StorageService {
       throw new BadRequestException('Object key is required');
     }
 
-    const localPath = path.join(this.localBasePath, key.trim());
+    const localPath = this.resolveLocalPath(key);
     if (fs.existsSync(localPath)) {
       try {
         fs.unlinkSync(localPath);
@@ -446,7 +469,7 @@ export class StorageService {
       throw new BadRequestException('Object key is required');
     }
 
-    const localPath = path.join(this.localBasePath, key.trim());
+    const localPath = this.resolveLocalPath(key);
     if (fs.existsSync(localPath)) {
       return fs.readFileSync(localPath);
     }
@@ -468,7 +491,7 @@ export class StorageService {
       const byteArray = await (response.Body as any).transformToByteArray();
       return Buffer.from(byteArray);
     } catch (err: any) {
-      const localPath = path.join(this.localBasePath, key.trim());
+      const localPath = this.resolveLocalPath(key);
       if (this.isNetworkOrDevError(err) && fs.existsSync(localPath)) {
         return fs.readFileSync(localPath);
       }

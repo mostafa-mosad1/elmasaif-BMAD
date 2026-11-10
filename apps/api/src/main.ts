@@ -59,4 +59,5 @@ async function bootstrap() {
   console.log(`[El Masaif API] Swagger docs at http://localhost:${port}/api/docs`);
 }
 
+// Bootstrap NestJS application
 bootstrap();

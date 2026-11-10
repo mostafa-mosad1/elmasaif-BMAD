@@ -57,6 +57,7 @@ export * from './offer.schema';
 export * from './inquiry.schema';
 export * from './deal.schema';
 export * from './dispute';
+export * from './licensing.schema';
 
 export const otpVerifySchema = z.object({
   mobileNumber: saudiMobileSchema,

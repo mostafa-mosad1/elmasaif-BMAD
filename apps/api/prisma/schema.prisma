@@ -30,6 +30,8 @@ enum ProfileStatus {
   DEACTIVATED
   DISABLED
   SOFT_DELETED
+  REJECTED
+  RENEWAL_UNDER_REVIEW
 }
 
 enum PropertyType {
@@ -287,19 +289,24 @@ model UserProfile {
 }
 
 model FalLicense {
-  id              String        @id @default(uuid())
-  profileId       String        @unique
-  licenseNumber   String        @unique
-  certificateUrl  String
-  expiryDate      DateTime
-  commercialName  String?
-  crNumber        String?
-  status          ProfileStatus @default(UNDER_REVIEW)
-  lockedByAdminId String?
-  lockedAt        DateTime?
-  lockExpiresAt   DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                     String        @id @default(uuid())
+  profileId              String        @unique
+  licenseNumber          String        @unique
+  certificateUrl         String
+  expiryDate             DateTime
+  commercialName         String?
+  crNumber               String?
+  status                 ProfileStatus @default(UNDER_REVIEW)
+  rejectionReason        String?       @map("rejection_reason")
+  reviewedByAdminId      String?       @map("reviewed_by_admin_id")
+  reviewedAt             DateTime?     @map("reviewed_at")
+  supportingDocumentUrls String[]      @default([]) @map("supporting_document_urls")
+  version                Int           @default(1)
+  lockedByAdminId        String?
+  lockedAt               DateTime?
+  lockExpiresAt          DateTime?
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
 
   profile UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 

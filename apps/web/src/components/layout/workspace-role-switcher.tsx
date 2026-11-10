@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuth } from '../providers/auth-provider';
 import { UserRole, ProfileStatus } from '@elmasaif/shared';
 import { roleConfig } from './role-config';
@@ -176,9 +177,13 @@ export function WorkspaceRoleSwitcher({ defaultOpen = false }: WorkspaceRoleSwit
 
                 {/* Marketer Activation (Requires Fal License) */}
                 {!hasActiveMarketer && (
-                  <div className="p-2 rounded-lg border border-surface-border dark:border-dark-surface-border bg-surface-sunken dark:bg-dark-surface opacity-85">
+                  <Link
+                    href="/app/marketer/onboarding"
+                    onClick={() => setIsOpen(false)}
+                    className="block p-2 rounded-lg border border-surface-border dark:border-dark-surface-border bg-surface-sunken dark:bg-dark-surface hover:border-[#C69C45]/60 hover:bg-[#C69C45]/5 transition-colors group cursor-pointer"
+                  >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs font-medium text-ink-secondary dark:text-dark-ink-secondary">
+                      <div className="flex items-center gap-2 text-xs font-medium text-ink-secondary dark:text-dark-ink-secondary group-hover:text-primary">
                         <Lock className="w-3.5 h-3.5 text-[#C69C45]" />
                         <span>ترقية لحساب مسوق معتمد</span>
                       </div>
@@ -187,9 +192,9 @@ export function WorkspaceRoleSwitcher({ defaultOpen = false }: WorkspaceRoleSwit
                       </span>
                     </div>
                     <p className="text-[10px] text-ink-muted dark:text-dark-ink-muted mt-1 leading-snug">
-                      يتطلب رخصة فال سارية من الهيئة العامة للعقار
+                      يتطلب رخصة فال سارية من الهيئة العامة للعقار (اضغط لبدء التحقق)
                     </p>
-                  </div>
+                  </Link>
                 )}
               </div>
             </div>

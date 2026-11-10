@@ -30,3 +30,4 @@ export * from './offer';
 export * from './masking';
 export * from './inquiry';
 export * from './deal';
+export * from './licensing';

@@ -117,3 +117,4 @@ export * from './locks';
 export * from './offer';
 export * from './inquiry';
 export * from './deal';
+export * from './licensing';

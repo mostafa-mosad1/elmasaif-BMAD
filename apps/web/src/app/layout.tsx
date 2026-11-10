@@ -21,7 +21,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
-      <body className="min-h-screen flex flex-col bg-surface-background dark:bg-dark-background text-ink-primary dark:text-dark-ink-primary font-sans antialiased transition-colors duration-200">
+      <body
+        suppressHydrationWarning
+        className="min-h-screen flex flex-col bg-surface-background dark:bg-dark-background text-ink-primary dark:text-dark-ink-primary font-sans antialiased transition-colors duration-200"
+      >
         <AppProviders>
           {children}
         </AppProviders>

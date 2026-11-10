@@ -33,7 +33,8 @@ import {
   Sparkles,
   MessagesSquare,
   Wallet,
-  Scale
+  Scale,
+  FileCheck
 } from 'lucide-react';
 
 interface WorkspaceShellProps {
@@ -110,6 +111,9 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
     ],
     [UserRole.ADMIN]: [
       { href: '/admin', label: 'لوحة تحكم المشرف', icon: LayoutDashboard },
+      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Licenses.Review')
+        ? [{ href: '/admin/licenses', label: 'طابور اعتماد رخص فال', icon: FileCheck }]
+        : []),
       ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Listings.Review')
         ? [{ href: '/admin/listings/moderation', label: 'طابور مراجعة الإعلانات العقارية', icon: Building }]
         : []),
