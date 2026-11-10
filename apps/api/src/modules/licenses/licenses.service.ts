@@ -3,14 +3,19 @@ import {
   ConflictException,
   Injectable,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClockService } from '../../common/clock/clock.service';
 import { StorageService } from '../storage/storage.service';
 import {
+  AUDIT_ACTION_FAL_LICENSE_RENEWAL_SUBMITTED,
   FAL_EXPIRED_DATE,
   FAL_LICENSE_ALREADY_EXISTS,
+  FAL_RENEWAL_DATE_NOT_EXTENDED,
+  LICENSE_NOT_FOUND,
   ProfileStatus,
+  RenewFalLicenseInput,
   SubmitFalLicenseInput,
   UserRole,
   calculateCalendarDaysRemaining,
@@ -156,6 +161,113 @@ export class LicensesService {
       statusCode: 201,
       message: 'تم إرسال طلب اعتماد رخصة فال بنجاح وجارٍ التدقيق الإداري',
       data: result,
+    };
+  }
+
+  /**
+   * Submits a renewal request for an existing Fal license.
+   */
+  async renewFalLicense(userId: string, input: RenewFalLicenseInput) {
+    const profile = await this.prisma.userProfile.findFirst({
+      where: {
+        userId,
+        role: UserRole.MARKETER,
+      },
+      include: {
+        falLicense: true,
+      },
+    });
+
+    if (!profile || !profile.falLicense) {
+      throw new NotFoundException({
+        code: LICENSE_NOT_FOUND,
+        message: 'لا يوجد ترخيص فال مسجل لهذا الحساب لتجديده',
+      });
+    }
+
+    const falLicense = profile.falLicense;
+    const now = this.clockService.now();
+    const newExpiryDate = new Date(input.expiryDate);
+
+    // 1. Strict future date validation
+    if (newExpiryDate.getTime() <= now.getTime()) {
+      throw new BadRequestException({
+        code: FAL_EXPIRED_DATE,
+        message: 'تاريخ انتهاء رخصة فال يجب أن يكون في المستقبل',
+      });
+    }
+
+    // 2. Strict extended date check if current license is active / not expired
+    const currentExpiryDate = new Date(falLicense.expiryDate);
+    if (
+      now.getTime() < currentExpiryDate.getTime() &&
+      newExpiryDate.getTime() <= currentExpiryDate.getTime()
+    ) {
+      throw new BadRequestException({
+        code: FAL_RENEWAL_DATE_NOT_EXTENDED,
+        message: 'تاريخ الانتهاء الجديد يجب أن يكون أبعد من تاريخ الانتهاء الحالي',
+      });
+    }
+
+    // 3. Execute atomic transaction
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updatedLicense = await tx.falLicense.update({
+        where: { id: falLicense.id },
+        data: {
+          certificateUrl: input.certificateUrl,
+          expiryDate: newExpiryDate,
+          commercialName: input.commercialName ?? falLicense.commercialName,
+          crNumber: input.crNumber ?? falLicense.crNumber,
+          supportingDocumentUrls: input.supportingDocumentUrls || [],
+          status: ProfileStatus.RENEWAL_UNDER_REVIEW,
+          rejectionReason: null,
+          reviewedByAdminId: null,
+          reviewedAt: null,
+          lockedByAdminId: null,
+          lockedAt: null,
+          lockExpiresAt: null,
+          version: { increment: 1 },
+        },
+      });
+
+      // Update UserProfile status if currently COMPLIANCE_RESTRICTED
+      if (profile.status === ProfileStatus.COMPLIANCE_RESTRICTED) {
+        await tx.userProfile.update({
+          where: { id: profile.id },
+          data: {
+            status: ProfileStatus.RENEWAL_UNDER_REVIEW,
+          },
+        });
+      }
+
+      // Insert immutable AuditLog
+      await tx.auditLog.create({
+        data: {
+          actorId: userId,
+          actorType: 'USER',
+          action: AUDIT_ACTION_FAL_LICENSE_RENEWAL_SUBMITTED,
+          entityType: 'FalLicense',
+          entityId: falLicense.id,
+          payload: {
+            licenseNumber: falLicense.licenseNumber,
+            previousExpiryDate: falLicense.expiryDate.toISOString(),
+            newExpiryDate: newExpiryDate.toISOString(),
+            previousStatus: falLicense.status,
+          },
+        },
+      });
+
+      this.logger.log(
+        `User '${userId}' submitted Fal license renewal for license '${falLicense.licenseNumber}'.`,
+      );
+
+      return updatedLicense;
+    });
+
+    return {
+      statusCode: 200,
+      message: 'تم استلام طلب تجديد رخصة فال بنجاح وجارٍ مراجعته إدارياً',
+      data: updated,
     };
   }
 

@@ -9,6 +9,10 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { ClockService } from '../../../common/clock/clock.service';
 import { StorageService } from '../../storage/storage.service';
 import {
+  AUDIT_ACTION_FAL_LICENSE_RENEWAL_APPROVED,
+  AUDIT_ACTION_FAL_LICENSE_RENEWAL_REJECTED,
+  AUDIT_ACTION_LISTING_REINSTATED_FAL_RENEWED,
+  COMPLIANCE_CATEGORY_FAL_EXPIRED,
   FAL_LOCK_DURATION_MS,
   LICENSE_INVALID_STATE,
   LICENSE_LOCK_CONFLICT,
@@ -17,6 +21,7 @@ import {
   LICENSE_NOT_FOUND,
   LICENSE_REJECTION_REASON_REQUIRED,
   LICENSE_VERSION_CONFLICT,
+  ListingStatus,
   ProfileStatus,
 } from '@elmasaif/shared';
 
@@ -46,6 +51,11 @@ describe('AdminLicensesService', () => {
         count: jest.fn(),
         update: jest.fn(),
       },
+      listing: {
+        findMany: jest.fn().mockResolvedValue([]),
+        count: jest.fn().mockResolvedValue(0),
+        update: jest.fn(),
+      },
       userProfile: {
         update: jest.fn(),
       },
@@ -58,6 +68,7 @@ describe('AdminLicensesService', () => {
       },
       auditLog: {
         create: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null),
       },
     };
 
@@ -242,6 +253,69 @@ describe('AdminLicensesService', () => {
         }),
       });
     });
+
+    it('approves renewal, activates profile, logs FAL_LICENSE_RENEWAL_APPROVED and automatically reinstates eligible suspended listings', async () => {
+      const renewalLicense = {
+        ...validLicense,
+        status: ProfileStatus.RENEWAL_UNDER_REVIEW,
+      };
+
+      prisma.falLicense.findUnique.mockResolvedValueOnce(renewalLicense);
+
+      // Marketer has 2 listings: 1 suspended due to FAL_LICENSE_EXPIRED, 1 suspended due to FRAUD
+      const eligibleListing = {
+        id: 'listing-1',
+        title: 'شقة فاخرة بحي النرجس',
+        sellerProfileId: 'profile-1',
+        status: ListingStatus.UNDER_COMPLIANCE_REVIEW,
+        complianceCategory: COMPLIANCE_CATEGORY_FAL_EXPIRED,
+      };
+
+      prisma.listing.findMany.mockResolvedValueOnce([eligibleListing]);
+      prisma.listing.update.mockResolvedValueOnce({
+        ...eligibleListing,
+        status: ListingStatus.ACTIVE,
+      });
+
+      const res = await service.approveLicense('fal-1', mockAdmin, { version: 2 });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.data).toBeDefined();
+      expect(res.data.reinstatedListingsCount).toBe(1);
+
+      // Verify listing update
+      expect(prisma.listing.update).toHaveBeenCalledWith({
+        where: { id: 'listing-1' },
+        data: expect.objectContaining({
+          status: ListingStatus.ACTIVE,
+          complianceReason: null,
+          complianceCategory: null,
+          complianceActionAt: null,
+          complianceOfficerId: null,
+          version: { increment: 1 },
+        }),
+      });
+
+      // Verify listing audit log
+      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          action: AUDIT_ACTION_LISTING_REINSTATED_FAL_RENEWED,
+          entityType: 'Listing',
+          entityId: 'listing-1',
+          actorId: 'admin-1',
+          actorType: 'ADMIN',
+        }),
+      });
+
+      // Verify license approval audit log has FAL_LICENSE_RENEWAL_APPROVED
+      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          action: AUDIT_ACTION_FAL_LICENSE_RENEWAL_APPROVED,
+          entityType: 'FalLicense',
+          entityId: 'fal-1',
+        }),
+      });
+    });
   });
 
   describe('rejectLicense', () => {
@@ -291,6 +365,88 @@ describe('AdminLicensesService', () => {
       expect(prisma.userProfile.update).toHaveBeenCalledWith({
         where: { id: 'profile-1' },
         data: { status: ProfileStatus.SUSPENDED },
+      });
+    });
+
+    it('rejects renewal when expired: sets COMPLIANCE_RESTRICTED and logs FAL_LICENSE_RENEWAL_REJECTED', async () => {
+      const expiredRenewalLicense = {
+        ...validLicense,
+        status: ProfileStatus.RENEWAL_UNDER_REVIEW,
+        expiryDate: new Date('2026-11-01T00:00:00.000Z'), // in past relative to mockNow (2026-11-09)
+      };
+
+      prisma.falLicense.findUnique.mockResolvedValueOnce(expiredRenewalLicense);
+      prisma.falLicense.update.mockResolvedValueOnce({
+        ...expiredRenewalLicense,
+        status: ProfileStatus.COMPLIANCE_RESTRICTED,
+      });
+
+      const res = await service.rejectLicense('fal-1', mockAdmin, {
+        version: 2,
+        rejectionReason: 'شهادة الترخيص المرفقة غير مطابقة للبيانات الرسمية',
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.falLicense.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'fal-1' },
+          data: expect.objectContaining({
+            status: ProfileStatus.COMPLIANCE_RESTRICTED,
+            rejectionReason: 'شهادة الترخيص المرفقة غير مطابقة للبيانات الرسمية',
+          }),
+        }),
+      );
+      expect(prisma.userProfile.update).toHaveBeenCalledWith({
+        where: { id: 'profile-1' },
+        data: { status: ProfileStatus.COMPLIANCE_RESTRICTED },
+      });
+      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          action: AUDIT_ACTION_FAL_LICENSE_RENEWAL_REJECTED,
+          entityType: 'FalLicense',
+          entityId: 'fal-1',
+        }),
+      });
+    });
+
+    it('rejects early renewal when not yet expired: sets ACTIVE and logs FAL_LICENSE_RENEWAL_REJECTED', async () => {
+      const activeRenewalLicense = {
+        ...validLicense,
+        status: ProfileStatus.RENEWAL_UNDER_REVIEW,
+        expiryDate: new Date('2026-11-25T00:00:00.000Z'), // still in future relative to mockNow (2026-11-09)
+      };
+
+      prisma.falLicense.findUnique.mockResolvedValueOnce(activeRenewalLicense);
+      prisma.falLicense.update.mockResolvedValueOnce({
+        ...activeRenewalLicense,
+        status: ProfileStatus.ACTIVE,
+      });
+
+      const res = await service.rejectLicense('fal-1', mockAdmin, {
+        version: 2,
+        rejectionReason: 'الشهادة المرفقة منتهية الصلاحية وليست جديدة',
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.falLicense.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'fal-1' },
+          data: expect.objectContaining({
+            status: ProfileStatus.ACTIVE,
+            rejectionReason: 'الشهادة المرفقة منتهية الصلاحية وليست جديدة',
+          }),
+        }),
+      );
+      expect(prisma.userProfile.update).toHaveBeenCalledWith({
+        where: { id: 'profile-1' },
+        data: { status: ProfileStatus.ACTIVE },
+      });
+      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          action: AUDIT_ACTION_FAL_LICENSE_RENEWAL_REJECTED,
+          entityType: 'FalLicense',
+          entityId: 'fal-1',
+        }),
       });
     });
   });

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   submitFalLicenseSchema,
+  renewFalLicenseSchema,
   licensingQueueQuerySchema,
   approveFalLicenseSchema,
   rejectFalLicenseSchema,
@@ -10,6 +11,7 @@ import { ProfileStatus } from '../enums';
 import { ClaimLockInfo } from './locks';
 
 export type SubmitFalLicenseInput = z.infer<typeof submitFalLicenseSchema>;
+export type RenewFalLicenseInput = z.infer<typeof renewFalLicenseSchema>;
 export type LicensingQueueQuery = z.infer<typeof licensingQueueQuerySchema>;
 export type ApproveFalLicenseInput = z.infer<typeof approveFalLicenseSchema>;
 export type RejectFalLicenseInput = z.infer<typeof rejectFalLicenseSchema>;
@@ -30,6 +32,17 @@ export interface FalLicenseQueueItem {
   applicantPhone: string;
   applicantNationalId: string | null;
   lockInfo: FalLockInfo;
+  isRenewal?: boolean;
+  suspendedListingsCount?: number;
+  previousExpiryDate?: string | null;
+}
+
+export interface SuspendedListingSummary {
+  id: string;
+  title: string;
+  city?: string;
+  askPrice?: number | string;
+  complianceCategory?: string | null;
 }
 
 export interface FalLicenseDetailResponse {
@@ -58,5 +71,9 @@ export interface FalLicenseDetailResponse {
     createdAt: string;
   };
   lockInfo: FalLockInfo;
+  isRenewal?: boolean;
+  previousExpiryDate?: string | null;
+  suspendedListingsCount?: number;
+  suspendedListings?: SuspendedListingSummary[];
 }
 

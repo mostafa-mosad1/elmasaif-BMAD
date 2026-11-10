@@ -12,7 +12,9 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import {
+  RenewFalLicenseInput,
   SubmitFalLicenseInput,
+  renewFalLicenseSchema,
   submitFalLicenseSchema,
 } from '@elmasaif/shared';
 import { LicensesService } from './licenses.service';
@@ -35,6 +37,19 @@ export class LicensesController {
     @Body(new ZodValidationPipe(submitFalLicenseSchema)) body: SubmitFalLicenseInput,
   ) {
     return this.licensesService.submitFalLicense(req.user.id, body);
+  }
+
+  @Post('renew')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Submit Fal license renewal request for administrative review' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Fal license renewal submitted successfully' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid payload or date not extended' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'No existing Fal license found' })
+  async renewFalLicense(
+    @Req() req: any,
+    @Body(new ZodValidationPipe(renewFalLicenseSchema)) body: RenewFalLicenseInput,
+  ) {
+    return this.licensesService.renewFalLicense(req.user.id, body);
   }
 
   @Get()

@@ -39,6 +39,8 @@ interface FalLicenseData {
   certificateDownloadUrl?: string;
   supportingDocumentUrls?: string[];
   supportingDocumentDownloadUrls?: string[];
+  daysRemaining?: number;
+  isExpired?: boolean;
 }
 
 export interface MarketerOnboardingPageProps {
@@ -72,8 +74,11 @@ export default function MarketerOnboardingPage(props?: MarketerOnboardingPagePro
   const [uploadingCert, setUploadingCert] = useState(false);
   const [uploadingSupporting, setUploadingSupporting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [isRenewingEarly, setIsRenewingEarly] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const isRenewal = existingLicense?.status === ProfileStatus.COMPLIANCE_RESTRICTED || isRenewingEarly;
 
   // Calculate tomorrow as min date
   const tomorrowStr = (() => {
@@ -248,8 +253,14 @@ export default function MarketerOnboardingPage(props?: MarketerOnboardingPagePro
         supportingDocumentUrls: supportingDocs.map((d) => d.url),
       };
 
-      await apiClient.post('/users/fal-license', payload);
-      setSuccessMessage('تم إرسال طلب اعتماد رخصة فال بنجاح وجارٍ التدقيق الإداري');
+      if (isRenewal) {
+        await apiClient.post('/users/fal-license/renew', payload);
+        setSuccessMessage('تم استلام طلب تجديد رخصة فال بنجاح وجارٍ مراجعته إدارياً');
+      } else {
+        await apiClient.post('/users/fal-license', payload);
+        setSuccessMessage('تم إرسال طلب اعتماد رخصة فال بنجاح وجارٍ التدقيق الإداري');
+      }
+      setIsRenewingEarly(false);
       await fetchLicenseStatus();
     } catch (err: any) {
       setErrorMessage(err?.message || 'فشل في إرسال طلب الترخيص؛ يرجى مراجعة البيانات المدخلة');
@@ -268,9 +279,50 @@ export default function MarketerOnboardingPage(props?: MarketerOnboardingPagePro
   }
 
   // Active Marketer State
-  if (existingLicense?.status === ProfileStatus.ACTIVE) {
+  if (existingLicense?.status === ProfileStatus.ACTIVE && !isRenewingEarly) {
+    const daysRemaining = existingLicense.daysRemaining ?? null;
+    const isExpiringSoon =
+      typeof daysRemaining === 'number' && daysRemaining <= 30 && daysRemaining >= 0;
+
     return (
       <div className="max-w-3xl mx-auto py-10 px-4 sm:px-6" dir="rtl">
+        {isExpiringSoon && (
+          <div
+            data-testid="onboarding-expiring-warning-banner"
+            className="mb-6 p-5 sm:p-6 rounded-2xl border-2 border-amber-300 dark:border-amber-800 bg-amber-50/90 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 shadow-sm"
+          >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-sm sm:text-base">تنبيه: اقتراب انتهاء صلاحية رخصة فال</h4>
+                  <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-300 mt-1 leading-relaxed">
+                    تنبيه: تنتهي صلاحية رخصة فال خلال {daysRemaining} يوم (متبقي {daysRemaining} يوم). يمكنك التقديم على التجديد المبكر الآن لتفادي أي انقطاع في نشاط حسابك.
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-testid="early-renewal-cta"
+                onClick={() => {
+                  setIsRenewingEarly(true);
+                  setCertificateUrl('');
+                  setCertificateName('');
+                  setSupportingDocs([]);
+                }}
+                className="shrink-0 border-amber-500 text-amber-900 dark:text-amber-200 hover:bg-amber-100 font-semibold px-4 py-2 text-xs rounded-xl shadow-xs"
+              >
+                <RotateCw className="w-3.5 h-3.5 ml-1.5" />
+                <span>تجديد مبكر لرخصة فال</span>
+              </Button>
+            </div>
+          </div>
+        )}
+
         <Card className="p-6 sm:p-10 rounded-2xl border-emerald-300 dark:border-emerald-800 bg-gradient-to-b from-emerald-50/70 via-surface to-surface dark:from-emerald-950/30 dark:via-dark-surface dark:to-dark-surface shadow-level2">
           <CardHeader className="text-center p-0 mb-6">
             <div className="w-20 h-20 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-4 border border-emerald-500/20 ring-8 ring-emerald-500/5 shadow-sm">
@@ -326,6 +378,86 @@ export default function MarketerOnboardingPage(props?: MarketerOnboardingPagePro
                 <Button className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3 text-base shadow-md font-semibold">
                   <span>الانتقال إلى مساحة المسوق</span>
                   <ArrowRight className="w-5 h-5 rotate-180" />
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Renewal Under Review State
+  if (existingLicense?.status === ProfileStatus.RENEWAL_UNDER_REVIEW) {
+    return (
+      <div className="max-w-3xl mx-auto py-10 px-4 sm:px-6" dir="rtl">
+        <Card className="p-6 sm:p-10 rounded-2xl border-amber-300/80 dark:border-amber-800/80 bg-gradient-to-b from-amber-50/70 via-surface to-surface dark:from-amber-950/30 dark:via-dark-surface dark:to-dark-surface shadow-level2">
+          <CardHeader className="text-center p-0 mb-6">
+            <div className="w-20 h-20 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 border border-amber-500/20 ring-8 ring-amber-500/5 shadow-sm">
+              <Clock className="w-11 h-11 animate-pulse" />
+            </div>
+            <CardTitle className="text-2xl sm:text-3xl font-extrabold text-amber-950 dark:text-amber-100">
+              طلب تجديد رخصة فال قيد المراجعة الإدارية
+            </CardTitle>
+            <CardDescription className="text-amber-900/80 dark:text-amber-300 text-sm sm:text-base mt-2 max-w-lg mx-auto leading-relaxed">
+              تم استلام بيانات وشهادة تجديد رخصة فال بنجاح، ويقوم فريق التحقق والامتثال بمراجعتها وتدقيقها وفق متطلبات REGA.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="p-0 space-y-6">
+            <div className="bg-surface-sunken/70 dark:bg-dark-surface-sunken/50 p-5 sm:p-6 rounded-2xl border border-surface-border dark:border-dark-surface-border divide-y divide-surface-border dark:divide-dark-surface-border space-y-3.5">
+              <div className="flex justify-between items-center text-sm pt-0">
+                <span className="text-ink-muted font-medium">رقم رخصة فال</span>
+                <span className="font-mono font-bold text-base text-ink-primary dark:text-dark-ink-primary bg-surface dark:bg-dark-surface px-3 py-1 rounded-lg border border-surface-border/80">
+                  {existingLicense.licenseNumber}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-sm pt-3.5">
+                <span className="text-ink-muted font-medium">الاسم التجاري</span>
+                <span className="font-semibold text-ink-primary dark:text-dark-ink-primary">
+                  {existingLicense.commercialName || 'غير مسجل'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-sm pt-3.5">
+                <span className="text-ink-muted font-medium">تاريخ الانتهاء الجديد المطلوب</span>
+                <span className="font-mono font-medium text-ink-primary dark:text-dark-ink-primary">
+                  {existingLicense.expiryDate
+                    ? new Date(existingLicense.expiryDate).toLocaleDateString('ar-SA')
+                    : 'غير محدد'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-sm pt-3.5">
+                <span className="text-ink-muted font-medium">حالة الطلب</span>
+                <Badge variant="warning" className="px-3 py-1 font-semibold gap-1.5 text-xs bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300">
+                  <Clock className="w-3.5 h-3.5 animate-pulse" />
+                  <span>طلب تجديد قيد المراجعة</span>
+                </Badge>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-200 text-xs sm:text-sm flex items-start gap-3 leading-relaxed">
+              <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold mb-1">مدة التدقيق المتوقعة</p>
+                <p className="text-xs text-amber-800 dark:text-amber-300">
+                  تتم مراجعة طلبات التجديد بصفة مستعجلة خلال ساعات العمل الرسمية (خلال 24 ساعة كحد أقصى) لإعادة تنشيط الحساب والإعلانات المعلقة للامتثال فوراً.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => fetchLicenseStatus(true)}
+                disabled={refreshing}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 text-sm"
+              >
+                <RotateCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <span>{refreshing ? 'جارٍ التحديث...' : 'تحديث حالة الطلب'}</span>
+              </Button>
+              <Link href="/app/marketer" className="w-full sm:w-auto">
+                <Button variant="ghost" className="w-full sm:w-auto text-sm text-ink-muted hover:text-ink-primary">
+                  العودة لمساحة العمل
                 </Button>
               </Link>
             </div>
@@ -426,12 +558,27 @@ export default function MarketerOnboardingPage(props?: MarketerOnboardingPagePro
           <span>الهيئة العامة للعقار (REGA)</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-ink-primary dark:text-dark-ink-primary tracking-tight">
-          {existingLicense?.status === ProfileStatus.COMPLIANCE_RESTRICTED
+          {isRenewingEarly
+            ? 'تجديد مبكر لرخصة فال العقارية'
+            : existingLicense?.status === ProfileStatus.COMPLIANCE_RESTRICTED
             ? 'تجديد رخصة فال العقارية (منتهية الصلاحية)'
             : existingLicense?.status === ProfileStatus.REJECTED
             ? 'إعادة تقديم طلب اعتماد رخصة فال'
             : 'توثيق واعتماد رخصة فال العقارية'}
         </h1>
+        {isRenewingEarly && (
+          <div className="mt-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsRenewingEarly(false)}
+              className="text-xs"
+            >
+              إلغاء التجديد المبكر والعودة
+            </Button>
+          </div>
+        )}
         <p className="text-sm text-ink-muted max-w-lg mx-auto mt-2 leading-relaxed">
           متطلب نظامي إلزامي للمسوقين والوسطاء لنشر وإدارة العروض والطلبات العقارية في منصة المصايف.
         </p>
@@ -458,18 +605,20 @@ export default function MarketerOnboardingPage(props?: MarketerOnboardingPagePro
       )}
 
       {/* Rejection Alert if returning after rejection */}
-      {existingLicense?.status === ProfileStatus.REJECTED && (
+      {existingLicense?.rejectionReason && (
         <div className="mb-6 p-5 sm:p-6 rounded-2xl border-2 border-red-300 dark:border-red-800 bg-red-50/80 dark:bg-red-950/30 text-red-900 dark:text-red-200 shadow-sm">
           <div className="flex items-start gap-3.5">
             <div className="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
               <AlertTriangle className="w-5 h-5" />
             </div>
             <div className="space-y-1.5 flex-1">
-              <h3 className="font-bold text-base">تم رفض طلب الاعتماد السابق</h3>
+              <h3 className="font-bold text-base">
+                {isRenewal ? 'ملاحظات رفض طلب التجديد السابق' : 'تم رفض طلب الاعتماد السابق'}
+              </h3>
               <p className="text-sm text-red-800 dark:text-red-300 leading-relaxed">
                 سبب الرفض الموثق من قبل إدارة المنصة:{' '}
                 <span className="font-semibold underline decoration-red-400">
-                  {existingLicense?.rejectionReason || 'البيانات أو الشهادة غير مطابقة'}
+                  {existingLicense.rejectionReason}
                 </span>
               </p>
               <p className="text-xs text-red-700 dark:text-red-400 pt-1">
@@ -531,15 +680,22 @@ export default function MarketerOnboardingPage(props?: MarketerOnboardingPagePro
                   required
                   placeholder="مثال: 1200012345"
                   value={licenseNumber}
-                  onChange={(e) => setLicenseNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                  className="w-full px-4 py-3 rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40 text-ink-primary dark:text-dark-ink-primary font-mono text-base focus:bg-surface focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                  readOnly={isRenewal}
+                  onChange={(e) => !isRenewal && setLicenseNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                  className={`w-full px-4 py-3 rounded-xl border border-surface-border dark:border-dark-surface-border ${
+                    isRenewal
+                      ? 'bg-surface-sunken/80 cursor-not-allowed text-ink-muted'
+                      : 'bg-surface-sunken/40 dark:bg-dark-surface-sunken/40 focus:bg-surface'
+                  } text-ink-primary dark:text-dark-ink-primary font-mono text-base focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all`}
                 />
                 <span className="absolute left-3 top-3.5 text-xs text-ink-muted font-mono">
                   {licenseNumber.length}/12
                 </span>
               </div>
               <p className="text-xs text-ink-muted leading-relaxed">
-                يتكون رقم الترخيص من 10 إلى 12 رقماً صادرة رسمياً من الهيئة العامة للعقار.
+                {isRenewal
+                  ? 'رقم رخصة فال مسجل مسبقاً ولا يمكن تعديله عند التجديد.'
+                  : 'يتكون رقم الترخيص من 10 إلى 12 رقماً صادرة رسمياً من الهيئة العامة للعقار.'}
               </p>
             </div>
 
@@ -723,7 +879,15 @@ export default function MarketerOnboardingPage(props?: MarketerOnboardingPagePro
                   className="w-full sm:w-auto px-8 py-3 text-base font-semibold shadow-md shrink-0 flex items-center justify-center gap-2"
                 >
                   <ShieldCheck className="w-5 h-5" />
-                  <span>{submitting ? 'جارٍ إرسال الطلب...' : 'إرسال طلب الاعتماد'}</span>
+                  <span>
+                    {submitting
+                      ? isRenewal
+                        ? 'جارٍ إرسال طلب التجديد...'
+                        : 'جارٍ إرسال الطلب...'
+                      : isRenewal
+                      ? 'إرسال طلب تجديد الرخصة'
+                      : 'إرسال طلب الاعتماد'}
+                  </span>
                 </Button>
               </div>
             </div>

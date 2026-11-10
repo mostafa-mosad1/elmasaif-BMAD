@@ -150,5 +150,74 @@ describe('Story 6.2: Marketer Compliance Restriction & Expiry Warnings UI (AC #6
       expect(html).toContain('bg-amber-100');
     });
   });
+
+  describe('Story 6.3: Marketer License Renewal UI Flows (AC #7)', () => {
+    it('renders dedicated renewal card when license status is RENEWAL_UNDER_REVIEW', () => {
+      const html = renderToString(
+        <MarketerOnboardingPage
+          initialLoading={false}
+          initialLicense={{
+            status: ProfileStatus.RENEWAL_UNDER_REVIEW,
+            licenseNumber: '1100009999',
+            commercialName: 'مكتب الرياض للتسويق',
+            crNumber: '1010999999',
+            expiryDate: '2028-12-31T00:00:00.000Z',
+          }}
+        />,
+      );
+
+      // Check dedicated review header
+      expect(html).toContain('طلب تجديد رخصة فال قيد المراجعة الإدارية');
+      // Status badge
+      expect(html).toContain('طلب تجديد قيد المراجعة');
+      // SLA note
+      expect(html).toContain('مدة التدقيق المتوقعة');
+      expect(html).toContain('خلال 24 ساعة كحد أقصى');
+      // Refresh status button
+      expect(html).toContain('تحديث حالة الطلب');
+    });
+
+    it('renders early renewal CTA button when license is ACTIVE with expiring warning (daysRemaining <= 30)', () => {
+      const html = renderToString(
+        <MarketerOnboardingPage
+          initialLoading={false}
+          initialLicense={{
+            status: ProfileStatus.ACTIVE,
+            licenseNumber: '1100009999',
+            commercialName: 'مكتب الرياض للتسويق',
+            crNumber: '1010999999',
+            expiryDate: '2026-11-20T00:00:00.000Z',
+            daysRemaining: 10,
+          } as any}
+        />,
+      );
+
+      expect(html).toContain('تنبيه: اقتراب انتهاء صلاحية رخصة فال');
+      expect(html).toContain('متبقي');
+      expect(html).toContain('تجديد مبكر لرخصة فال');
+    });
+
+    it('renders renewal form with non-editable license number and renewal CTA when restricted', () => {
+      const html = renderToString(
+        <MarketerOnboardingPage
+          initialLoading={false}
+          initialLicense={{
+            status: ProfileStatus.COMPLIANCE_RESTRICTED,
+            licenseNumber: '1100009999',
+            commercialName: 'مكتب الرياض للتسويق',
+            crNumber: '1010999999',
+            rejectionReason: 'شهادة الترخيص غير واضحة',
+          }}
+        />,
+      );
+
+      // Submit button text for renewal
+      expect(html).toContain('إرسال طلب تجديد الرخصة');
+      // Rejection feedback if previous renewal was rejected
+      expect(html).toContain('شهادة الترخيص غير واضحة');
+      // Readonly license number
+      expect(html.toLowerCase()).toContain('readonly');
+    });
+  });
 });
 

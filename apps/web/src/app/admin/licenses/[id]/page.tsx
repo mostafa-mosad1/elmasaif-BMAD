@@ -30,13 +30,19 @@ import { apiClient } from '../../../../lib/api-client';
 import { FalLicenseDetailResponse, ProfileStatus } from '@elmasaif/shared';
 import { formatLockCountdown } from '../licensing-helpers';
 
-export default function AdminLicenseReviewDetailPage() {
+export interface AdminLicenseReviewDetailPageProps {
+  initialLicense?: FalLicenseDetailResponse;
+  initialLoading?: boolean;
+}
+
+export default function AdminLicenseReviewDetailPage(props?: AdminLicenseReviewDetailPageProps) {
+  const { initialLicense, initialLoading = !props?.initialLicense } = props || {};
   const params = useParams();
   const router = useRouter();
-  const licenseId = String(params?.id || '');
+  const licenseId = String(params?.id || initialLicense?.id || '');
 
-  const [loading, setLoading] = useState(true);
-  const [license, setLicense] = useState<FalLicenseDetailResponse | null>(null);
+  const [loading, setLoading] = useState(initialLoading);
+  const [license, setLicense] = useState<FalLicenseDetailResponse | null>(initialLicense || null);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
 
@@ -71,8 +77,10 @@ export default function AdminLicenseReviewDetailPage() {
   }, [licenseId]);
 
   useEffect(() => {
-    fetchLicense();
-  }, [fetchLicense]);
+    if (!initialLicense) {
+      fetchLicense();
+    }
+  }, [fetchLicense, initialLicense]);
 
   // Heartbeat & countdown timers
   useEffect(() => {
@@ -328,6 +336,97 @@ export default function AdminLicenseReviewDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: License & Document Details (2 cols) */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Renewal Inspection Card (Story 6.3 AC #2, #5) */}
+          {license.isRenewal && (
+            <Card
+              data-testid="renewal-inspection-card"
+              className="rounded-2xl border-purple-200 dark:border-purple-800/60 bg-gradient-to-r from-purple-50/80 via-surface to-surface dark:from-purple-950/20 dark:via-dark-surface dark:to-dark-surface shadow-xs overflow-hidden"
+            >
+              <CardHeader className="px-6 py-4 border-b border-purple-100 dark:border-purple-900/40 mb-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/60 dark:text-purple-300 font-bold">
+                      طلب تجديد رخصة فال
+                    </Badge>
+                    <span className="text-xs text-purple-700 dark:text-purple-300 font-medium">
+                      مقارنة صلاحية الترخيص وتأثير التجديد على الإعلانات المعلقة
+                    </span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                {/* Date comparison */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-xl bg-surface dark:bg-dark-surface border border-surface-border dark:border-dark-surface-border">
+                    <span className="text-[11px] text-ink-muted block mb-1">
+                      تاريخ الانتهاء السابق المسجل
+                    </span>
+                    <span className="font-mono font-bold text-sm text-ink-secondary dark:text-dark-ink-secondary">
+                      {license.previousExpiryDate
+                        ? new Date(license.previousExpiryDate).toLocaleDateString('ar-SA')
+                        : 'غير متوفر'}
+                    </span>
+                  </div>
+                  <div className="p-4 rounded-xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
+                    <span className="text-[11px] text-purple-800 dark:text-purple-300 block mb-1">
+                      تاريخ الانتهاء الجديد المطلوب (تمديد)
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-sm text-purple-950 dark:text-purple-200">
+                        {new Date(license.expiryDate).toLocaleDateString('ar-SA')}
+                      </span>
+                      <span className="inline-flex items-center text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                        ✓ تمديد صلاحية سليم
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Suspended Listings Automatic Reinstatement Panel */}
+                <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/70 dark:bg-amber-950/20 text-xs">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1.5 flex-1">
+                      <h5 className="font-bold text-amber-900 dark:text-amber-200">
+                        إعلانات معلقة ستتم إعادتها آلياً فور الاعتماد (
+                        <span data-testid="reinstatement-count">
+                          {license.suspendedListingsCount || 0}
+                        </span>
+                        )
+                      </h5>
+                      <p className="text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed">
+                        وفقاً لقواعد الامتثال، سيتم آلياً فور الضغط على اعتماد نقل كافة إعلانات المسوق
+                        المعلقة بسبب انتهاء الرخصة السابقة إلى الحالة النشطة (ACTIVE).
+                      </p>
+                      {license.suspendedListings && license.suspendedListings.length > 0 && (
+                        <div className="mt-3 space-y-1.5 pt-2 border-t border-amber-200 dark:border-amber-800/40">
+                          {license.suspendedListings.slice(0, 5).map((lst) => (
+                            <div
+                              key={lst.id}
+                              className="flex items-center justify-between bg-surface dark:bg-dark-surface px-3 py-1.5 rounded-lg border border-amber-200/60 dark:border-amber-800/40 text-[11px]"
+                            >
+                              <span className="font-semibold text-ink-primary dark:text-dark-ink-primary truncate max-w-xs">
+                                {lst.title}
+                              </span>
+                              <span className="font-mono text-ink-muted">
+                                {Number(lst.askPrice).toLocaleString()} ر.س
+                              </span>
+                            </div>
+                          ))}
+                          {license.suspendedListings.length > 5 && (
+                            <span className="text-[11px] text-amber-700 dark:text-amber-400 block pt-1">
+                              + {license.suspendedListings.length - 5} إعلانات إضافية
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Main Credentials Card */}
           <Card className="rounded-2xl border-surface-border dark:border-dark-surface-border shadow-xs overflow-hidden bg-surface-base dark:bg-dark-surface-base">
             <CardHeader className="px-6 py-5 border-b border-surface-border dark:border-dark-surface-border mb-0">
@@ -564,20 +663,36 @@ export default function AdminLicenseReviewDetailPage() {
       <Modal
         open={approveModalOpen}
         onClose={() => setApproveModalOpen(false)}
-        ariaLabel="تأكيد اعتماد رخصة فال"
+        ariaLabel={license.isRenewal ? 'تأكيد اعتماد تجديد رخصة فال' : 'تأكيد اعتماد رخصة فال'}
       >
         <div className="space-y-4 text-xs" dir="rtl">
           <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
-            تأكيد اعتماد رخصة فال
+            {license.isRenewal ? 'تأكيد اعتماد تجديد رخصة فال' : 'تأكيد اعتماد رخصة فال'}
           </h3>
           <p className="text-ink-primary dark:text-dark-ink-primary leading-relaxed">
             هل أنت متأكد من صحة بيانات رخصة فال رقم{' '}
             <span className="font-mono font-bold text-primary">{license.licenseNumber}</span> التابعة
             لـ <span className="font-semibold">{license.applicant.fullName}</span>؟
           </p>
-          <p className="text-ink-muted">
-            سيؤدي هذا الإجراء إلى تفعيل دور المسوق (Marketer) في حساب المستخدم وإشعاره بالاعتماد.
-          </p>
+
+          {license.isRenewal ? (
+            <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 space-y-1.5">
+              <span className="font-bold block">إعادة تفعيل الإعلانات المعلقة تلقائياً:</span>
+              <p className="leading-relaxed">
+                سيؤدي هذا الاعتماد إلى تمديد صلاحية رخصة فال وتحديث الملف الشخصي إلى (ACTIVE)، مع
+                إعادة تفعيل تلقائية لـ{' '}
+                <span className="font-bold font-mono text-emerald-950 dark:text-emerald-100">
+                  {license.suspendedListingsCount || 0}
+                </span>{' '}
+                إعلان(ات) معلقة لانتهاء الرخصة ونقلها مباشرة إلى الحالة النشطة (ACTIVE).
+              </p>
+            </div>
+          ) : (
+            <p className="text-ink-muted">
+              سيؤدي هذا الإجراء إلى تفعيل دور المسوق (Marketer) في حساب المستخدم وإشعاره بالاعتماد.
+            </p>
+          )}
+
           <div className="flex justify-end gap-2 pt-2">
             <Button
               variant="outline"
@@ -603,12 +718,24 @@ export default function AdminLicenseReviewDetailPage() {
       <Modal
         open={rejectModalOpen}
         onClose={() => setRejectModalOpen(false)}
-        ariaLabel="رفض طلب اعتماد رخصة فال"
+        ariaLabel={license.isRenewal ? 'رفض طلب تجديد رخصة فال' : 'رفض طلب اعتماد رخصة فال'}
       >
         <div className="space-y-4 text-xs" dir="rtl">
           <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
-            رفض طلب اعتماد رخصة فال
+            {license.isRenewal ? 'رفض طلب تجديد رخصة فال' : 'رفض طلب اعتماد رخصة فال'}
           </h3>
+
+          {license.isRenewal && (
+            <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 space-y-1">
+              <span className="font-bold block text-[11px]">تنبيه بشأن أثر رفض التجديد:</span>
+              <p className="text-[11px] leading-relaxed">
+                في حال كانت الرخصة السابقة منتهية الصلاحية، سيبقى الحساب مقيداً للامتثال
+                (COMPLIANCE_RESTRICTED) وإعلاناته معلقة. أما إذا كانت الرخصة السابقة لا تزال سارية،
+                فسيظل الحساب نشطاً حتى تاريخ انتهائها الأصلي.
+              </p>
+            </div>
+          )}
+
           <p className="text-ink-primary dark:text-dark-ink-primary">
             يرجى توثيق سبب الرفض بالتفصيل ليتم إبلاغ المستخدم به وتوجيهه لتصحيحه:
           </p>

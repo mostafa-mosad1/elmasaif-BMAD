@@ -11,6 +11,11 @@ import { ClockService } from '../../common/clock/clock.service';
 import { StorageService } from '../storage/storage.service';
 import {
   ApproveFalLicenseInput,
+  AUDIT_ACTION_FAL_LICENSE_RENEWAL_APPROVED,
+  AUDIT_ACTION_FAL_LICENSE_RENEWAL_REJECTED,
+  AUDIT_ACTION_FAL_LICENSE_RENEWAL_SUBMITTED,
+  AUDIT_ACTION_LISTING_REINSTATED_FAL_RENEWED,
+  COMPLIANCE_CATEGORY_FAL_EXPIRED,
   ClaimLockInfo,
   FAL_LOCK_DURATION_MS,
   FalLicenseDetailResponse,
@@ -24,6 +29,7 @@ import {
   LICENSE_REJECTION_REASON_REQUIRED,
   LICENSE_VERSION_CONFLICT,
   LicensingQueueQuery,
+  ListingStatus,
   ProfileStatus,
   RejectFalLicenseInput,
 } from '@elmasaif/shared';
@@ -186,8 +192,31 @@ export class AdminLicensesService {
       }
     }
 
+    // Preload suspended listings count for applicant profiles
+    const profileIds = records.map((r) => r.profileId);
+    const suspendedListingsMap = new Map<string, number>();
+    if (profileIds.length > 0) {
+      try {
+        const suspendedListings = await this.prisma.listing.findMany({
+          where: {
+            sellerProfileId: { in: profileIds },
+            status: ListingStatus.UNDER_COMPLIANCE_REVIEW,
+            complianceCategory: COMPLIANCE_CATEGORY_FAL_EXPIRED,
+          },
+          select: { sellerProfileId: true },
+        });
+        for (const l of suspendedListings) {
+          suspendedListingsMap.set(l.sellerProfileId, (suspendedListingsMap.get(l.sellerProfileId) || 0) + 1);
+        }
+      } catch {
+        // Fallback gracefully if listing query fails
+      }
+    }
+
     const items: FalLicenseQueueItem[] = records.map((record) => {
       const lockInfo = this.buildLockInfo(record, now, currentAdminId, adminNameMap);
+      const isRenewal = record.status === ProfileStatus.RENEWAL_UNDER_REVIEW;
+      const suspendedListingsCount = suspendedListingsMap.get(record.profileId) ?? 0;
       return {
         id: record.id,
         licenseNumber: record.licenseNumber,
@@ -201,6 +230,8 @@ export class AdminLicensesService {
         applicantPhone: record.profile.user.mobileNumber,
         applicantNationalId: record.profile.user.nationalId || null,
         lockInfo,
+        isRenewal,
+        suspendedListingsCount,
       };
     });
 
@@ -276,6 +307,45 @@ export class AdminLicensesService {
       }
     }
 
+    const isRenewal = license.status === ProfileStatus.RENEWAL_UNDER_REVIEW;
+
+    // Fetch suspended listings count and details if applicable
+    let eligibleSuspendedListings: any[] = [];
+    try {
+      eligibleSuspendedListings = await this.prisma.listing.findMany({
+        where: {
+          sellerProfileId: license.profileId,
+          status: ListingStatus.UNDER_COMPLIANCE_REVIEW,
+          complianceCategory: COMPLIANCE_CATEGORY_FAL_EXPIRED,
+        },
+        select: {
+          id: true,
+          title: true,
+          askPrice: true,
+          complianceCategory: true,
+        },
+      });
+    } catch {
+      eligibleSuspendedListings = [];
+    }
+
+    let previousExpiryDate: string | null = null;
+    if (isRenewal) {
+      try {
+        const renewalAudit = await this.prisma.auditLog.findFirst({
+          where: {
+            entityType: 'FalLicense',
+            entityId: license.id,
+            action: AUDIT_ACTION_FAL_LICENSE_RENEWAL_SUBMITTED,
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+        previousExpiryDate = (renewalAudit?.payload as any)?.previousExpiryDate ?? null;
+      } catch {
+        previousExpiryDate = null;
+      }
+    }
+
     return {
       id: license.id,
       profileId: license.profileId,
@@ -302,6 +372,10 @@ export class AdminLicensesService {
         createdAt: license.profile.user.createdAt.toISOString(),
       },
       lockInfo,
+      isRenewal,
+      previousExpiryDate,
+      suspendedListingsCount: eligibleSuspendedListings.length,
+      suspendedListings: eligibleSuspendedListings,
     };
   }
 
@@ -609,6 +683,9 @@ export class AdminLicensesService {
       });
     }
 
+    const isRenewal = license.status === ProfileStatus.RENEWAL_UNDER_REVIEW;
+    let reinstatedCount = 0;
+
     await this.prisma.$transaction(async (tx) => {
       await tx.falLicense.update({
         where: { id: licenseId },
@@ -631,28 +708,83 @@ export class AdminLicensesService {
         },
       });
 
+      // Selective automatic reinstatement of marketer listings held in UNDER_COMPLIANCE_REVIEW
+      // strictly due to Fal expiry (FR-8, BR-14, UC-43, UC-62)
+      const eligibleListings = await tx.listing.findMany({
+        where: {
+          sellerProfileId: license.profileId,
+          status: ListingStatus.UNDER_COMPLIANCE_REVIEW,
+          complianceCategory: COMPLIANCE_CATEGORY_FAL_EXPIRED,
+        },
+      });
+
+      for (const listing of eligibleListings) {
+        await tx.listing.update({
+          where: { id: listing.id },
+          data: {
+            status: ListingStatus.ACTIVE,
+            complianceReason: null,
+            complianceCategory: null,
+            complianceActionAt: null,
+            complianceOfficerId: null,
+            version: { increment: 1 },
+          },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            actorId: admin.id,
+            actorType: 'ADMIN',
+            action: AUDIT_ACTION_LISTING_REINSTATED_FAL_RENEWED,
+            entityType: 'Listing',
+            entityId: listing.id,
+            payload: {
+              listingId: listing.id,
+              listingTitle: listing.title,
+              previousStatus: 'UNDER_COMPLIANCE_REVIEW',
+              newStatus: 'ACTIVE',
+              reason: 'FAL_LICENSE_RENEWED',
+            },
+          },
+        });
+      }
+
+      reinstatedCount = eligibleListings.length;
+
+      const approvalAction = isRenewal
+        ? AUDIT_ACTION_FAL_LICENSE_RENEWAL_APPROVED
+        : 'FAL_LICENSE_APPROVED';
+
       await tx.auditLog.create({
         data: {
           actorId: admin.id,
           actorType: 'ADMIN',
-          action: 'FAL_LICENSE_APPROVED',
+          action: approvalAction,
           entityType: 'FalLicense',
           entityId: licenseId,
           payload: {
             adminName: admin.fullName,
             reviewedAt: now.toISOString(),
+            reinstatedListingsCount: reinstatedCount,
           },
         },
       });
     });
 
     this.logger.log(
-      `Fal license '${licenseId}' approved by admin '${admin.id}'. Marketer profile activated.`,
+      `Fal license '${licenseId}' approved by admin '${admin.id}'. Marketer profile activated. Reinstated listings: ${reinstatedCount}`,
     );
 
     return {
       statusCode: 200,
-      message: 'تم اعتماد رخصة فال وتفعيل حساب المسوق بنجاح',
+      message: isRenewal
+        ? 'تم اعتماد تجديد رخصة فال بنجاح وإعادة تنشيط الإعلانات المعلقة للامتثال'
+        : 'تم اعتماد رخصة فال وتفعيل حساب المسوق بنجاح',
+      data: {
+        licenseId,
+        status: ProfileStatus.ACTIVE,
+        reinstatedListingsCount: reinstatedCount,
+      },
     };
   }
 
@@ -714,11 +846,29 @@ export class AdminLicensesService {
       });
     }
 
+    const isRenewal = license.status === ProfileStatus.RENEWAL_UNDER_REVIEW;
+
     await this.prisma.$transaction(async (tx) => {
+      let licenseTargetStatus: ProfileStatus = ProfileStatus.REJECTED;
+      let profileTargetStatus: ProfileStatus = ProfileStatus.SUSPENDED;
+      let rejectAction = 'FAL_LICENSE_REJECTED';
+
+      if (isRenewal) {
+        rejectAction = AUDIT_ACTION_FAL_LICENSE_RENEWAL_REJECTED;
+        const expiryTime = new Date(license.expiryDate).getTime();
+        if (now.getTime() >= expiryTime) {
+          licenseTargetStatus = ProfileStatus.COMPLIANCE_RESTRICTED;
+          profileTargetStatus = ProfileStatus.COMPLIANCE_RESTRICTED;
+        } else {
+          licenseTargetStatus = ProfileStatus.ACTIVE;
+          profileTargetStatus = ProfileStatus.ACTIVE;
+        }
+      }
+
       await tx.falLicense.update({
         where: { id: licenseId },
         data: {
-          status: ProfileStatus.REJECTED,
+          status: licenseTargetStatus,
           rejectionReason: reason,
           reviewedByAdminId: admin.id,
           reviewedAt: now,
@@ -732,7 +882,7 @@ export class AdminLicensesService {
       await tx.userProfile.update({
         where: { id: license.profileId },
         data: {
-          status: ProfileStatus.SUSPENDED,
+          status: profileTargetStatus,
         },
       });
 
@@ -740,7 +890,7 @@ export class AdminLicensesService {
         data: {
           actorId: admin.id,
           actorType: 'ADMIN',
-          action: 'FAL_LICENSE_REJECTED',
+          action: rejectAction,
           entityType: 'FalLicense',
           entityId: licenseId,
           payload: {
@@ -758,7 +908,9 @@ export class AdminLicensesService {
 
     return {
       statusCode: 200,
-      message: 'تم رفض طلب اعتماد رخصة فال مع توثيق سبب الرفض للمستخدم',
+      message: isRenewal
+        ? 'تم رفض طلب تجديد رخصة فال وتوثيق السبب للمستخدم'
+        : 'تم رفض طلب اعتماد رخصة فال مع توثيق سبب الرفض للمستخدم',
     };
   }
 }

@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { ListingStatus } from '../../enums';
+import { COMPLIANCE_CATEGORY_FAL_EXPIRED } from '../../constants/licensing';
 import {
   isFalLicenseExpired,
   calculateCalendarDaysRemaining,
   getFalLicenseWarningWindow,
   isListingEligibleForComplianceSuspension,
+  isListingEligibleForReinstatement,
 } from '../expiry';
 
 describe('Fal License Expiry Pure Helpers', () => {
@@ -107,6 +109,76 @@ describe('Fal License Expiry Pure Helpers', () => {
       expect(isListingEligibleForComplianceSuspension({ status: ListingStatus.SUSPENDED })).toBe(false);
       expect(isListingEligibleForComplianceSuspension({ status: ListingStatus.BLOCKED })).toBe(false);
       expect(isListingEligibleForComplianceSuspension({ status: ListingStatus.UNDER_COMPLIANCE_REVIEW })).toBe(false);
+    });
+  });
+
+  describe('isListingEligibleForReinstatement', () => {
+    it('returns true strictly if status is UNDER_COMPLIANCE_REVIEW and complianceCategory is FAL_LICENSE_EXPIRED', () => {
+      expect(
+        isListingEligibleForReinstatement({
+          status: ListingStatus.UNDER_COMPLIANCE_REVIEW,
+          complianceCategory: COMPLIANCE_CATEGORY_FAL_EXPIRED,
+        }),
+      ).toBe(true);
+    });
+
+    it('returns false if status is UNDER_COMPLIANCE_REVIEW but complianceCategory is different (e.g. FRAUD, MISLEADING)', () => {
+      expect(
+        isListingEligibleForReinstatement({
+          status: ListingStatus.UNDER_COMPLIANCE_REVIEW,
+          complianceCategory: 'TITLE_DEED_MISMATCH',
+        }),
+      ).toBe(false);
+
+      expect(
+        isListingEligibleForReinstatement({
+          status: ListingStatus.UNDER_COMPLIANCE_REVIEW,
+          complianceCategory: null,
+        }),
+      ).toBe(false);
+
+      expect(
+        isListingEligibleForReinstatement({
+          status: ListingStatus.UNDER_COMPLIANCE_REVIEW,
+        }),
+      ).toBe(false);
+    });
+
+    it('returns false for listings in any other status even if complianceCategory matches', () => {
+      expect(
+        isListingEligibleForReinstatement({
+          status: ListingStatus.ACTIVE,
+          complianceCategory: COMPLIANCE_CATEGORY_FAL_EXPIRED,
+        }),
+      ).toBe(false);
+
+      expect(
+        isListingEligibleForReinstatement({
+          status: ListingStatus.RESERVED,
+          complianceCategory: COMPLIANCE_CATEGORY_FAL_EXPIRED,
+        }),
+      ).toBe(false);
+
+      expect(
+        isListingEligibleForReinstatement({
+          status: ListingStatus.BLOCKED,
+          complianceCategory: COMPLIANCE_CATEGORY_FAL_EXPIRED,
+        }),
+      ).toBe(false);
+
+      expect(
+        isListingEligibleForReinstatement({
+          status: ListingStatus.ARCHIVED,
+          complianceCategory: COMPLIANCE_CATEGORY_FAL_EXPIRED,
+        }),
+      ).toBe(false);
+
+      expect(
+        isListingEligibleForReinstatement({
+          status: ListingStatus.DRAFT,
+          complianceCategory: COMPLIANCE_CATEGORY_FAL_EXPIRED,
+        }),
+      ).toBe(false);
     });
   });
 });

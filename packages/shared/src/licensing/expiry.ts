@@ -1,4 +1,5 @@
 import { ListingStatus } from '../enums';
+import { COMPLIANCE_CATEGORY_FAL_EXPIRED } from '../constants/licensing';
 
 /**
  * Evaluates whether a Fal license is expired relative to the given reference time.
@@ -59,4 +60,25 @@ export function isListingEligibleForComplianceSuspension(listing: {
 }): boolean {
   return listing.status === ListingStatus.ACTIVE;
 }
+
+/**
+ * Evaluates whether a listing is eligible for automatic compliance reinstatement
+ * upon broker's Fal license renewal approval.
+ *
+ * Rule (FR-8 / BR-14 / UC-43):
+ * Returns true strictly if:
+ *   listing.status === ListingStatus.UNDER_COMPLIANCE_REVIEW AND
+ *   listing.complianceCategory === COMPLIANCE_CATEGORY_FAL_EXPIRED
+ * All other listings (other statuses or other compliance reasons) return false.
+ */
+export function isListingEligibleForReinstatement(listing: {
+  status: ListingStatus;
+  complianceCategory?: string | null;
+}): boolean {
+  return (
+    listing.status === ListingStatus.UNDER_COMPLIANCE_REVIEW &&
+    listing.complianceCategory === COMPLIANCE_CATEGORY_FAL_EXPIRED
+  );
+}
+
 

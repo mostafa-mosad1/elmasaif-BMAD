@@ -4,7 +4,7 @@ baseline_commit: ad56db8
 
 # Story 6.2: Automated Daily Fal Expiry Enforcement Worker Job
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

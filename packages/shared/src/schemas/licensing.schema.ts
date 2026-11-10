@@ -26,6 +26,33 @@ export const submitFalLicenseSchema = z.object({
   supportingDocumentUrls: z.array(z.string().trim().min(1)).max(5, 'لا يمكن إرفاق أكثر من 5 وثائق داعمة').optional().default([]),
 });
 
+export const renewFalLicenseSchema = z.object({
+  certificateUrl: z.string().trim().min(1, 'رابط شهادة رخصة فال مطلوب'),
+  expiryDate: z
+    .string()
+    .trim()
+    .refine(
+      (val) => !isNaN(Date.parse(val)),
+      'تاريخ انتهاء رخصة فال يجب أن يكون بصيغة تاريخ صالحة',
+    ),
+  commercialName: z
+    .string()
+    .trim()
+    .min(3, 'الاسم التجاري يجب ألا يقل عن 3 أحرف')
+    .max(100, 'الاسم التجاري يجب ألا يتجاوز 100 حرف')
+    .optional(),
+  crNumber: z
+    .string()
+    .trim()
+    .regex(/^\d{10}$/, 'رقم السجل التجاري يجب أن يتكون من 10 أرقام')
+    .optional(),
+  supportingDocumentUrls: z
+    .array(z.string().trim().min(1))
+    .max(5, 'لا يمكن إرفاق أكثر من 5 وثائق داعمة')
+    .optional()
+    .default([]),
+});
+
 export const licensingQueueQuerySchema = z.object({
   status: z.nativeEnum(ProfileStatus).optional(),
   search: z.string().trim().optional(),

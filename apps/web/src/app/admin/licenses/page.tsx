@@ -39,6 +39,7 @@ export default function AdminLicensesPage(props?: AdminLicensesPageProps) {
   const [loading, setLoading] = useState(initialLoading);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<ProfileStatus | ''>(ProfileStatus.UNDER_REVIEW);
+  const [typeFilter, setTypeFilter] = useState<'ALL' | 'NEW' | 'RENEWAL'>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const [claimingId, setClaimingId] = useState<string | null>(null);
@@ -149,69 +150,111 @@ export default function AdminLicensesPage(props?: AdminLicensesPageProps) {
       {/* Filter Tabs & Search */}
       <Card className="mb-6 border-surface-border dark:border-dark-surface-border">
         <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            {/* Status Tabs */}
-            <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-surface-sunken dark:bg-dark-surface border border-surface-border dark:border-dark-surface-border text-xs">
-              <button
-                type="button"
-                onClick={() => {
-                  setStatusFilter(ProfileStatus.UNDER_REVIEW);
-                  setPage(1);
-                }}
-                className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                  statusFilter === ProfileStatus.UNDER_REVIEW
-                    ? 'bg-surface dark:bg-dark-surface-raised text-primary font-bold shadow-xs'
-                    : 'text-ink-muted hover:text-ink-primary'
-                }`}
-              >
-                قيد المراجعة
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setStatusFilter(ProfileStatus.ACTIVE);
-                  setPage(1);
-                }}
-                className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                  statusFilter === ProfileStatus.ACTIVE
-                    ? 'bg-surface dark:bg-dark-surface-raised text-primary font-bold shadow-xs'
-                    : 'text-ink-muted hover:text-ink-primary'
-                }`}
-              >
-                المعتمدة
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setStatusFilter(ProfileStatus.REJECTED);
-                  setPage(1);
-                }}
-                className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                  statusFilter === ProfileStatus.REJECTED
-                    ? 'bg-surface dark:bg-dark-surface-raised text-primary font-bold shadow-xs'
-                    : 'text-ink-muted hover:text-ink-primary'
-                }`}
-              >
-                المرفوضة
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setStatusFilter('');
-                  setPage(1);
-                }}
-                className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                  statusFilter === ''
-                    ? 'bg-surface dark:bg-dark-surface-raised text-primary font-bold shadow-xs'
-                    : 'text-ink-muted hover:text-ink-primary'
-                }`}
-              >
-                الكل
-              </button>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Status Tabs */}
+              <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-surface-sunken dark:bg-dark-surface border border-surface-border dark:border-dark-surface-border text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter(ProfileStatus.UNDER_REVIEW);
+                    setPage(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
+                    statusFilter === ProfileStatus.UNDER_REVIEW
+                      ? 'bg-surface dark:bg-dark-surface-raised text-primary font-bold shadow-xs'
+                      : 'text-ink-muted hover:text-ink-primary'
+                  }`}
+                >
+                  قيد المراجعة
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter(ProfileStatus.ACTIVE);
+                    setPage(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
+                    statusFilter === ProfileStatus.ACTIVE
+                      ? 'bg-surface dark:bg-dark-surface-raised text-primary font-bold shadow-xs'
+                      : 'text-ink-muted hover:text-ink-primary'
+                  }`}
+                >
+                  المعتمدة
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter(ProfileStatus.REJECTED);
+                    setPage(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
+                    statusFilter === ProfileStatus.REJECTED
+                      ? 'bg-surface dark:bg-dark-surface-raised text-primary font-bold shadow-xs'
+                      : 'text-ink-muted hover:text-ink-primary'
+                  }`}
+                >
+                  المرفوضة
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter('');
+                    setPage(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
+                    statusFilter === ''
+                      ? 'bg-surface dark:bg-dark-surface-raised text-primary font-bold shadow-xs'
+                      : 'text-ink-muted hover:text-ink-primary'
+                  }`}
+                >
+                  الكل
+                </button>
+              </div>
+
+              {/* Application Type Filter (Story 6.3 AC #4) */}
+              <div className="flex items-center gap-1 p-1 rounded-xl bg-surface-sunken dark:bg-dark-surface border border-surface-border dark:border-dark-surface-border text-xs">
+                <button
+                  type="button"
+                  data-testid="filter-type-all"
+                  onClick={() => setTypeFilter('ALL')}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
+                    typeFilter === 'ALL'
+                      ? 'bg-surface dark:bg-dark-surface-raised text-primary font-bold shadow-xs'
+                      : 'text-ink-muted hover:text-ink-primary'
+                  }`}
+                >
+                  جميع الطلبات
+                </button>
+                <button
+                  type="button"
+                  data-testid="filter-type-renewals"
+                  onClick={() => setTypeFilter('RENEWAL')}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
+                    typeFilter === 'RENEWAL'
+                      ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 font-bold shadow-xs'
+                      : 'text-ink-muted hover:text-ink-primary'
+                  }`}
+                >
+                  طلبات التجديد
+                </button>
+                <button
+                  type="button"
+                  data-testid="filter-type-new"
+                  onClick={() => setTypeFilter('NEW')}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
+                    typeFilter === 'NEW'
+                      ? 'bg-surface dark:bg-dark-surface-raised text-primary font-bold shadow-xs'
+                      : 'text-ink-muted hover:text-ink-primary'
+                  }`}
+                >
+                  الطلبات الجديدة
+                </button>
+              </div>
             </div>
 
             {/* Search Input */}
-            <div className="relative w-full md:w-80">
+            <div className="relative w-full lg:w-72">
               <input
                 type="text"
                 placeholder="بحث برقم الرخصة، السجل، أو الاسم..."
@@ -235,6 +278,7 @@ export default function AdminLicensesPage(props?: AdminLicensesPageProps) {
             <thead className="bg-surface-sunken/60 dark:bg-dark-surface-border/40 text-ink-muted border-b border-surface-border dark:border-dark-surface-border">
               <tr>
                 <th className="py-3 px-4 text-start font-semibold">مقدم الطلب</th>
+                <th className="py-3 px-4 text-start font-semibold">نوع الطلب</th>
                 <th className="py-3 px-4 text-start font-semibold">الاسم التجاري</th>
                 <th className="py-3 px-4 text-start font-semibold">رقم رخصة فال</th>
                 <th className="py-3 px-4 text-start font-semibold">السجل التجاري</th>
@@ -247,20 +291,30 @@ export default function AdminLicensesPage(props?: AdminLicensesPageProps) {
             <tbody className="divide-y divide-surface-border dark:divide-dark-surface-border">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-ink-muted">
+                  <td colSpan={9} className="py-12 text-center text-ink-muted">
                     <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                     <span>جارٍ تحميل عناصر الطابور...</span>
                   </td>
                 </tr>
-              ) : items.length === 0 ? (
+              ) : items.filter((item) => {
+                  if (typeFilter === 'RENEWAL') return Boolean(item.isRenewal);
+                  if (typeFilter === 'NEW') return !item.isRenewal;
+                  return true;
+                }).length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-ink-muted">
+                  <td colSpan={9} className="py-12 text-center text-ink-muted">
                     <FileCheck className="w-10 h-10 mx-auto mb-2 text-ink-muted opacity-40" />
                     <p className="font-medium">لا توجد طلبات رخص مطابقة في هذا التصنيف</p>
                   </td>
                 </tr>
               ) : (
-                items.map((item) => (
+                items
+                  .filter((item) => {
+                    if (typeFilter === 'RENEWAL') return Boolean(item.isRenewal);
+                    if (typeFilter === 'NEW') return !item.isRenewal;
+                    return true;
+                  })
+                  .map((item) => (
                   <tr
                     key={item.id}
                     className="hover:bg-surface-sunken/40 dark:hover:bg-dark-surface-border/20 transition-colors"
@@ -271,6 +325,30 @@ export default function AdminLicensesPage(props?: AdminLicensesPageProps) {
                       </div>
                       <div className="font-mono text-[11px] text-ink-muted">
                         {item.applicantPhone}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex flex-col gap-1 items-start">
+                        {item.isRenewal ? (
+                          <Badge
+                            data-testid={`badge-renewal-${item.id}`}
+                            className="bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 font-bold text-[10px]"
+                          >
+                            طلب تجديد
+                          </Badge>
+                        ) : (
+                          <Badge variant="neutral" className="text-[10px]">
+                            طلب جديد
+                          </Badge>
+                        )}
+                        {item.suspendedListingsCount && item.suspendedListingsCount > 0 ? (
+                          <span
+                            data-testid={`suspended-listings-${item.id}`}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 border border-amber-300"
+                          >
+                            {item.suspendedListingsCount} إعلانات معلقة
+                          </span>
+                        ) : null}
                       </div>
                     </td>
                     <td className="py-3 px-4 font-medium text-ink-primary dark:text-dark-ink-primary">
