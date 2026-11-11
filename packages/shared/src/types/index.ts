@@ -21,7 +21,13 @@ import {
   paymentQueueQuerySchema,
   adminRejectPaymentSchema,
   adminRejectPaymentBodySchema,
-  paymentForceUnlockSchema
+  paymentForceUnlockSchema,
+  createOwnerListingRequestSchema,
+  dispatchOwnerContractSchema,
+  rejectOwnerListingRequestSchema,
+  requestModificationSchema,
+  forceUnlockOwnerRequestSchema,
+  ownerRequestsQueueQuerySchema
 } from '../schemas';
 import { ListingStatus, DealStatus, PropertyType } from '../enums';
 
@@ -47,6 +53,12 @@ export type PaymentQueueQuery = z.infer<typeof paymentQueueQuerySchema>;
 export type AdminRejectPaymentInput = z.infer<typeof adminRejectPaymentSchema>;
 export type AdminRejectPaymentBodyInput = z.infer<typeof adminRejectPaymentBodySchema>;
 export type PaymentForceUnlockInput = z.infer<typeof paymentForceUnlockSchema>;
+export type CreateOwnerListingRequestInput = z.infer<typeof createOwnerListingRequestSchema>;
+export type DispatchOwnerContractInput = z.infer<typeof dispatchOwnerContractSchema>;
+export type RejectOwnerListingRequestInput = z.infer<typeof rejectOwnerListingRequestSchema>;
+export type RequestModificationInput = z.infer<typeof requestModificationSchema>;
+export type ForceUnlockOwnerRequestInput = z.infer<typeof forceUnlockOwnerRequestSchema>;
+export type OwnerRequestsQueueQuery = z.infer<typeof ownerRequestsQueueQuerySchema>;
 
 export interface ApiResponse<T> {
   statusCode: number;
@@ -119,3 +131,4 @@ export * from './inquiry';
 export * from './deal';
 export * from './licensing';
 export * from './broker';
+export * from './contracts';

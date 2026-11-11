@@ -21,7 +21,7 @@ import {
   Ban,
   Archive,
 } from 'lucide-react';
-import { ListingStatus, PropertyType } from '@elmasaif/shared';
+import { ListingStatus, PropertyType, OwnerListingRequestStatus, type OwnerListingRequestItem } from '@elmasaif/shared';
 import { apiClient } from '../../../lib/api-client';
 import { SellerPriceSuggestionCard } from '../../../components/listings/seller-price-suggestion-card';
 import {
@@ -41,19 +41,27 @@ const PROPERTY_TYPE_LABELS: Record<string, string> = {
 
 export default function OwnerDashboardPage() {
   const [myListings, setMyListings] = useState<any[]>([]);
+  const [listingRequests, setListingRequests] = useState<OwnerListingRequestItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiClient
-      .get<{ statusCode: number; data: { items: any[] } }>('/listings/my')
-      .then((res) => {
-        if (res?.data?.items) {
-          setMyListings(res.data.items);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      apiClient.get<{ statusCode: number; data: { items: any[] } }>('/listings/my').catch(() => null),
+      apiClient.get<OwnerListingRequestItem[]>('/owner/listing-requests').catch(() => []),
+    ]).then(([listingsRes, requestsRes]) => {
+      if (listingsRes?.data?.items) {
+        setMyListings(listingsRes.data.items);
+      }
+      if (Array.isArray(requestsRes)) {
+        setListingRequests(requestsRes);
+      }
+      setLoading(false);
+    });
   }, []);
+
+  const pendingSignatureRequest = listingRequests.find(
+    (r) => r.status === OwnerListingRequestStatus.APPROVED_PENDING_SIGNATURE,
+  );
 
   return (
     <div className="space-y-8">
@@ -80,6 +88,31 @@ export default function OwnerDashboardPage() {
           </Button>
         </Link>
       </div>
+
+      {/* Prominent Pending Signature Banner (AC-8) */}
+      {pendingSignatureRequest && (
+        <div className="p-5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0">
+              <FileText className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-amber-900 dark:text-amber-100">
+                عقد وساطة رسمي جاهز للتوقيع الإلكتروني!
+              </h3>
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                أرسلت الإدارة عقد وساطة للعقار ({pendingSignatureRequest.propertyTitle}). يرجى مراجعة البنود وإتمام التوقيع الإلكتروني لنشر العقار.
+              </p>
+            </div>
+          </div>
+          <Link href={`/app/owner/contracts/${pendingSignatureRequest.contractId || pendingSignatureRequest.id}`}>
+            <Button size="sm" className="bg-[#1B4332] hover:bg-[#2D6A4F] text-white text-xs font-bold gap-2 whitespace-nowrap shadow-sm">
+              <span>مراجعة وتوقيع العقد</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* Owner Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -164,6 +197,90 @@ export default function OwnerDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Direct Listing Requests Section (AC-8) */}
+      {listingRequests.length > 0 && (
+        <Card className="rounded-2xl border border-surface-border dark:border-dark-surface-border overflow-hidden">
+          <CardHeader className="border-b border-surface-border dark:border-dark-surface-border p-5 sm:p-6">
+            <CardTitle className="text-lg font-bold flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              <span>طلبات الإدراج المباشر ومتابعة العقود ({listingRequests.length})</span>
+            </CardTitle>
+            <CardDescription className="text-xs mt-1">
+              متابعة حالة طلبات العرض المباشر وصكوك الملكية وتوقيع عقود الوساطة المعتمدة.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="divide-y divide-surface-border dark:divide-dark-surface-border p-0">
+            {listingRequests.map((req) => {
+              const isApproved = req.status === OwnerListingRequestStatus.APPROVED_PENDING_SIGNATURE;
+              const isRejected = req.status === OwnerListingRequestStatus.REJECTED;
+              const isModification = req.status === OwnerListingRequestStatus.MODIFICATION_REQUESTED;
+
+              return (
+                <div key={req.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-bold">
+                        {PROPERTY_TYPE_LABELS[req.propertyType] || req.propertyType}
+                      </span>
+                      <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
+                        {req.propertyTitle}
+                      </h3>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-ink-secondary">
+                      <span>{req.cityName} — حي {req.districtName}</span>
+                      <span>•</span>
+                      <span>السعر المطلوب: {req.askPrice.toLocaleString()} ر.س</span>
+                      <span>•</span>
+                      <span>تاريخ الطلب: {new Date(req.createdAt).toLocaleDateString('ar-SA')}</span>
+                    </div>
+
+                    {isRejected && req.rejectionReason && (
+                      <div className="p-2.5 rounded-lg bg-rose-50 text-rose-800 text-xs border border-rose-200 mt-2">
+                        <span className="font-bold">سبب الرفض: </span>
+                        <span>{req.rejectionReason}</span>
+                      </div>
+                    )}
+
+                    {isModification && req.modificationNotes && (
+                      <div className="p-2.5 rounded-lg bg-blue-50 text-blue-800 text-xs border border-blue-200 mt-2">
+                        <span className="font-bold">الملاحظات المطلوبة: </span>
+                        <span>{req.modificationNotes}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {isApproved ? (
+                      <Link href={`/app/owner/contracts/${req.contractId || req.id}`}>
+                        <Button size="sm" className="bg-[#1B4332] hover:bg-[#2D6A4F] text-white text-xs font-bold gap-1.5 shadow-sm">
+                          <span>مراجعة وتوقيع العقد</span>
+                          <ArrowLeft className="w-3.5 h-3.5" />
+                        </Button>
+                      </Link>
+                    ) : isRejected ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 text-rose-800 border border-rose-200 text-xs font-bold">
+                        <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                        <span>طلب مرفوض</span>
+                      </span>
+                    ) : isModification ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-200 text-xs font-bold">
+                        <AlertTriangle className="w-3.5 h-3.5 text-blue-600" />
+                        <span>مطلوب تعديلات</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold">
+                        <Clock className="w-3.5 h-3.5 text-amber-600" />
+                        <span>قيد المراجعة الإدارية</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Owner Submitted Listings & Moderation Status */}
       {myListings.length > 0 ? (

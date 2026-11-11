@@ -64,6 +64,7 @@ export function ListingWizard({ userRole, onSuccessRedirectUrl }: ListingWizardP
     payoutIban: '',
     photos: [],
     documents: [],
+    titleDeedNumber: '',
     agreedToTerms: false,
   });
 
@@ -187,7 +188,14 @@ export function ListingWizard({ userRole, onSuccessRedirectUrl }: ListingWizardP
         })),
       };
 
-      await apiClient.post('/listings', payload);
+      if (userRole === UserRole.OWNER) {
+        await apiClient.post('/owner/listing-requests', {
+          ...payload,
+          titleDeedNumber: formData.titleDeedNumber || '1000000000',
+        });
+      } else {
+        await apiClient.post('/listings', payload);
+      }
       setIsSuccessModalOpen(true);
     } catch (err: unknown) {
       if (err instanceof ApiError) {

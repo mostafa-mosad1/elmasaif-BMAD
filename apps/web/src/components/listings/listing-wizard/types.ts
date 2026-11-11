@@ -46,6 +46,7 @@ export interface ListingWizardFormState {
 
   // Step 5: Documents
   documents: WizardDocumentItem[];
+  titleDeedNumber?: string;
 
   // Step 6: Confirmation
   agreedToTerms: boolean;

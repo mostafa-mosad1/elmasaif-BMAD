@@ -428,6 +428,7 @@ model Listing {
   offers           Offer[]
   deals            Deal[]
   ownerContract    OwnerContract?
+  ownerListingRequest OwnerListingRequest?
   dailyMetrics     ListingDailyMetric[]
   favorites        ListingFavorite[]
   demandMatches    DemandMatch[] @relation("DemandMatchListing")
@@ -762,22 +763,27 @@ model Payment {
 }
 
 model OwnerListingRequest {
-  id              String       @id @default(uuid())
-  ownerProfileId  String
-  propertyType    PropertyType
-  cityId          String
-  districtId      String
-  titleDeedNumber String
-  status          String       @default("PENDING")
-  lockedByAdminId String?
-  lockedAt        DateTime?
-  lockExpiresAt   DateTime?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id                String       @id @default(uuid())
+  ownerProfileId    String
+  listingId         String?      @unique
+  propertyType      PropertyType
+  cityId            String
+  districtId        String
+  titleDeedNumber   String
+  status            String       @default("PENDING")
+  rejectionReason   String?      @map("rejection_reason")
+  modificationNotes String?      @map("modification_notes")
+  lockedByAdminId   String?
+  lockedAt          DateTime?
+  lockExpiresAt     DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 
   ownerProfile UserProfile @relation(fields: [ownerProfileId], references: [id])
+  listing      Listing?    @relation(fields: [listingId], references: [id])
 
   @@index([lockExpiresAt])
+  @@index([status])
   @@map("owner_listing_requests")
 }
 
@@ -940,24 +946,42 @@ model Proposal {
 }
 
 model OwnerContract {
-  id             String              @id @default(uuid())
-  listingId      String              @unique
-  ownerProfileId String
-  contractFee    Decimal             @default(1000.00) @db.Decimal(12, 2)
-  contractTerms  String
-  signatureData  String?
-  signedAt       DateTime?
-  otpCode        String?
-  status         OwnerContractStatus @default(DRAFT)
-  expiresAt      DateTime
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  id                String              @id @default(uuid())
+  listingId         String              @unique
+  ownerProfileId    String
+  templateId        String?
+  contractFee       Decimal             @default(1000.00) @db.Decimal(12, 2)
+  feeOverrideReason String?             @map("fee_override_reason")
+  contractTerms     String
+  signatureData     String?
+  signedAt          DateTime?
+  otpCode           String?
+  status            OwnerContractStatus @default(DRAFT)
+  expiresAt         DateTime
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
 
   listing      Listing              @relation(fields: [listingId], references: [id], onDelete: Cascade)
   ownerProfile UserProfile          @relation(fields: [ownerProfileId], references: [id])
+  template     ContractTemplate?    @relation(fields: [templateId], references: [id])
   feePayments  ContractFeePayment[]
 
   @@map("owner_contracts")
+}
+
+model ContractTemplate {
+  id               String          @id @default(uuid())
+  title            String
+  content          String
+  version          Int             @default(1)
+  isActive         Boolean         @default(true)
+  createdByAdminId String?         @map("created_by_admin_id")
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  contracts        OwnerContract[]
+
+  @@map("contract_templates")
 }
 
 model InvoiceRecord {

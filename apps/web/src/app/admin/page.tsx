@@ -16,6 +16,7 @@ import {
   Users,
   ArrowLeft,
   Building2,
+  FileText,
 } from 'lucide-react';
 import { apiClient } from '../../lib/api-client';
 import { useAdminAuth } from '../../components/providers/admin-auth-provider';
@@ -31,6 +32,11 @@ export default function AdminDashboardPage() {
     hasPermission('Rbac.Manage') || admin?.role === AdminRole.SUPER_ADMIN;
   const canManageGeo =
     hasPermission('Geo.Manage') || admin?.role === AdminRole.SUPER_ADMIN;
+  const canReviewContracts =
+    hasPermission('Contracts.Review') ||
+    hasPermission('Contracts.Manage') ||
+    admin?.role === AdminRole.SUPER_ADMIN ||
+    admin?.role === AdminRole.MODERATOR;
   const canReviewListings =
     hasPermission('Listings.Review') ||
     admin?.role === AdminRole.SUPER_ADMIN ||
@@ -73,6 +79,16 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {canReviewContracts && (
+            <Link
+              href="/admin/owner-requests"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-[#1B4332] text-xs font-bold shadow-sm hover:bg-[#D8F3DC] transition-colors"
+            >
+              <FileText className="w-4 h-4" />
+              <span>طلبات الملاك والعقود</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </Link>
+          )}
           {canReviewListings && (
             <Link
               href="/admin/listings/moderation"

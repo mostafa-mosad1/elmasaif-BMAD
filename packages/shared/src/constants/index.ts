@@ -31,3 +31,5 @@ export * from './masking';
 export * from './inquiry';
 export * from './deal';
 export * from './licensing';
+export * from './contracts';
+export * from './errors';

@@ -111,6 +111,9 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
     ],
     [UserRole.ADMIN]: [
       { href: '/admin', label: 'لوحة تحكم المشرف', icon: LayoutDashboard },
+      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Contracts.Review') || admin.permissions?.includes('Contracts.Manage')
+        ? [{ href: '/admin/owner-requests', label: 'طلبات الملاك والعقود', icon: FileText }]
+        : []),
       ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Licenses.Review')
         ? [{ href: '/admin/licenses', label: 'طابور اعتماد رخص فال', icon: FileCheck }]
         : []),

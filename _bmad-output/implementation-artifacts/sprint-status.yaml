@@ -95,16 +95,16 @@ development_status:
   5-6-pre-payment-cancellations-dispute-adjudication: done
   epic-5-retrospective: optional
 
-  epic-6: in-progress
+  epic-6: done
   6-1-fal-license-onboarding-administrative-verification: done
   6-2-automated-daily-fal-expiry-enforcement-worker-job: done
   6-3-fal-license-renewal-workflow: done
   6-4-marketer-unified-operational-dashboard: done
-  6-5-public-broker-profile-moderated-reviews: review
+  6-5-public-broker-profile-moderated-reviews: done
   epic-6-retrospective: optional
 
-  epic-7: backlog
-  7-1-owner-direct-listing-request-admin-contract-dispatch: backlog
+  epic-7: in-progress
+  7-1-owner-direct-listing-request-admin-contract-dispatch: review
   7-2-electronic-contract-review-canvas-signature-pad-with-otp-sta: backlog
   7-3-contract-fee-payment-proof-verification-auto-publishing: backlog
   epic-7-retrospective: optional

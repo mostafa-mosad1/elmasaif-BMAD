@@ -127,6 +127,13 @@ export enum OwnerContractStatus {
   TERMINATED = 'TERMINATED'
 }
 
+export enum OwnerListingRequestStatus {
+  PENDING = 'PENDING',
+  APPROVED_PENDING_SIGNATURE = 'APPROVED_PENDING_SIGNATURE',
+  REJECTED = 'REJECTED',
+  MODIFICATION_REQUESTED = 'MODIFICATION_REQUESTED',
+}
+
 export enum DocumentVisibility {
   PUBLIC = 'PUBLIC',
   ADMIN_ONLY = 'ADMIN_ONLY'
