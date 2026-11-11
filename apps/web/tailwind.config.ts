@@ -26,6 +26,7 @@ const config: Config = {
           foreground: '#1A1208',
         },
         surface: {
+          DEFAULT: '#FFFFFF',
           background: '#F8FAF9',
           base: '#FFFFFF',
           raised: '#FFFFFF',
@@ -42,6 +43,7 @@ const config: Config = {
         },
         // Dark Mode Surface & Ink Scales
         'dark-background': '#0B130E',
+        'dark-surface': '#132018',
         'dark-surface-base': '#132018',
         'dark-surface-raised': '#1C2E24',
         'dark-surface-sunken': '#0E1712',

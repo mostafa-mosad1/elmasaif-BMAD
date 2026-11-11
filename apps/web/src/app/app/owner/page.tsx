@@ -84,82 +84,91 @@ export default function OwnerDashboardPage() {
       {/* Owner Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Direct Listing Request CTA Card */}
-        <Card className="border-primary/30 bg-primary/5">
-          <CardHeader>
-            <div className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center mb-2">
-              <Building className="w-5 h-5" />
+        <div className="p-6 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-surface-base dark:from-primary/20 dark:via-dark-surface-base dark:to-dark-surface-base shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
+          <div>
+            <div className="w-12 h-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center mb-4 shadow-sm transition-transform duration-200 group-hover:scale-105">
+              <Building className="w-6 h-6" />
             </div>
-            <CardTitle className="text-base font-bold">عرض عقار للبيع أو الإيجار</CardTitle>
-            <CardDescription className="text-xs">
+            <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
+              عرض عقار للبيع أو الإيجار
+            </h3>
+            <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary mt-1.5 leading-relaxed">
               أرسل بيانات عقارك ليتولى فريق المنصة فحص الصك وصياغة العقد المعتمد.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/app/owner/listings/new">
-              <Button variant="primary" size="sm" className="w-full gap-2">
+            </p>
+          </div>
+          <div className="pt-5 mt-4 border-t border-primary/15">
+            <Link href="/app/owner/listings/new" className="block">
+              <Button variant="primary" size="sm" className="w-full gap-2 shadow-xs">
                 <span>تقديم طلب عرض مباشر</span>
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-4 h-4 transition-transform duration-200 group-hover:-translate-x-1" />
               </Button>
             </Link>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Electronic Contracts Overview */}
-        <Card>
-          <CardHeader>
-            <div className="w-10 h-10 rounded-lg bg-surface-sunken dark:bg-dark-surface text-ink-secondary dark:text-dark-ink-secondary flex items-center justify-center mb-2">
-              <FileText className="w-5 h-5" />
+        <div className="p-6 rounded-2xl border border-surface-border dark:border-dark-surface-border bg-surface-base dark:bg-dark-surface-base shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
+          <div>
+            <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 flex items-center justify-center mb-4 transition-transform duration-200 group-hover:scale-105">
+              <FileText className="w-6 h-6" />
             </div>
-            <CardTitle className="text-base font-bold">عقود الوساطة الإلكترونية</CardTitle>
-            <CardDescription className="text-xs">
+            <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
+              عقود الوساطة الإلكترونية
+            </h3>
+            <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary mt-1.5 leading-relaxed">
               عقود وساطة نظامية ملزمة معتمدة من الهيئة العامة للعقار.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between text-xs text-ink-secondary dark:text-dark-ink-secondary pb-3">
+            </p>
+          </div>
+          <div className="pt-4 mt-4 border-t border-surface-border/60 dark:border-dark-surface-border/60 space-y-3">
+            <div className="flex items-center justify-between text-xs text-ink-secondary dark:text-dark-ink-secondary bg-surface-sunken dark:bg-dark-surface-sunken px-3 py-1.5 rounded-lg">
               <span>العقارات المعتمدة والمنشورة:</span>
-              <span className="font-bold font-mono text-sm">
+              <span className="font-bold font-mono text-sm text-ink-primary dark:text-dark-ink-primary">
                 {myListings.filter((l) => l.status === ListingStatus.ACTIVE).length}
               </span>
             </div>
-            <Link href="/app/owner/contracts">
-              <Button variant="secondary" size="sm" className="w-full">
-                استعراض العقود
+            <Link href="/app/owner/contracts" className="block">
+              <Button variant="secondary" size="sm" className="w-full gap-2">
+                <span>استعراض العقود</span>
+                <ArrowLeft className="w-3.5 h-3.5 transition-transform duration-200 group-hover:-translate-x-1" />
               </Button>
             </Link>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Payout IBAN Status */}
-        <Card>
-          <CardHeader>
-            <div className="w-10 h-10 rounded-lg bg-surface-sunken dark:bg-dark-surface text-ink-secondary dark:text-dark-ink-secondary flex items-center justify-center mb-2">
-              <CreditCard className="w-5 h-5" />
+        <div className="p-6 rounded-2xl border border-surface-border dark:border-dark-surface-border bg-surface-base dark:bg-dark-surface-base shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
+          <div>
+            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 flex items-center justify-center mb-4 transition-transform duration-200 group-hover:scale-105">
+              <CreditCard className="w-6 h-6" />
             </div>
-            <CardTitle className="text-base font-bold">حساب التحويل البنكي (IBAN)</CardTitle>
-            <CardDescription className="text-xs">
+            <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
+              حساب التحويل البنكي (IBAN)
+            </h3>
+            <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary mt-1.5 leading-relaxed">
               الحساب البنكي المعتمد لاستلام مبالغ صفقات البيع عند الإتمام.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2 mb-3">
+            </p>
+          </div>
+          <div className="pt-4 mt-4 border-t border-surface-border/60 dark:border-dark-surface-border/60 space-y-3">
+            <div className="flex items-center justify-between">
               <Badge variant="verified" size="sm">
                 إدارة حسابات الآيبان
               </Badge>
+              <span className="text-[11px] text-ink-muted">حساب معتمد</span>
             </div>
-            <Link href="/app/settings/payout">
-              <Button variant="outline" size="sm" className="w-full">
-                إدارة الحساب البنكي
+            <Link href="/app/settings/payout" className="block">
+              <Button variant="outline" size="sm" className="w-full gap-2">
+                <span>إدارة الحساب البنكي</span>
+                <ArrowLeft className="w-3.5 h-3.5 transition-transform duration-200 group-hover:-translate-x-1" />
               </Button>
             </Link>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Owner Submitted Listings & Moderation Status */}
       {myListings.length > 0 ? (
-        <Card>
-          <CardHeader className="border-b border-surface-border dark:border-dark-surface-border">
+        <Card className="rounded-2xl border border-surface-border dark:border-dark-surface-border overflow-hidden">
+          <CardHeader className="border-b border-surface-border dark:border-dark-surface-border p-5 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-lg font-bold">

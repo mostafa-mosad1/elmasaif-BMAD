@@ -76,7 +76,9 @@ export function Modal({
             <span>{closeLabel}</span>
           </button>
         </div>
-        <div className="max-h-[75vh] overflow-y-auto rounded-card shadow-level3">{children}</div>
+        <div className="max-h-[75vh] overflow-y-auto rounded-card shadow-level3 bg-surface-base dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border">
+          {children}
+        </div>
       </div>
     </div>
   );

@@ -128,3 +128,4 @@ export const cancelDemandSchema = z.object({
 });
 
 export * from './proposal.schema';
+export * from './review.schema';

@@ -65,22 +65,43 @@ export default function BuyerDashboardPage() {
       count: offersCount,
       description: 'عروض شراء قيد التفاوض والمراجعة',
       icon: HandCoins,
-      href: '/app/buyer/offers'
+      href: '/app/buyer/offers',
+      badge: 'العروض المالية',
+      badgeColor: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
+      iconColor: 'text-emerald-600 dark:text-emerald-400',
+      iconBg: 'bg-emerald-500/10 dark:bg-emerald-500/20',
+      accentGlow: 'from-emerald-500/15 via-emerald-500/5 to-transparent',
+      hoverBorder: 'group-hover:border-emerald-500/40',
+      actionText: 'متابعة العروض',
     },
     {
       title: 'العقارات المفضلة',
       count: favoritesCount,
       description: 'عقارات محفوظة للمتابعة السريعة',
       icon: Heart,
-      href: '/app/buyer/favorites'
+      href: '/app/buyer/favorites',
+      badge: 'قائمة الرغبات',
+      badgeColor: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20',
+      iconColor: 'text-rose-500 dark:text-rose-400',
+      iconBg: 'bg-rose-500/10 dark:bg-rose-500/20',
+      accentGlow: 'from-rose-500/15 via-rose-500/5 to-transparent',
+      hoverBorder: 'group-hover:border-rose-500/40',
+      actionText: 'استعراض المفضلة',
     },
     {
       title: 'طلبات الشراء النشطة',
       count: demandsCount,
       description: 'طلبات عقارية مسجلة لمطابقة السوق',
       icon: FileQuestion,
-      href: '/app/buyer/demands'
-    }
+      href: '/app/buyer/demands',
+      badge: 'المطابقة الذكية',
+      badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20',
+      iconColor: 'text-amber-600 dark:text-amber-400',
+      iconBg: 'bg-amber-500/10 dark:bg-amber-500/20',
+      accentGlow: 'from-amber-500/15 via-amber-500/5 to-transparent',
+      hoverBorder: 'group-hover:border-amber-500/40',
+      actionText: 'إدارة الطلبات',
+    },
   ];
 
   return (
@@ -114,25 +135,53 @@ export default function BuyerDashboardPage() {
         {stats.map((s) => {
           const Icon = s.icon;
           return (
-            <Link key={s.title} href={s.href} className="group">
-              <Card className="h-full transition-all group-hover:border-primary/50 group-hover:shadow-md">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-ink-secondary dark:text-dark-ink-secondary">
-                    {s.title}
-                  </CardTitle>
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                    <Icon className="w-4 h-4" />
+            <Link key={s.title} href={s.href} className="group block focus:outline-none">
+              <div
+                className={`relative overflow-hidden rounded-2xl border border-surface-border dark:border-dark-surface-border bg-surface-base dark:bg-dark-surface-base p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${s.hoverBorder} flex flex-col justify-between h-full`}
+              >
+                {/* Decorative radial gradient glow in the corner */}
+                <div
+                  className={`pointer-events-none absolute -top-14 -left-14 h-36 w-36 rounded-full bg-gradient-to-br ${s.accentGlow} blur-2xl transition-transform duration-500 group-hover:scale-125`}
+                />
+
+                {/* Subtle watermark icon in the background to fill empty space */}
+                <div className="pointer-events-none absolute -bottom-4 -left-4 opacity-5 dark:opacity-10 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
+                  <Icon className="w-32 h-32 text-current" />
+                </div>
+
+                {/* Top Row: Icon + Category Badge */}
+                <div className="relative z-10 flex items-center justify-between">
+                  <div
+                    className={`w-12 h-12 rounded-xl ${s.iconBg} ${s.iconColor} flex items-center justify-center shadow-xs transition-transform duration-300 group-hover:scale-110`}
+                  >
+                    <Icon className="w-6 h-6" />
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-extrabold text-ink-primary dark:text-dark-ink-primary font-mono">
+                  <span
+                    className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${s.badgeColor}`}
+                  >
+                    {s.badge}
+                  </span>
+                </div>
+
+                {/* Middle Content: Big Number + Title + Description */}
+                <div className="relative z-10 my-5 space-y-1.5">
+                  <div className="text-4xl font-black font-mono tracking-tight text-ink-primary dark:text-dark-ink-primary">
                     {s.count}
                   </div>
-                  <p className="text-xs text-ink-muted dark:text-dark-ink-muted mt-1">
+                  <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
+                    {s.title}
+                  </h3>
+                  <p className="text-xs text-ink-muted dark:text-dark-ink-muted leading-relaxed">
                     {s.description}
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+
+                {/* Interactive Footer: Action link with animated slide arrow */}
+                <div className="relative z-10 pt-3 border-t border-surface-border/70 dark:border-dark-surface-border/70 flex items-center justify-between text-xs font-semibold text-ink-secondary dark:text-dark-ink-secondary group-hover:text-primary transition-colors">
+                  <span>{s.actionText}</span>
+                  <ArrowLeft className="w-4 h-4 transition-transform duration-300 group-hover:-translate-x-1.5" />
+                </div>
+              </div>
             </Link>
           );
         })}

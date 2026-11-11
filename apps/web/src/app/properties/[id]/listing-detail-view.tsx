@@ -300,19 +300,39 @@ export function ListingDetailView({
 
             <div className="pt-3 border-t border-surface-border dark:border-dark-surface-border">
               <div className="flex items-center justify-between gap-2 mb-3">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="shrink-0 w-8 h-8 rounded-pill bg-surface-sunken dark:bg-dark-surface-sunken text-ink-secondary dark:text-dark-ink-secondary flex items-center justify-center text-xs font-bold">
-                    {(detail.sellerProfile?.user?.fullName || 'ب').charAt(0)}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary truncate">
-                      {detail.sellerProfile?.user?.fullName || 'بائع العقار'}
-                    </p>
-                    <p className="text-[11px] text-ink-secondary dark:text-dark-ink-secondary">
-                      {falVerified ? 'معلن مرخص (فال)' : 'مالك مباشر'}
-                    </p>
+                {detail.sellerProfile?.id ? (
+                  <Link
+                    href={`/brokers/${detail.sellerProfile.id}`}
+                    className="flex items-center gap-2 min-w-0 group hover:opacity-90 transition-opacity"
+                    data-testid="broker-profile-link"
+                  >
+                    <span className="shrink-0 w-8 h-8 rounded-pill bg-surface-sunken dark:bg-dark-surface-sunken text-ink-secondary dark:text-dark-ink-secondary flex items-center justify-center text-xs font-bold group-hover:bg-brand-surface dark:group-hover:bg-brand-surfaceDark group-hover:text-brand-primary transition-colors">
+                      {(detail.sellerProfile?.user?.fullName || 'ب').charAt(0)}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary truncate group-hover:text-brand-primary transition-colors">
+                        {detail.sellerProfile?.user?.fullName || 'بائع العقار'}
+                      </p>
+                      <p className="text-[11px] text-ink-secondary dark:text-dark-ink-secondary">
+                        {falVerified ? 'معلن مرخص (فال)' : 'مالك مباشر'}
+                      </p>
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="shrink-0 w-8 h-8 rounded-pill bg-surface-sunken dark:bg-dark-surface-sunken text-ink-secondary dark:text-dark-ink-secondary flex items-center justify-center text-xs font-bold">
+                      {(detail.sellerProfile?.user?.fullName || 'ب').charAt(0)}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary truncate">
+                        {detail.sellerProfile?.user?.fullName || 'بائع العقار'}
+                      </p>
+                      <p className="text-[11px] text-ink-secondary dark:text-dark-ink-secondary">
+                        {falVerified ? 'معلن مرخص (فال)' : 'مالك مباشر'}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
                 {/* Broker ratings ship with Epic 6 — never fabricated here */}
                 <span
                   className="inline-flex items-center gap-1 text-[11px] text-ink-secondary dark:text-dark-ink-secondary shrink-0"

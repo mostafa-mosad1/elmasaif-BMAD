@@ -165,7 +165,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
 
       {/* Institutional Responsive Sidebar (280px) */}
       <aside
-        className={`fixed inset-y-0 start-0 z-50 w-[280px] bg-surface dark:bg-dark-surface-raised border-e border-surface-border dark:border-dark-surface-border flex flex-col transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed inset-y-0 start-0 z-50 w-[280px] bg-surface-base dark:bg-dark-surface-base border-e border-surface-border dark:border-dark-surface-border shadow-xl lg:shadow-none flex flex-col transition-transform duration-300 lg:translate-x-0 ${
           mobileSidebarOpen
             ? 'translate-x-0'
             : isArabic

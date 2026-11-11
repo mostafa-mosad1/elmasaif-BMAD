@@ -233,4 +233,20 @@ describe('ListingDetailView rendering (Story 3.3)', () => {
     expect(toDetailError(new ApiError(500, 'INTERNAL_ERROR', 'خطأ'))).toBe('failed');
     expect(toDetailError(new Error('network'))).toBe('failed');
   });
+
+  it('links the seller section to the public broker profile page (Story 6.5 / AC: #9)', () => {
+    const html = renderView({
+      detail: detail({
+        sellerProfile: {
+          id: 'profile-marketer-99',
+          role: UserRole.MARKETER,
+          user: { id: 'user-99', fullName: 'عبدالله الشمري', username: 'abdullah' },
+        },
+      }),
+    });
+
+    expect(html).toContain('data-testid="broker-profile-link"');
+    expect(html).toContain('href="/brokers/profile-marketer-99"');
+    expect(html).toContain('عبدالله الشمري');
+  });
 });

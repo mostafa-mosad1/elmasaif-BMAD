@@ -665,7 +665,7 @@ export default function AdminLicenseReviewDetailPage(props?: AdminLicenseReviewD
         onClose={() => setApproveModalOpen(false)}
         ariaLabel={license.isRenewal ? 'تأكيد اعتماد تجديد رخصة فال' : 'تأكيد اعتماد رخصة فال'}
       >
-        <div className="space-y-4 text-xs" dir="rtl">
+        <div className="p-6 space-y-4 text-xs" dir="rtl">
           <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
             {license.isRenewal ? 'تأكيد اعتماد تجديد رخصة فال' : 'تأكيد اعتماد رخصة فال'}
           </h3>
@@ -720,7 +720,7 @@ export default function AdminLicenseReviewDetailPage(props?: AdminLicenseReviewD
         onClose={() => setRejectModalOpen(false)}
         ariaLabel={license.isRenewal ? 'رفض طلب تجديد رخصة فال' : 'رفض طلب اعتماد رخصة فال'}
       >
-        <div className="space-y-4 text-xs" dir="rtl">
+        <div className="p-6 space-y-4 text-xs" dir="rtl">
           <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
             {license.isRenewal ? 'رفض طلب تجديد رخصة فال' : 'رفض طلب اعتماد رخصة فال'}
           </h3>
@@ -777,7 +777,7 @@ export default function AdminLicenseReviewDetailPage(props?: AdminLicenseReviewD
         onClose={() => setForceUnlockModalOpen(false)}
         ariaLabel="فك القفل الإجباري (صلاحية المشرف العام)"
       >
-        <div className="space-y-4 text-xs" dir="rtl">
+        <div className="p-6 space-y-4 text-xs" dir="rtl">
           <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
             فك القفل الإجباري (صلاحية المشرف العام)
           </h3>

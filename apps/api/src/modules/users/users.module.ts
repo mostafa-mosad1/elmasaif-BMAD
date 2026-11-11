@@ -4,6 +4,7 @@ import { UsersService } from './users.service';
 import { ActiveRoleGuard } from './guards/active-role.guard';
 import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
 import { AdminSessionAuthGuard } from '../auth/guards/admin-session-auth.guard';
+import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { StorageModule } from '../storage/storage.module';
 import { AuthModule } from '../auth/auth.module';
 import { CryptoModule } from '../../common/crypto/crypto.module';
@@ -21,6 +22,9 @@ import { AccountDeletionController } from './account-deletion.controller';
 import { AccountDeletionService } from './account-deletion.service';
 import { PreferencesController } from './preferences.controller';
 import { PreferencesService } from './preferences.service';
+import { BrokersController } from './brokers.controller';
+import { AdminReviewsController } from './admin-reviews.controller';
+import { BrokersService } from './brokers.service';
 
 @Module({
   imports: [StorageModule, AuthModule, CryptoModule],
@@ -33,7 +37,9 @@ import { PreferencesService } from './preferences.service';
     AdminPhoneChangeController,
     ProfileController,
     AccountDeletionController,
-    PreferencesController
+    PreferencesController,
+    BrokersController,
+    AdminReviewsController,
   ],
   providers: [
     UsersService,
@@ -41,12 +47,14 @@ import { PreferencesService } from './preferences.service';
     SessionAuthGuard,
     AdminSessionAuthGuard,
     AdminIdentityGuard,
+    AdminPermissionGuard,
     IdentityService,
     PayoutService,
     PhoneChangeService,
     ProfileService,
     AccountDeletionService,
-    PreferencesService
+    PreferencesService,
+    BrokersService,
   ],
   exports: [
     UsersService,
@@ -56,7 +64,8 @@ import { PreferencesService } from './preferences.service';
     PhoneChangeService,
     ProfileService,
     AccountDeletionService,
-    PreferencesService
+    PreferencesService,
+    BrokersService,
   ]
 })
 export class UsersModule {}

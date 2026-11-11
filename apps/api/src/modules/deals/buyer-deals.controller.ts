@@ -245,10 +245,10 @@ export class BuyerDealsController {
     return { statusCode: HttpStatus.OK, data };
   }
 
-  @Post(':id/rating')
+  @Post([':id/rating', ':id/ratings'])
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Submit buyer rating on a completed deal (AC-4, FR-54)' })
+  @ApiOperation({ summary: 'Submit buyer rating on a completed deal (AC-4, FR-54, Story 6.5)' })
   @ApiParam({ name: 'id', description: 'Deal id' })
   @ApiBody({
     schema: {
