@@ -956,6 +956,8 @@ model OwnerContract {
   signatureData     String?
   signedAt          DateTime?
   otpCode           String?
+  ipAddress         String?             @map("ip_address")
+  userAgent         String?             @map("user_agent")
   status            OwnerContractStatus @default(DRAFT)
   expiresAt         DateTime
   createdAt         DateTime            @default(now())

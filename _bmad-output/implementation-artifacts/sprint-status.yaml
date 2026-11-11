@@ -104,8 +104,8 @@ development_status:
   epic-6-retrospective: optional
 
   epic-7: in-progress
-  7-1-owner-direct-listing-request-admin-contract-dispatch: review
-  7-2-electronic-contract-review-canvas-signature-pad-with-otp-sta: backlog
+  7-1-owner-direct-listing-request-admin-contract-dispatch: done
+  7-2-electronic-contract-review-canvas-signature-pad-with-otp-sta: review
   7-3-contract-fee-payment-proof-verification-auto-publishing: backlog
   epic-7-retrospective: optional
 

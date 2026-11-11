@@ -17,6 +17,7 @@ import {
   CONTRACT_FEE_OVERRIDE_REASON_REQUIRED,
   OWNER_REQUEST_REJECTION_REASON_REQUIRED,
   OWNER_REQUEST_MODIFICATION_NOTES_REQUIRED,
+  CONTRACT_SIGNATURE_DATA_REQUIRED,
 } from '../constants/contracts';
 import { listingPhotoItemSchema, listingDocumentItemSchema } from './listing.schema';
 import { saudiIbanSchema } from './index';
@@ -163,4 +164,21 @@ export const ownerRequestsQueueQuerySchema = z.object({
   status: z.nativeEnum(OwnerListingRequestStatus).optional(),
   search: z.string().trim().optional(),
 });
+
+export const requestSignatureOtpSchema = z.object({}).optional().default({});
+
+export const signOwnerContractSchema = z.object({
+  signatureData: z
+    .string()
+    .trim()
+    .min(10, CONTRACT_SIGNATURE_DATA_REQUIRED)
+    .refine((data) => data.startsWith('data:image/'), {
+      message: 'بيانات التوقيع يجب أن تكون بصيغة صورة صالحة (data:image/...)',
+    }),
+  otpCode: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, 'رمز التحقق يجب أن يتكون من 6 أرقام'),
+});
+
 

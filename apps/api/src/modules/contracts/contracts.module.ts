@@ -6,9 +6,11 @@ import { AuthModule } from '../auth/auth.module';
 import { ContractTemplatesService } from './contract-templates.service';
 import { OwnerRequestsService } from './owner-requests.service';
 import { AdminOwnerRequestsService } from './admin-owner-requests.service';
+import { OwnerContractsService } from './owner-contracts.service';
 import { OwnerRequestsController } from './owner-requests.controller';
 import { AdminOwnerRequestsController } from './admin-owner-requests.controller';
 import { AdminContractTemplatesController } from './admin-contract-templates.controller';
+import { OwnerContractsController } from './owner-contracts.controller';
 
 @Module({
   imports: [PrismaModule, ClockModule, StorageModule, AuthModule],
@@ -16,16 +18,19 @@ import { AdminContractTemplatesController } from './admin-contract-templates.con
     OwnerRequestsController,
     AdminOwnerRequestsController,
     AdminContractTemplatesController,
+    OwnerContractsController,
   ],
   providers: [
     ContractTemplatesService,
     OwnerRequestsService,
     AdminOwnerRequestsService,
+    OwnerContractsService,
   ],
   exports: [
     ContractTemplatesService,
     OwnerRequestsService,
     AdminOwnerRequestsService,
+    OwnerContractsService,
   ],
 })
 export class ContractsModule {}

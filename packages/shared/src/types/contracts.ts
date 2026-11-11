@@ -77,6 +77,12 @@ export interface OwnerContractDetailResponse {
   listingId: string;
   ownerProfileId: string;
   templateId: string | null;
+  propertyTitle?: string;
+  propertyType?: PropertyType;
+  cityName?: string;
+  districtName?: string;
+  askPrice?: number;
+  areaSquareMeters?: number;
   contractFee: number;
   feeOverrideReason: string | null;
   contractTerms: string;
@@ -84,6 +90,30 @@ export interface OwnerContractDetailResponse {
   expiresAt: string;
   createdAt: string;
   signedAt: string | null;
+  signatureData?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  otpCode?: string | null;
+  ownerName?: string;
+  ownerMobile?: string;
+}
+
+export interface SignOwnerContractInput {
+  signatureData: string;
+  otpCode: string;
+}
+
+export interface SignOwnerContractResult {
+  success: boolean;
+  contractId: string;
+  status: OwnerContractStatus;
+  signedAt: string;
+  expiresAt: string;
+}
+
+export interface RequestSignatureOtpResult {
+  success: boolean;
+  resendAvailableInSeconds: number;
 }
 
 export interface OwnerListingRequestItem {

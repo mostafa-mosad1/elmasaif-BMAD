@@ -6,6 +6,8 @@ import {
   requestModificationSchema,
   forceUnlockOwnerRequestSchema,
   ownerRequestsQueueQuerySchema,
+  requestSignatureOtpSchema,
+  signOwnerContractSchema,
 } from '../contracts.schema';
 import {
   PropertyType,
@@ -17,6 +19,7 @@ import {
   OWNER_REQUEST_MODIFICATION_NOTES_REQUIRED,
   CONTRACT_FEE_OVERRIDE_REASON_REQUIRED,
   DEFAULT_OWNER_CONTRACT_FEE_SAR,
+  CONTRACT_SIGNATURE_DATA_REQUIRED,
 } from '../../constants/contracts';
 import { LISTING_OWNER_DEED_REQUIRED } from '../../constants/listing';
 
@@ -237,6 +240,66 @@ describe('Contracts & Owner Requests Schemas', () => {
         expect(result.data.limit).toBe(10);
         expect(result.data.search).toBe('فيلا');
       }
+    });
+  });
+
+  describe('requestSignatureOtpSchema', () => {
+    it('should accept empty or missing object payload', () => {
+      const r1 = requestSignatureOtpSchema.safeParse({});
+      expect(r1.success).toBe(true);
+      const r2 = requestSignatureOtpSchema.safeParse(undefined);
+      expect(r2.success).toBe(true);
+    });
+  });
+
+  describe('signOwnerContractSchema', () => {
+    const validSignatureData = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+    it('should validate valid signature data and 6-digit OTP', () => {
+      const res = signOwnerContractSchema.safeParse({
+        signatureData: validSignatureData,
+        otpCode: '123456',
+      });
+      expect(res.success).toBe(true);
+    });
+
+    it('should reject non-data-url signature data', () => {
+      const res = signOwnerContractSchema.safeParse({
+        signatureData: 'invalid-signature-string',
+        otpCode: '123456',
+      });
+      expect(res.success).toBe(false);
+    });
+
+    it('should reject too short or empty signature data', () => {
+      const res = signOwnerContractSchema.safeParse({
+        signatureData: 'data:',
+        otpCode: '123456',
+      });
+      expect(res.success).toBe(false);
+      if (!res.success) {
+        expect(res.error.errors[0]?.message).toBe(CONTRACT_SIGNATURE_DATA_REQUIRED);
+      }
+    });
+
+    it('should reject invalid OTP format', () => {
+      const nonDigits = signOwnerContractSchema.safeParse({
+        signatureData: validSignatureData,
+        otpCode: '12345A',
+      });
+      expect(nonDigits.success).toBe(false);
+
+      const tooShort = signOwnerContractSchema.safeParse({
+        signatureData: validSignatureData,
+        otpCode: '12345',
+      });
+      expect(tooShort.success).toBe(false);
+
+      const tooLong = signOwnerContractSchema.safeParse({
+        signatureData: validSignatureData,
+        otpCode: '1234567',
+      });
+      expect(tooLong.success).toBe(false);
     });
   });
 });

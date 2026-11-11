@@ -4,7 +4,7 @@ baseline_commit: 85a97be23f990fe66f4619b0aa7a107ef4f21650
 
 # Story 7.1: Owner Direct Listing Request & Admin Contract Dispatch
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
