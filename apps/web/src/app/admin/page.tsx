@@ -17,6 +17,7 @@ import {
   ArrowLeft,
   Building2,
   FileText,
+  CreditCard,
 } from 'lucide-react';
 import { apiClient } from '../../lib/api-client';
 import { useAdminAuth } from '../../components/providers/admin-auth-provider';
@@ -80,14 +81,24 @@ export default function AdminDashboardPage() {
 
         <div className="flex flex-wrap items-center gap-2.5">
           {canReviewContracts && (
-            <Link
-              href="/admin/owner-requests"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-[#1B4332] text-xs font-bold shadow-sm hover:bg-[#D8F3DC] transition-colors"
-            >
-              <FileText className="w-4 h-4" />
-              <span>طلبات الملاك والعقود</span>
-              <ArrowLeft className="w-3.5 h-3.5" />
-            </Link>
+            <>
+              <Link
+                href="/admin/owner-requests"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-[#1B4332] text-xs font-bold shadow-sm hover:bg-[#D8F3DC] transition-colors"
+              >
+                <FileText className="w-4 h-4" />
+                <span>طلبات الملاك والعقود</span>
+                <ArrowLeft className="w-3.5 h-3.5" />
+              </Link>
+              <Link
+                href="/admin/contract-fees"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/20 text-white border border-white/30 text-xs font-bold shadow-sm hover:bg-white/30 transition-colors"
+              >
+                <CreditCard className="w-4 h-4" />
+                <span>تدقيق رسوم العقود والنشر</span>
+                <ArrowLeft className="w-3.5 h-3.5" />
+              </Link>
+            </>
           )}
           {canReviewListings && (
             <Link

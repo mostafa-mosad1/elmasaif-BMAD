@@ -4,10 +4,14 @@ import {
   ForbiddenException,
   BadRequestException,
   ConflictException,
+  ServiceUnavailableException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClockService } from '../../common/clock/clock.service';
 import { OtpService } from '../auth/otp/otp.service';
+import { QuarantineService } from '../storage/quarantine.service';
+import { StorageService } from '../storage/storage.service';
 import {
   UserRole,
   PropertyType,
@@ -17,18 +21,39 @@ import {
   OWNER_CONTRACT_INVALID_STATE,
   OWNER_CONTRACT_EXPIRED,
   OWNER_CONTRACT_ALREADY_SIGNED,
+  CONTRACT_FEE_PROOF_REQUIRED,
+  CONTRACT_FEE_PROOF_UNSUPPORTED_TYPE,
+  CONTRACT_FEE_PROOF_TOO_LARGE,
+  CONTRACT_FEE_PROOF_SCAN_FAILED,
+  CONTRACT_FEE_PAYMENT_STATUS,
+  type ContractFeePaymentStatus,
   type OwnerContractDetailResponse,
   type SignOwnerContractInput,
   type SignOwnerContractResult,
   type RequestSignatureOtpResult,
+  type UploadContractFeeProofInput,
+  type OwnerContractFeeStatusResponse,
 } from '@elmasaif/shared';
+
+export interface ContractFeeProofUploadFile {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  size: number;
+  buffer: Buffer;
+}
 
 @Injectable()
 export class OwnerContractsService {
+  private readonly logger = new Logger(OwnerContractsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly clockService: ClockService,
     private readonly otpService: OtpService,
+    private readonly quarantineService: QuarantineService,
+    private readonly storageService: StorageService,
   ) {}
 
   private maskSaudiMobile(phone: string): string {
@@ -314,4 +339,211 @@ export class OwnerContractsService {
       expiresAt: updatedContract.expiresAt.toISOString(),
     };
   }
+
+  async uploadFeeProof(
+    userId: string,
+    contractId: string,
+    file: ContractFeeProofUploadFile | undefined,
+    body: UploadContractFeeProofInput,
+  ) {
+    if (!file) {
+      throw new BadRequestException({
+        code: CONTRACT_FEE_PROOF_REQUIRED,
+        message: 'ملف إشعار التحويل البنكي مطلوب',
+      });
+    }
+
+    const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException({
+        code: CONTRACT_FEE_PROOF_UNSUPPORTED_TYPE,
+        message: 'نوع الملف غير مدعوم. يرجى رفع ملف بصيغة PDF أو JPG أو PNG',
+      });
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      throw new BadRequestException({
+        code: CONTRACT_FEE_PROOF_TOO_LARGE,
+        message: 'حجم الملف يتجاوز الحد الأقصى المسموح به (10 ميجابايت)',
+      });
+    }
+
+    const ownerProfile = await this.getActiveOwnerProfile(userId);
+    const contract = await this.resolveContract(contractId);
+
+    if (!contract) {
+      throw new NotFoundException({
+        code: OWNER_CONTRACT_NOT_FOUND,
+        message: 'عقد المالك غير موجود',
+      });
+    }
+
+    if (contract.ownerProfileId !== ownerProfile.id) {
+      throw new ForbiddenException({
+        code: AUTH_NOT_AUTHORIZED,
+        message: 'غير مصرح لك بالوصول لهذا العقد',
+      });
+    }
+
+    if (contract.status !== OwnerContractStatus.PENDING_FEE) {
+      throw new ConflictException({
+        code: OWNER_CONTRACT_INVALID_STATE,
+        message: 'العقد ليس في حالة انتظار سداد الرسوم',
+      });
+    }
+
+    const now = this.clockService.now();
+    if (contract.expiresAt.getTime() <= now.getTime()) {
+      throw new BadRequestException({
+        code: OWNER_CONTRACT_EXPIRED,
+        message: 'انتهت مهلة سداد رسوم العقد (7 أيام). يرجى التواصل مع إدارة المنصة.',
+      });
+    }
+
+    // Stage in quarantine and scan for malware
+    const staged = await this.quarantineService.stageFileForQuarantine({
+      filename: file.originalname,
+      mimeType: file.mimetype,
+      fileSize: file.size,
+      buffer: file.buffer,
+      userId,
+    });
+
+    let outcome;
+    try {
+      outcome = await this.quarantineService.scanAndProcess(
+        staged.fileObjectId,
+        'contracts',
+        { contractId: contract.id },
+        userId,
+      );
+    } catch (error: any) {
+      this.logger.error(`Contract fee proof scan failed: ${error?.message ?? error}`);
+      throw new ServiceUnavailableException({
+        code: CONTRACT_FEE_PROOF_SCAN_FAILED,
+        message: 'تعذر فحص الملف حالياً. يرجى المحاولة بعد قليل',
+      });
+    }
+
+    if (!outcome.isClean) {
+      throw new BadRequestException({
+        code: 'MALWARE_DETECTED',
+        message: 'تم رفض الملف لاحتوائه على برمجيات ضارة أو غير آمنة',
+      });
+    }
+
+    const existingPayment = await this.prisma.contractFeePayment.findFirst({
+      where: { ownerContractId: contract.id },
+    });
+
+    const payment = await this.prisma.$transaction(async (tx) => {
+      let p;
+      if (existingPayment) {
+        p = await tx.contractFeePayment.update({
+          where: { id: existingPayment.id },
+          data: {
+            amount: contract.contractFee,
+            status: CONTRACT_FEE_PAYMENT_STATUS.PROOF_UPLOADED,
+            proofFileUrl: staged.fileObjectId,
+            bankReferenceCode: body.bankReferenceCode?.trim() || null,
+            senderBankName: body.senderBankName?.trim() || null,
+            uploadedAt: now,
+            rejectionReason: null,
+          },
+        });
+      } else {
+        p = await tx.contractFeePayment.create({
+          data: {
+            ownerContractId: contract.id,
+            amount: contract.contractFee,
+            status: CONTRACT_FEE_PAYMENT_STATUS.PROOF_UPLOADED,
+            proofFileUrl: staged.fileObjectId,
+            bankReferenceCode: body.bankReferenceCode?.trim() || null,
+            senderBankName: body.senderBankName?.trim() || null,
+            uploadedAt: now,
+            rejectionReason: null,
+          },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorId: userId,
+          actorType: 'USER',
+          action: 'CONTRACT_FEE_PROOF_UPLOADED',
+          entityType: 'ContractFeePayment',
+          entityId: p.id,
+          payload: {
+            contractId: contract.id,
+            amount: Number(contract.contractFee),
+            bankReferenceCode: body.bankReferenceCode?.trim() || null,
+            senderBankName: body.senderBankName?.trim() || null,
+            uploadedAt: now.toISOString(),
+          },
+        },
+      });
+
+      return p;
+    });
+
+    this.logger.log(
+      `Contract fee proof uploaded for contract ${contract.id} by user ${userId}. Awaiting admin review.`,
+    );
+
+    return {
+      success: true,
+      paymentId: payment.id,
+      status: CONTRACT_FEE_PAYMENT_STATUS.PROOF_UPLOADED,
+      uploadedAt: now.toISOString(),
+    };
+  }
+
+  async getFeePayment(userId: string, contractId: string): Promise<OwnerContractFeeStatusResponse> {
+    const ownerProfile = await this.getActiveOwnerProfile(userId);
+    const contract = await this.resolveContract(contractId);
+
+    if (!contract) {
+      throw new NotFoundException({
+        code: OWNER_CONTRACT_NOT_FOUND,
+        message: 'عقد المالك غير موجود',
+      });
+    }
+
+    if (contract.ownerProfileId !== ownerProfile.id) {
+      throw new ForbiddenException({
+        code: AUTH_NOT_AUTHORIZED,
+        message: 'غير مصرح لك بالوصول لهذا العقد',
+      });
+    }
+
+    const payment = await this.prisma.contractFeePayment.findFirst({
+      where: { ownerContractId: contract.id },
+    });
+
+    let presignedProofUrl: string | null = null;
+    if (payment?.proofFileUrl) {
+      try {
+        presignedProofUrl = await this.storageService.getVerifiedDownloadUrl(payment.proofFileUrl, 300);
+      } catch {
+        presignedProofUrl = null;
+      }
+    }
+
+    return {
+      id: payment?.id ?? '',
+      ownerContractId: contract.id,
+      amount: Number(payment?.amount ?? contract.contractFee),
+      status: (payment?.status as ContractFeePaymentStatus) ?? CONTRACT_FEE_PAYMENT_STATUS.PENDING,
+      proofFileUrl: presignedProofUrl,
+      bankReferenceCode: payment?.bankReferenceCode ?? null,
+      senderBankName: payment?.senderBankName ?? null,
+      uploadedAt: payment?.uploadedAt ? payment.uploadedAt.toISOString() : null,
+      rejectionReason: payment?.rejectionReason ?? null,
+      verifiedAt: payment?.verifiedAt ? payment.verifiedAt.toISOString() : null,
+      expiresAt: contract.expiresAt.toISOString(),
+      isContractActive: contract.status === OwnerContractStatus.ACTIVE,
+      listingId: contract.listingId ?? null,
+    };
+  }
 }
+

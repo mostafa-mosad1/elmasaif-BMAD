@@ -24,7 +24,7 @@ import { OwnerRequestsService } from './owner-requests.service';
 
 @ApiTags('Owner Listing Requests')
 @ApiBearerAuth()
-@Controller('api/v1/owner/listing-requests')
+@Controller('owner/listing-requests')
 @UseGuards(SessionAuthGuard, ActiveRoleGuard)
 @RequireRole(UserRole.OWNER)
 export class OwnerRequestsController {

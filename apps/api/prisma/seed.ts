@@ -527,13 +527,10 @@ export async function seedDemoDeal() {
       id: DEMO_COMMISSION_PROOF_FILE_ID,
       bucket: 'elmasaif-private',
       key: 'deals/proofs/commission-proof.pdf',
-      fileName: 'commission-proof.pdf',
       fileSize: 102400,
       mimeType: 'application/pdf',
       scanStatus: ScanStatus.CLEAN,
       scannedAt: now,
-      uploadedBy: DEMO_BUYER.id,
-      uploadedAt: now,
     },
   });
 
@@ -544,13 +541,10 @@ export async function seedDemoDeal() {
       id: DEMO_PURCHASE_PROOF_FILE_ID,
       bucket: 'elmasaif-private',
       key: 'deals/proofs/purchase-proof.pdf',
-      fileName: 'purchase-proof.pdf',
       fileSize: 204800,
       mimeType: 'application/pdf',
       scanStatus: ScanStatus.CLEAN,
       scannedAt: now,
-      uploadedBy: DEMO_BUYER.id,
-      uploadedAt: now,
     },
   });
 
@@ -618,7 +612,7 @@ export async function seedDemoCompletedDeal() {
       id: DEMO_COMPLETED_OFFER_ID,
       listingId: DEMO_COMPLETED_LISTING_ID,
       buyerProfileId: DEMO_BUYER.profileId,
-      amount: 2000000,
+      offerPrice: 2000000,
       status: OfferStatus.CONVERTED_TO_DEAL,
       expiresAt: new Date(Date.now() + 30 * 24 * 3_600_000),
     },

@@ -8,6 +8,10 @@ import {
   ownerRequestsQueueQuerySchema,
   requestSignatureOtpSchema,
   signOwnerContractSchema,
+  contractFeeQueueQuerySchema,
+  uploadContractFeeProofBodySchema,
+  rejectContractFeeBodySchema,
+  forceUnlockContractFeeSchema,
 } from '../contracts.schema';
 import {
   PropertyType,
@@ -302,4 +306,110 @@ describe('Contracts & Owner Requests Schemas', () => {
       expect(tooLong.success).toBe(false);
     });
   });
+
+  describe('Story 7.3: Contract Fee Payment Schemas', () => {
+    describe('contractFeeQueueQuerySchema', () => {
+      it('should validate default query parameters', () => {
+        const parsed = contractFeeQueueQuerySchema.safeParse({});
+        expect(parsed.success).toBe(true);
+        if (parsed.success) {
+          expect(parsed.data.page).toBe(1);
+          expect(parsed.data.limit).toBe(20);
+          expect(parsed.data.status).toBe('ALL');
+        }
+      });
+
+      it('should coerce string numbers for page and limit', () => {
+        const parsed = contractFeeQueueQuerySchema.safeParse({
+          page: '3',
+          limit: '50',
+          status: 'PROOF_UPLOADED',
+          search: 'فيلا',
+        });
+        expect(parsed.success).toBe(true);
+        if (parsed.success) {
+          expect(parsed.data.page).toBe(3);
+          expect(parsed.data.limit).toBe(50);
+          expect(parsed.data.status).toBe('PROOF_UPLOADED');
+          expect(parsed.data.search).toBe('فيلا');
+        }
+      });
+
+      it('should reject invalid status filter', () => {
+        const parsed = contractFeeQueueQuerySchema.safeParse({
+          status: 'INVALID_STATUS',
+        });
+        expect(parsed.success).toBe(false);
+      });
+    });
+
+    describe('uploadContractFeeProofBodySchema', () => {
+      it('should accept valid optional bank reference and sender bank name', () => {
+        const parsed = uploadContractFeeProofBodySchema.safeParse({
+          bankReferenceCode: 'TXN-987654321',
+          senderBankName: 'Al Rajhi Bank',
+        });
+        expect(parsed.success).toBe(true);
+      });
+
+      it('should accept empty payload', () => {
+        const parsed = uploadContractFeeProofBodySchema.safeParse({});
+        expect(parsed.success).toBe(true);
+      });
+
+      it('should reject reference code exceeding 64 characters', () => {
+        const parsed = uploadContractFeeProofBodySchema.safeParse({
+          bankReferenceCode: 'A'.repeat(65),
+        });
+        expect(parsed.success).toBe(false);
+      });
+
+      it('should reject sender bank name exceeding 100 characters', () => {
+        const parsed = uploadContractFeeProofBodySchema.safeParse({
+          senderBankName: 'B'.repeat(101),
+        });
+        expect(parsed.success).toBe(false);
+      });
+    });
+
+    describe('rejectContractFeeBodySchema', () => {
+      it('should accept a valid Arabic rejection reason', () => {
+        const parsed = rejectContractFeeBodySchema.safeParse({
+          reason: 'الإشعار البنكي غير واضح ولا يظهر رقم الحساب المحول إليه',
+        });
+        expect(parsed.success).toBe(true);
+      });
+
+      it('should reject reasons shorter than 5 characters', () => {
+        const parsed = rejectContractFeeBodySchema.safeParse({
+          reason: 'رفض',
+        });
+        expect(parsed.success).toBe(false);
+      });
+
+      it('should reject reasons exceeding 500 characters', () => {
+        const parsed = rejectContractFeeBodySchema.safeParse({
+          reason: 'أ'.repeat(501),
+        });
+        expect(parsed.success).toBe(false);
+      });
+    });
+
+    describe('forceUnlockContractFeeSchema', () => {
+      it('should accept valid force-unlock reason', () => {
+        const parsed = forceUnlockContractFeeSchema.safeParse({
+          reason: 'المشرف غير متواجد وتم تجاوز مهلة التدقيق للمهمة',
+        });
+        expect(parsed.success).toBe(true);
+      });
+
+      it('should reject reason shorter than 3 characters', () => {
+        const parsed = forceUnlockContractFeeSchema.safeParse({
+          reason: 'فك',
+        });
+        expect(parsed.success).toBe(false);
+      });
+    });
+  });
 });
+

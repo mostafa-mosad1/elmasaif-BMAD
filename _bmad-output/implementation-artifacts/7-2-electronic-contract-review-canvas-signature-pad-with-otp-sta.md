@@ -4,7 +4,7 @@ baseline_commit: 06f781f1b89b2b5b884b23bc3749cd079da73383
 
 # Story 7.2: Electronic Contract Review & Canvas Signature Pad with OTP Stamping
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

@@ -7,7 +7,7 @@ import { ContractTemplatesService } from './contract-templates.service';
 
 @ApiTags('Admin Contract Templates')
 @ApiBearerAuth()
-@Controller('api/v1/admin/contract-templates')
+@Controller('admin/contract-templates')
 @UseGuards(AdminSessionAuthGuard, AdminPermissionGuard)
 export class AdminContractTemplatesController {
   constructor(private readonly templatesService: ContractTemplatesService) {}

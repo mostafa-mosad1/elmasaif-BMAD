@@ -10,6 +10,8 @@ import { OwnerContractsService } from '../owner-contracts.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { ClockService } from '../../../common/clock/clock.service';
 import { OtpService } from '../../auth/otp/otp.service';
+import { QuarantineService } from '../../storage/quarantine.service';
+import { StorageService } from '../../storage/storage.service';
 import {
   UserRole,
   OwnerContractStatus,
@@ -19,16 +21,22 @@ import {
   OWNER_CONTRACT_INVALID_STATE,
   OWNER_CONTRACT_EXPIRED,
   OWNER_CONTRACT_ALREADY_SIGNED,
+  CONTRACT_FEE_PROOF_REQUIRED,
+  CONTRACT_FEE_PROOF_UNSUPPORTED_TYPE,
+  CONTRACT_FEE_PROOF_TOO_LARGE,
+  CONTRACT_FEE_PAYMENT_STATUS,
   AUTH_OTP_INVALID,
   AUTH_OTP_LOCKED,
   AUTH_OTP_EXPIRED,
 } from '@elmasaif/shared';
 
-describe('OwnerContractsService (Story 7.2 / FR-9, UC-50, UC-53, UJ-3, OQ-11)', () => {
+describe('OwnerContractsService (Story 7.2 & 7.3)', () => {
   let service: OwnerContractsService;
   let prisma: any;
   let clockService: any;
   let otpService: any;
+  let quarantineService: any;
+  let storageService: any;
 
   const userId = 'user-owner-123';
   const otherUserId = 'user-other-456';
@@ -117,6 +125,12 @@ describe('OwnerContractsService (Story 7.2 / FR-9, UC-50, UC-53, UJ-3, OQ-11)', 
       auditLog: {
         create: jest.fn().mockResolvedValue({ id: 'audit-log-1' }),
       },
+      contractFeePayment: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        findUnique: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockImplementation(({ data }: any) => Promise.resolve({ id: 'fee-pay-1', ...data })),
+        update: jest.fn().mockImplementation(({ data }: any) => Promise.resolve({ id: 'fee-pay-1', ...data })),
+      },
       $transaction: jest.fn().mockImplementation(async (cb: any) => {
         return cb(prisma);
       }),
@@ -139,12 +153,32 @@ describe('OwnerContractsService (Story 7.2 / FR-9, UC-50, UC-53, UJ-3, OQ-11)', 
       cleanupOtp: jest.fn().mockResolvedValue(undefined),
     };
 
+    quarantineService = {
+      stageFileForQuarantine: jest.fn().mockResolvedValue({
+        fileObjectId: 'staged-file-123',
+        key: 'quarantine/staged-file-123.pdf',
+      }),
+      scanAndProcess: jest.fn().mockResolvedValue({
+        fileObject: {
+          id: 'staged-file-123',
+          key: 'contracts/contract-uuid-001/receipt.pdf',
+        },
+        isClean: true,
+      }),
+    };
+
+    storageService = {
+      getVerifiedDownloadUrl: jest.fn().mockResolvedValue('https://storage.example.com/receipt.pdf'),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OwnerContractsService,
         { provide: PrismaService, useValue: prisma },
         { provide: ClockService, useValue: clockService },
         { provide: OtpService, useValue: otpService },
+        { provide: QuarantineService, useValue: quarantineService },
+        { provide: StorageService, useValue: storageService },
       ],
     }).compile();
 
@@ -376,5 +410,174 @@ describe('OwnerContractsService (Story 7.2 / FR-9, UC-50, UC-53, UJ-3, OQ-11)', 
       expect(res.expiresAt).toBe(expectedFeeExpiresAt.toISOString());
     });
   });
+
+  describe('Story 7.3: uploadFeeProof', () => {
+    const validFile = {
+      fieldname: 'file',
+      originalname: 'transfer-proof.pdf',
+      encoding: '7bit',
+      mimetype: 'application/pdf',
+      size: 1024 * 500,
+      buffer: Buffer.from('mock-pdf-content'),
+    };
+
+    const validBody = {
+      bankReferenceCode: 'TXN-12345678',
+      senderBankName: 'مصرف الراجحي',
+    };
+
+    it('throws BadRequestException if file is missing', async () => {
+      await expect(
+        service.uploadFeeProof(userId, contractId, undefined as any, validBody),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException if file type is unsupported', async () => {
+      const badFile = { ...validFile, mimetype: 'application/exe' };
+      await expect(
+        service.uploadFeeProof(userId, contractId, badFile, validBody),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException if file exceeds 10MB', async () => {
+      const largeFile = { ...validFile, size: 11 * 1024 * 1024 };
+      await expect(
+        service.uploadFeeProof(userId, contractId, largeFile, validBody),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws ConflictException OWNER_CONTRACT_INVALID_STATE if contract not in PENDING_FEE status', async () => {
+      prisma.ownerContract.findUnique.mockResolvedValue(
+        mockContract({ status: OwnerContractStatus.PENDING_SIGNATURE }),
+      );
+
+      await expect(
+        service.uploadFeeProof(userId, contractId, validFile, validBody),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('throws BadRequestException OWNER_CONTRACT_EXPIRED if payment window expired', async () => {
+      prisma.ownerContract.findUnique.mockResolvedValue(
+        mockContract({
+          status: OwnerContractStatus.PENDING_FEE,
+          expiresAt: pastExpiry,
+        }),
+      );
+
+      await expect(
+        service.uploadFeeProof(userId, contractId, validFile, validBody),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException if malware is detected by scanner', async () => {
+      prisma.ownerContract.findUnique.mockResolvedValue(
+        mockContract({ status: OwnerContractStatus.PENDING_FEE }),
+      );
+      quarantineService.scanAndProcess.mockResolvedValue({
+        isClean: false,
+        threatName: 'Eicar-Test-Signature',
+      });
+
+      await expect(
+        service.uploadFeeProof(userId, contractId, validFile, validBody),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('successfully uploads fee proof, creates payment record and writes audit log', async () => {
+      prisma.ownerContract.findUnique.mockResolvedValue(
+        mockContract({ status: OwnerContractStatus.PENDING_FEE }),
+      );
+      quarantineService.scanAndProcess.mockResolvedValue({
+        isClean: true,
+        fileObject: { id: 'staged-file-123', key: 'contracts/contract-uuid-001/receipt.pdf' },
+      });
+
+      const res = await service.uploadFeeProof(userId, contractId, validFile, validBody);
+
+      expect(quarantineService.stageFileForQuarantine).toHaveBeenCalledWith({
+        filename: validFile.originalname,
+        mimeType: validFile.mimetype,
+        fileSize: validFile.size,
+        buffer: validFile.buffer,
+        userId,
+      });
+
+      expect(quarantineService.scanAndProcess).toHaveBeenCalledWith(
+        'staged-file-123',
+        'contracts',
+        { contractId },
+        userId,
+      );
+
+      expect(prisma.contractFeePayment.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          ownerContractId: contractId,
+          amount: 1000,
+          status: CONTRACT_FEE_PAYMENT_STATUS.PROOF_UPLOADED,
+          proofFileUrl: 'staged-file-123',
+          bankReferenceCode: 'TXN-12345678',
+          senderBankName: 'مصرف الراجحي',
+          uploadedAt: mockNow,
+          rejectionReason: null,
+        }),
+      });
+
+      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          actorId: userId,
+          actorType: 'USER',
+          action: 'CONTRACT_FEE_PROOF_UPLOADED',
+          entityType: 'ContractFeePayment',
+        }),
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.status).toBe(CONTRACT_FEE_PAYMENT_STATUS.PROOF_UPLOADED);
+      expect(res.uploadedAt).toBe(mockNow.toISOString());
+    });
+  });
+
+  describe('Story 7.3: getFeePayment', () => {
+    it('returns fee payment status with presigned URL when payment exists', async () => {
+      prisma.ownerContract.findUnique.mockResolvedValue(
+        mockContract({ status: OwnerContractStatus.PENDING_FEE }),
+      );
+      prisma.contractFeePayment.findFirst.mockResolvedValue({
+        id: 'payment-1',
+        ownerContractId: contractId,
+        amount: 1000,
+        status: CONTRACT_FEE_PAYMENT_STATUS.PROOF_UPLOADED,
+        proofFileUrl: 'staged-file-123',
+        bankReferenceCode: 'TXN-123',
+        senderBankName: 'الراجحي',
+        uploadedAt: mockNow,
+        rejectionReason: null,
+        verifiedAt: null,
+      });
+
+      const res = await service.getFeePayment(userId, contractId);
+
+      expect(res.id).toBe('payment-1');
+      expect(res.status).toBe(CONTRACT_FEE_PAYMENT_STATUS.PROOF_UPLOADED);
+      expect(res.proofFileUrl).toBe('https://storage.example.com/receipt.pdf');
+      expect(res.amount).toBe(1000);
+      expect(res.isContractActive).toBe(false);
+    });
+
+    it('returns pending fee state when owner has not uploaded proof yet', async () => {
+      prisma.ownerContract.findUnique.mockResolvedValue(
+        mockContract({ status: OwnerContractStatus.PENDING_FEE }),
+      );
+      prisma.contractFeePayment.findFirst.mockResolvedValue(null);
+
+      const res = await service.getFeePayment(userId, contractId);
+
+      expect(res.id).toBe('');
+      expect(res.status).toBe(CONTRACT_FEE_PAYMENT_STATUS.PENDING);
+      expect(res.proofFileUrl).toBeNull();
+      expect(res.amount).toBe(1000);
+    });
+  });
 });
+
 

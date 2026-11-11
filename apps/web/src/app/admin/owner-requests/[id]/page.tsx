@@ -610,11 +610,35 @@ export default function AdminOwnerRequestDetailPage(props?: AdminOwnerRequestDet
                   </span>
                 </div>
               ) : !isPending ? (
-                <div className="p-4 rounded-xl bg-muted/60 text-muted-foreground text-xs leading-relaxed">
-                  تم اتخاذ إجراء على هذا الطلب بالفعل (الحالة الحالية: {statusConfig.label}).
+                <div className="p-4 rounded-xl bg-muted/60 text-muted-foreground text-xs leading-relaxed space-y-3">
+                  <div>
+                    تم اتخاذ إجراء على هذا الطلب بالفعل (الحالة الحالية: <span className="font-bold text-foreground">{statusConfig.label}</span>).
+                  </div>
                   {detail.contract && (
-                    <div className="mt-2 pt-2 border-t font-semibold text-foreground">
-                      العقد المرتبط: {detail.contract.id} ({detail.contract.status})
+                    <div className="pt-2.5 border-t border-border space-y-2.5">
+                      <div className="flex items-center justify-between font-semibold text-foreground">
+                        <span>العقد المرتبط:</span>
+                        <span className="font-mono text-[11px] font-bold">
+                          #{detail.contract.id.slice(0, 8)} ({detail.contract.status})
+                        </span>
+                      </div>
+                      {detail.contract.status === 'PENDING_FEE' && (
+                        <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex flex-col gap-2">
+                          <p className="leading-relaxed font-normal">
+                            تم توقيع العقد من المالك بنجاح وهو بانتظار سداد الرسوم. يتم تدقيق إشعارات التحويل البنكي وتفعيل العقد ونشر العقار عبر طابور رسوم العقود:
+                          </p>
+                          <Link href="/admin/contract-fees">
+                            <Button size="sm" className="bg-[#1B4332] hover:bg-[#2D6A4F] text-white text-xs w-full gap-1.5">
+                              <span>فتح طابور تدقيق رسوم العقود والنشر الآلي</span>
+                            </Button>
+                          </Link>
+                        </div>
+                      )}
+                      {detail.contract.status === 'ACTIVE' && (
+                        <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold text-center">
+                          تم تفعيل العقد ونشر العقار في السوق العام بنجاح.
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -627,12 +651,17 @@ export default function AdminOwnerRequestDetailPage(props?: AdminOwnerRequestDet
                       value={selectedTemplateId}
                       onChange={(e) => setSelectedTemplateId(e.target.value)}
                       className="w-full p-2 rounded-lg border bg-background text-xs focus:ring-2 focus:ring-primary"
+                      disabled={templates.length === 0}
                     >
-                      {templates.map((tpl) => (
-                        <option key={tpl.id} value={tpl.id}>
-                          {tpl.title} (إصدار {tpl.version})
-                        </option>
-                      ))}
+                      {templates.length === 0 ? (
+                        <option value="">لا توجد قوالب عقود نشطة متاحة</option>
+                      ) : (
+                        templates.map((tpl) => (
+                          <option key={tpl.id} value={tpl.id}>
+                            {tpl.title} (إصدار {tpl.version})
+                          </option>
+                        ))
+                      )}
                     </select>
                   </div>
 
@@ -692,7 +721,7 @@ export default function AdminOwnerRequestDetailPage(props?: AdminOwnerRequestDet
                   {/* Dispatch CTA */}
                   <Button
                     onClick={handleDispatchContract}
-                    disabled={actionInProgress}
+                    disabled={actionInProgress || !selectedTemplateId || templates.length === 0}
                     className="w-full bg-[#1B4332] hover:bg-[#2D6A4F] text-white font-bold py-2.5 gap-2 text-xs shadow-md"
                   >
                     <Send className="w-4 h-4" />

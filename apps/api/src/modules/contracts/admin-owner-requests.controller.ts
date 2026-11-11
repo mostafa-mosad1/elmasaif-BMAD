@@ -32,7 +32,7 @@ import { AdminOwnerRequestsService } from './admin-owner-requests.service';
 
 @ApiTags('Admin Owner Listing Requests Queue')
 @ApiBearerAuth()
-@Controller('api/v1/admin/owner-requests')
+@Controller('admin/owner-requests')
 @UseGuards(AdminSessionAuthGuard, AdminPermissionGuard)
 export class AdminOwnerRequestsController {
   constructor(private readonly adminOwnerRequestsService: AdminOwnerRequestsService) {}

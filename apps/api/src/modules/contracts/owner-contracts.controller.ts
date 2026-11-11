@@ -9,8 +9,16 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  UseInterceptors,
+  UploadedFile,
+  UseFilters,
+  Catch,
+  ExceptionFilter,
+  ArgumentsHost,
+  PayloadTooLargeException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
 import { ActiveRoleGuard } from '../users/guards/active-role.guard';
 import { RequireRole } from '../users/decorators/require-role.decorator';
@@ -18,13 +26,31 @@ import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import {
   UserRole,
   signOwnerContractSchema,
+  uploadContractFeeProofBodySchema,
+  CONTRACT_FEE_PROOF_TOO_LARGE,
   type SignOwnerContractInput,
+  type UploadContractFeeProofInput,
 } from '@elmasaif/shared';
-import { OwnerContractsService } from './owner-contracts.service';
+import { OwnerContractsService, type ContractFeeProofUploadFile } from './owner-contracts.service';
+
+@Catch(PayloadTooLargeException)
+export class ContractFeeProofTooLargeFilter implements ExceptionFilter<PayloadTooLargeException> {
+  catch(_exception: PayloadTooLargeException, host: ArgumentsHost) {
+    const http = host.switchToHttp();
+    const request = http.getRequest();
+    const response = http.getResponse();
+    response.status(HttpStatus.BAD_REQUEST).json({
+      statusCode: HttpStatus.BAD_REQUEST,
+      code: CONTRACT_FEE_PROOF_TOO_LARGE,
+      message: 'يجب ألا يتجاوز حجم الملف 10 ميجابايت',
+      requestId: request.headers?.['x-request-id'],
+    });
+  }
+}
 
 @ApiTags('Owner Contracts')
 @ApiBearerAuth()
-@Controller('api/v1/owner/contracts')
+@Controller('owner/contracts')
 @UseGuards(SessionAuthGuard, ActiveRoleGuard)
 @RequireRole(UserRole.OWNER)
 export class OwnerContractsController {
@@ -77,5 +103,50 @@ export class OwnerContractsController {
 
     return this.ownerContractsService.signContract(userId, id, body, ipAddress, userAgent);
   }
+
+  @Post(':id/fee-proof')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  @UseFilters(ContractFeeProofTooLargeFilter)
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload wire transfer receipt for owner contract listing fee' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        bankReferenceCode: { type: 'string', maxLength: 64 },
+        senderBankName: { type: 'string', maxLength: 100 },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Fee proof uploaded successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid file or contract expired' })
+  @ApiResponse({ status: 409, description: 'Contract not in PENDING_FEE status' })
+  async uploadFeeProof(
+    @Req() req: any,
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: ContractFeeProofUploadFile,
+    @Body(new ZodValidationPipe(uploadContractFeeProofBodySchema))
+    body: UploadContractFeeProofInput,
+  ) {
+    const userId = req.user.id;
+    return this.ownerContractsService.uploadFeeProof(userId, id, file, body);
+  }
+
+  @Get(':id/fee-status')
+  @ApiOperation({ summary: 'Get owner contract fee payment status' })
+  @ApiResponse({ status: 200, description: 'Contract fee status returned successfully' })
+  @ApiResponse({ status: 403, description: 'Not authorized to access this contract' })
+  @ApiResponse({ status: 404, description: 'Contract not found' })
+  async getFeePayment(
+    @Req() req: any,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const userId = req.user.id;
+    return this.ownerContractsService.getFeePayment(userId, id);
+  }
 }
+
 

@@ -18,6 +18,7 @@ import {
   OWNER_REQUEST_REJECTION_REASON_REQUIRED,
   OWNER_REQUEST_MODIFICATION_NOTES_REQUIRED,
   CONTRACT_SIGNATURE_DATA_REQUIRED,
+  CONTRACT_FEE_REJECTION_REASON_REQUIRED,
 } from '../constants/contracts';
 import { listingPhotoItemSchema, listingDocumentItemSchema } from './listing.schema';
 import { saudiIbanSchema } from './index';
@@ -180,5 +181,56 @@ export const signOwnerContractSchema = z.object({
     .trim()
     .regex(/^\d{6}$/, 'رمز التحقق يجب أن يتكون من 6 أرقام'),
 });
+
+// Story 7.3: Contract Fee Payment Proof Verification & Auto-Publishing Schemas
+export const contractFeeQueueQuerySchema = z.object({
+  page: z
+    .union([z.number(), z.string()])
+    .optional()
+    .default(1)
+    .pipe(z.coerce.number().int().min(1)),
+  limit: z
+    .union([z.number(), z.string()])
+    .optional()
+    .default(20)
+    .pipe(z.coerce.number().int().min(1).max(100)),
+  status: z
+    .enum(['ALL', 'PENDING', 'PROOF_UPLOADED', 'UNDER_REVIEW', 'CONFIRMED', 'REJECTED', 'EXPIRED'])
+    .optional()
+    .default('ALL'),
+  search: z.string().trim().optional(),
+});
+
+export const uploadContractFeeProofBodySchema = z.object({
+  bankReferenceCode: z
+    .string()
+    .trim()
+    .max(64, 'رمز مرجع البنك يجب ألا يتجاوز 64 حرفاً')
+    .optional()
+    .nullable(),
+  senderBankName: z
+    .string()
+    .trim()
+    .max(100, 'اسم البنك المحول منه يجب ألا يتجاوز 100 حرف')
+    .optional()
+    .nullable(),
+});
+
+export const rejectContractFeeBodySchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(5, CONTRACT_FEE_REJECTION_REASON_REQUIRED)
+    .max(500, 'سبب الرفض يجب ألا يتجاوز 500 حرف'),
+});
+
+export const forceUnlockContractFeeSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(3, 'سبب فك القفل الإجباري مطلوب (3 أحرف على الأقل)')
+    .max(500, 'سبب فك القفل يجب ألا يتجاوز 500 حرف'),
+});
+
 
 
