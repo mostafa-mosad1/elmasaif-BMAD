@@ -40,7 +40,8 @@ import {
   Star,
   ShieldAlert,
   LifeBuoy,
-  Sliders
+  Sliders,
+  ScrollText
 } from 'lucide-react';
 
 interface WorkspaceShellProps {
@@ -162,6 +163,9 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         : []),
       ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Settings.Manage') || admin.permissions?.includes('Settings.Commission')
         ? [{ href: '/admin/settings', label: 'إعدادات المنصة والعمولات', icon: Sliders }]
+        : []),
+      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Audit.View')
+        ? [{ href: '/admin/audit', label: 'سجل التدقيق والرقابة', icon: ScrollText }]
         : [])
     ]
   };

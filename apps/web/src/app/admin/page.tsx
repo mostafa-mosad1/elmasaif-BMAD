@@ -23,6 +23,7 @@ import {
   ShieldAlert,
   LifeBuoy,
   Sliders,
+  ScrollText,
 } from 'lucide-react';
 import { apiClient } from '../../lib/api-client';
 import { useAdminAuth } from '../../components/providers/admin-auth-provider';
@@ -59,6 +60,9 @@ export default function AdminDashboardPage() {
     hasPermission('Tickets.Handle') ||
     admin?.role === AdminRole.SUPER_ADMIN ||
     admin?.role === AdminRole.MODERATOR;
+  const canViewAudit =
+    hasPermission('Audit.View') ||
+    admin?.role === AdminRole.SUPER_ADMIN;
   const canManageSettings =
     hasPermission('Settings.Manage') ||
     hasPermission('Settings.Commission') ||
@@ -186,6 +190,16 @@ export default function AdminDashboardPage() {
             >
               <LifeBuoy className="w-4 h-4 text-primary-600" />
               <span>تذاكر الدعم الفني</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </Link>
+          )}
+          {canViewAudit && (
+            <Link
+              href="/admin/audit"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-[#1B4332] text-xs font-bold shadow-sm hover:bg-[#D8F3DC] transition-colors"
+            >
+              <ScrollText className="w-4 h-4 text-emerald-800" />
+              <span>سجل التدقيق والرقابة (Audit)</span>
               <ArrowLeft className="w-3.5 h-3.5" />
             </Link>
           )}

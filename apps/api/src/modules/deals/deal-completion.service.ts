@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  AUDIT_ACTION,
   DEAL_COMPLETED,
   DEAL_NOT_FOUND,
   DEAL_PAYMENT_STATUS,
@@ -250,6 +251,28 @@ export class DealCompletionService {
           dealPrice: String(deal.dealPrice),
           platformCommission: String(deal.platformCommission),
           completedAt: now.toISOString(),
+        },
+      },
+    });
+
+    // 9. Write AuditLog for CONTACT_DETAILS_DISCLOSED (Story 5.4 / Story 8.7, FR-33, BR-19)
+    await tx.auditLog.create({
+      data: {
+        actorId: actor.id,
+        actorType: 'ADMIN',
+        action: AUDIT_ACTION.CONTACT_DETAILS_DISCLOSED,
+        entityType: 'Deal',
+        entityId: deal.id,
+        payload: {
+          dealId: deal.id,
+          dealNumber: deal.dealNumber,
+          buyerId: deal.buyerProfile?.userId,
+          sellerId: deal.sellerProfile?.userId,
+          buyerMobile: deal.buyerProfile?.user?.mobileNumber,
+          sellerMobile: deal.sellerProfile?.user?.mobileNumber,
+          disclosedAt: now.toISOString(),
+          justificationReason:
+            'الصفقة مكتملة وسداد العمولات معتمد - تم كشف بيانات الاتصال للأطراف المعنية بموجب اللائحة',
         },
       },
     });

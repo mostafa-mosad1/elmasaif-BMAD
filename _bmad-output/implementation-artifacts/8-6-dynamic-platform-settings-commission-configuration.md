@@ -4,7 +4,7 @@ baseline_commit: 2fb019d365d2351daa550550d0508745f64561b5
 
 # Story 8.6: Dynamic Platform Settings & Commission Configuration
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

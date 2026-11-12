@@ -35,6 +35,7 @@ export * from './contracts';
 export * from './queues';
 export * from './support';
 export * from './settings';
+export * from './audit';
 export * from './errors';
 
 // Explicit re-exports to resolve ambiguity across domain modules (Story 8.6)
