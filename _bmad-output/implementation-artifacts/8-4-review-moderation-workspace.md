@@ -4,7 +4,7 @@ baseline_commit: d02265d8951478a6a1e1d7e6b46251b7f5ae24d0
 
 # Story 8.4: Review Moderation Workspace
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

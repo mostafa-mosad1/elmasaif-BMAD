@@ -9,4 +9,5 @@ export * from './deal';
 export * from './offer';
 export * from './licensing';
 export * from './queues';
+export * from './support';
 

@@ -131,3 +131,4 @@ export * from './proposal.schema';
 export * from './review.schema';
 export * from './contracts.schema';
 export * from './queues';
+export * from './support.schema';

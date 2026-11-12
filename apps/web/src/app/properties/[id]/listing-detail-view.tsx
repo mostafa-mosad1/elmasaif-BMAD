@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   MapPin,
   Maximize2,
+  ShieldAlert,
   Star,
 } from 'lucide-react';
 import {
@@ -27,6 +28,7 @@ import {
   PropertyMediaCarousel,
   SimilarListingsSection,
 } from '../../../components/listings';
+import { ViolationReportModal } from '../../../components/support/violation-report-modal';
 import { ApiError } from '../../../lib/api-client';
 
 /** Formats a money or count value the way the marketplace cards do (LTR, grouped). */
@@ -101,6 +103,8 @@ export function ListingDetailView({
   ctaNotice = null,
   headerAction = null,
 }: ListingDetailViewProps) {
+  const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
+
   if (loading) {
     return (
       <div className="py-6 sm:py-8" dir="rtl" aria-busy="true">
@@ -365,8 +369,28 @@ export function ListingDetailView({
           </Card>
 
           <ContactShieldingCallout />
+
+          <button
+            type="button"
+            onClick={() => setIsReportModalOpen(true)}
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs text-ink-muted hover:text-red-600 transition-colors border border-dashed border-surface-border dark:border-dark-surface-border rounded-lg"
+            data-testid="report-listing-button"
+          >
+            <ShieldAlert className="w-3.5 h-3.5 text-red-500" />
+            <span>إبلاغ عن مخالفة في هذا الإعلان</span>
+          </button>
         </div>
       </div>
+
+      {detail && (
+        <ViolationReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          targetType="LISTING"
+          targetListingId={detail.id}
+          targetListingTitle={detail.title}
+        />
+      )}
     </div>
   );
 }

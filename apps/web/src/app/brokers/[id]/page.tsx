@@ -12,8 +12,9 @@ import {
 } from '../../../components/brokers';
 import { apiClient, ApiError } from '../../../lib/api-client';
 import { EmptyState, Button } from '../../../components/ui';
-import { AlertCircle, UserX, Loader2, Building2, Star } from 'lucide-react';
+import { AlertCircle, UserX, Loader2, Building2, Star, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
+import { ViolationReportModal } from '../../../components/support/violation-report-modal';
 
 export default function BrokerPublicProfilePage() {
   const params = useParams();
@@ -23,6 +24,7 @@ export default function BrokerPublicProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'listings' | 'reviews'>('listings');
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [, startTransition] = useTransition();
 
   useEffect(() => {
@@ -131,6 +133,14 @@ export default function BrokerPublicProfilePage() {
                   >
                     {profile.reviews.length}
                   </span>
+                <button
+                  type="button"
+                  onClick={() => setIsReportModalOpen(true)}
+                  className="mr-auto inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors border border-red-200 dark:border-red-900/50"
+                  data-testid="report-broker-button"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <span>إبلاغ عن وسيط مخالف</span>
                 </button>
               </div>
 
@@ -154,6 +164,16 @@ export default function BrokerPublicProfilePage() {
           </>
         )}
       </div>
+
+      {profile && (
+        <ViolationReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          targetType="BROKER"
+          targetUserId={profile.userId}
+          targetBrokerName={profile.commercialName}
+        />
+      )}
     </LayoutShell>
   );
 }
