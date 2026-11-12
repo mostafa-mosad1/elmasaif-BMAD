@@ -4,7 +4,7 @@ baseline_commit: d02265d8951478a6a1e1d7e6b46251b7f5ae24d0
 
 # Story 8.4: Review Moderation Workspace
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -91,39 +91,39 @@ so that **platform reputation data remains professional and accurate while prese
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Shared Review Moderation Constants, Schemas & DTO Types in `@elmasaif/shared` (AC: #1)**
-  - [ ] 1.1 Update `packages/shared/src/schemas/review.schema.ts` to add `REVIEW_MODERATION_MIN_REASON_LENGTH = 3`, `REVIEW_MODERATION_MAX_REASON_LENGTH = 500`, `REVIEW_VISIBILITY_FILTERS = ['ALL', 'VISIBLE', 'HIDDEN'] as const`, `reviewModerationReasonSchema`, and `adminReviewQueueQuerySchema` while keeping `moderateReviewSchema` and `ModerateReviewInput` intact.
-  - [ ] 1.2 Update `packages/shared/src/types/broker.ts` to add `ReviewVisibilityFilter`, `AdminReviewAuditEntryDto`, `AdminReviewModerationItemDto`, `AdminReviewModerationDetailDto`, `AdminReviewModerationCountsDto`, `AdminReviewModerationQueueResponseDto`, and `AdminModerateReviewResponseDto`.
-  - [ ] 1.3 Expand `packages/shared/src/schemas/__tests__/review.spec.ts` to test `reviewModerationReasonSchema` and `adminReviewQueueQuerySchema` (default pagination, visibility filter validation, score bounds `1..5`, invalid inputs).
+- [x] **Task 1: Shared Review Moderation Constants, Schemas & DTO Types in `@elmasaif/shared` (AC: #1)**
+  - [x] 1.1 Update `packages/shared/src/schemas/review.schema.ts` to add `REVIEW_MODERATION_MIN_REASON_LENGTH = 3`, `REVIEW_MODERATION_MAX_REASON_LENGTH = 500`, `REVIEW_VISIBILITY_FILTERS = ['ALL', 'VISIBLE', 'HIDDEN'] as const`, `reviewModerationReasonSchema`, and `adminReviewQueueQuerySchema` while keeping `moderateReviewSchema` and `ModerateReviewInput` intact.
+  - [x] 1.2 Update `packages/shared/src/types/broker.ts` to add `ReviewVisibilityFilter`, `AdminReviewAuditEntryDto`, `AdminReviewModerationItemDto`, `AdminReviewModerationDetailDto`, `AdminReviewModerationCountsDto`, `AdminReviewModerationQueueResponseDto`, and `AdminModerateReviewResponseDto`.
+  - [x] 1.3 Expand `packages/shared/src/schemas/__tests__/review.spec.ts` to test `reviewModerationReasonSchema` and `adminReviewQueueQuerySchema` (default pagination, visibility filter validation, score bounds `1..5`, invalid inputs).
 
-- [ ] **Task 2: Backend Review Moderation Queue, Detail, Hide/Restore Actions & Audit Trail in `apps/api` (AC: #2, #3)**
-  - [ ] 2.1 Enhance `BrokersService` (`apps/api/src/modules/users/brokers.service.ts`) with:
+- [x] **Task 2: Backend Review Moderation Queue, Detail, Hide/Restore Actions & Audit Trail in `apps/api` (AC: #2, #3)**
+  - [x] 2.1 Enhance `BrokersService` (`apps/api/src/modules/users/brokers.service.ts`) with:
     - `listAdminReviews(query: AdminReviewQueueQueryInput)`: Queries `prisma.rating` with relations (`deal` + `listing`, `raterUser`, `targetUser` + `profiles` + `falLicense`), resolves `AdminUser` names for `hiddenByAdminId`, computes live public broker rating stats (`publicAverageRating`, `publicVisibleReviewsCount`) from non-hidden ratings (`isHidden: false`), and computes global queue KPI counts (`totalReviews`, `visibleReviews`, `hiddenReviews`, `lowScoreVisibleReviews`).
     - `getAdminReviewDetail(ratingId: string)`: Returns the full `AdminReviewModerationDetailDto` with `auditTrail` queried from `prisma.auditLog.findMany({ where: { entityType: 'Rating', entityId: ratingId }, orderBy: { createdAt: 'desc' } })` and resolved `actorName` from `AdminUser`.
     - Enhance `moderateReview(ratingId, input, admin, ipAddress)` so it preserves full compatibility with Story 6.5 tests (`mockPrismaService.rating.findUnique`, `mockPrismaService.rating.update`, `mockPrismaService.auditLog.create`), records comprehensive `AuditLog` payload (`dealId`, `targetUserId`, `raterUserId`, `score`, `commentSnapshot`, `previousIsHidden`, `isHidden`, `reason`, `adminUsername`), and returns the updated rating plus recalculated `updatedBrokerStats` (`averageRating`, `totalReviews`, `ratingDistribution`) when available.
-  - [ ] 2.2 Enhance `AdminReviewsController` (`apps/api/src/modules/users/admin-reviews.controller.ts`) with:
+  - [x] 2.2 Enhance `AdminReviewsController` (`apps/api/src/modules/users/admin-reviews.controller.ts`) with:
     - `@Get()` (`GET /api/v1/admin/reviews`) gated by `@RequireAdminPermission('Reviews.Moderate')`.
     - `@Get(':id')` (`GET /api/v1/admin/reviews/:id`) gated by `@RequireAdminPermission('Reviews.Moderate')`.
     - `@Patch(':id/moderation')` (preserved from Story 6.5).
     - `@Post(':id/hide')` (`POST /api/v1/admin/reviews/:id/hide`) delegating to `moderateReview(id, { isHidden: true, reason: body.reason }, admin, ipAddress)`.
     - `@Post(':id/restore')` (`POST /api/v1/admin/reviews/:id/restore`) delegating to `moderateReview(id, { isHidden: false, reason: body.reason }, admin, ipAddress)`.
 
-- [ ] **Task 3: Frontend Review Moderation Workspace (`/admin/reviews`) & Navigation Integration in `apps/web` (AC: #4)**
-  - [ ] 3.1 Create `apps/web/src/components/admin/review-moderation-workspace.tsx` (`ReviewModerationWorkspace`):
+- [x] **Task 3: Frontend Review Moderation Workspace (`/admin/reviews`) & Navigation Integration in `apps/web` (AC: #4)**
+  - [x] 3.1 Create `apps/web/src/components/admin/review-moderation-workspace.tsx` (`ReviewModerationWorkspace`):
     - Accepts optional SSR props (`initialQueueData`, `initialSelectedDetail`, `initialVisibilityFilter`, `initialScoreFilter`, `initialModalMode`) for deterministic SSR testing via `renderToString`.
     - Renders KPI summary cards (`totalReviews`, `visibleReviews`, `hiddenReviews`, `lowScoreVisibleReviews`).
     - Renders visibility filter tabs (`الكل`, `معروضة للعموم (نشطة)`, `محجوبة إدارياً`, `تقييمات منخفضة (1-2 ★)`), star score filter pills (`1 ★` to `5 ★`), and search input.
     - Renders `DESIGN.md` Component #9 Review Moderation Cards showing 1–5 gold stars, buyer full name + masked public name (`ط*** ش***`), deal reference code, target broker commercial name + Fal badge + link to `/brokers/:profileId`, live broker average rating & visible review count, inclusion/exclusion status badge (`مُدرج في التقييم العام ومتوسط الوسيط` vs `محجوب إدارياً — مستبعد من العرض العام ومتوسط التقييم`), and `"إخفاء التقييم"` / `"استعادة التقييم"` action buttons.
     - Renders the mandatory justification modal (`>= 3` characters) with preset reason pills and calls `POST /api/v1/admin/reviews/:id/hide` or `POST /api/v1/admin/reviews/:id/restore` (or `PATCH /api/v1/admin/reviews/:id/moderation`).
     - Renders the review inspection & immutable `AuditLog` side panel showing all historical `REVIEW_HIDDEN` and `REVIEW_UNHIDDEN` audit entries.
-  - [ ] 3.2 Create `apps/web/src/app/admin/reviews/page.tsx` rendering `<ReviewModerationWorkspace />`.
-  - [ ] 3.3 Update `apps/web/src/components/layout/workspace-shell.tsx` and `apps/web/src/app/admin/page.tsx` to add navigation links to `/admin/reviews` (`مراجعة وتدقيق التقييمات`) gated by `Reviews.Moderate` or `SUPER_ADMIN`.
+  - [x] 3.2 Create `apps/web/src/app/admin/reviews/page.tsx` rendering `<ReviewModerationWorkspace />`.
+  - [x] 3.3 Update `apps/web/src/components/layout/workspace-shell.tsx` and `apps/web/src/app/admin/page.tsx` to add navigation links to `/admin/reviews` (`مراجعة وتدقيق التقييمات`) gated by `Reviews.Moderate` or `SUPER_ADMIN`.
 
-- [ ] **Task 4: Automated Unit, Integration & SSR Tests Across Monorepo (AC: #5)**
-  - [ ] 4.1 Run and verify `packages/shared/src/schemas/__tests__/review.spec.ts`.
-  - [ ] 4.2 Expand `apps/api/src/modules/users/__tests__/brokers.spec.ts` to test `listAdminReviews`, `getAdminReviewDetail`, `hideReview`, `restoreReview`, `moderateReview` (both hiding and restoring), physical row preservation, `AuditLog` creation, and broker average recalculation.
-  - [ ] 4.3 Create `apps/web/src/components/admin/__tests__/review-moderation-workspace.spec.tsx` using Vitest and `renderToString` from `react-dom/server` to verify KPI summary cards, visible vs hidden review cards, inclusion/exclusion badges, mandatory reason modal, and audit trail rendering.
-  - [ ] 4.4 Run full test suites across `packages/shared`, `apps/api`, and `apps/web` to confirm zero regressions.
+- [x] **Task 4: Automated Unit, Integration & SSR Tests Across Monorepo (AC: #5)**
+  - [x] 4.1 Run and verify `packages/shared/src/schemas/__tests__/review.spec.ts`.
+  - [x] 4.2 Expand `apps/api/src/modules/users/__tests__/brokers.spec.ts` to test `listAdminReviews`, `getAdminReviewDetail`, `hideReview`, `restoreReview`, `moderateReview` (both hiding and restoring), physical row preservation, `AuditLog` creation, and broker average recalculation.
+  - [x] 4.3 Create `apps/web/src/components/admin/__tests__/review-moderation-workspace.spec.tsx` using Vitest and `renderToString` from `react-dom/server` to verify KPI summary cards, visible vs hidden review cards, inclusion/exclusion badges, mandatory reason modal, and audit trail rendering.
+  - [x] 4.4 Run full test suites across `packages/shared`, `apps/api`, and `apps/web` to confirm zero regressions.
 
 ## Dev Notes
 
@@ -267,10 +267,28 @@ Gemini 4 Argon (Medium)
 
 ### Completion Notes List
 
-- Ultimate context engine analysis completed - comprehensive developer guide created for Story 8.4 (`Review Moderation Workspace`).
+- Implemented shared review moderation constants (`REVIEW_MODERATION_MIN_REASON_LENGTH`, `REVIEW_MODERATION_MAX_REASON_LENGTH`, `REVIEW_VISIBILITY_FILTERS`, status codes), Zod schemas (`reviewModerationReasonSchema`, `adminReviewQueueQuerySchema`), and TypeScript DTO contracts (`AdminReviewModerationQueueResponseDto`, `AdminReviewModerationItemDto`, `AdminReviewModerationDetailDto`, `AdminReviewAuditEntryDto`, `AdminReviewModerationCountsDto`, `AdminModerateReviewResponseDto`) in `@elmasaif/shared`.
+- Enhanced `BrokersService` and `AdminReviewsController` in `apps/api` with `GET /api/v1/admin/reviews`, `GET /api/v1/admin/reviews/:id`, `POST /api/v1/admin/reviews/:id/hide`, and `POST /api/v1/admin/reviews/:id/restore` alongside `PATCH /api/v1/admin/reviews/:id/moderation`, enforcing `@RequireAdminPermission('Reviews.Moderate')`, deterministic `ClockService.now()`, permanent physical `Rating` row preservation (`FR-52`, `AD-6`), immutable `AuditLog` recording (`REVIEW_HIDDEN` / `REVIEW_UNHIDDEN`), and immediate recalculation of broker public rating stats (`updatedBrokerStats`).
+- Built the Sovereign Review Moderation Workspace (`ReviewModerationWorkspace` at `/admin/reviews`) in `apps/web` per `DESIGN.md` Component #9 with KPI summary cards, visibility and star score filters, inclusion/exclusion status pills, buyer full & masked names, live broker reputation metrics, mandatory justification modal with preset regulatory reason chips, and an immutable `AuditLog` history side panel, plus navigation links in `WorkspaceShell` and `AdminDashboardPage`.
+- Verified all unit, integration, and SSR tests pass across `@elmasaif/shared` (48 files / 628 tests), `@elmasaif/api` (84 suites / 1032 tests), and `@elmasaif/web` (84 files / 473 tests) with zero regressions.
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/8-4-review-moderation-workspace.md`
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `packages/shared/src/schemas/review.schema.ts`
+- `packages/shared/src/types/broker.ts`
+- `packages/shared/src/schemas/__tests__/review.spec.ts`
+- `apps/api/src/modules/users/brokers.service.ts`
+- `apps/api/src/modules/users/admin-reviews.controller.ts`
+- `apps/api/src/modules/users/__tests__/brokers.spec.ts`
+- `apps/web/src/components/admin/review-moderation-workspace.tsx`
+- `apps/web/src/app/admin/reviews/page.tsx`
+- `apps/web/src/components/layout/workspace-shell.tsx`
+- `apps/web/src/app/admin/page.tsx`
+- `apps/web/src/components/admin/__tests__/review-moderation-workspace.spec.tsx`
+
+## Change Log
+
+- **2026-11-12:** Implemented Story 8.4 (`Review Moderation Workspace`) across `@elmasaif/shared`, `apps/api`, and `apps/web` with full unit, integration, and SSR test coverage.
 

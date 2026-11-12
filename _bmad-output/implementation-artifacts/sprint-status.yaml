@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 10-27-2026 15:27
-last_updated: 11-12-2026 11:38
+last_updated: 11-12-2026 12:03
 project: elmasaif
 project_key: NOKEY
 tracking_system: file-system
@@ -113,7 +113,7 @@ development_status:
   8-1-isolated-admin-authentication-realm-password-reset: done
   8-2-granular-dynamic-rbac-super-admin-user-management: done
   8-3-unified-operational-queue-task-claim-heartbeat-locking-servi: done
-  8-4-review-moderation-workspace: ready-for-dev
+  8-4-review-moderation-workspace: review
   8-5-violation-reporting-support-ticketing-system: backlog
   8-6-dynamic-platform-settings-commission-configuration: backlog
   8-7-immutable-domain-audit-logging-inspection: backlog

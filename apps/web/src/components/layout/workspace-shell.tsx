@@ -36,7 +36,8 @@ import {
   Scale,
   FileCheck,
   Users,
-  Layers
+  Layers,
+  Star
 } from 'lucide-react';
 
 interface WorkspaceShellProps {
@@ -143,6 +144,9 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         : []),
       ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Deals.DisputeResolve')
         ? [{ href: '/admin/disputes', label: 'فض النزاعات', icon: Scale }]
+        : []),
+      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Reviews.Moderate')
+        ? [{ href: '/admin/reviews', label: 'مراجعة وتدقيق التقييمات', icon: Star }]
         : []),
       ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Rbac.Manage')
         ? [{ href: '/admin/staff', label: 'إدارة الموظفين والصلاحيات (RBAC)', icon: Users }]

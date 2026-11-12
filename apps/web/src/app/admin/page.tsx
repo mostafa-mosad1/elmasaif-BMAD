@@ -19,6 +19,7 @@ import {
   FileText,
   CreditCard,
   Layers,
+  Star,
 } from 'lucide-react';
 import { apiClient } from '../../lib/api-client';
 import { useAdminAuth } from '../../components/providers/admin-auth-provider';
@@ -41,6 +42,10 @@ export default function AdminDashboardPage() {
     admin?.role === AdminRole.MODERATOR;
   const canReviewListings =
     hasPermission('Listings.Review') ||
+    admin?.role === AdminRole.SUPER_ADMIN ||
+    admin?.role === AdminRole.MODERATOR;
+  const canModerateReviews =
+    hasPermission('Reviews.Moderate') ||
     admin?.role === AdminRole.SUPER_ADMIN ||
     admin?.role === AdminRole.MODERATOR;
 
@@ -126,6 +131,16 @@ export default function AdminDashboardPage() {
             >
               <Building2 className="w-4 h-4" />
               <span>طابور مراجعة الإعلانات العقارية</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </Link>
+          )}
+          {canModerateReviews && (
+            <Link
+              href="/admin/reviews"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-[#1B4332] text-xs font-bold shadow-sm hover:bg-[#D8F3DC] transition-colors"
+            >
+              <Star className="w-4 h-4" />
+              <span>مراجعة وتدقيق التقييمات</span>
               <ArrowLeft className="w-3.5 h-3.5" />
             </Link>
           )}
