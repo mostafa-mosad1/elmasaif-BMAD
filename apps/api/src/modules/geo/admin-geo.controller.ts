@@ -28,7 +28,8 @@ import {
   updateDistrictSchema,
   UpdateDistrictInput,
   AdminRole,
-  AUTH_NOT_AUTHORIZED
+  AUTH_NOT_AUTHORIZED,
+  resolveAdminPermissions,
 } from '@elmasaif/shared';
 
 @Injectable()
@@ -37,7 +38,22 @@ export class AdminGeoGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const admin = request.admin;
 
-    if (!admin?.id || !admin.isActive || admin.role !== AdminRole.SUPER_ADMIN) {
+    if (!admin?.id || !admin.isActive || admin.deletedAt) {
+      throw new ForbiddenException({
+        code: AUTH_NOT_AUTHORIZED,
+        message: 'الدور الإداري لا يملك الصلاحية المطلوبة لإدارة البيانات الجغرافية'
+      });
+    }
+
+    const effectivePermissions = resolveAdminPermissions(
+      admin.role as AdminRole,
+      admin.permissions
+    );
+
+    if (
+      admin.role !== AdminRole.SUPER_ADMIN &&
+      !effectivePermissions.includes('Geo.Manage')
+    ) {
       throw new ForbiddenException({
         code: AUTH_NOT_AUTHORIZED,
         message: 'الدور الإداري لا يملك الصلاحية المطلوبة لإدارة البيانات الجغرافية'

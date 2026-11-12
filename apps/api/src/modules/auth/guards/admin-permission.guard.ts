@@ -5,7 +5,11 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { AdminRole, AUTH_NOT_AUTHORIZED } from '@elmasaif/shared';
+import {
+  AdminRole,
+  AUTH_NOT_AUTHORIZED,
+  resolveAdminPermissions,
+} from '@elmasaif/shared';
 import { ADMIN_PERMISSION_METADATA_KEY } from '../decorators/require-admin-permission.decorator';
 
 @Injectable()
@@ -27,7 +31,7 @@ export class AdminPermissionGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const admin = request.admin;
 
-    if (!admin?.id || !admin.isActive) {
+    if (!admin?.id || !admin.isActive || admin.deletedAt) {
       throw new ForbiddenException({
         code: AUTH_NOT_AUTHORIZED,
         message: 'غير مصرح لك بتنفيذ هذا الإجراء الإداري',
@@ -38,9 +42,10 @@ export class AdminPermissionGuard implements CanActivate {
       return true;
     }
 
-    const permissions: string[] = Array.isArray(admin.permissions)
-      ? admin.permissions
-      : [];
+    const permissions = resolveAdminPermissions(
+      admin.role as AdminRole,
+      admin.permissions,
+    );
 
     const requiredList = Array.isArray(requiredPermission)
       ? requiredPermission
@@ -60,4 +65,5 @@ export class AdminPermissionGuard implements CanActivate {
     return true;
   }
 }
+
 

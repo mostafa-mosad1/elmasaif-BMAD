@@ -22,13 +22,15 @@ import {
   IDENTITY_INVALID_DOCUMENT,
   AdminRole,
   adminRejectIdentitySchema,
-  adminVerifyIdentitySchema
+  adminVerifyIdentitySchema,
+  resolveAdminPermissions,
 } from '@elmasaif/shared';
 import { AdminSessionAuthGuard } from '../auth/guards/admin-session-auth.guard';
 import { IdentityService } from './identity.service';
 
 export type IdentityAdminPermission =
   | 'Users.View'
+  | 'Users.Verify'
   | 'Users.Review'
   | 'Audit.View'
   | 'Compliance.Review';
@@ -47,21 +49,52 @@ export class AdminIdentityGuard implements CanActivate {
       context.getHandler()
     ) as IdentityAdminPermission[] | undefined;
 
-    if (!admin?.id || !admin.isActive || !requiredPermissions?.length) {
+    if (!admin?.id || !admin.isActive || admin.deletedAt || !requiredPermissions?.length) {
       throw new ForbiddenException({
         code: AUTH_NOT_AUTHORIZED,
         message: 'لا تملك صلاحية الوصول إلى مراجعة وثائق الهوية'
       });
     }
 
+    if (admin.role === AdminRole.SUPER_ADMIN) {
+      return true;
+    }
+
+    const effectivePermissions = resolveAdminPermissions(
+      admin.role as AdminRole,
+      admin.permissions
+    );
+
     const rolePermissions: Record<AdminRole, IdentityAdminPermission[]> = {
-      [AdminRole.SUPER_ADMIN]: ['Users.View', 'Users.Review', 'Audit.View', 'Compliance.Review'],
-      [AdminRole.MODERATOR]: ['Users.View', 'Users.Review'],
-      [AdminRole.COMPLIANCE_OFFICER]: ['Users.View', 'Audit.View', 'Compliance.Review'],
+      [AdminRole.SUPER_ADMIN]: ['Users.View', 'Users.Verify', 'Users.Review', 'Audit.View', 'Compliance.Review'],
+      [AdminRole.MODERATOR]: ['Users.View', 'Users.Verify', 'Users.Review'],
+      [AdminRole.COMPLIANCE_OFFICER]: ['Users.View', 'Users.Verify', 'Audit.View', 'Compliance.Review'],
       [AdminRole.FINANCIAL_AUDITOR]: ['Users.View', 'Audit.View']
     };
 
-    if (requiredPermissions.some((permission) => rolePermissions[admin.role as AdminRole]?.includes(permission))) {
+    const hasDynamicMatch = requiredPermissions.some((permission) => {
+      if (effectivePermissions.includes(permission)) return true;
+      if (permission === 'Users.Review' && effectivePermissions.includes('Users.Verify')) {
+        return true;
+      }
+      if (
+        permission === 'Compliance.Review' &&
+        (effectivePermissions.includes('Users.Verify') ||
+          effectivePermissions.includes('Compliance.Manage') ||
+          effectivePermissions.includes('Compliance.View'))
+      ) {
+        return true;
+      }
+      return false;
+    });
+
+    if (
+      hasDynamicMatch ||
+      (!admin.permissions?.length &&
+        requiredPermissions.some((permission) =>
+          rolePermissions[admin.role as AdminRole]?.includes(permission)
+        ))
+    ) {
       return true;
     }
     throw new ForbiddenException({

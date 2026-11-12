@@ -1,14 +1,18 @@
-import { HttpStatus } from '@nestjs/common';
+import { HttpStatus, ConflictException, BadRequestException } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import {
   AdminRole,
   ADMIN_ACCOUNT_DISABLED,
   ADMIN_ACCOUNT_LOCKED,
+  ADMIN_EMAIL_ALREADY_EXISTS,
+  ADMIN_HARD_DELETE_HISTORY_EXISTS,
   ADMIN_INVALID_CREDENTIALS,
   ADMIN_NOT_FOUND,
   ADMIN_RESET_TOKEN_EXPIRED,
   ADMIN_RESET_TOKEN_INVALID,
+  ADMIN_SELF_MODIFICATION_FORBIDDEN,
   ADMIN_SESSION_INACTIVITY_MS,
+  ADMIN_USERNAME_ALREADY_EXISTS,
   AUTH_NOT_AUTHORIZED,
   AUTH_PASSWORD_SAME_AS_CURRENT,
 } from '@elmasaif/shared';
@@ -25,7 +29,9 @@ describe('AdminAuthService (Story 8.1)', () => {
       findFirst: jest.Mock;
       findUnique: jest.Mock;
       findMany: jest.Mock;
+      create: jest.Mock;
       update: jest.Mock;
+      delete: jest.Mock;
     };
     adminSession: {
       create: jest.Mock;
@@ -35,6 +41,7 @@ describe('AdminAuthService (Story 8.1)', () => {
     };
     auditLog: {
       create: jest.Mock;
+      count: jest.Mock;
     };
     $transaction: jest.Mock;
   };
@@ -57,7 +64,9 @@ describe('AdminAuthService (Story 8.1)', () => {
         findFirst: jest.fn(),
         findUnique: jest.fn(),
         findMany: jest.fn(),
+        create: jest.fn(),
         update: jest.fn(),
+        delete: jest.fn(),
       },
       adminSession: {
         create: jest.fn(),
@@ -67,6 +76,7 @@ describe('AdminAuthService (Story 8.1)', () => {
       },
       auditLog: {
         create: jest.fn(),
+        count: jest.fn().mockResolvedValue(0),
       },
       $transaction: jest.fn(async (cb: (tx: typeof prisma) => Promise<unknown>) => cb(prisma)),
     };
@@ -438,6 +448,271 @@ describe('AdminAuthService (Story 8.1)', () => {
           code: ADMIN_RESET_TOKEN_EXPIRED,
         }),
       });
+    });
+  });
+
+  describe('Staff RBAC Management & Guarded Deletion (Story 8.2) (AC: 3, 4)', () => {
+    it('creates a new staff account with Argon2id password, custom permissions, and logs ADMIN_STAFF_CREATED', async () => {
+      prisma.adminUser.findUnique.mockResolvedValue(null);
+      prisma.adminUser.create.mockImplementation(async ({ data }) => ({
+        id: 'staff-new-1',
+        ...data,
+        createdAt: fixedNow,
+      }));
+
+      const created = await service.createStaffAccount(
+        'super-1',
+        AdminRole.SUPER_ADMIN,
+        {
+          username: '  Ops_Mod_2  ',
+          email: '  OpsMod2@Elmasaif.sa ',
+          fullName: 'تركي العتيبي',
+          role: AdminRole.MODERATOR,
+          initialPassword: 'StaffPassword2026',
+          permissions: ['Listings.Review', 'Reviews.Moderate', 'Geo.Manage'],
+        },
+        '10.0.0.5'
+      );
+
+      expect(created.id).toBe('staff-new-1');
+      expect(created.username).toBe('ops_mod_2');
+      expect(created.email).toBe('opsmod2@elmasaif.sa');
+      expect(created.permissions).toEqual([
+        'Listings.Review',
+        'Reviews.Moderate',
+        'Geo.Manage',
+      ]);
+      expect(created.hasOperationalHistory).toBe(false);
+      expect(prisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            actorId: 'super-1',
+            action: 'ADMIN_STAFF_CREATED',
+            entityId: 'staff-new-1',
+          }),
+        })
+      );
+    });
+
+    it('rejects duplicate username (409 ADMIN_USERNAME_ALREADY_EXISTS) and duplicate email (409 ADMIN_EMAIL_ALREADY_EXISTS)', async () => {
+      prisma.adminUser.findUnique.mockResolvedValueOnce({ id: 'existing-1' });
+
+      await expect(
+        service.createStaffAccount(
+          'super-1',
+          AdminRole.SUPER_ADMIN,
+          {
+            username: 'moderator',
+            email: 'new@elmasaif.sa',
+            fullName: 'موظف جديد',
+            role: AdminRole.MODERATOR,
+            initialPassword: 'StaffPassword2026',
+          },
+          '10.0.0.5'
+        )
+      ).rejects.toThrow(ConflictException);
+
+      prisma.adminUser.findUnique
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ id: 'existing-2' });
+
+      await expect(
+        service.createStaffAccount(
+          'super-1',
+          AdminRole.SUPER_ADMIN,
+          {
+            username: 'unique_staff',
+            email: 'moderator@elmasaif.sa',
+            fullName: 'موظف جديد',
+            role: AdminRole.MODERATOR,
+            initialPassword: 'StaffPassword2026',
+          },
+          '10.0.0.5'
+        )
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({
+          code: ADMIN_EMAIL_ALREADY_EXISTS,
+        }),
+      });
+    });
+
+    it('updates staff permissions, revokes active sessions, logs before/after snapshot, and blocks self-modification', async () => {
+      await expect(
+        service.updateStaffPermissions(
+          'super-1',
+          AdminRole.SUPER_ADMIN,
+          'super-1',
+          {
+            permissions: ['Users.View'],
+            reason: 'محاولة تعديل الصلاحيات الذاتية',
+          },
+          '10.0.0.5'
+        )
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({
+          code: ADMIN_SELF_MODIFICATION_FORBIDDEN,
+        }),
+      });
+
+      prisma.adminUser.findUnique.mockResolvedValueOnce({
+        id: 'mod-1',
+        username: 'moderator',
+        email: 'moderator@elmasaif.sa',
+        fullName: 'مشرف العمليات',
+        role: AdminRole.MODERATOR,
+        permissions: ['Listings.Review'],
+        isActive: true,
+        deletedAt: null,
+      });
+      prisma.adminUser.update.mockImplementation(async ({ data }) => ({
+        id: 'mod-1',
+        username: 'moderator',
+        email: 'moderator@elmasaif.sa',
+        fullName: data.fullName,
+        role: data.role,
+        permissions: data.permissions,
+        isActive: true,
+        deletedAt: null,
+      }));
+
+      const updated = await service.updateStaffPermissions(
+        'super-1',
+        AdminRole.SUPER_ADMIN,
+        'mod-1',
+        {
+          role: AdminRole.MODERATOR,
+          permissions: ['Listings.Review', 'Reviews.Moderate', 'Tasks.ForceUnlock'],
+          reason: 'منح صلاحية الإشراف على التقييمات وفك قفل المهام',
+        },
+        '10.0.0.5'
+      );
+
+      expect(updated.permissions).toEqual([
+        'Listings.Review',
+        'Reviews.Moderate',
+        'Tasks.ForceUnlock',
+      ]);
+      expect(prisma.adminSession.deleteMany).toHaveBeenCalledWith({
+        where: { adminId: 'mod-1' },
+      });
+      expect(prisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: 'ADMIN_PERMISSIONS_UPDATED',
+            entityId: 'mod-1',
+            payload: expect.objectContaining({
+              reason: 'منح صلاحية الإشراف على التقييمات وفك قفل المهام',
+              activeSessionsRevoked: true,
+            }),
+          }),
+        })
+      );
+    });
+
+    it('disables, soft-deletes, and re-enables staff accounts while revoking active sessions', async () => {
+      prisma.adminUser.findUnique.mockResolvedValue({
+        id: 'mod-1',
+        username: 'moderator',
+        email: 'moderator@elmasaif.sa',
+        fullName: 'مشرف العمليات',
+        role: AdminRole.MODERATOR,
+        permissions: ['Listings.Review'],
+        isActive: true,
+        deletedAt: null,
+      });
+      prisma.adminUser.update.mockImplementation(async ({ data }) => ({
+        id: 'mod-1',
+        username: 'moderator',
+        email: 'moderator@elmasaif.sa',
+        fullName: 'مشرف العمليات',
+        role: AdminRole.MODERATOR,
+        permissions: ['Listings.Review'],
+        isActive: data.isActive,
+        deletedAt: data.deletedAt,
+      }));
+
+      const softDeleted = await service.updateStaffStatus(
+        'super-1',
+        AdminRole.SUPER_ADMIN,
+        'mod-1',
+        {
+          action: 'SOFT_DELETE',
+          reason: 'إنهاء تكليف الموظف مع الاحتفاظ بسجل العمليات',
+        },
+        '10.0.0.5'
+      );
+
+      expect(softDeleted.isActive).toBe(false);
+      expect(softDeleted.deletedAt).toEqual(fixedNow);
+      expect(prisma.adminSession.deleteMany).toHaveBeenCalledWith({
+        where: { adminId: 'mod-1' },
+      });
+      expect(prisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: 'ADMIN_STAFF_SOFT_DELETED',
+          }),
+        })
+      );
+    });
+
+    it('strictly blocks hard-delete with 409 ADMIN_HARD_DELETE_HISTORY_EXISTS when historyCount > 0 and allows when historyCount === 0', async () => {
+      prisma.adminUser.findUnique.mockResolvedValue({
+        id: 'mod-with-history',
+        username: 'moderator',
+        email: 'moderator@elmasaif.sa',
+        fullName: 'مشرف العمليات',
+        role: AdminRole.MODERATOR,
+        isActive: false,
+      });
+      prisma.auditLog.count.mockResolvedValueOnce(3);
+
+      await expect(
+        service.hardDeleteStaff(
+          'super-1',
+          AdminRole.SUPER_ADMIN,
+          'mod-with-history',
+          { reason: 'محاولة حذف نهائي لموظف له سجل عمليات' },
+          '10.0.0.5'
+        )
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({
+          code: ADMIN_HARD_DELETE_HISTORY_EXISTS,
+        }),
+      });
+
+      expect(prisma.adminUser.delete).not.toHaveBeenCalled();
+      expect(prisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: 'ADMIN_STAFF_HARD_DELETE_BLOCKED',
+          }),
+        })
+      );
+
+      // Zero history -> allows hard deletion
+      prisma.auditLog.count.mockResolvedValueOnce(0);
+      prisma.adminUser.delete.mockResolvedValueOnce({ id: 'mod-no-history' });
+
+      const deleted = await service.hardDeleteStaff(
+        'super-1',
+        AdminRole.SUPER_ADMIN,
+        'mod-with-history',
+        { reason: 'حساب تجريبي بدون أي سجل عمليات' },
+        '10.0.0.5'
+      );
+
+      expect(deleted.deleted).toBe(true);
+      expect(prisma.adminUser.delete).toHaveBeenCalledWith({
+        where: { id: 'mod-with-history' },
+      });
+      expect(prisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: 'ADMIN_STAFF_HARD_DELETED',
+          }),
+        })
+      );
     });
   });
 });

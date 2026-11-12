@@ -179,6 +179,8 @@ model User {
   nationalId          String        @unique
   passwordHash        String
   status              ProfileStatus @default(ACTIVE)
+  isActive            Boolean       @default(true) @map("is_active")
+  deletedAt           DateTime?     @map("deleted_at")
   email               String?       @unique
   pendingEmail        String?
   emailVerifiedAt     DateTime?
@@ -340,7 +342,9 @@ model AdminUser {
   fullName               String
   passwordHash           String
   role                   AdminRole @default(MODERATOR)
+  permissions            String[]  @default([])
   isActive               Boolean   @default(true)
+  deletedAt              DateTime? @map("deleted_at")
   lastLoginAt            DateTime?
   failedLoginAttempts    Int       @default(0) @map("failed_login_attempts")
   lockedUntil            DateTime? @map("locked_until")

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AdminAuthController } from './admin-auth.controller';
+import { AdminStaffController } from './admin-staff.controller';
 import { AdminAuthService } from './admin-auth.service';
 import { EmailTransportService } from './email/email-transport.service';
 import { OtpService } from './otp/otp.service';
@@ -17,7 +18,7 @@ import { ClockModule } from '../../common/clock/clock.module';
 
 @Module({
   imports: [PrismaModule, ClockModule],
-  controllers: [AuthController, AdminAuthController],
+  controllers: [AuthController, AdminAuthController, AdminStaffController],
   providers: [
     AuthService,
     AdminAuthService,

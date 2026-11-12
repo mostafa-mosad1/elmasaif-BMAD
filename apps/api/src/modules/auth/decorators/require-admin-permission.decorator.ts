@@ -8,3 +8,6 @@ export const RequireAdminPermission = (...permissions: string[]) =>
     permissions.length === 1 ? permissions[0] : permissions,
   );
 
+export const RequirePermissions = RequireAdminPermission;
+
+

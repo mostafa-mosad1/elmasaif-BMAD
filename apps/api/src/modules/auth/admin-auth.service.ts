@@ -1,4 +1,12 @@
-import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  HttpException,
+  HttpStatus,
+  Logger,
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import * as crypto from 'crypto';
 import * as argon2 from 'argon2';
 import {
@@ -6,20 +14,32 @@ import {
   AdminLoginInput,
   AdminInitiatePasswordResetInput,
   AdminCompletePasswordResetInput,
+  AdminCreateStaffRequestInput,
+  AdminUpdateStaffPermissionsRequestInput,
+  AdminUpdateStaffStatusRequestInput,
+  AdminHardDeleteStaffRequestInput,
   AdminSessionUser,
+  AdminStaffSummaryDto,
   ADMIN_ACCOUNT_DISABLED,
   ADMIN_ACCOUNT_LOCKED,
+  ADMIN_EMAIL_ALREADY_EXISTS,
+  ADMIN_HARD_DELETE_HISTORY_EXISTS,
   ADMIN_INVALID_CREDENTIALS,
   ADMIN_LOGIN_LOCKOUT_MINUTES,
   ADMIN_LOGIN_MAX_FAILED_ATTEMPTS,
   ADMIN_NOT_FOUND,
   ADMIN_PASSWORD_RESET_EXPIRY_SECONDS,
+  ADMIN_PERMISSION_GROUPS,
   ADMIN_RESET_TOKEN_EXPIRED,
   ADMIN_RESET_TOKEN_INVALID,
   ADMIN_ROLE_PERMISSIONS,
+  ADMIN_SELF_MODIFICATION_FORBIDDEN,
   ADMIN_SESSION_INACTIVITY_MS,
+  ADMIN_USERNAME_ALREADY_EXISTS,
+  ALL_ADMIN_PERMISSIONS,
   AUTH_NOT_AUTHORIZED,
   AUTH_PASSWORD_SAME_AS_CURRENT,
+  resolveAdminPermissions,
 } from '@elmasaif/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClockService } from '../../common/clock/clock.service';
@@ -129,10 +149,14 @@ export class AdminAuthService {
       email: string;
       fullName: string;
       role: string | AdminRole;
+      permissions?: string[] | null;
       isActive: boolean;
+      deletedAt?: Date | null;
       lastLoginAt?: Date | null;
+      createdAt?: Date;
     },
-    lastLoginOverride?: Date
+    lastLoginOverride?: Date,
+    hasOperationalHistory?: boolean
   ): AdminSessionUser {
     const role = admin.role as AdminRole;
     return {
@@ -141,9 +165,12 @@ export class AdminAuthService {
       email: admin.email,
       fullName: admin.fullName,
       role,
-      isActive: admin.isActive,
+      isActive: admin.isActive && !admin.deletedAt,
+      deletedAt: admin.deletedAt ?? null,
       lastLoginAt: lastLoginOverride ?? admin.lastLoginAt ?? null,
-      permissions: ADMIN_ROLE_PERMISSIONS[role] || [],
+      ...(admin.createdAt !== undefined ? { createdAt: admin.createdAt } : {}),
+      ...(hasOperationalHistory !== undefined ? { hasOperationalHistory } : {}),
+      permissions: resolveAdminPermissions(role, admin.permissions),
     };
   }
 
@@ -211,8 +238,8 @@ export class AdminAuthService {
       );
     }
 
-    // 2. Check if account is disabled
-    if (!admin.isActive) {
+    // 2. Check if account is disabled or soft-deleted
+    if (!admin.isActive || (admin as any).deletedAt) {
       await this.prisma.auditLog.create({
         data: {
           actorId: admin.id,
@@ -405,7 +432,7 @@ export class AdminAuthService {
       where: { id: adminId },
     });
 
-    if (!admin || !admin.isActive) {
+    if (!admin || !admin.isActive || (admin as any).deletedAt) {
       throw new HttpException(
         {
           code: ADMIN_ACCOUNT_DISABLED,
@@ -418,23 +445,505 @@ export class AdminAuthService {
     return this.toAdminSessionUser(admin);
   }
 
-  async listAdminsForSuperAdmin(actorRole: AdminRole): Promise<AdminSessionUser[]> {
-    const permissions = ADMIN_ROLE_PERMISSIONS[actorRole] || [];
+  private assertRbacManagePermission(
+    actorRole: AdminRole,
+    actorPermissions?: string[]
+  ): void {
+    const permissions = resolveAdminPermissions(actorRole, actorPermissions);
     if (!permissions.includes('Rbac.Manage')) {
       throw new HttpException(
         {
           code: AUTH_NOT_AUTHORIZED,
-          message: 'هذه العملية مخصصة للمشرف العام فقط (Rbac.Manage)',
+          message: 'هذه العملية مخصصة للمشرف العام أو المفوضين بصلاحية (Rbac.Manage)',
         },
         HttpStatus.FORBIDDEN
       );
     }
+  }
+
+  private async safeCount(
+    model: any,
+    where: Record<string, unknown>
+  ): Promise<number> {
+    if (!model || typeof model.count !== 'function') {
+      return 0;
+    }
+    const c = await model.count({ where });
+    return typeof c === 'number' ? c : 0;
+  }
+
+  async countAdminOperationalHistory(adminId: string): Promise<number> {
+    const p = this.prisma as any;
+    const counts = await Promise.all([
+      this.safeCount(p.auditLog, { actorId: adminId }),
+      this.safeCount(p.listing, {
+        OR: [
+          { reviewedByAdminId: adminId },
+          { complianceOfficerId: adminId },
+          { lockedByAdminId: adminId },
+        ],
+      }),
+      this.safeCount(p.falLicense, {
+        OR: [{ reviewedByAdminId: adminId }, { lockedByAdminId: adminId }],
+      }),
+      this.safeCount(p.identityDocument, { verifiedByAdminId: adminId }),
+      this.safeCount(p.contractTemplate, { createdByAdminId: adminId }),
+      this.safeCount(p.offerHistory, { actorAdminId: adminId }),
+      this.safeCount(p.deal, { approvedByAdminId: adminId }),
+      this.safeCount(p.payment, {
+        OR: [{ verifiedByAdminId: adminId }, { lockedByAdminId: adminId }],
+      }),
+      this.safeCount(p.contractFeePayment, {
+        OR: [{ verifiedByAdminId: adminId }, { lockedByAdminId: adminId }],
+      }),
+      this.safeCount(p.dispute, {
+        OR: [{ resolvedByAdminId: adminId }, { lockedByAdminId: adminId }],
+      }),
+      this.safeCount(p.rating, { hiddenByAdminId: adminId }),
+      this.safeCount(p.priceSuggestion, { suggestedByAdminId: adminId }),
+      this.safeCount(p.inquiryMessage, {
+        OR: [{ relayedByAdminId: adminId }, { authorAdminId: adminId }],
+      }),
+    ]);
+
+    return counts.reduce((acc, val) => acc + val, 0);
+  }
+
+  private toStaffSummaryDto(
+    admin: any,
+    hasOperationalHistory: boolean
+  ): AdminStaffSummaryDto {
+    const role = admin.role as AdminRole;
+    return {
+      id: admin.id,
+      username: admin.username,
+      email: admin.email,
+      fullName: admin.fullName,
+      role,
+      permissions: resolveAdminPermissions(role, admin.permissions),
+      isActive: Boolean(admin.isActive && !admin.deletedAt),
+      deletedAt: admin.deletedAt ?? null,
+      lastLoginAt: admin.lastLoginAt ?? null,
+      createdAt: admin.createdAt,
+      hasOperationalHistory,
+    };
+  }
+
+  async listAdminsForSuperAdmin(
+    actorRole: AdminRole,
+    actorPermissions?: string[]
+  ): Promise<AdminSessionUser[]> {
+    this.assertRbacManagePermission(actorRole, actorPermissions);
 
     const admins = await this.prisma.adminUser.findMany({
       orderBy: { createdAt: 'asc' },
     });
 
-    return admins.map((a) => this.toAdminSessionUser(a));
+    const results: AdminSessionUser[] = [];
+    for (const admin of admins) {
+      const historyCount = await this.countAdminOperationalHistory(admin.id);
+      results.push(this.toAdminSessionUser(admin, undefined, historyCount > 0));
+    }
+    return results;
+  }
+
+  async listStaffWithCatalog(
+    actorRole: AdminRole,
+    actorPermissions?: string[]
+  ): Promise<{
+    staff: AdminStaffSummaryDto[];
+    permissionGroups: typeof ADMIN_PERMISSION_GROUPS;
+    rolePresets: typeof ADMIN_ROLE_PERMISSIONS;
+  }> {
+    this.assertRbacManagePermission(actorRole, actorPermissions);
+
+    const admins = await this.prisma.adminUser.findMany({
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const staff: AdminStaffSummaryDto[] = [];
+    for (const admin of admins) {
+      const historyCount = await this.countAdminOperationalHistory(admin.id);
+      staff.push(this.toStaffSummaryDto(admin, historyCount > 0));
+    }
+
+    return {
+      staff,
+      permissionGroups: ADMIN_PERMISSION_GROUPS,
+      rolePresets: ADMIN_ROLE_PERMISSIONS,
+    };
+  }
+
+  async createStaffAccount(
+    actorAdminId: string,
+    actorRole: AdminRole,
+    dto: AdminCreateStaffRequestInput,
+    ip: string,
+    actorPermissions?: string[]
+  ): Promise<AdminStaffSummaryDto> {
+    this.assertRbacManagePermission(actorRole, actorPermissions);
+
+    const username = dto.username.trim().toLowerCase();
+    const email = dto.email.trim().toLowerCase();
+    const fullName = dto.fullName.trim();
+
+    const existingByUsername = await this.prisma.adminUser.findUnique({
+      where: { username },
+    });
+    if (existingByUsername) {
+      throw new ConflictException({
+        code: ADMIN_USERNAME_ALREADY_EXISTS,
+        message: 'اسم المستخدم الإداري مستخدم بالفعل لموظف آخر',
+      });
+    }
+
+    const existingByEmail = await this.prisma.adminUser.findUnique({
+      where: { email },
+    });
+    if (existingByEmail) {
+      throw new ConflictException({
+        code: ADMIN_EMAIL_ALREADY_EXISTS,
+        message: 'البريد الإلكتروني الإداري مستخدم بالفعل لموظف آخر',
+      });
+    }
+
+    const assignedPermissions =
+      dto.role === AdminRole.SUPER_ADMIN
+        ? [...ALL_ADMIN_PERMISSIONS]
+        : dto.permissions && dto.permissions.length > 0
+          ? Array.from(new Set(dto.permissions))
+          : [...(ADMIN_ROLE_PERMISSIONS[dto.role] ?? [])];
+
+    const invalidPerms = assignedPermissions.filter(
+      (p) => !ALL_ADMIN_PERMISSIONS.includes(p)
+    );
+    if (invalidPerms.length > 0) {
+      throw new BadRequestException({
+        code: 'INVALID_ADMIN_PERMISSIONS',
+        message: `صلاحيات غير صالحة: ${invalidPerms.join(', ')}`,
+      });
+    }
+
+    const passwordHash = await argon2.hash(dto.initialPassword, {
+      type: argon2.argon2id,
+    });
+
+    const created = await this.prisma.$transaction(async (tx) => {
+      const staff = await tx.adminUser.create({
+        data: {
+          username,
+          email,
+          fullName,
+          role: dto.role,
+          passwordHash,
+          permissions: assignedPermissions,
+          isActive: true,
+          deletedAt: null,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: actorAdminId,
+          actorType: 'ADMIN',
+          action: 'ADMIN_STAFF_CREATED',
+          entityType: 'AdminUser',
+          entityId: staff.id,
+          ipAddress: ip,
+          payload: {
+            username: staff.username,
+            email: staff.email,
+            fullName: staff.fullName,
+            role: staff.role,
+            permissions: assignedPermissions,
+          },
+        },
+      });
+
+      return staff;
+    });
+
+    return this.toStaffSummaryDto(created, false);
+  }
+
+  async updateStaffPermissions(
+    actorAdminId: string,
+    actorRole: AdminRole,
+    targetAdminId: string,
+    dto: AdminUpdateStaffPermissionsRequestInput,
+    ip: string,
+    actorPermissions?: string[]
+  ): Promise<AdminStaffSummaryDto> {
+    this.assertRbacManagePermission(actorRole, actorPermissions);
+
+    if (actorAdminId === targetAdminId) {
+      throw new BadRequestException({
+        code: ADMIN_SELF_MODIFICATION_FORBIDDEN,
+        message:
+          'لا يمكن للمشرف تعديل صلاحيات أو دور حسابه الشخصي مباشرة لمنع فقدان الصلاحيات',
+      });
+    }
+
+    const targetAdmin = await this.prisma.adminUser.findUnique({
+      where: { id: targetAdminId },
+    });
+
+    if (!targetAdmin) {
+      throw new NotFoundException({
+        code: ADMIN_NOT_FOUND,
+        message: 'حساب الموظف المستهدف غير موجود',
+      });
+    }
+
+    const nextRole = dto.role ?? (targetAdmin.role as AdminRole);
+    const nextFullName = dto.fullName?.trim() || targetAdmin.fullName;
+    const nextPermissions =
+      nextRole === AdminRole.SUPER_ADMIN
+        ? [...ALL_ADMIN_PERMISSIONS]
+        : Array.from(new Set(dto.permissions));
+
+    const invalidPerms = nextPermissions.filter(
+      (p) => !ALL_ADMIN_PERMISSIONS.includes(p)
+    );
+    if (invalidPerms.length > 0) {
+      throw new BadRequestException({
+        code: 'INVALID_ADMIN_PERMISSIONS',
+        message: `صلاحيات غير صالحة: ${invalidPerms.join(', ')}`,
+      });
+    }
+
+    const beforeSnapshot = {
+      role: targetAdmin.role,
+      fullName: targetAdmin.fullName,
+      permissions: resolveAdminPermissions(
+        targetAdmin.role as AdminRole,
+        (targetAdmin as any).permissions
+      ),
+    };
+
+    const afterSnapshot = {
+      role: nextRole,
+      fullName: nextFullName,
+      permissions: nextPermissions,
+    };
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const staff = await tx.adminUser.update({
+        where: { id: targetAdmin.id },
+        data: {
+          role: nextRole,
+          fullName: nextFullName,
+          permissions: nextPermissions,
+        },
+      });
+
+      await tx.adminSession.deleteMany({
+        where: { adminId: targetAdmin.id },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: actorAdminId,
+          actorType: 'ADMIN',
+          action: 'ADMIN_PERMISSIONS_UPDATED',
+          entityType: 'AdminUser',
+          entityId: targetAdmin.id,
+          ipAddress: ip,
+          payload: {
+            beforeSnapshot,
+            afterSnapshot,
+            reason: dto.reason,
+            activeSessionsRevoked: true,
+          },
+        },
+      });
+
+      return staff;
+    });
+
+    const historyCount = await this.countAdminOperationalHistory(targetAdmin.id);
+    return this.toStaffSummaryDto(updated, historyCount > 0);
+  }
+
+  async updateStaffStatus(
+    actorAdminId: string,
+    actorRole: AdminRole,
+    targetAdminId: string,
+    dto: AdminUpdateStaffStatusRequestInput,
+    ip: string,
+    actorPermissions?: string[]
+  ): Promise<AdminStaffSummaryDto> {
+    this.assertRbacManagePermission(actorRole, actorPermissions);
+
+    if (actorAdminId === targetAdminId) {
+      throw new BadRequestException({
+        code: ADMIN_SELF_MODIFICATION_FORBIDDEN,
+        message: 'لا يمكن للمشرف تعطيل أو حذف حسابه الشخصي',
+      });
+    }
+
+    const targetAdmin = await this.prisma.adminUser.findUnique({
+      where: { id: targetAdminId },
+    });
+
+    if (!targetAdmin) {
+      throw new NotFoundException({
+        code: ADMIN_NOT_FOUND,
+        message: 'حساب الموظف المستهدف غير موجود',
+      });
+    }
+
+    const now = this.clockService.now();
+    const isEnable = dto.action === 'ENABLE';
+    const isSoftDelete = dto.action === 'SOFT_DELETE';
+
+    const nextIsActive = isEnable;
+    const nextDeletedAt = isSoftDelete
+      ? now
+      : isEnable
+        ? null
+        : (targetAdmin as any).deletedAt ?? null;
+    const auditAction = isSoftDelete
+      ? 'ADMIN_STAFF_SOFT_DELETED'
+      : 'ADMIN_STAFF_STATUS_CHANGED';
+
+    const beforeSnapshot = {
+      isActive: targetAdmin.isActive,
+      deletedAt: (targetAdmin as any).deletedAt ?? null,
+    };
+    const afterSnapshot = {
+      isActive: nextIsActive,
+      deletedAt: nextDeletedAt,
+    };
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const staff = await tx.adminUser.update({
+        where: { id: targetAdmin.id },
+        data: {
+          isActive: nextIsActive,
+          deletedAt: nextDeletedAt,
+        },
+      });
+
+      if (!isEnable) {
+        await tx.adminSession.deleteMany({
+          where: { adminId: targetAdmin.id },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorId: actorAdminId,
+          actorType: 'ADMIN',
+          action: auditAction,
+          entityType: 'AdminUser',
+          entityId: targetAdmin.id,
+          ipAddress: ip,
+          payload: {
+            statusAction: dto.action,
+            reason: dto.reason,
+            beforeSnapshot,
+            afterSnapshot,
+            activeSessionsRevoked: !isEnable,
+          },
+        },
+      });
+
+      return staff;
+    });
+
+    const historyCount = await this.countAdminOperationalHistory(targetAdmin.id);
+    return this.toStaffSummaryDto(updated, historyCount > 0);
+  }
+
+  async hardDeleteStaff(
+    actorAdminId: string,
+    actorRole: AdminRole,
+    targetAdminId: string,
+    dto: AdminHardDeleteStaffRequestInput,
+    ip: string,
+    actorPermissions?: string[]
+  ): Promise<{ id: string; deleted: boolean }> {
+    this.assertRbacManagePermission(actorRole, actorPermissions);
+
+    if (actorAdminId === targetAdminId) {
+      throw new BadRequestException({
+        code: ADMIN_SELF_MODIFICATION_FORBIDDEN,
+        message: 'لا يمكن للمشرف حذف حسابه الشخصي نهائياً',
+      });
+    }
+
+    const targetAdmin = await this.prisma.adminUser.findUnique({
+      where: { id: targetAdminId },
+    });
+
+    if (!targetAdmin) {
+      throw new NotFoundException({
+        code: ADMIN_NOT_FOUND,
+        message: 'حساب الموظف المستهدف غير موجود',
+      });
+    }
+
+    const historyCount = await this.countAdminOperationalHistory(targetAdmin.id);
+    if (historyCount > 0) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId: actorAdminId,
+          actorType: 'ADMIN',
+          action: 'ADMIN_STAFF_HARD_DELETE_BLOCKED',
+          entityType: 'AdminUser',
+          entityId: targetAdmin.id,
+          ipAddress: ip,
+          payload: {
+            reason: dto.reason,
+            historyCount,
+            code: ADMIN_HARD_DELETE_HISTORY_EXISTS,
+          },
+        },
+      });
+
+      throw new ConflictException({
+        code: ADMIN_HARD_DELETE_HISTORY_EXISTS,
+        message:
+          'لا يمكن الحذف النهائي لحساب الموظف لوجود سجل عمليات أو تدقيق مرتبط به؛ يرجى استخدام التعطيل أو الحذف الناعم',
+        details: {
+          historyCount,
+        },
+      });
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.adminSession.deleteMany({
+        where: { adminId: targetAdmin.id },
+      });
+
+      await tx.adminUser.delete({
+        where: { id: targetAdmin.id },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: actorAdminId,
+          actorType: 'ADMIN',
+          action: 'ADMIN_STAFF_HARD_DELETED',
+          entityType: 'AdminUser',
+          entityId: targetAdmin.id,
+          ipAddress: ip,
+          payload: {
+            deletedUsername: targetAdmin.username,
+            deletedEmail: targetAdmin.email,
+            deletedFullName: targetAdmin.fullName,
+            deletedRole: targetAdmin.role,
+            reason: dto.reason,
+          },
+        },
+      });
+    });
+
+    return {
+      id: targetAdmin.id,
+      deleted: true,
+    };
   }
 
   async initiatePasswordReset(
@@ -442,23 +951,15 @@ export class AdminAuthService {
     actorRole: AdminRole,
     targetAdminId: string,
     dto: AdminInitiatePasswordResetInput,
-    ip: string
+    ip: string,
+    actorPermissions?: string[]
   ): Promise<{
     adminId: string;
     email: string;
     expiresInSeconds: number;
     activeSessionsRevoked: boolean;
   }> {
-    const permissions = ADMIN_ROLE_PERMISSIONS[actorRole] || [];
-    if (!permissions.includes('Rbac.Manage')) {
-      throw new HttpException(
-        {
-          code: AUTH_NOT_AUTHORIZED,
-          message: 'إعادة تعيين كلمة مرور المشرفين مخصصة للمشرف العام فقط (Rbac.Manage)',
-        },
-        HttpStatus.FORBIDDEN
-      );
-    }
+    this.assertRbacManagePermission(actorRole, actorPermissions);
 
     const targetAdmin = await this.prisma.adminUser.findUnique({
       where: { id: targetAdminId },

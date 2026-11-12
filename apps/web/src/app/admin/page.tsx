@@ -80,6 +80,16 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {canManageRbac && (
+            <Link
+              href="/admin/staff"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-[#1B4332] text-xs font-bold shadow-sm hover:bg-[#D8F3DC] transition-colors"
+            >
+              <Users className="w-4 h-4" />
+              <span>إدارة الموظفين والصلاحيات (RBAC)</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </Link>
+          )}
           {canReviewContracts && (
             <>
               <Link
@@ -163,7 +173,7 @@ export default function AdminDashboardPage() {
       {/* Super Admin Staff Password Reset Management Section */}
       {canManageRbac && (
         <section className="rounded-2xl bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border overflow-hidden">
-          <div className="px-6 py-4 border-b border-surface-border dark:border-dark-surface-border flex items-center justify-between">
+          <div className="px-6 py-4 border-b border-surface-border dark:border-dark-surface-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <Users className="w-5 h-5 text-[#1B4332]" />
               <div>
@@ -175,6 +185,13 @@ export default function AdminDashboardPage() {
                 </p>
               </div>
             </div>
+            <Link
+              href="/admin/staff"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1B4332] text-white text-xs font-bold hover:bg-[#1B4332]/90 transition-colors"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>إدارة الموظفين والصلاحيات (RBAC)</span>
+            </Link>
           </div>
 
           <div className="divide-y divide-surface-border dark:divide-dark-surface-border">

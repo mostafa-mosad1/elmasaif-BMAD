@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { AUTH_CONSENT_REQUIRED, AUTH_INVALID_PHONE } from '../constants/auth';
+import {
+  ALL_ADMIN_PERMISSIONS,
+  AUTH_CONSENT_REQUIRED,
+  AUTH_INVALID_PHONE,
+} from '../constants/auth';
 import { UserRole, ProfileStatus, AdminRole } from '../enums';
 
 export const saudiNationalIdSchema = z.string()
@@ -213,7 +217,102 @@ export const adminSessionUserSchema = z.object({
   fullName: z.string(),
   role: z.nativeEnum(AdminRole),
   isActive: z.boolean(),
+  deletedAt: z.union([z.date(), z.string()]).nullable().optional(),
   lastLoginAt: z.union([z.date(), z.string()]).nullable().optional(),
+  createdAt: z.union([z.date(), z.string()]).optional(),
+  hasOperationalHistory: z.boolean().optional(),
   permissions: z.array(z.string()).default([]),
 });
+
+// Granular Dynamic RBAC & Super Admin User Management Schemas (Story 8.2)
+const validAdminPermissionSchema = z
+  .string()
+  .refine((val) => ALL_ADMIN_PERMISSIONS.includes(val), {
+    message: 'صلاحية إدارية غير معروفة في كتالوج الصلاحيات (Area.Action)',
+  });
+
+export const adminCreateStaffRequestSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(3, 'اسم المستخدم الإداري يجب ألا يقل عن 3 خانات')
+    .max(30, 'اسم المستخدم الإداري يجب ألا يتجاوز 30 خانة')
+    .regex(
+      /^[a-z0-9_.-]+$/,
+      'اسم المستخدم يجب أن يحتوي على أحرف إنجليزية وأرقام أو نقاط أو شرطات فقط'
+    ),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email('صيغة البريد الإلكتروني الإداري غير صالحة'),
+  fullName: z
+    .string()
+    .trim()
+    .min(3, 'الاسم الكامل للموظف يجب ألا يقل عن 3 أحرف')
+    .max(100, 'الاسم الكامل للموظف يجب ألا يتجاوز 100 حرف'),
+  role: z.nativeEnum(AdminRole),
+  initialPassword: passwordComplexitySchema,
+  permissions: z.array(validAdminPermissionSchema).optional(),
+});
+
+export const adminUpdateStaffPermissionsRequestSchema = z.object({
+  role: z.nativeEnum(AdminRole).optional(),
+  fullName: z
+    .string()
+    .trim()
+    .min(3, 'الاسم الكامل للموظف يجب ألا يقل عن 3 أحرف')
+    .max(100, 'الاسم الكامل للموظف يجب ألا يتجاوز 100 حرف')
+    .optional(),
+  permissions: z
+    .array(validAdminPermissionSchema)
+    .min(1, 'يجب منح صلاحية واحدة على الأقل للموظف'),
+  reason: z
+    .string()
+    .trim()
+    .min(3, 'سبب تعديل الصلاحيات مطلوب (3 أحرف على الأقل)')
+    .max(500, 'سبب التعديل يجب ألا يتجاوز 500 حرف'),
+});
+
+export const adminAccountStatusActionSchema = z.enum([
+  'ENABLE',
+  'DISABLE',
+  'SOFT_DELETE',
+]);
+
+export const adminUpdateStaffStatusRequestSchema = z.object({
+  action: adminAccountStatusActionSchema,
+  reason: z
+    .string()
+    .trim()
+    .min(3, 'سبب تغيير حالة حساب الموظف مطلوب (3 أحرف على الأقل)')
+    .max(500, 'السبب يجب ألا يتجاوز 500 حرف'),
+});
+
+export const adminHardDeleteStaffRequestSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(3, 'سبب الحذف النهائي لحساب الموظف مطلوب (3 أحرف على الأقل)')
+    .max(500, 'السبب يجب ألا يتجاوز 500 حرف'),
+});
+
+export const adminUpdateUserStatusRequestSchema = z.object({
+  action: adminAccountStatusActionSchema,
+  reason: z
+    .string()
+    .trim()
+    .min(3, 'سبب تغيير حالة حساب المستخدم مطلوب (3 أحرف على الأقل)')
+    .max(500, 'السبب يجب ألا يتجاوز 500 حرف'),
+});
+
+export const adminHardDeleteUserRequestSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(3, 'سبب الحذف النهائي لحساب المستخدم مطلوب (3 أحرف على الأقل)')
+    .max(500, 'السبب يجب ألا يتجاوز 500 حرف'),
+});
+
 

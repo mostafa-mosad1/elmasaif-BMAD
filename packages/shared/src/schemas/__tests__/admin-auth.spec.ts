@@ -4,6 +4,12 @@ import {
   adminInitiatePasswordResetSchema,
   adminCompletePasswordResetSchema,
   adminSessionUserSchema,
+  adminCreateStaffRequestSchema,
+  adminUpdateStaffPermissionsRequestSchema,
+  adminUpdateStaffStatusRequestSchema,
+  adminHardDeleteStaffRequestSchema,
+  adminUpdateUserStatusRequestSchema,
+  adminHardDeleteUserRequestSchema,
 } from '../auth.schema';
 import {
   ADMIN_SESSION_INACTIVITY_HOURS,
@@ -12,6 +18,9 @@ import {
   ADMIN_LOGIN_LOCKOUT_MINUTES,
   ADMIN_PASSWORD_RESET_EXPIRY_SECONDS,
   ADMIN_ROLE_PERMISSIONS,
+  ALL_ADMIN_PERMISSIONS,
+  ADMIN_PERMISSION_GROUPS,
+  resolveAdminPermissions,
 } from '../../constants/auth';
 import { AdminRole } from '../../enums';
 
@@ -105,6 +114,151 @@ describe('Admin Auth Constants & Schemas (Story 8.1)', () => {
       });
       expect(parsed.role).toBe(AdminRole.SUPER_ADMIN);
       expect(parsed.permissions).toEqual([]);
+    });
+  });
+
+  describe('Granular Dynamic RBAC Catalog & Schemas (Story 8.2)', () => {
+    it('exports ALL_ADMIN_PERMISSIONS and ADMIN_PERMISSION_GROUPS covering all canonical Area.Action keys', () => {
+      const requiredCanonicalKeys = [
+        'Users.View',
+        'Users.Verify',
+        'Users.Status',
+        'Users.HardDelete',
+        'Users.PhoneChange',
+        'Listings.View',
+        'Listings.Review',
+        'Listings.Edit',
+        'Listings.Lifecycle',
+        'Listings.PriceSuggest',
+        'Listings.Feature',
+        'Licenses.View',
+        'Licenses.Verify',
+        'Licenses.Compliance',
+        'Contracts.View',
+        'Contracts.Manage',
+        'Contracts.Assign',
+        'Offers.View',
+        'Offers.Manage',
+        'Deals.View',
+        'Deals.FinalApprove',
+        'Deals.ExtendTimer',
+        'Deals.DisputeResolve',
+        'Payments.View',
+        'Payments.Verify',
+        'Payments.Refund',
+        'Conversations.View',
+        'Conversations.Relay',
+        'Conversations.Redact',
+        'Reviews.View',
+        'Reviews.Moderate',
+        'Geo.Manage',
+        'Tasks.View',
+        'Tasks.Claim',
+        'Tasks.ForceUnlock',
+        'Finance.View',
+        'Finance.Export',
+        'Finance.Audit',
+        'Compliance.View',
+        'Compliance.Manage',
+        'Security.Manage',
+        'Settings.Manage',
+        'CMS.Manage',
+        'Audit.View',
+        'Rbac.Manage',
+      ];
+
+      for (const key of requiredCanonicalKeys) {
+        expect(ALL_ADMIN_PERMISSIONS).toContain(key);
+      }
+      expect(ADMIN_PERMISSION_GROUPS.length).toBeGreaterThanOrEqual(14);
+    });
+
+    it('resolveAdminPermissions returns ALL_ADMIN_PERMISSIONS for SUPER_ADMIN, customPermissions when non-empty, and role defaults when empty', () => {
+      expect(resolveAdminPermissions(AdminRole.SUPER_ADMIN, ['Users.View'])).toEqual(
+        ALL_ADMIN_PERMISSIONS
+      );
+      expect(
+        resolveAdminPermissions(AdminRole.MODERATOR, ['Geo.Manage', 'Reviews.Moderate'])
+      ).toEqual(['Geo.Manage', 'Reviews.Moderate']);
+      expect(resolveAdminPermissions(AdminRole.MODERATOR, [])).toEqual(
+        ADMIN_ROLE_PERMISSIONS[AdminRole.MODERATOR]
+      );
+      expect(resolveAdminPermissions(AdminRole.FINANCIAL_AUDITOR, undefined)).toEqual(
+        ADMIN_ROLE_PERMISSIONS[AdminRole.FINANCIAL_AUDITOR]
+      );
+    });
+
+    it('validates adminCreateStaffRequestSchema and normalizes username/email', () => {
+      const parsed = adminCreateStaffRequestSchema.parse({
+        username: '  Mod_Ops_01  ',
+        email: '  Ops01@Elmasaif.SA ',
+        fullName: 'فهد القحطاني',
+        role: AdminRole.MODERATOR,
+        initialPassword: 'SecureStaff2026',
+        permissions: ['Listings.Review', 'Reviews.Moderate', 'Geo.Manage'],
+      });
+
+      expect(parsed.username).toBe('mod_ops_01');
+      expect(parsed.email).toBe('ops01@elmasaif.sa');
+      expect(parsed.permissions).toEqual([
+        'Listings.Review',
+        'Reviews.Moderate',
+        'Geo.Manage',
+      ]);
+
+      expect(
+        adminCreateStaffRequestSchema.safeParse({
+          username: 'mod_ops_01',
+          email: 'ops01@elmasaif.sa',
+          fullName: 'فهد القحطاني',
+          role: AdminRole.MODERATOR,
+          initialPassword: 'SecureStaff2026',
+          permissions: ['Invalid.PermissionKey'],
+        }).success
+      ).toBe(false);
+    });
+
+    it('validates adminUpdateStaffPermissionsRequestSchema and status/deletion schemas', () => {
+      expect(
+        adminUpdateStaffPermissionsRequestSchema.safeParse({
+          role: AdminRole.MODERATOR,
+          permissions: ['Reviews.Moderate', 'Tasks.ForceUnlock'],
+          reason: 'تفويض المشرف بإدارة التقييمات وفك أقفال المهام',
+        }).success
+      ).toBe(true);
+
+      expect(
+        adminUpdateStaffPermissionsRequestSchema.safeParse({
+          permissions: [],
+          reason: 'سبب',
+        }).success
+      ).toBe(false);
+
+      expect(
+        adminUpdateStaffStatusRequestSchema.safeParse({
+          action: 'SOFT_DELETE',
+          reason: 'انتهاء تكليف الموظف مع الاحتفاظ بسجل التدقيق',
+        }).success
+      ).toBe(true);
+
+      expect(
+        adminHardDeleteStaffRequestSchema.safeParse({
+          reason: 'حساب تجريبي بدون أي سجل عمليات',
+        }).success
+      ).toBe(true);
+
+      expect(
+        adminUpdateUserStatusRequestSchema.safeParse({
+          action: 'DISABLE',
+          reason: 'إيقاف الحساب مؤقتاً للتحقق من المستندات',
+        }).success
+      ).toBe(true);
+
+      expect(
+        adminHardDeleteUserRequestSchema.safeParse({
+          reason: 'حساب مكرر بدون أي معاملات',
+        }).success
+      ).toBe(true);
     });
   });
 });

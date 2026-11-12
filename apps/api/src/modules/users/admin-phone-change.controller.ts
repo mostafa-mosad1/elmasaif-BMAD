@@ -11,6 +11,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { PhoneChangeService } from './phone-change.service';
 import { AdminSessionAuthGuard } from '../auth/guards/admin-session-auth.guard';
+import { RequirePermissions } from '../auth/decorators/require-admin-permission.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import {
   adminPhoneChangeSchema,
@@ -26,9 +27,10 @@ export class AdminPhoneChangeController {
   constructor(private readonly phoneChangeService: PhoneChangeService) {}
 
   @Post(':userId/phone-change')
+  @RequirePermissions('Users.PhoneChange')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Support-assisted administrative mobile number update (Super Admin only)'
+    summary: 'Support-assisted administrative mobile number update (Users.PhoneChange)'
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -42,13 +44,22 @@ export class AdminPhoneChangeController {
     const admin = req.admin;
     const ip = req.ip || req.connection?.remoteAddress || '127.0.0.1';
 
-    const result = await this.phoneChangeService.adminPhoneChange(
-      admin.id,
-      admin.role,
-      targetUserId,
-      body,
-      ip
-    );
+    const result = Array.isArray(admin?.permissions)
+      ? await this.phoneChangeService.adminPhoneChange(
+          admin.id,
+          admin.role,
+          targetUserId,
+          body,
+          ip,
+          admin.permissions
+        )
+      : await this.phoneChangeService.adminPhoneChange(
+          admin.id,
+          admin.role,
+          targetUserId,
+          body,
+          ip
+        );
 
     return {
       ...result,

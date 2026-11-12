@@ -122,4 +122,56 @@ describe('AdminSessionAuthGuard', () => {
       permissions: ADMIN_ROLE_PERMISSIONS[AdminRole.SUPER_ADMIN]
     });
   });
+
+  it('populates dynamic custom permissions and revokes session when admin has deletedAt !== null', async () => {
+    const deleteMock = jest.fn().mockResolvedValue({});
+    (prisma.adminSession as unknown as Record<string, unknown>).delete = deleteMock;
+
+    (prisma.adminSession.findUnique as jest.Mock).mockResolvedValueOnce({
+      id: 'session-custom-1',
+      expiresAt: new Date(now.getTime() + 60_000),
+      admin: {
+        id: 'mod-custom-1',
+        username: 'custom_mod',
+        email: 'custom@elmasaif.sa',
+        fullName: 'مشرف مخصص',
+        role: AdminRole.MODERATOR,
+        permissions: ['Geo.Manage', 'Reviews.Moderate'],
+        isActive: true,
+        deletedAt: null,
+      },
+    });
+
+    const reqCustom: Record<string, unknown> = {
+      cookies: { [ADMIN_SESSION_COOKIE_NAME]: 'custom-token' },
+      headers: {},
+    };
+    await expect(guard.canActivate(context(reqCustom))).resolves.toBe(true);
+    expect(reqCustom.admin).toMatchObject({
+      id: 'mod-custom-1',
+      permissions: ['Geo.Manage', 'Reviews.Moderate'],
+    });
+
+    // Soft-deleted admin session is revoked and rejected with 401
+    (prisma.adminSession.findUnique as jest.Mock).mockResolvedValueOnce({
+      id: 'session-deleted-1',
+      expiresAt: new Date(now.getTime() + 60_000),
+      admin: {
+        id: 'mod-deleted-1',
+        username: 'deleted_mod',
+        email: 'deleted@elmasaif.sa',
+        fullName: 'مشرف محذوف',
+        role: AdminRole.MODERATOR,
+        isActive: true,
+        deletedAt: new Date('2026-11-10T00:00:00Z'),
+      },
+    });
+
+    await expect(
+      guard.canActivate(
+        context({ cookies: { [ADMIN_SESSION_COOKIE_NAME]: 'deleted-token' }, headers: {} })
+      )
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(deleteMock).toHaveBeenCalledWith({ where: { id: 'session-deleted-1' } });
+  });
 });

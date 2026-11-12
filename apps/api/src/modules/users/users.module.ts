@@ -25,6 +25,8 @@ import { PreferencesService } from './preferences.service';
 import { BrokersController } from './brokers.controller';
 import { AdminReviewsController } from './admin-reviews.controller';
 import { BrokersService } from './brokers.service';
+import { AdminUsersController } from './admin-users.controller';
+import { AdminUsersService } from './admin-users.service';
 
 @Module({
   imports: [StorageModule, AuthModule, CryptoModule],
@@ -40,6 +42,7 @@ import { BrokersService } from './brokers.service';
     PreferencesController,
     BrokersController,
     AdminReviewsController,
+    AdminUsersController,
   ],
   providers: [
     UsersService,
@@ -55,6 +58,7 @@ import { BrokersService } from './brokers.service';
     AccountDeletionService,
     PreferencesService,
     BrokersService,
+    AdminUsersService,
   ],
   exports: [
     UsersService,
@@ -66,6 +70,7 @@ import { BrokersService } from './brokers.service';
     AccountDeletionService,
     PreferencesService,
     BrokersService,
+    AdminUsersService,
   ]
 })
 export class UsersModule {}

@@ -32,7 +32,8 @@ import {
   AUTH_PHONE_CHANGE_SUCCESS,
   ADMIN_PHONE_CHANGE_SUCCESS,
   PHONE_CHANGE_OTP_EXPIRY_SECONDS,
-  AUTH_NOT_AUTHORIZED
+  AUTH_NOT_AUTHORIZED,
+  resolveAdminPermissions,
 } from '@elmasaif/shared';
 
 @Injectable()
@@ -493,12 +494,17 @@ export class PhoneChangeService {
     adminRole: AdminRole,
     targetUserId: string,
     dto: AdminPhoneChangeInput,
-    ip?: string
+    ip?: string,
+    adminPermissions?: string[]
   ): Promise<PhoneChangeCompletionResponse> {
-    if (adminRole !== AdminRole.SUPER_ADMIN) {
+    const effectivePermissions = resolveAdminPermissions(adminRole, adminPermissions);
+    if (
+      adminRole !== AdminRole.SUPER_ADMIN &&
+      !effectivePermissions.includes('Users.PhoneChange')
+    ) {
       throw new ForbiddenException({
         code: AUTH_NOT_AUTHORIZED,
-        message: 'تتطلب هذه العملية صلاحية Users.PhoneChange المقتصرة على المشرف العام (Super Admin)'
+        message: 'تتطلب هذه العملية صلاحية Users.PhoneChange المقتصرة على المشرف العام أو المفوضين'
       });
     }
 

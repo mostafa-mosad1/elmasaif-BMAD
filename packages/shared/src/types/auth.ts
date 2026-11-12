@@ -25,8 +25,17 @@ import {
   adminLoginSchema,
   adminInitiatePasswordResetSchema,
   adminCompletePasswordResetSchema,
-  adminSessionUserSchema
+  adminSessionUserSchema,
+  adminCreateStaffRequestSchema,
+  adminUpdateStaffPermissionsRequestSchema,
+  adminUpdateStaffStatusRequestSchema,
+  adminHardDeleteStaffRequestSchema,
+  adminUpdateUserStatusRequestSchema,
+  adminHardDeleteUserRequestSchema,
+  adminAccountStatusActionSchema
 } from '../schemas/auth.schema';
+import { AdminRole, UserRole, VerificationStatus } from '../enums';
+import { AdminPermissionGroupMeta } from '../constants/auth';
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type VerifyOtpRegisterInput = z.infer<typeof verifyOtpRegisterSchema>;
@@ -280,6 +289,73 @@ export interface AdminCompletePasswordResetResponse {
   message: string;
   requestId?: string;
 }
+
+// Granular Dynamic RBAC & Staff/User Management Types (Story 8.2)
+export type AdminAccountStatusAction = z.infer<typeof adminAccountStatusActionSchema>;
+export type AdminCreateStaffRequestInput = z.infer<typeof adminCreateStaffRequestSchema>;
+export type AdminUpdateStaffPermissionsRequestInput = z.infer<
+  typeof adminUpdateStaffPermissionsRequestSchema
+>;
+export type AdminUpdateStaffStatusRequestInput = z.infer<
+  typeof adminUpdateStaffStatusRequestSchema
+>;
+export type AdminHardDeleteStaffRequestInput = z.infer<
+  typeof adminHardDeleteStaffRequestSchema
+>;
+export type AdminUpdateUserStatusRequestInput = z.infer<
+  typeof adminUpdateUserStatusRequestSchema
+>;
+export type AdminHardDeleteUserRequestInput = z.infer<
+  typeof adminHardDeleteUserRequestSchema
+>;
+
+export interface AdminProfileDto extends AdminSessionUser {
+  isActive: boolean;
+  deletedAt?: string | Date | null;
+  hasOperationalHistory?: boolean;
+}
+
+export interface AdminStaffSummaryDto {
+  id: string;
+  username: string;
+  email: string;
+  fullName: string;
+  role: AdminRole;
+  permissions: string[];
+  isActive: boolean;
+  deletedAt?: string | Date | null;
+  lastLoginAt?: string | Date | null;
+  createdAt?: string | Date;
+  hasOperationalHistory: boolean;
+}
+
+export interface AdminStaffListResponse {
+  code: string;
+  message: string;
+  data: {
+    staff: AdminStaffSummaryDto[];
+    permissionGroups: AdminPermissionGroupMeta[];
+    rolePresets: Record<AdminRole, string[]>;
+  };
+  requestId?: string;
+}
+
+export interface AdminPlatformUserSummaryDto {
+  id: string;
+  phone: string;
+  mobileNumber?: string;
+  username?: string;
+  fullName: string;
+  role: UserRole | string;
+  roles?: string[];
+  verificationStatus: VerificationStatus | string;
+  status?: string;
+  isActive: boolean;
+  deletedAt?: string | Date | null;
+  createdAt: string | Date;
+  transactionHistoryCount: number;
+}
+
 
 
 

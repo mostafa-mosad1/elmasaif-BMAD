@@ -11,6 +11,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
 import {
+  ADMIN_ROLE_PERMISSIONS,
   DEFAULT_COMMISSION_RATE,
   DEFAULT_FIXED_COMMISSION_SAR,
   DEFAULT_PAYMENT_WINDOW_HOURS,
@@ -214,6 +215,8 @@ export async function seedAdminUsers() {
       type: argon2.argon2id,
     });
 
+    const rolePermissions = ADMIN_ROLE_PERMISSIONS[account.role as any] ?? [];
+
     await prisma.adminUser.upsert({
       where: { username: account.username },
       update: {
@@ -221,7 +224,9 @@ export async function seedAdminUsers() {
         fullName: account.fullName,
         passwordHash,
         role: account.role,
+        permissions: rolePermissions,
         isActive: true,
+        deletedAt: null,
         failedLoginAttempts: 0,
         lockedUntil: null,
       },
@@ -232,7 +237,9 @@ export async function seedAdminUsers() {
         fullName: account.fullName,
         passwordHash,
         role: account.role,
+        permissions: rolePermissions,
         isActive: true,
+        deletedAt: null,
       },
     });
   }

@@ -138,83 +138,290 @@ export const ADMIN_RESET_TOKEN_INVALID = 'ADMIN_RESET_TOKEN_INVALID';
 export const ADMIN_RESET_TOKEN_EXPIRED = 'ADMIN_RESET_TOKEN_EXPIRED';
 export const ADMIN_PASSWORD_RESET_SUCCESS = 'ADMIN_PASSWORD_RESET_SUCCESS';
 
+// Granular Dynamic RBAC & Staff/User Lifecycle Codes (Story 8.2)
+export const ADMIN_USERNAME_ALREADY_EXISTS = 'ADMIN_USERNAME_ALREADY_EXISTS';
+export const ADMIN_EMAIL_ALREADY_EXISTS = 'ADMIN_EMAIL_ALREADY_EXISTS';
+export const ADMIN_SELF_MODIFICATION_FORBIDDEN = 'ADMIN_SELF_MODIFICATION_FORBIDDEN';
+export const ADMIN_LAST_SUPER_ADMIN_BLOCK = 'ADMIN_LAST_SUPER_ADMIN_BLOCK';
+export const ADMIN_HARD_DELETE_HISTORY_EXISTS = 'ADMIN_HARD_DELETE_HISTORY_EXISTS';
+export const USER_HARD_DELETE_HISTORY_EXISTS = 'USER_HARD_DELETE_HISTORY_EXISTS';
+export const USER_NOT_FOUND = 'USER_NOT_FOUND';
+
+export const ADMIN_STAFF_CREATED = 'ADMIN_STAFF_CREATED';
+export const ADMIN_PERMISSIONS_UPDATED = 'ADMIN_PERMISSIONS_UPDATED';
+export const ADMIN_STAFF_STATUS_CHANGED = 'ADMIN_STAFF_STATUS_CHANGED';
+export const ADMIN_STAFF_SOFT_DELETED = 'ADMIN_STAFF_SOFT_DELETED';
+export const ADMIN_STAFF_HARD_DELETED = 'ADMIN_STAFF_HARD_DELETED';
+export const ADMIN_USER_STATUS_CHANGED = 'ADMIN_USER_STATUS_CHANGED';
+export const ADMIN_USER_HARD_DELETED = 'ADMIN_USER_HARD_DELETED';
+
+export interface AdminPermissionItemMeta {
+  key: string;
+  labelAr: string;
+  descriptionAr?: string;
+}
+
+export interface AdminPermissionGroupMeta {
+  groupKey: string;
+  groupLabelAr: string;
+  permissions: AdminPermissionItemMeta[];
+}
+
+export const ADMIN_ROLE_LABELS: Record<AdminRole, string> = {
+  [AdminRole.SUPER_ADMIN]: 'مشرف عام (Super Admin)',
+  [AdminRole.MODERATOR]: 'مشرف عمليات (Moderator)',
+  [AdminRole.FINANCIAL_AUDITOR]: 'مدقق مالي (Financial Auditor)',
+  [AdminRole.COMPLIANCE_OFFICER]: 'مسؤول امتثال (Compliance Officer)',
+};
+
+export const ADMIN_PERMISSION_GROUPS: AdminPermissionGroupMeta[] = [
+  {
+    groupKey: 'Users',
+    groupLabelAr: 'إدارة المستخدمين وتوثيق الهويات (Users)',
+    permissions: [
+      { key: 'Users.View', labelAr: 'عرض حسابات المستخدمين' },
+      { key: 'Users.Verify', labelAr: 'التحقق من وثائق الهوية الوطنية والإقامة' },
+      { key: 'Users.Status', labelAr: 'تفعيل وتعطيل والحذف الناعم لحسابات المستخدمين' },
+      { key: 'Users.HardDelete', labelAr: 'الحذف النهائي المشروط لحسابات المستخدمين (بدون سجل معاملات)' },
+      { key: 'Users.PhoneChange', labelAr: 'تحديث رقم الجوال الإداري عبر الدعم الفني' },
+    ],
+  },
+  {
+    groupKey: 'Listings',
+    groupLabelAr: 'الإعلانات العقارية (Listings)',
+    permissions: [
+      { key: 'Listings.View', labelAr: 'عرض الإعلانات العقارية' },
+      { key: 'Listings.Review', labelAr: 'مراجعة واعتماد أو رفض الإعلانات العقارية' },
+      { key: 'Listings.Edit', labelAr: 'تعديل بيانات الإعلانات العقارية' },
+      { key: 'Listings.Lifecycle', labelAr: 'إدارة دورة حياة الإعلان (أرشفة، تعليق، إيقاف)' },
+      { key: 'Listings.PriceSuggest', labelAr: 'اقتراح تعديل سعر العقار للمعلن' },
+      { key: 'Listings.Feature', labelAr: 'تمييز الإعلانات العقارية' },
+      { key: 'Listings.Compliance', labelAr: 'الإجراءات الرقابية والامتثال على الإعلانات' },
+      { key: 'Price.Suggest', labelAr: 'إرسال مقترحات الأسعار (توافقية)' },
+    ],
+  },
+  {
+    groupKey: 'Licenses',
+    groupLabelAr: 'تراخيص فال العقارية (Licenses)',
+    permissions: [
+      { key: 'Licenses.View', labelAr: 'عرض تراخيص فال العقارية' },
+      { key: 'Licenses.Verify', labelAr: 'التحقق واعتماد تراخيص فال العقارية' },
+      { key: 'Licenses.Compliance', labelAr: 'مراقبة امتثال وصلاحية تراخيص فال' },
+      { key: 'Licenses.Review', labelAr: 'مراجعة طلبات تراخيص فال (توافقية)' },
+    ],
+  },
+  {
+    groupKey: 'Contracts',
+    groupLabelAr: 'عقود الملاك والوساطة (Contracts)',
+    permissions: [
+      { key: 'Contracts.View', labelAr: 'عرض طلبات الملاك وعقود الوساطة' },
+      { key: 'Contracts.Manage', labelAr: 'إدارة قوالب وبنود عقود الوساطة' },
+      { key: 'Contracts.Assign', labelAr: 'إسناد وإرسال عقود الوساطة للملاك' },
+      { key: 'Contracts.Review', labelAr: 'مراجعة طلبات الملاك المباشرين (توافقية)' },
+      { key: 'Contracts.FeeOverride', labelAr: 'تعديل رسوم العقود استثنائياً' },
+      { key: 'ContractFees.Review', labelAr: 'مراجعة وتدقيق إيصالات رسوم العقود' },
+    ],
+  },
+  {
+    groupKey: 'Offers',
+    groupLabelAr: 'عروض الشراء والتفاوض (Offers)',
+    permissions: [
+      { key: 'Offers.View', labelAr: 'عرض عروض الشراء والمقترحات' },
+      { key: 'Offers.Manage', labelAr: 'إدارة التفاوض وعروض الشراء والاحتياط' },
+      { key: 'Offers.Review', labelAr: 'مراجعة وتمرير عروض الشراء (توافقية)' },
+    ],
+  },
+  {
+    groupKey: 'Deals',
+    groupLabelAr: 'الصفقات العقارية والنزاعات (Deals)',
+    permissions: [
+      { key: 'Deals.View', labelAr: 'عرض الصفقات العقارية' },
+      { key: 'Deals.FinalApprove', labelAr: 'الاعتماد النهائي للصفقات وإتمام الإغلاق' },
+      { key: 'Deals.ExtendTimer', labelAr: 'تمديد مهلة السداد للصفقات' },
+      { key: 'Deals.DisputeResolve', labelAr: 'الفصل في النزاعات العقارية وإغلاقها' },
+      { key: 'Deals.StatusOverride', labelAr: 'تجاوز حالة الصفقة إدارياً' },
+    ],
+  },
+  {
+    groupKey: 'Payments',
+    groupLabelAr: 'المدفوعات والتحويلات البنكية (Payments)',
+    permissions: [
+      { key: 'Payments.View', labelAr: 'عرض سجلات المدفوعات وإيصالات التحويل' },
+      { key: 'Payments.Verify', labelAr: 'تدقيق واعتماد إيصالات التحويل البنكي' },
+      { key: 'Payments.Refund', labelAr: 'إدارة عمليات الاسترداد المالي' },
+      { key: 'Payments.Review', labelAr: 'مراجعة إثباتات الدفع (توافقية)' },
+    ],
+  },
+  {
+    groupKey: 'Conversations',
+    groupLabelAr: 'المحادثات والاستفسارات (Conversations)',
+    permissions: [
+      { key: 'Conversations.View', labelAr: 'عرض محادثات واستفسارات العقارات' },
+      { key: 'Conversations.Relay', labelAr: 'تمرير رسائل الاستفسارات بين الأطراف' },
+      { key: 'Conversations.Redact', labelAr: 'حجب بيانات التواصل المخالفة في المحادثات' },
+      { key: 'Conversations.Handle', labelAr: 'إدارة طابور المحادثات (توافقية)' },
+    ],
+  },
+  {
+    groupKey: 'Reviews',
+    groupLabelAr: 'التقييمات والمراجعات (Reviews)',
+    permissions: [
+      { key: 'Reviews.View', labelAr: 'عرض التقييمات والمراجعات' },
+      { key: 'Reviews.Moderate', labelAr: 'الإشراف على التقييمات وإخفاء المخالف منها' },
+    ],
+  },
+  {
+    groupKey: 'Geo',
+    groupLabelAr: 'البيانات الجغرافية (Geo)',
+    permissions: [
+      { key: 'Geo.Manage', labelAr: 'إدارة المدن والأحياء والبيانات الجغرافية' },
+    ],
+  },
+  {
+    groupKey: 'Tasks',
+    groupLabelAr: 'طوابير المهام وأقفال المراجعة (Tasks)',
+    permissions: [
+      { key: 'Tasks.View', labelAr: 'عرض طوابير المهام التشغيلية' },
+      { key: 'Tasks.Claim', labelAr: 'استلام وحجز المهام التشغيلية' },
+      { key: 'Tasks.ForceUnlock', labelAr: 'فك قفل المهام التشغيلية المحجوزة قسرياً' },
+    ],
+  },
+  {
+    groupKey: 'Finance',
+    groupLabelAr: 'المالية والفواتير والتقارير (Finance)',
+    permissions: [
+      { key: 'Finance.View', labelAr: 'عرض التقارير المالية والفواتير' },
+      { key: 'Finance.Export', labelAr: 'تصدير التقارير المالية والضريبية' },
+      { key: 'Finance.Audit', labelAr: 'التدقيق المالي الشامل ومطابقة العمولات' },
+    ],
+  },
+  {
+    groupKey: 'Security & Compliance',
+    groupLabelAr: 'الأمن والامتثال ومكافحة الاحتيال (Security & Compliance)',
+    permissions: [
+      { key: 'Compliance.View', labelAr: 'عرض تقارير الامتثال والمخالفات' },
+      { key: 'Compliance.Manage', labelAr: 'إدارة إجراءات الامتثال والقيود النظامية' },
+      { key: 'Security.Manage', labelAr: 'إدارة إعدادات الأمان وحظر الحسابات المشبوهة' },
+      { key: 'Fraud.View', labelAr: 'عرض سجل مؤشرات الاحتيال' },
+      { key: 'Penalties.Apply', labelAr: 'تطبيق الجزاءات والمخالفات' },
+      { key: 'Tickets.Handle', labelAr: 'معالجة تذاكر الدعم الفني' },
+      { key: 'Reports.Handle', labelAr: 'معالجة بلاغات المخالفات' },
+      { key: 'Reports.Analytics', labelAr: 'عرض تحليلات البلاغات والعمليات' },
+    ],
+  },
+  {
+    groupKey: 'System & RBAC',
+    groupLabelAr: 'النظام والمحتوى والصلاحيات (System & RBAC)',
+    permissions: [
+      { key: 'Settings.Manage', labelAr: 'إدارة إعدادات المنصة العامة والعمولات' },
+      { key: 'Settings.Commission', labelAr: 'تعديل نسب العمولات والمهل الزمنية' },
+      { key: 'CMS.Manage', labelAr: 'إدارة المحتوى الثابت والصفحات التعريفية' },
+      { key: 'Content.Manage', labelAr: 'إدارة محتوى المنصة (توافقية)' },
+      { key: 'Audit.View', labelAr: 'عرض سجل التدقيق الرقابي غير القابل للتعديل' },
+      { key: 'Rbac.Manage', labelAr: 'إدارة حسابات الموظفين ومصفوفة الصلاحيات (RBAC)' },
+      { key: 'Notes.Manage', labelAr: 'إدارة الملاحظات الإدارية الداخلية' },
+      { key: 'Bulk.Execute', labelAr: 'تنفيذ العمليات الإدارية الجماعية' },
+    ],
+  },
+];
+
+export const ALL_ADMIN_PERMISSIONS: string[] = Array.from(
+  new Set(
+    ADMIN_PERMISSION_GROUPS.flatMap((group) =>
+      group.permissions.map((perm) => perm.key)
+    )
+  )
+);
+
 export const ADMIN_ROLE_PERMISSIONS: Record<AdminRole, string[]> = {
-  [AdminRole.SUPER_ADMIN]: [
-    'Users.View',
-    'Users.Status',
-    'Users.HardDelete',
-    'Users.PhoneChange',
-    'Licenses.Review',
-    'Listings.Review',
-    'Listings.Compliance',
-    'Price.Suggest',
-    'Contracts.Review',
-    'Contracts.FeeOverride',
-    'Contracts.Manage',
-    'ContractFees.Review',
-    'Offers.Review',
-    'Deals.View',
-    'Deals.FinalApprove',
-    'Deals.StatusOverride',
-    'Deals.DisputeResolve',
-    'Payments.Review',
-    'Conversations.Handle',
-    'Tickets.Handle',
-    'Reports.Handle',
-    'Reports.Analytics',
-    'Penalties.Apply',
-    'Fraud.View',
-    'Finance.View',
-    'Finance.Export',
-    'Settings.Commission',
-    'Settings.Manage',
-    'Rbac.Manage',
-    'Content.Manage',
-    'CMS.Manage',
-    'Bulk.Execute',
-    'Notes.Manage',
-    'Audit.View',
-    'Reviews.Moderate',
-    'Geo.Manage',
-    'Tasks.ForceUnlock',
-    'Compliance.Manage',
-  ],
+  [AdminRole.SUPER_ADMIN]: [...ALL_ADMIN_PERMISSIONS],
   [AdminRole.MODERATOR]: [
     'Users.View',
+    'Users.Verify',
+    'Licenses.View',
+    'Licenses.Verify',
     'Licenses.Review',
+    'Listings.View',
     'Listings.Review',
+    'Listings.Edit',
+    'Listings.Lifecycle',
+    'Listings.PriceSuggest',
+    'Listings.Feature',
     'Price.Suggest',
+    'Contracts.View',
+    'Contracts.Assign',
     'Contracts.Review',
     'ContractFees.Review',
+    'Offers.View',
+    'Offers.Manage',
     'Offers.Review',
     'Deals.View',
+    'Deals.ExtendTimer',
+    'Payments.View',
+    'Payments.Verify',
     'Payments.Review',
+    'Conversations.View',
+    'Conversations.Relay',
+    'Conversations.Redact',
     'Conversations.Handle',
     'Tickets.Handle',
     'Reports.Handle',
     'Notes.Manage',
+    'Reviews.View',
     'Reviews.Moderate',
+    'Tasks.View',
+    'Tasks.Claim',
   ],
   [AdminRole.FINANCIAL_AUDITOR]: [
     'Users.View',
+    'Contracts.View',
     'Deals.View',
+    'Payments.View',
+    'Payments.Verify',
+    'Payments.Refund',
     'Payments.Review',
     'ContractFees.Review',
     'Finance.View',
     'Finance.Export',
+    'Finance.Audit',
     'Notes.Manage',
     'Audit.View',
+    'Tasks.View',
+    'Tasks.Claim',
   ],
   [AdminRole.COMPLIANCE_OFFICER]: [
     'Users.View',
+    'Users.Verify',
+    'Licenses.View',
+    'Licenses.Verify',
+    'Licenses.Compliance',
     'Licenses.Review',
+    'Listings.View',
     'Listings.Review',
+    'Listings.Lifecycle',
     'Listings.Compliance',
     'Deals.View',
+    'Reviews.View',
     'Reports.Handle',
     'Fraud.View',
+    'Compliance.View',
     'Compliance.Manage',
     'Notes.Manage',
     'Audit.View',
+    'Tasks.View',
+    'Tasks.Claim',
   ],
 };
+
+export function resolveAdminPermissions(
+  role: AdminRole,
+  customPermissions?: string[] | null
+): string[] {
+  if (role === AdminRole.SUPER_ADMIN) {
+    return [...ALL_ADMIN_PERMISSIONS];
+  }
+  if (Array.isArray(customPermissions) && customPermissions.length > 0) {
+    return Array.from(new Set(customPermissions));
+  }
+  return [...(ADMIN_ROLE_PERMISSIONS[role] ?? [])];
+}
