@@ -802,11 +802,41 @@ export async function seedContractTemplates() {
   console.log(`✅ Standard contract template seeded: ${SEED_OWNER_CONTRACT_TEMPLATE_ID}`);
 }
 
+export async function seedPlatformSettings() {
+  await prisma.platformSetting.upsert({
+    where: { id: 'default' },
+    update: {},
+    create: {
+      id: 'default',
+      commissionRate: 0.0250,
+      fixedFeeSar: 0.00,
+      ownerContractFeeSar: 1000.00,
+      vatRate: 15.00,
+      paymentWindowHours: 48,
+      paymentCorrectionHours: 12,
+      contractFeeDeadlineDays: 7,
+      coolingOffPeriodDays: 14,
+      dealReviewSlaAlertHours: 4,
+      dealReviewSlaEscalationHours: 12,
+      dealReviewSlaSuperAdminHours: 24,
+      ticketSlaFirstResponseHours: 4,
+      ticketSlaResolutionHours: 48,
+      taskClaimLeaseMinutes: 15,
+      taskClaimHeartbeatMinutes: 5,
+      fraudRejectedProofThreshold: 3,
+      fraudWindowHours: 72,
+    },
+  });
+
+  console.log('✅ Default platform settings seeded');
+}
+
 async function main() {
   try {
     await seedGeographicData();
     await seedAdminUsers();
     await seedContractTemplates();
+    await seedPlatformSettings();
     await seedDemoListings();
     await seedDemoDeal();
     await seedDemoCompletedDeal();

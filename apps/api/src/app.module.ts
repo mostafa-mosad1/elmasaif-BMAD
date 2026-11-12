@@ -16,6 +16,7 @@ import { DealsModule } from './modules/deals/deals.module';
 import { LicensesModule } from './modules/licenses/licenses.module';
 import { ContractsModule } from './modules/contracts/contracts.module';
 import { SupportModule } from './modules/support/support.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { ClockModule } from './common/clock/clock.module';
 import { LocksModule } from './common/locks/locks.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
@@ -46,7 +47,8 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
     DealsModule,
     LicensesModule,
     ContractsModule,
-    SupportModule
+    SupportModule,
+    SettingsModule
   ]
 })
 export class AppModule implements NestModule {

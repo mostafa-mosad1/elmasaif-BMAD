@@ -115,7 +115,7 @@ development_status:
   8-3-unified-operational-queue-task-claim-heartbeat-locking-servi: done
   8-4-review-moderation-workspace: done
   8-5-violation-reporting-support-ticketing-system: done
-  8-6-dynamic-platform-settings-commission-configuration: in-progress
+  8-6-dynamic-platform-settings-commission-configuration: review
   8-7-immutable-domain-audit-logging-inspection: backlog
   8-8-unified-in-app-notification-feed-transactional-emails: backlog
   8-9-fraud-management-log-financial-reports-cms: backlog

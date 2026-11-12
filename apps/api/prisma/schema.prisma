@@ -417,6 +417,7 @@ model AdminUser {
   resolvedViolationReports ViolationReport[] @relation("ResolvedViolationReports")
   assignedSupportTickets   SupportTicket[]   @relation("AssignedSupportTickets")
   ticketMessages           TicketMessage[]
+  updatedPlatformSettings  PlatformSetting[]
 
   @@map("admin_users")
 }
@@ -1241,3 +1242,35 @@ model TicketMessage {
   @@index([ticketId, createdAt])
   @@map("ticket_messages")
 }
+
+model PlatformSetting {
+  id                           String     @id @default("default")
+  commissionRate               Decimal    @default(0.0250) @map("commission_rate") @db.Decimal(5, 4)
+  fixedFeeSar                  Decimal    @default(0.00) @map("fixed_fee_sar") @db.Decimal(12, 2)
+  ownerContractFeeSar          Decimal    @default(1000.00) @map("owner_contract_fee_sar") @db.Decimal(12, 2)
+  vatRate                      Decimal    @default(15.00) @map("vat_rate") @db.Decimal(5, 2)
+  platformCollectionIban       String?    @map("platform_collection_iban")
+  platformAccountHolderName    String?    @map("platform_account_holder_name")
+  platformBankName             String?    @map("platform_bank_name")
+  paymentWindowHours           Int        @default(48) @map("payment_window_hours")
+  paymentCorrectionHours       Int        @default(12) @map("payment_correction_hours")
+  contractFeeDeadlineDays      Int        @default(7) @map("contract_fee_deadline_days")
+  coolingOffPeriodDays         Int        @default(14) @map("cooling_off_period_days")
+  dealReviewSlaAlertHours      Int        @default(4) @map("deal_review_sla_alert_hours")
+  dealReviewSlaEscalationHours Int        @default(12) @map("deal_review_sla_escalation_hours")
+  dealReviewSlaSuperAdminHours Int        @default(24) @map("deal_review_sla_superadmin_hours")
+  ticketSlaFirstResponseHours  Int        @default(4) @map("ticket_sla_first_response_hours")
+  ticketSlaResolutionHours     Int        @default(48) @map("ticket_sla_resolution_hours")
+  taskClaimLeaseMinutes        Int        @default(15) @map("task_claim_lease_minutes")
+  taskClaimHeartbeatMinutes    Int        @default(5) @map("task_claim_heartbeat_minutes")
+  fraudRejectedProofThreshold  Int        @default(3) @map("fraud_rejected_proof_threshold")
+  fraudWindowHours             Int        @default(72) @map("fraud_window_hours")
+  updatedByAdminId             String?    @map("updated_by_admin_id")
+  createdAt                    DateTime   @default(now()) @map("created_at")
+  updatedAt                    DateTime   @updatedAt @map("updated_at")
+
+  updatedByAdmin               AdminUser? @relation(fields: [updatedByAdminId], references: [id], onDelete: SetNull)
+
+  @@map("platform_settings")
+}
+

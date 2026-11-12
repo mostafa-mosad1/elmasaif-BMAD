@@ -34,4 +34,12 @@ export * from './licensing';
 export * from './contracts';
 export * from './queues';
 export * from './support';
+export * from './settings';
 export * from './errors';
+
+// Explicit re-exports to resolve ambiguity across domain modules (Story 8.6)
+export {
+  DEFAULT_FIXED_COMMISSION_SAR,
+  DEFAULT_PAYMENT_WINDOW_HOURS,
+  DEFAULT_OWNER_CONTRACT_FEE_SAR,
+} from './settings';

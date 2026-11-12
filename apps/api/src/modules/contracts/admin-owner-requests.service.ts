@@ -4,7 +4,9 @@ import {
   ForbiddenException,
   BadRequestException,
   ConflictException,
+  Optional,
 } from '@nestjs/common';
+import { PlatformSettingsService } from '../settings/platform-settings.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClockService } from '../../common/clock/clock.service';
 import { StorageService } from '../storage/storage.service';
@@ -43,6 +45,7 @@ export class AdminOwnerRequestsService {
     private readonly clockService: ClockService,
     private readonly storageService: StorageService,
     private readonly contractTemplatesService: ContractTemplatesService,
+    @Optional() private readonly platformSettingsService?: PlatformSettingsService,
   ) {}
 
   private maskSaudiMobile(phone: string): string {
@@ -461,8 +464,15 @@ export class AdminOwnerRequestsService {
       });
     }
 
-    const fee = Number(dto.contractFee ?? DEFAULT_OWNER_CONTRACT_FEE_SAR);
-    if (fee !== DEFAULT_OWNER_CONTRACT_FEE_SAR) {
+    const activeSettings = this.platformSettingsService
+      ? await this.platformSettingsService.getSettings()
+      : null;
+    const defaultFee = activeSettings
+      ? activeSettings.ownerContractFeeSar
+      : DEFAULT_OWNER_CONTRACT_FEE_SAR;
+
+    const fee = Number(dto.contractFee ?? defaultFee);
+    if (fee !== defaultFee) {
       const permissions: string[] = Array.isArray(admin.permissions) ? admin.permissions : [];
       const hasFeeOverride =
         admin.role === AdminRole.SUPER_ADMIN || permissions.includes('Contracts.FeeOverride');

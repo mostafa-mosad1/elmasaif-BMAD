@@ -133,6 +133,8 @@ export default function BrokerPublicProfilePage() {
                   >
                     {profile.reviews.length}
                   </span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setIsReportModalOpen(true)}

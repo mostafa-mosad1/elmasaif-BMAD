@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, Logger } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, Optional } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import {
   ACTIVE_DEAL_STATUSES,
@@ -23,6 +23,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClockService } from '../../common/clock/clock.service';
 import { CryptoService } from '../../common/crypto/crypto.service';
+import { PlatformSettingsService } from '../settings/platform-settings.service';
 import { assertLockHeld, offerNotFound } from '../offers/offer-lock';
 import type { AuthenticatedAdminActor } from '../listings/admin-listings.service';
 import { toDealBinding } from './deal-binding.mapper';
@@ -59,6 +60,7 @@ export class DealsService {
     private readonly prisma: PrismaService,
     private readonly clockService: ClockService,
     private readonly crypto: CryptoService,
+    @Optional() private readonly platformSettingsService?: PlatformSettingsService,
   ) {}
 
   /**
@@ -153,19 +155,30 @@ export class DealsService {
         });
       }
 
-      // 7. Money — the shared fixed-point helper only. `String(...)` gets the decimal text out of
-      //    Prisma's `Decimal`; `Number()` is a BR-02 defect anywhere in this path (trap T-4).
+      // 7. Money & Settings — read dynamic parameters from platform settings if available
+      const activeSettings = this.platformSettingsService
+        ? await this.platformSettingsService.getSettings()
+        : null;
+
+      const commissionRate = activeSettings
+        ? activeSettings.commissionRate
+        : DEFAULT_COMMISSION_RATE;
+      const fixedCommission = activeSettings
+        ? activeSettings.fixedFeeAmountSar.toFixed(2)
+        : DEFAULT_FIXED_COMMISSION_SAR;
+      const paymentWindowHours = activeSettings
+        ? activeSettings.paymentWindowHours
+        : DEFAULT_PAYMENT_WINDOW_HOURS;
+
       const amounts = computeDealAmounts({
         dealPrice: String(offer.offerPrice),
-        commissionRate: DEFAULT_COMMISSION_RATE,
-        fixedCommission: DEFAULT_FIXED_COMMISSION_SAR,
+        commissionRate,
+        fixedCommission,
       });
 
       // 8. Identifiers are pre-generated so both unique codes land in ONE insert — Prisma's
       //    `@default(uuid())` would only hand the id back after the row exists (AC-7).
       const dealId = randomUUID();
-      // TODO(8.6): read the window from the platform settings row.
-      const paymentWindowHours = DEFAULT_PAYMENT_WINDOW_HOURS;
       const paymentDeadline = new Date(
         now.getTime() + paymentWindowHours * 3_600_000,
       );
@@ -184,7 +197,7 @@ export class DealsService {
             dealPrice: amounts.finalDealPrice,
             platformCommission: amounts.finalCommission,
             totalAmount: amounts.finalTotal,
-            commissionRateSnapshot: DEFAULT_COMMISSION_RATE.toFixed(4), // '0.0250'
+            commissionRateSnapshot: commissionRate.toFixed(4),
             fixedCommissionSnapshot: amounts.fixedCommission,
             paymentWindowHoursSnapshot: paymentWindowHours,
             sellerPayoutAccountId: payout.id,

@@ -3,6 +3,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { ClockModule } from '../../common/clock/clock.module';
 import { StorageModule } from '../storage/storage.module';
 import { AuthModule } from '../auth/auth.module';
+import { SettingsModule } from '../settings/settings.module';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { ContractTemplatesService } from './contract-templates.service';
 import { OwnerRequestsService } from './owner-requests.service';
@@ -16,7 +17,7 @@ import { OwnerContractsController } from './owner-contracts.controller';
 import { AdminContractFeesController } from './admin-contract-fees.controller';
 
 @Module({
-  imports: [PrismaModule, ClockModule, StorageModule, AuthModule],
+  imports: [PrismaModule, ClockModule, StorageModule, AuthModule, SettingsModule],
   controllers: [
     OwnerRequestsController,
     AdminOwnerRequestsController,

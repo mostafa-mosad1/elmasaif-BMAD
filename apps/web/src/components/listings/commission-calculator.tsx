@@ -1,15 +1,21 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calculator } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { PLATFORM_COMMISSION_RATE } from '@elmasaif/shared';
+import {
+  PLATFORM_COMMISSION_RATE,
+  PublicPlatformSettingsDto,
+} from '@elmasaif/shared';
 import { Card } from '../ui';
+import { apiClient } from '../../lib/api-client';
 
 export interface CommissionCalculatorProps {
   /** Raw ask price fetched from the listing; every figure below is derived from it. */
   askPrice: number;
+  /** Optional dynamic platform commission rate override (e.g. 0.025 or passed from public settings) */
+  commissionRate?: number;
   className?: string;
 }
 
@@ -19,22 +25,52 @@ export function formatSar(amount: number): string {
 }
 
 /**
- * Estimated platform commission — the exact same formula the property cards use (FR-18).
- * A pure percentage estimate; any fixed fee belongs to the Deal stage, not this widget.
+ * Estimated platform commission — dynamic percentage calculation (Story 8.6 / AC6).
+ * Defaults to 2.5% if not overridden or fetched dynamically.
  */
-export function calculateCommission(askPrice: number): number {
-  return Math.round((Number(askPrice) || 0) * PLATFORM_COMMISSION_RATE);
+export function calculateCommission(
+  askPrice: number,
+  rate: number = PLATFORM_COMMISSION_RATE,
+): number {
+  return Math.round((Number(askPrice) || 0) * rate);
 }
-
-const commissionPercentLabel = (PLATFORM_COMMISSION_RATE * 100).toLocaleString('en-US');
 
 export function CommissionCalculator({
   askPrice,
+  commissionRate,
   className,
 }: CommissionCalculatorProps) {
+  const [activeRate, setActiveRate] = useState<number>(
+    commissionRate ?? PLATFORM_COMMISSION_RATE,
+  );
+
+  useEffect(() => {
+    if (commissionRate !== undefined) {
+      setActiveRate(commissionRate);
+      return;
+    }
+
+    let isMounted = true;
+    apiClient
+      .get<{ data: PublicPlatformSettingsDto }>('/settings/public')
+      .then((res) => {
+        if (isMounted && res?.data?.commissionRate !== undefined) {
+          setActiveRate(res.data.commissionRate);
+        }
+      })
+      .catch(() => {
+        // Fall back gracefully to PLATFORM_COMMISSION_RATE
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [commissionRate]);
+
   const numericAskPrice = Number(askPrice) || 0;
-  const commission = calculateCommission(numericAskPrice);
+  const commission = calculateCommission(numericAskPrice, activeRate);
   const total = numericAskPrice + commission;
+  const commissionPercentLabel = Number((activeRate * 100).toFixed(2)).toLocaleString('en-US');
 
   const rows = [
     { label: 'سعر الطلب', value: formatSar(numericAskPrice), emphasis: false },

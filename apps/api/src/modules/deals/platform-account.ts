@@ -1,4 +1,4 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, Logger, Optional, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   DEAL_PLATFORM_ACCOUNT_UNAVAILABLE,
@@ -7,6 +7,7 @@ import {
   getSaudiBankName,
   saudiIbanSchema,
 } from '@elmasaif/shared';
+import { PlatformSettingsService } from '../settings/platform-settings.service';
 
 /** The two env keys this provider owns. Exported so specs and `.env.example` cannot drift. */
 export const PLATFORM_COLLECTION_IBAN_KEY = 'PLATFORM_COLLECTION_IBAN';
@@ -28,15 +29,22 @@ export const PLATFORM_ACCOUNT_HOLDER_NAME_KEY = 'PLATFORM_ACCOUNT_HOLDER_NAME';
 export class PlatformAccountService {
   private readonly logger = new Logger(PlatformAccountService.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    @Optional() private readonly platformSettingsService?: PlatformSettingsService,
+  ) {}
 
   getAccount(): DealPlatformAccount {
-    const iban = (this.configService.get<string>(PLATFORM_COLLECTION_IBAN_KEY) ?? '')
+    const cached = this.platformSettingsService?.getSettingsSync?.();
+    const dynamicIban = cached?.platformCollectionIban;
+    const dynamicHolder = cached?.platformAccountHolderName;
+
+    const iban = (dynamicIban || this.configService.get<string>(PLATFORM_COLLECTION_IBAN_KEY) || '')
       .replace(/\s+/g, '')
       .toUpperCase();
-    const accountHolderName = (this.configService.get<string>(
+    const accountHolderName = (dynamicHolder || this.configService.get<string>(
       PLATFORM_ACCOUNT_HOLDER_NAME_KEY,
-    ) ?? '').trim();
+    ) || '').trim();
 
     // `saudiIbanSchema` is the house ISO-7064 mod-97 check. Re-implementing the checksum here
     // would be a second, silently divergent copy.
@@ -44,7 +52,7 @@ export class PlatformAccountService {
     if (!parsed.success || accountHolderName.length < 3 || accountHolderName.length > 100) {
       // No IBAN, no holder name — not even a masked fragment: this line is the only trace.
       this.logger.error(
-        'Platform collection account is not configured: set PLATFORM_COLLECTION_IBAN and PLATFORM_ACCOUNT_HOLDER_NAME',
+        'Platform collection account is not configured: set PLATFORM_COLLECTION_IBAN and PLATFORM_ACCOUNT_HOLDER_NAME or configure in platform settings',
       );
       throw new ServiceUnavailableException({
         code: DEAL_PLATFORM_ACCOUNT_UNAVAILABLE,
@@ -56,8 +64,14 @@ export class PlatformAccountService {
       iban,
       ibanFormatted: formatSaudiIban(iban),
       accountHolderName,
-      // TODO(8.6): the platform collection account becomes a platform setting.
-      bankName: getSaudiBankName(iban) ?? 'بنك غير محدد',
+      bankName: cached?.platformBankName || getSaudiBankName(iban) || 'بنك غير محدد',
     };
+  }
+
+  async getAccountAsync(): Promise<DealPlatformAccount> {
+    if (this.platformSettingsService) {
+      await this.platformSettingsService.getSettings();
+    }
+    return this.getAccount();
   }
 }

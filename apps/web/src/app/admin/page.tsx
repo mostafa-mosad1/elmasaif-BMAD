@@ -22,6 +22,7 @@ import {
   Star,
   ShieldAlert,
   LifeBuoy,
+  Sliders,
 } from 'lucide-react';
 import { apiClient } from '../../lib/api-client';
 import { useAdminAuth } from '../../components/providers/admin-auth-provider';
@@ -58,6 +59,10 @@ export default function AdminDashboardPage() {
     hasPermission('Tickets.Handle') ||
     admin?.role === AdminRole.SUPER_ADMIN ||
     admin?.role === AdminRole.MODERATOR;
+  const canManageSettings =
+    hasPermission('Settings.Manage') ||
+    hasPermission('Settings.Commission') ||
+    admin?.role === AdminRole.SUPER_ADMIN;
 
   const loadStaff = useCallback(async () => {
     if (!canManageRbac) return;
@@ -111,6 +116,16 @@ export default function AdminDashboardPage() {
             >
               <Users className="w-4 h-4" />
               <span>إدارة الموظفين والصلاحيات (RBAC)</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </Link>
+          )}
+          {canManageSettings && (
+            <Link
+              href="/admin/settings"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-[#1B4332] text-xs font-bold shadow-sm hover:bg-[#D8F3DC] transition-colors"
+            >
+              <Sliders className="w-4 h-4" />
+              <span>إعدادات المنصة والعمولات</span>
               <ArrowLeft className="w-3.5 h-3.5" />
             </Link>
           )}

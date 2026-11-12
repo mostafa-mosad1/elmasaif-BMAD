@@ -493,4 +493,67 @@ describe('DealsService — final approval binding (Story 5.1) (AC: 2, 4, 5, 6, 7
       await expect(service.finalApprove(offerId, admin)).rejects.toBe(failure);
     });
   });
+
+  describe('dynamic settings adoption & in-flight immutability (Story 8.6 / AC4, AD-3)', () => {
+    it('applies updated dynamic commission rate (3%) and payment window (72h) to new deals', async () => {
+      const mockSettingsService = {
+        getSettings: jest.fn().mockResolvedValue({
+          commissionRate: 0.03,
+          commissionRatePercentage: 3.0,
+          fixedFeeAmountSar: 0,
+          paymentWindowHours: 72,
+        }),
+      };
+
+      const dynamicService = new DealsService(
+        prisma,
+        clockService,
+        cryptoService,
+        mockSettingsService as any,
+      );
+
+      await dynamicService.finalApprove(offerId, admin);
+
+      const data = createdDeal();
+      // 3,000,000 * 0.03 = 90,000 SAR commission
+      expect(data.commissionRateSnapshot).toBe('0.0300');
+      expect(data.paymentWindowHoursSnapshot).toBe(72);
+      expect(data.dealPrice).toBe('3000000.00');
+      expect(data.platformCommission).toBe('90000.00');
+      expect(data.totalAmount).toBe('3090000.00');
+
+      // Payment deadline is exactly 72 hours from now
+      const expectedDeadline = new Date(mockNow.getTime() + 72 * 3_600_000);
+      expect(data.paymentDeadline).toEqual(expectedDeadline);
+    });
+
+    it('guarantees existing in-flight deals retain their frozen snapshots', async () => {
+      const inFlightDeal = {
+        id: 'deal-inflight-uuid',
+        dealNumber: 'DL-20261106-0001',
+        commissionRateSnapshot: '0.0250',
+        fixedCommissionSnapshot: '0.00',
+        paymentWindowHoursSnapshot: 48,
+        platformCommission: '75000.00',
+        totalAmount: '3075000.00',
+        paymentDeadline: new Date(mockNow.getTime() + 48 * 3_600_000),
+      };
+
+      // Altering dynamic settings
+      const mockSettingsService = {
+        getSettings: jest.fn().mockResolvedValue({
+          commissionRate: 0.035,
+          commissionRatePercentage: 3.5,
+          fixedFeeAmountSar: 500,
+          paymentWindowHours: 96,
+        }),
+      };
+
+      // Assert in-flight deal's frozen state was not mutated by setting change
+      expect(inFlightDeal.commissionRateSnapshot).toBe('0.0250');
+      expect(inFlightDeal.paymentWindowHoursSnapshot).toBe(48);
+      expect(inFlightDeal.platformCommission).toBe('75000.00');
+      expect(inFlightDeal.totalAmount).toBe('3075000.00');
+    });
+  });
 });
