@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -32,6 +33,7 @@ import {
   OfferQueueQuery,
   adminRejectOfferSchema,
   offerQueueQuerySchema,
+  parseIfMatchVersion,
 } from '@elmasaif/shared';
 
 /**
@@ -160,7 +162,7 @@ export class AdminOffersController {
 
   @Post(':id/relay-to-seller')
   @HttpCode(HttpStatus.OK)
-  @RequireAdminPermission('Offers.Review')
+  @RequireAdminPermission('Offers.Review', 'Offers.Manage')
   @ApiOperation({
     summary: 'PENDING_ADMIN_REVIEW → RELAYED_TO_SELLER with a fresh 7-day expiry (FR-26)',
   })
@@ -170,8 +172,17 @@ export class AdminOffersController {
     status: 409,
     description: 'OFFER_LOCK_* / OFFER_INVALID_STATE_TRANSITION / OFFER_ALREADY_EXPIRED',
   })
-  async relayToSeller(@Param('id') id: string, @Req() req: any) {
-    const data = await this.adminOffersService.relayToSeller(id, req.admin);
+  async relayToSeller(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Headers('if-match') ifMatch?: string,
+  ) {
+    const expectedVersion = parseIfMatchVersion(ifMatch);
+    const data = await this.adminOffersService.relayToSeller(
+      id,
+      req.admin,
+      expectedVersion,
+    );
     return {
       statusCode: HttpStatus.OK,
       message: 'تم إرسال العرض إلى البائع',
@@ -181,7 +192,7 @@ export class AdminOffersController {
 
   @Post(':id/relay-to-buyer')
   @HttpCode(HttpStatus.OK)
-  @RequireAdminPermission('Offers.Review')
+  @RequireAdminPermission('Offers.Review', 'Offers.Manage')
   @ApiOperation({
     summary: 'COUNTER_OFFERED → RELAYED_TO_BUYER with a fresh 7-day expiry (FR-26)',
   })
@@ -191,8 +202,17 @@ export class AdminOffersController {
     status: 409,
     description: 'OFFER_LOCK_* / OFFER_INVALID_STATE_TRANSITION / OFFER_ALREADY_EXPIRED',
   })
-  async relayToBuyer(@Param('id') id: string, @Req() req: any) {
-    const data = await this.adminOffersService.relayToBuyer(id, req.admin);
+  async relayToBuyer(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Headers('if-match') ifMatch?: string,
+  ) {
+    const expectedVersion = parseIfMatchVersion(ifMatch);
+    const data = await this.adminOffersService.relayToBuyer(
+      id,
+      req.admin,
+      expectedVersion,
+    );
     return {
       statusCode: HttpStatus.OK,
       message: 'تم إرسال العرض المضاد إلى المشتري',
@@ -202,7 +222,7 @@ export class AdminOffersController {
 
   @Post(':id/reject')
   @HttpCode(HttpStatus.OK)
-  @RequireAdminPermission('Offers.Review')
+  @RequireAdminPermission('Offers.Review', 'Offers.Manage')
   @ApiOperation({
     summary: 'Reject the mediated terms with a mandatory reason → REJECTED_BY_ADMIN (AC#6)',
   })
@@ -214,11 +234,14 @@ export class AdminOffersController {
     @Param('id') id: string,
     @Body(new ZodValidationPipe(adminRejectOfferSchema)) body: AdminRejectOfferInput,
     @Req() req: any,
+    @Headers('if-match') ifMatch?: string,
   ) {
+    const expectedVersion = parseIfMatchVersion(ifMatch);
     const data = await this.adminOffersService.rejectOffer(
       id,
       req.admin,
       body.reason,
+      expectedVersion,
     );
     return {
       statusCode: HttpStatus.OK,

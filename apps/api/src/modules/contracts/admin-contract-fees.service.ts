@@ -281,14 +281,43 @@ export class AdminContractFeesService {
     );
 
     if (isActivelyLocked && payment.lockedByAdminId !== adminId) {
+      const conflictNames = await resolveLockHolderNames(this.prisma, [payment], now);
       throw new ConflictException({
         code: CONTRACT_FEE_LOCK_CONFLICT,
         message: CONTRACT_FEE_LOCK_CODES.conflict.message,
+        lockInfo: buildLockInfo(payment, now, adminId, conflictNames),
       });
     }
 
     const newExpiresAt = new Date(now.getTime() + 15 * 60 * 1000);
     const shouldAdvanceStatus = payment.status === CONTRACT_FEE_PAYMENT_STATUS.PROOF_UPLOADED;
+
+    if (typeof (this.prisma.contractFeePayment as any).updateMany === 'function') {
+      const claimed = await this.prisma.contractFeePayment.updateMany({
+        where: {
+          id,
+          OR: [
+            { lockedByAdminId: null },
+            { lockExpiresAt: { lte: now } },
+            { lockedByAdminId: adminId },
+          ],
+        },
+        data: {
+          lockedByAdminId: adminId,
+          lockedAt: now,
+          lockExpiresAt: newExpiresAt,
+          status: shouldAdvanceStatus ? CONTRACT_FEE_PAYMENT_STATUS.UNDER_REVIEW : payment.status,
+        },
+      });
+      if (claimed.count === 0) {
+        const conflictNames = await resolveLockHolderNames(this.prisma, [payment], now);
+        throw new ConflictException({
+          code: CONTRACT_FEE_LOCK_CONFLICT,
+          message: CONTRACT_FEE_LOCK_CODES.conflict.message,
+          lockInfo: buildLockInfo(payment, now, adminId, conflictNames),
+        });
+      }
+    }
 
     const updated = await this.prisma.contractFeePayment.update({
       where: { id },

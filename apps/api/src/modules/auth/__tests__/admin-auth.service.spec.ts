@@ -1,4 +1,4 @@
-import { HttpStatus, ConflictException, BadRequestException } from '@nestjs/common';
+import { HttpStatus, ConflictException } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import {
   AdminRole,
@@ -12,7 +12,6 @@ import {
   ADMIN_RESET_TOKEN_INVALID,
   ADMIN_SELF_MODIFICATION_FORBIDDEN,
   ADMIN_SESSION_INACTIVITY_MS,
-  ADMIN_USERNAME_ALREADY_EXISTS,
   AUTH_NOT_AUTHORIZED,
   AUTH_PASSWORD_SAME_AS_CURRENT,
 } from '@elmasaif/shared';

@@ -1,15 +1,19 @@
 import { ConflictException } from '@nestjs/common';
-import type { ClaimLockInfo } from '@elmasaif/shared';
+import {
+  OPTIMISTIC_VERSION_CONFLICT,
+  parseIfMatchVersion,
+  TASK_CLAIM_LEASE_DURATION_MS,
+  type ClaimLockInfo,
+} from '@elmasaif/shared';
 
 /**
  * The single AD-10 claim-lease implementation, shared by every claim-locked admin queue.
  *
  * Story 4.2/4.3 proved the semantics on the offer queues; Story 4.4 requires the very same
- * 15-minute lease for the conversation queue. Duplicating `buildClaimLockInfo` /
- * `assertClaimLockHeld` would let the two queues drift apart on lazy expiry — the exact bug
- * AD-10 exists to prevent — so the projection and the assertions live here once and each
- * module only supplies its own error codes and Arabic messages.
+ * 15-minute lease for the conversation queue; Story 8.3 unifies all 8 operational queues.
  */
+
+export const DEFAULT_CLAIM_LOCK_DURATION_MS = TASK_CLAIM_LEASE_DURATION_MS;
 
 /** The lock columns every claim-locked row carries. */
 export interface ClaimLockableRecord {
@@ -91,6 +95,8 @@ export function assertClaimLockHeld(
   }
 }
 
+export const assertActiveClaimLock = assertClaimLockHeld;
+
 /**
  * Resolves every active lock holder in **one** query — never an N+1 per queue row. Expired
  * leases are filtered out here so the caller only pays for names it will actually render.
@@ -122,4 +128,35 @@ export async function resolveClaimLockHolderNames(
   return new Map(
     (holders as any[]).map((holder) => [holder.id, holder.fullName || holder.username]),
   );
+}
+
+/**
+ * Parses an HTTP `If-Match` header value (e.g. `"2"`, `W/"2"`, `2`) or falls back to `bodyVersion`.
+ */
+export function parseIfMatchHeader(
+  ifMatchHeader?: string | string[] | number | null,
+  bodyVersion?: number | null,
+): number | undefined {
+  return parseIfMatchVersion(ifMatchHeader, bodyVersion);
+}
+
+/**
+ * Enforces AD-8 / AD-10 optimistic concurrency control: holding an active claim lock never
+ * bypasses version checks. Throws HTTP 409 Conflict when `expectedVersion` is provided and
+ * does not match `actualVersion`.
+ */
+export function assertOptimisticVersion(
+  expectedVersion: number | undefined,
+  actualVersion: number,
+  conflictCode: string = OPTIMISTIC_VERSION_CONFLICT,
+  message = 'تعارض في نسخة السجل: تم تعديل السجل بواسطة عملية أخرى، يرجى التحديث وإعادة المحاولة',
+): void {
+  if (expectedVersion !== undefined && expectedVersion !== actualVersion) {
+    throw new ConflictException({
+      code: conflictCode,
+      message,
+      expectedVersion,
+      currentVersion: actualVersion,
+    });
+  }
 }

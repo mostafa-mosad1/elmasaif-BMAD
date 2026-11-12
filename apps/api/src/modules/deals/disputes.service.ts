@@ -35,6 +35,7 @@ import {
 } from '@elmasaif/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClockService } from '../../common/clock/clock.service';
+import { assertOptimisticVersion } from '../../common/locks/claim-lock';
 import { DealCompletionService } from './deal-completion.service';
 import type { AuthenticatedAdminActor } from '../listings/admin-listings.service';
 import {
@@ -491,9 +492,13 @@ export class DisputesService {
         dispute.lockExpiresAt.getTime() > now.getTime();
 
       if (activeLock) {
+        const conflictNames = tx.adminUser?.findMany
+          ? await resolveDisputeLockHolderNames(tx, [dispute], now)
+          : new Map<string, string>();
         throw new ConflictException({
           code: DISPUTE_LOCK_CONFLICT,
           message: 'قفل النزاع محجوز حالياً بواسطة مسؤول آخر',
+          lockInfo: buildDisputeLockInfo(dispute, now, adminId, conflictNames),
         });
       }
 
@@ -524,9 +529,13 @@ export class DisputesService {
         },
       });
 
+      const nameMap = tx.adminUser?.findMany
+        ? await resolveDisputeLockHolderNames(tx, [updatedDispute], now)
+        : new Map<string, string>();
+
       return {
         ...updatedDispute,
-        lockInfo: buildDisputeLockInfo(updatedDispute, now, adminId),
+        lockInfo: buildDisputeLockInfo(updatedDispute, now, adminId, nameMap),
       };
     });
   }
@@ -559,9 +568,13 @@ export class DisputesService {
         },
       });
 
+      const nameMap = tx.adminUser?.findMany
+        ? await resolveDisputeLockHolderNames(tx, [updatedDispute], now)
+        : new Map<string, string>();
+
       return {
         ...updatedDispute,
-        lockInfo: buildDisputeLockInfo(updatedDispute, now, adminId),
+        lockInfo: buildDisputeLockInfo(updatedDispute, now, adminId, nameMap),
       };
     });
   }
@@ -669,6 +682,7 @@ export class DisputesService {
     disputeId: string,
     admin: AuthenticatedAdminActor,
     input: AdjudicateDisputeInput,
+    expectedVersion?: number,
   ) {
     return this.prisma.$transaction(async (tx: any) => {
       const now = this.clockService.now();
@@ -711,6 +725,9 @@ export class DisputesService {
       }
 
       const deal = dispute.deal;
+      if (expectedVersion !== undefined && typeof deal?.version === 'number') {
+        assertOptimisticVersion(expectedVersion, deal.version);
+      }
 
       // Verdict 1: COMPLETE (Deal Approval)
       if (input.action === DISPUTE_RESOLUTION_ACTION.COMPLETE) {

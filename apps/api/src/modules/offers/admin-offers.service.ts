@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClockService } from '../../common/clock/clock.service';
+import { assertOptimisticVersion } from '../../common/locks/claim-lock';
 import {
   DEFAULT_PAGE_SIZE,
   MAX_PAGE_SIZE,
@@ -74,6 +75,7 @@ interface MediationDecision {
   requiresUnexpired?: boolean;
   rejectionReason?: string | null;
   rejectionNote?: string | null;
+  expectedVersion?: number;
   invalidStateMessage: string;
 }
 
@@ -384,31 +386,46 @@ export class AdminOffersService {
   }
 
   /** `POST /admin/offers/:id/relay-to-seller` — AC#1: `PENDING_ADMIN_REVIEW` → `RELAYED_TO_SELLER`. */
-  async relayToSeller(offerId: string, admin: AuthenticatedAdminActor) {
+  async relayToSeller(
+    offerId: string,
+    admin: AuthenticatedAdminActor,
+    expectedVersion?: number,
+  ) {
     return this.applyDecision(offerId, admin, {
       allowedFrom: [OfferStatus.PENDING_ADMIN_REVIEW],
       toStatus: OfferStatus.RELAYED_TO_SELLER,
       historyAction: OFFER_HISTORY_ACTIONS.RELAYED_TO_SELLER,
       auditAction: 'OFFER_RELAYED_TO_SELLER',
+      expectedVersion,
       invalidStateMessage:
         'لا يمكن إرسال العرض إلى البائع إلا إذا كان بانتظار مراجعة الإدارة',
     });
   }
 
   /** `POST /admin/offers/:id/relay-to-buyer` — AC#4: `COUNTER_OFFERED` → `RELAYED_TO_BUYER`. */
-  async relayToBuyer(offerId: string, admin: AuthenticatedAdminActor) {
+  async relayToBuyer(
+    offerId: string,
+    admin: AuthenticatedAdminActor,
+    expectedVersion?: number,
+  ) {
     return this.applyDecision(offerId, admin, {
       allowedFrom: [OfferStatus.COUNTER_OFFERED],
       toStatus: OfferStatus.RELAYED_TO_BUYER,
       historyAction: OFFER_HISTORY_ACTIONS.RELAYED_TO_BUYER,
       auditAction: 'OFFER_RELAYED_TO_BUYER',
+      expectedVersion,
       invalidStateMessage:
         'لا يمكن إرسال العرض المضاد إلى المشتري إلا إذا كان بانتظار قرار الإدارة',
     });
   }
 
   /** `POST /admin/offers/:id/reject` — AC#6: mediated terms refused with a mandatory reason. */
-  async rejectOffer(offerId: string, admin: AuthenticatedAdminActor, reason: string) {
+  async rejectOffer(
+    offerId: string,
+    admin: AuthenticatedAdminActor,
+    reason: string,
+    expectedVersion?: number,
+  ) {
     const trimmedReason = (reason ?? '').trim();
 
     return this.applyDecision(offerId, admin, {
@@ -419,6 +436,7 @@ export class AdminOffersService {
       requiresUnexpired: false,
       rejectionReason: trimmedReason,
       rejectionNote: trimmedReason,
+      expectedVersion,
       invalidStateMessage:
         'لا يمكن رفض هذا العرض إدارياً في حالته الحالية',
     });
@@ -448,6 +466,10 @@ export class AdminOffersService {
 
       // AD-10: validate the lease in-transaction so a stale decision cannot commit.
       assertLockHeld(offer, admin.id, now);
+
+      if (decision.expectedVersion !== undefined && typeof offer.version === 'number') {
+        assertOptimisticVersion(decision.expectedVersion, offer.version);
+      }
 
       if (!decision.allowedFrom.includes(offer.status)) {
         throw new ConflictException({

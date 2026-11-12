@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -22,6 +23,7 @@ import {
   type AdminRejectPaymentBodyInput,
   type PaymentQueueQuery,
   adminRejectPaymentBodySchema,
+  parseIfMatchVersion,
   paymentQueueQuerySchema,
 } from '@elmasaif/shared';
 import { AdminSessionAuthGuard } from '../auth/guards/admin-session-auth.guard';
@@ -155,8 +157,20 @@ export class AdminPaymentsController {
   @ApiResponse({ status: 200, description: 'Payment confirmed' })
   @ApiResponse({ status: 403, description: 'PAYMENT_SELF_APPROVAL_FORBIDDEN' })
   @ApiResponse({ status: 409, description: 'PAYMENT_LOCK_* or PAYMENT_NOT_CLAIMABLE' })
-  async confirmPayment(@Param('id') id: string, @Req() req: any) {
-    const data = await this.adminPaymentsService.confirmPayment(id, req.admin);
+  async confirmPayment(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Headers('if-match') ifMatch?: string,
+  ) {
+    const expectedVersion = parseIfMatchVersion(ifMatch);
+    const data =
+      expectedVersion !== undefined
+        ? await this.adminPaymentsService.confirmPayment(
+            id,
+            req.admin,
+            expectedVersion,
+          )
+        : await this.adminPaymentsService.confirmPayment(id, req.admin);
     return {
       statusCode: HttpStatus.OK,
       message: 'تم تأكيد إثبات الدفع',
@@ -178,12 +192,22 @@ export class AdminPaymentsController {
     @Param('id') id: string,
     @Body(new ZodValidationPipe(adminRejectPaymentBodySchema)) body: AdminRejectPaymentBodyInput,
     @Req() req: any,
+    @Headers('if-match') ifMatch?: string,
   ) {
-    const data = await this.adminPaymentsService.rejectPayment(
-      id,
-      req.admin,
-      body?.reason as string,
-    );
+    const expectedVersion = parseIfMatchVersion(ifMatch);
+    const data =
+      expectedVersion !== undefined
+        ? await this.adminPaymentsService.rejectPayment(
+            id,
+            req.admin,
+            body?.reason as string,
+            expectedVersion,
+          )
+        : await this.adminPaymentsService.rejectPayment(
+            id,
+            req.admin,
+            body?.reason as string,
+          );
     return {
       statusCode: HttpStatus.OK,
       message: 'تم رفض إثبات الدفع وتسجيل السبب',

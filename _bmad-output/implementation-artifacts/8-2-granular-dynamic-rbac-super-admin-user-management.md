@@ -4,7 +4,7 @@ baseline_commit: f964421d93a68a7e8bb1ca7789885191878837a0
 
 # Story 8.2: Granular Dynamic RBAC & Super Admin User Management
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -126,16 +126,16 @@ so that employees only have access to their designated operational areas and his
     - `POST /api/v1/admin/users/:userId/status` (`@RequirePermissions('Users.Status')`): Enable, Disable, or Soft-Delete (`isActive`, `deletedAt`), revoke active `UserSession` records on disable/soft-delete, and write `AuditLog` (`ADMIN_USER_STATUS_CHANGED`).
     - `DELETE /api/v1/admin/users/:userId` (`@RequirePermissions('Users.HardDelete')`): Check `countUserTransactionHistory(userId)`; if `> 0`, block with `ConflictException` (`USER_HARD_DELETE_HISTORY_EXISTS`) and log `ADMIN_USER_HARD_DELETE_BLOCKED`; if `0`, hard-delete user and log `ADMIN_USER_HARD_DELETED`.
 
-- [ ] **Task 5: Build Back-Office Staff & Dynamic RBAC Management UI in `apps/web` (AC: 6)**
-  - [ ] 5.1 Create `apps/web/src/components/admin/admin-staff-management.tsx` (plus sub-modals or integrated modal views for Create Staff, Edit Granular Permissions Matrix, Status Toggle/Soft-Delete/Hard-Delete with mandatory reason, Password Reset link trigger, and Platform User Governance tab).
-  - [ ] 5.2 Create route page `apps/web/src/app/admin/staff/page.tsx` rendering `AdminStaffManagement`.
-  - [ ] 5.3 Update `apps/web/src/components/layout/workspace-shell.tsx` and `apps/web/src/app/admin/page.tsx` so Super Admins (`hasPermission('Rbac.Manage')`) have direct navigation to `/admin/staff` and can open the full RBAC workspace.
+- [x] **Task 5: Build Back-Office Staff & Dynamic RBAC Management UI in `apps/web` (AC: 6)**
+  - [x] 5.1 Create `apps/web/src/components/admin/admin-staff-management.tsx` (plus sub-modals or integrated modal views for Create Staff, Edit Granular Permissions Matrix, Status Toggle/Soft-Delete/Hard-Delete with mandatory reason, Password Reset link trigger, and Platform User Governance tab).
+  - [x] 5.2 Create route page `apps/web/src/app/admin/staff/page.tsx` rendering `AdminStaffManagement`.
+  - [x] 5.3 Update `apps/web/src/components/layout/workspace-shell.tsx` and `apps/web/src/app/admin/page.tsx` so Super Admins (`hasPermission('Rbac.Manage')`) have direct navigation to `/admin/staff` and can open the full RBAC workspace.
 
-- [ ] **Task 6: Write Unit & Component Tests and Verify Build (AC: 7)**
+- [x] **Task 6: Write Unit & Component Tests and Verify Build (AC: 7)**
   - [x] 6.1 Update/add tests in `packages/shared/src/schemas/__tests__/auth.schema.spec.ts` for `ALL_ADMIN_PERMISSIONS`, `resolveAdminPermissions`, and the new RBAC/status Zod schemas.
   - [x] 6.2 Update/add tests in `apps/api/src/modules/auth/__tests__/admin-permission.guard.spec.ts`, `admin-auth.service.spec.ts`, and `apps/api/src/modules/users/__tests__/admin-users.service.spec.ts` covering dynamic permission overrides, `@RequirePermissions`, staff creation, permission updates, disable/soft-delete, and hard-delete history blocking (`ADMIN_HARD_DELETE_HISTORY_EXISTS` & `USER_HARD_DELETE_HISTORY_EXISTS`).
-  - [ ] 6.3 Add SSR component tests in `apps/web/src/components/admin/__tests__/admin-staff-management.spec.tsx` using `renderToString`.
-  - [ ] 6.4 Run `npm test`, `npm run lint`, and `npm run build` across the monorepo and verify 100% green execution.
+  - [x] 6.3 Add SSR component tests in `apps/web/src/components/admin/__tests__/admin-staff-management.spec.tsx` using `renderToString`.
+  - [x] 6.4 Run `npm test`, `npm run lint`, and `npm run build` across the monorepo and verify 100% green execution.
 
 ## Dev Notes
 
@@ -184,10 +184,57 @@ so that employees only have access to their designated operational areas and his
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6 (BMAD Dev Agent)
 
 ### Debug Log References
+- `npm test --workspace=@elmasaif/shared` (47 passed, 611 tests)
+- `npm test --workspace=@elmasaif/api` (82 passed, 1003 tests)
+- `npm test --workspace=@elmasaif/web` (81 passed, 463 tests)
+- `npm run build:shared && npm run build:api && npm run build:web` (all succeeded, including `/admin/staff`)
 
 ### Completion Notes List
+- Updated `AdminUser` (`permissions String[] @default([])`, `deletedAt DateTime?`) and `User` (`isActive Boolean @default(true)`, `deletedAt DateTime?`) in `apps/api/prisma/schema.prisma` and regenerated Prisma Client.
+- Expanded `ADMIN_ROLE_PERMISSIONS` and added `ALL_ADMIN_PERMISSIONS`, `ADMIN_PERMISSION_GROUPS`, `resolveAdminPermissions(role, customPermissions)`, new RBAC/hard-delete error codes, and Zod schemas/DTOs in `@elmasaif/shared`.
+- Exported `@RequirePermissions` alias alongside `@RequireAdminPermission`, enhanced `AdminSessionAuthGuard` and `AdminPermissionGuard` to enforce `isActive` and `deletedAt === null` and resolve dynamic `admin.permissions`, and updated `AdminGeoGuard`, `AdminPhoneChangeController`/`PhoneChangeService`, and `AdminIdentityController` to honor dynamic permissions.
+- Implemented Super Admin staff lifecycle and RBAC management endpoints under `/api/v1/admin/staff` (`GET`, `POST`, `PATCH :adminId/permissions`, `POST :adminId/status`, `DELETE :adminId`) with Argon2id password hashing, immediate active session revocation on permission/status change, `AuditLog` snapshots, and `409 Conflict` (`ADMIN_HARD_DELETE_HISTORY_EXISTS`) when operational/audit history exists (`BR-18` / `FR-43`).
+- Implemented platform user lifecycle and guarded deletion endpoints under `/api/v1/admin/users` (`GET`, `POST :userId/status`, `DELETE :userId`) blocking hard-delete with `409 Conflict` (`USER_HARD_DELETE_HISTORY_EXISTS`) when transaction history exists.
+- Built RTL Arabic back-office UI `AdminStaffManagement`, `AdminCreateStaffModal`, and `AdminPermissionsModal` in `apps/web/src/components/admin/admin-staff-management.tsx`, route `/admin/staff`, and navigation links in `WorkspaceShell` and `/admin/page.tsx`.
+- Added comprehensive unit and SSR component tests across `packages/shared`, `apps/api`, and `apps/web`.
 
 ### File List
+- `apps/api/prisma/schema.prisma`
+- `apps/api/prisma/seed.ts`
+- `packages/shared/src/constants/auth.ts`
+- `packages/shared/src/schemas/auth.schema.ts`
+- `packages/shared/src/types/auth.ts`
+- `packages/shared/src/schemas/__tests__/admin-auth.spec.ts`
+- `packages/shared/src/schemas/__tests__/auth.schema.spec.ts`
+- `apps/api/src/modules/auth/decorators/require-admin-permission.decorator.ts`
+- `apps/api/src/modules/auth/guards/admin-session-auth.guard.ts`
+- `apps/api/src/modules/auth/guards/admin-permission.guard.ts`
+- `apps/api/src/modules/auth/admin-auth.service.ts`
+- `apps/api/src/modules/auth/admin-staff.controller.ts`
+- `apps/api/src/modules/auth/admin-phone-change.controller.ts`
+- `apps/api/src/modules/auth/auth.module.ts`
+- `apps/api/src/modules/auth/__tests__/admin-permission.guard.spec.ts`
+- `apps/api/src/modules/auth/__tests__/admin-session-auth.guard.spec.ts`
+- `apps/api/src/modules/auth/__tests__/admin-auth.service.spec.ts`
+- `apps/api/src/modules/geo/admin-geo.controller.ts`
+- `apps/api/src/modules/geo/guards/admin-geo.guard.ts`
+- `apps/api/src/modules/users/admin-users.service.ts`
+- `apps/api/src/modules/users/admin-users.controller.ts`
+- `apps/api/src/modules/users/admin-phone-change.controller.ts`
+- `apps/api/src/modules/users/phone-change.service.ts`
+- `apps/api/src/modules/users/admin-identity.controller.ts`
+- `apps/api/src/modules/users/users.module.ts`
+- `apps/api/src/modules/users/__tests__/admin-users.service.spec.ts`
+- `apps/web/src/components/admin/admin-staff-management.tsx`
+- `apps/web/src/app/admin/staff/page.tsx`
+- `apps/web/src/components/layout/workspace-shell.tsx`
+- `apps/web/src/app/admin/page.tsx`
+- `apps/web/src/components/admin/__tests__/admin-staff-management.spec.tsx`
+
+## Change Log
+- **2026-11-12**: Implemented Story 8.2 — Granular Dynamic RBAC & Super Admin User Management (`FR-40`, `FR-43`, `AD-5`, `AD-12`, `BR-18`).
+
 

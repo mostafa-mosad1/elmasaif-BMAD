@@ -35,7 +35,8 @@ import {
   Wallet,
   Scale,
   FileCheck,
-  Users
+  Users,
+  Layers
 } from 'lucide-react';
 
 interface WorkspaceShellProps {
@@ -112,6 +113,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
     ],
     [UserRole.ADMIN]: [
       { href: '/admin', label: 'لوحة تحكم المشرف', icon: LayoutDashboard },
+      { href: '/admin/queues', label: 'طوابير المهام والأقفال التشغيلية', icon: Layers },
       ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Contracts.Review') || admin.permissions?.includes('Contracts.Manage')
         ? [{ href: '/admin/owner-requests', label: 'طلبات الملاك والعقود', icon: FileText }]
         : []),

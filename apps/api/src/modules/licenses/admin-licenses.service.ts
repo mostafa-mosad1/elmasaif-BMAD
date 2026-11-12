@@ -431,6 +431,30 @@ export class AdminLicensesService {
     const newLockExpiresAt = new Date(now.getTime() + FAL_LOCK_DURATION_MS);
 
     const updated = await this.prisma.$transaction(async (tx) => {
+      if (typeof (tx.falLicense as any).updateMany === 'function') {
+        const claimed = await tx.falLicense.updateMany({
+          where: {
+            id: licenseId,
+            OR: [
+              { lockedByAdminId: null },
+              { lockExpiresAt: { lte: now } },
+              { lockedByAdminId: admin.id },
+            ],
+          },
+          data: {
+            lockedByAdminId: admin.id,
+            lockedAt: now,
+            lockExpiresAt: newLockExpiresAt,
+          },
+        });
+        if (claimed && claimed.count === 0) {
+          throw new ConflictException({
+            code: LICENSE_LOCK_CONFLICT,
+            message: 'طلب الترخيص قيد المراجعة حالياً من قبل مشرف آخر',
+          });
+        }
+      }
+
       const res = await tx.falLicense.update({
         where: { id: licenseId },
         data: {

@@ -16,6 +16,7 @@ import { DealsModule } from './modules/deals/deals.module';
 import { LicensesModule } from './modules/licenses/licenses.module';
 import { ContractsModule } from './modules/contracts/contracts.module';
 import { ClockModule } from './common/clock/clock.module';
+import { LocksModule } from './common/locks/locks.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 
 @Module({
@@ -30,6 +31,7 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
     }]),
     ClockModule,
     PrismaModule,
+    LocksModule,
     HealthModule,
     StorageModule,
     GeoModule,

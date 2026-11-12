@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -34,17 +35,18 @@ import {
   RelayInquiryInput,
   closeInquirySchema,
   inquiryQueueQuerySchema,
+  parseIfMatchVersion,
   relayInquirySchema,
 } from '@elmasaif/shared';
 
 /**
- * Administrative conversation queue for mediated listing inquiries (Story 4.4 / AC-3, AC-5).
+ * Administrative conversation queue for mediated listing inquiries (Story 4.4 / AC-3, AC-5; Story 8.3).
  * `ListingInquiry` is one of the claim-locked queues (AD-10) gated by `Conversations.Handle`;
  * breaking someone else's lease additionally needs `Tasks.ForceUnlock`.
  */
 @ApiTags('Admin Conversation Queue')
 @ApiBearerAuth()
-@Controller('admin/inquiries')
+@Controller(['admin/inquiries', 'admin/conversations'])
 @UseGuards(AdminSessionAuthGuard, AdminPermissionGuard)
 export class AdminInquiriesController {
   constructor(private readonly adminInquiriesService: AdminInquiriesService) {}
@@ -163,7 +165,7 @@ export class AdminInquiriesController {
 
   @Post(':id/relay-to-seller')
   @HttpCode(HttpStatus.OK)
-  @RequireAdminPermission('Conversations.Handle')
+  @RequireAdminPermission('Conversations.Handle', 'Conversations.Relay')
   @ApiOperation({
     summary: 'PENDING_ADMIN_REVIEW → RELAYED_TO_SELLER and stamp the buyer messages (AC-4)',
   })
@@ -175,8 +177,15 @@ export class AdminInquiriesController {
     @Param('id') id: string,
     @Body(new ZodValidationPipe(relayInquirySchema)) body: RelayInquiryInput,
     @Req() req: any,
+    @Headers('if-match') ifMatch?: string,
   ) {
-    const data = await this.adminInquiriesService.relayToSeller(id, req.admin, body?.note);
+    const expectedVersion = parseIfMatchVersion(ifMatch);
+    const data = await this.adminInquiriesService.relayToSeller(
+      id,
+      req.admin,
+      body?.note,
+      expectedVersion,
+    );
     return {
       statusCode: HttpStatus.OK,
       message: 'تم إحالة الاستفسار إلى البائع',
@@ -186,7 +195,7 @@ export class AdminInquiriesController {
 
   @Post(':id/relay-to-buyer')
   @HttpCode(HttpStatus.OK)
-  @RequireAdminPermission('Conversations.Handle')
+  @RequireAdminPermission('Conversations.Handle', 'Conversations.Relay')
   @ApiOperation({
     summary: 'SELLER_RESPONDED → RELAYED_TO_BUYER and stamp the seller messages (AC-4)',
   })
@@ -198,8 +207,15 @@ export class AdminInquiriesController {
     @Param('id') id: string,
     @Body(new ZodValidationPipe(relayInquirySchema)) body: RelayInquiryInput,
     @Req() req: any,
+    @Headers('if-match') ifMatch?: string,
   ) {
-    const data = await this.adminInquiriesService.relayToBuyer(id, req.admin, body?.note);
+    const expectedVersion = parseIfMatchVersion(ifMatch);
+    const data = await this.adminInquiriesService.relayToBuyer(
+      id,
+      req.admin,
+      body?.note,
+      expectedVersion,
+    );
     return {
       statusCode: HttpStatus.OK,
       message: 'تم إحالة رد البائع إلى المشتري',
@@ -209,7 +225,7 @@ export class AdminInquiriesController {
 
   @Post(':id/close')
   @HttpCode(HttpStatus.OK)
-  @RequireAdminPermission('Conversations.Handle')
+  @RequireAdminPermission('Conversations.Handle', 'Conversations.Relay')
   @ApiOperation({ summary: 'Close the thread with a documented reason → CLOSED (terminal)' })
   @ApiParam({ name: 'id', description: 'Inquiry id' })
   @ApiBody({ type: CloseInquiryDto })
@@ -219,8 +235,15 @@ export class AdminInquiriesController {
     @Param('id') id: string,
     @Body(new ZodValidationPipe(closeInquirySchema)) body: CloseInquiryInput,
     @Req() req: any,
+    @Headers('if-match') ifMatch?: string,
   ) {
-    const data = await this.adminInquiriesService.closeInquiry(id, req.admin, body.reason);
+    const expectedVersion = parseIfMatchVersion(ifMatch);
+    const data = await this.adminInquiriesService.closeInquiry(
+      id,
+      req.admin,
+      body.reason,
+      expectedVersion,
+    );
     return {
       statusCode: HttpStatus.OK,
       message: 'تم إغلاق المحادثة وتسجيل السبب',

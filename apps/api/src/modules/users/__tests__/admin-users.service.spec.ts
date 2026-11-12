@@ -1,4 +1,4 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { ConflictException } from '@nestjs/common';
 import {
   ProfileStatus,
   USER_HARD_DELETE_HISTORY_EXISTS,

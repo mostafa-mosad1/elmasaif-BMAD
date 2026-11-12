@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -40,6 +41,7 @@ import {
   unsuspendListingSchema,
   listingAnalyticsQuerySchema,
   ListingAnalyticsQuery,
+  parseIfMatchVersion,
 } from '@elmasaif/shared';
 import { AdminListingsService } from './admin-listings.service';
 
@@ -116,7 +118,7 @@ export class AdminListingsController {
 
   @Post(':id/claim')
   @HttpCode(HttpStatus.OK)
-  @RequireAdminPermission('Listings.Review')
+  @RequireAdminPermission('Listings.Review', 'Tasks.Claim')
   @ApiOperation({
     summary: 'Acquire or extend a 15-minute exclusive task claim lock on a listing',
   })
@@ -132,7 +134,7 @@ export class AdminListingsController {
 
   @Post(':id/heartbeat')
   @HttpCode(HttpStatus.OK)
-  @RequireAdminPermission('Listings.Review')
+  @RequireAdminPermission('Listings.Review', 'Tasks.Claim')
   @ApiOperation({
     summary: 'Extend an active listing moderation lock by 15 minutes from ClockService.now()',
   })
@@ -151,7 +153,7 @@ export class AdminListingsController {
 
   @Post(':id/release')
   @HttpCode(HttpStatus.OK)
-  @RequireAdminPermission('Listings.Review')
+  @RequireAdminPermission('Listings.Review', 'Tasks.Claim')
   @ApiOperation({
     summary: 'Explicitly release an active listing moderation lock',
   })
@@ -205,11 +207,13 @@ export class AdminListingsController {
     @Body(new ZodValidationPipe(approveListingSchema))
     body: ApproveListingInput,
     @Req() req: any,
+    @Headers('if-match') ifMatch?: string,
   ) {
+    const effectiveVersion = parseIfMatchVersion(ifMatch, body.version) ?? body.version;
     const result = await this.adminListingsService.approveListing(
       id,
       req.admin,
-      body,
+      { ...body, version: effectiveVersion },
     );
     return {
       statusCode: HttpStatus.OK,
@@ -230,11 +234,13 @@ export class AdminListingsController {
     @Body(new ZodValidationPipe(rejectListingSchema))
     body: RejectListingInput,
     @Req() req: any,
+    @Headers('if-match') ifMatch?: string,
   ) {
+    const effectiveVersion = parseIfMatchVersion(ifMatch, body.version) ?? body.version;
     const result = await this.adminListingsService.rejectListing(
       id,
       req.admin,
-      body,
+      { ...body, version: effectiveVersion },
     );
     return {
       statusCode: HttpStatus.OK,

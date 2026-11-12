@@ -26,6 +26,7 @@ import {
 } from '@elmasaif/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClockService } from '../../common/clock/clock.service';
+import { assertOptimisticVersion } from '../../common/locks/claim-lock';
 import { StorageService } from '../storage/storage.service';
 import { DealCompletionService } from './deal-completion.service';
 import type { AuthenticatedAdminActor } from '../listings/admin-listings.service';
@@ -413,7 +414,11 @@ export class AdminPaymentsService {
    * Confirms payment proof, releases lease, sets verifiedAt/verifiedByAdminId.
    * Gated on separation of duties (admin.id !== deal.approvedByAdminId).
    */
-  async confirmPayment(id: string, admin: AuthenticatedAdminActor) {
+  async confirmPayment(
+    id: string,
+    admin: AuthenticatedAdminActor,
+    expectedVersion?: number,
+  ) {
     const now = this.clockService.now();
 
     return this.prisma.$transaction(async (tx: any) => {
@@ -438,6 +443,10 @@ export class AdminPaymentsService {
 
       // Must hold active lease
       assertLockHeld(payment, admin.id, now);
+
+      if (expectedVersion !== undefined && typeof payment.deal?.version === 'number') {
+        assertOptimisticVersion(expectedVersion, payment.deal.version);
+      }
 
       // Must be in UNDER_REVIEW state
       if (payment.status !== DEAL_PAYMENT_STATUS.UNDER_REVIEW) {
@@ -521,6 +530,7 @@ export class AdminPaymentsService {
     id: string,
     admin: AuthenticatedAdminActor,
     reason: string,
+    expectedVersion?: number,
   ) {
     const trimmedReason = (reason ?? '').trim();
     if (trimmedReason.length < 5 || trimmedReason.length > 500) {
@@ -554,6 +564,10 @@ export class AdminPaymentsService {
 
       // Must hold active lease
       assertLockHeld(payment, admin.id, now);
+
+      if (expectedVersion !== undefined && typeof payment.deal?.version === 'number') {
+        assertOptimisticVersion(expectedVersion, payment.deal.version);
+      }
 
       // Must be in UNDER_REVIEW state
       if (payment.status !== DEAL_PAYMENT_STATUS.UNDER_REVIEW) {

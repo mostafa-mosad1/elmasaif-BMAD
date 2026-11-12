@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -24,6 +25,7 @@ import {
   adjudicateDisputeSchema,
   ForceUnlockDisputeInput,
   forceUnlockDisputeSchema,
+  parseIfMatchVersion,
 } from '@elmasaif/shared';
 import { AdminSessionAuthGuard } from '../auth/guards/admin-session-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
@@ -88,6 +90,7 @@ export class AdminDisputesController {
 
   @Post(':id/claim')
   @HttpCode(HttpStatus.OK)
+  @RequireAdminPermission('Deals.DisputeResolve', 'Tasks.Claim')
   @ApiOperation({ summary: 'Acquire 15-minute exclusive adjudication claim lease (AC-7)' })
   @ApiParam({ name: 'id', description: 'Dispute UUID' })
   @ApiResponse({ status: 200, description: 'Dispute claimed' })
@@ -105,8 +108,26 @@ export class AdminDisputesController {
     };
   }
 
+  @Post(':id/heartbeat')
+  @HttpCode(HttpStatus.OK)
+  @RequireAdminPermission('Deals.DisputeResolve', 'Tasks.Claim')
+  @ApiOperation({ summary: 'Extend active claim lease by 15 minutes (heartbeat) (AC-3, AD-10)' })
+  @ApiParam({ name: 'id', description: 'Dispute UUID' })
+  async heartbeat(
+    @Param('id') id: string,
+    @Req() req: { admin: AuthenticatedAdminActor },
+  ) {
+    const data = await this.disputesService.renewDisputeLock(id, req.admin.id);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'تم تجديد حجز النزاع بنجاح',
+      data,
+    };
+  }
+
   @Post(':id/renew')
   @HttpCode(HttpStatus.OK)
+  @RequireAdminPermission('Deals.DisputeResolve', 'Tasks.Claim')
   @ApiOperation({ summary: 'Extend active claim lease by 15 minutes (heartbeat) (AC-7)' })
   @ApiParam({ name: 'id', description: 'Dispute UUID' })
   @ApiResponse({ status: 200, description: 'Dispute lease renewed' })
@@ -126,6 +147,7 @@ export class AdminDisputesController {
 
   @Post(':id/release')
   @HttpCode(HttpStatus.OK)
+  @RequireAdminPermission('Deals.DisputeResolve', 'Tasks.Claim')
   @ApiOperation({ summary: 'Voluntarily release active claim lease back to queue (AC-7)' })
   @ApiParam({ name: 'id', description: 'Dispute UUID' })
   @ApiResponse({ status: 200, description: 'Dispute released' })
@@ -145,6 +167,7 @@ export class AdminDisputesController {
 
   @Post(':id/force-unlock')
   @HttpCode(HttpStatus.OK)
+  @RequireAdminPermission('Tasks.ForceUnlock', 'Deals.DisputeResolve')
   @ApiOperation({ summary: 'Super Admin override force unlock with mandatory reason note (AC-7)' })
   @ApiParam({ name: 'id', description: 'Dispute UUID' })
   @ApiBody({
@@ -173,6 +196,7 @@ export class AdminDisputesController {
 
   @Post(':id/adjudicate')
   @HttpCode(HttpStatus.OK)
+  @RequireAdminPermission('Deals.DisputeResolve')
   @ApiOperation({ summary: 'Execute binding dispute adjudication verdict (AC-8, FR-36, UC-70C)' })
   @ApiParam({ name: 'id', description: 'Dispute UUID' })
   @ApiBody({
@@ -194,8 +218,18 @@ export class AdminDisputesController {
     @Param('id') id: string,
     @Body(new ZodValidationPipe(adjudicateDisputeSchema)) body: AdjudicateDisputeInput,
     @Req() req: { admin: AuthenticatedAdminActor },
+    @Headers('if-match') ifMatch?: string,
   ) {
-    const data = await this.disputesService.adjudicateDispute(id, req.admin, body);
+    const expectedVersion = parseIfMatchVersion(ifMatch);
+    const data =
+      expectedVersion !== undefined
+        ? await this.disputesService.adjudicateDispute(
+            id,
+            req.admin,
+            body,
+            expectedVersion,
+          )
+        : await this.disputesService.adjudicateDispute(id, req.admin, body);
     return {
       statusCode: HttpStatus.OK,
       message: 'تم إصدار القرار الإداري والبت في النزاع بنجاح',

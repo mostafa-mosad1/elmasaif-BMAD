@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -22,6 +23,7 @@ import {
   forceUnlockFalLicenseSchema,
   LicensingQueueQuery,
   licensingQueueQuerySchema,
+  parseIfMatchVersion,
   RejectFalLicenseInput,
   rejectFalLicenseSchema,
 } from '@elmasaif/shared';
@@ -29,7 +31,7 @@ import { AdminLicensesService } from './admin-licenses.service';
 
 @ApiTags('Admin Fal Licensing Moderation Queue')
 @ApiBearerAuth()
-@Controller('admin/licenses')
+@Controller(['admin/licenses', 'admin/fal-profiles'])
 @UseGuards(AdminSessionAuthGuard, AdminPermissionGuard)
 export class AdminLicensesController {
   constructor(private readonly adminLicensesService: AdminLicensesService) {}
@@ -103,7 +105,7 @@ export class AdminLicensesController {
 
   @Post(':id/approve')
   @HttpCode(HttpStatus.OK)
-  @RequireAdminPermission('Licenses.Review')
+  @RequireAdminPermission('Licenses.Review', 'Licenses.Verify')
   @ApiOperation({ summary: 'Approve Fal license and activate marketer profile' })
   @ApiParam({ name: 'id', description: 'Fal license application ID' })
   @ApiResponse({ status: HttpStatus.OK, description: 'License approved and marketer activated' })
@@ -112,13 +114,18 @@ export class AdminLicensesController {
     @Req() req: any,
     @Param('id') id: string,
     @Body(new ZodValidationPipe(approveFalLicenseSchema)) body: ApproveFalLicenseInput,
+    @Headers('if-match') ifMatch?: string,
   ) {
-    return this.adminLicensesService.approveLicense(id, req.admin, body);
+    const effectiveVersion = parseIfMatchVersion(ifMatch, body.version) ?? body.version;
+    return this.adminLicensesService.approveLicense(id, req.admin, {
+      ...body,
+      version: effectiveVersion,
+    });
   }
 
   @Post(':id/reject')
   @HttpCode(HttpStatus.OK)
-  @RequireAdminPermission('Licenses.Review')
+  @RequireAdminPermission('Licenses.Review', 'Licenses.Verify')
   @ApiOperation({ summary: 'Reject Fal license application with required feedback' })
   @ApiParam({ name: 'id', description: 'Fal license application ID' })
   @ApiResponse({ status: HttpStatus.OK, description: 'License rejected and feedback recorded' })
@@ -128,8 +135,13 @@ export class AdminLicensesController {
     @Req() req: any,
     @Param('id') id: string,
     @Body(new ZodValidationPipe(rejectFalLicenseSchema)) body: RejectFalLicenseInput,
+    @Headers('if-match') ifMatch?: string,
   ) {
-    return this.adminLicensesService.rejectLicense(id, req.admin, body);
+    const effectiveVersion = parseIfMatchVersion(ifMatch, body.version) ?? body.version;
+    return this.adminLicensesService.rejectLicense(id, req.admin, {
+      ...body,
+      version: effectiveVersion,
+    });
   }
 }
 

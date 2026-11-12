@@ -280,13 +280,41 @@ export class AdminOwnerRequestsService {
     );
 
     if (isActivelyLocked && request.lockedByAdminId !== adminId) {
+      const conflictNames = await resolveLockHolderNames(this.prisma, [request], now);
       throw new ConflictException({
         code: OWNER_REQUEST_LOCK_CONFLICT,
         message: OWNER_REQUEST_LOCK_CODES.conflict.message,
+        lockInfo: buildLockInfo(request, now, adminId, conflictNames),
       });
     }
 
     const newExpiresAt = new Date(now.getTime() + 15 * 60 * 1000);
+    if (typeof (this.prisma.ownerListingRequest as any).updateMany === 'function') {
+      const claimed = await this.prisma.ownerListingRequest.updateMany({
+        where: {
+          id,
+          OR: [
+            { lockedByAdminId: null },
+            { lockExpiresAt: { lte: now } },
+            { lockedByAdminId: adminId },
+          ],
+        },
+        data: {
+          lockedByAdminId: adminId,
+          lockedAt: now,
+          lockExpiresAt: newExpiresAt,
+        },
+      });
+      if (claimed.count === 0) {
+        const conflictNames = await resolveLockHolderNames(this.prisma, [request], now);
+        throw new ConflictException({
+          code: OWNER_REQUEST_LOCK_CONFLICT,
+          message: OWNER_REQUEST_LOCK_CODES.conflict.message,
+          lockInfo: buildLockInfo(request, now, adminId, conflictNames),
+        });
+      }
+    }
+
     const updated = await this.prisma.ownerListingRequest.update({
       where: { id },
       data: {

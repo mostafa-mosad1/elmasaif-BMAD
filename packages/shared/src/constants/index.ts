@@ -32,4 +32,5 @@ export * from './inquiry';
 export * from './deal';
 export * from './licensing';
 export * from './contracts';
+export * from './queues';
 export * from './errors';

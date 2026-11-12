@@ -8,4 +8,5 @@ export * from './listing';
 export * from './deal';
 export * from './offer';
 export * from './licensing';
+export * from './queues';
 

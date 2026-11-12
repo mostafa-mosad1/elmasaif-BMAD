@@ -418,6 +418,31 @@ export class AdminListingsService {
     const lockExpiresAt = new Date(now.getTime() + LISTING_LOCK_DURATION_MS);
 
     return this.prisma.$transaction(async (tx) => {
+      if (typeof (tx.listing as any).updateMany === 'function') {
+        const claimed = await tx.listing.updateMany({
+          where: {
+            id: listingId,
+            OR: [
+              { lockedByAdminId: null },
+              { lockExpiresAt: { lte: now } },
+              { lockedByAdminId: admin.id },
+            ],
+          },
+          data: {
+            lockedByAdminId: admin.id,
+            lockedAt: now,
+            lockExpiresAt,
+          },
+        });
+
+        if (claimed && claimed.count === 0) {
+          throw new ConflictException({
+            code: LISTING_LOCK_CONFLICT,
+            message: 'هذا الإعلان قيد المراجعة حالياً بواسطة مشرف آخر',
+          });
+        }
+      }
+
       const updated = await tx.listing.update({
         where: { id: listingId },
         data: {

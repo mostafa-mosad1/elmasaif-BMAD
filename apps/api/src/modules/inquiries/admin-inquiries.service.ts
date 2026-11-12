@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClockService } from '../../common/clock/clock.service';
+import { assertOptimisticVersion } from '../../common/locks/claim-lock';
 import {
   CLAIMABLE_INQUIRY_STATUSES,
   DEFAULT_PAGE_SIZE,
@@ -60,6 +61,7 @@ interface InquiryTransition {
   note?: string | null;
   /** Set for `CLOSED` only — the documented reason is mandatory. */
   closeReason?: string | null;
+  expectedVersion?: number;
 }
 
 /**
@@ -342,6 +344,7 @@ export class AdminInquiriesService {
     inquiryId: string,
     admin: AuthenticatedAdminActor,
     note?: string | null,
+    expectedVersion?: number,
   ): Promise<AdminInquiryThread> {
     return this.applyTransition(inquiryId, admin, {
       allowedFrom: [InquiryStatus.PENDING_ADMIN_REVIEW],
@@ -349,6 +352,7 @@ export class AdminInquiriesService {
       auditAction: INQUIRY_AUDIT_ACTIONS.RELAYED_TO_SELLER,
       relayAuthorRole: InquiryAuthorRole.BUYER,
       note,
+      expectedVersion,
       invalidStateMessage:
         'لا يمكن إحالة الاستفسار إلى البائع إلا إذا كان بانتظار مراجعة الإدارة',
     });
@@ -359,6 +363,7 @@ export class AdminInquiriesService {
     inquiryId: string,
     admin: AuthenticatedAdminActor,
     note?: string | null,
+    expectedVersion?: number,
   ): Promise<AdminInquiryThread> {
     return this.applyTransition(inquiryId, admin, {
       allowedFrom: [InquiryStatus.SELLER_RESPONDED],
@@ -366,6 +371,7 @@ export class AdminInquiriesService {
       auditAction: INQUIRY_AUDIT_ACTIONS.RELAYED_TO_BUYER,
       relayAuthorRole: InquiryAuthorRole.SELLER,
       note,
+      expectedVersion,
       invalidStateMessage:
         'لا يمكن إحالة الرد إلى المشتري إلا إذا كان البائع قد رد على الاستفسار',
     });
@@ -376,6 +382,7 @@ export class AdminInquiriesService {
     inquiryId: string,
     admin: AuthenticatedAdminActor,
     reason: string,
+    expectedVersion?: number,
   ): Promise<AdminInquiryThread> {
     const trimmedReason = (reason ?? '').trim();
     if (trimmedReason.length < 5) {
@@ -390,6 +397,7 @@ export class AdminInquiriesService {
       toStatus: InquiryStatus.CLOSED,
       auditAction: INQUIRY_AUDIT_ACTIONS.CLOSED,
       closeReason: trimmedReason,
+      expectedVersion,
       invalidStateMessage: 'لا يمكن إغلاق المحادثة في حالتها الحالية',
     });
   }
@@ -424,6 +432,10 @@ export class AdminInquiriesService {
 
       // AD-10: validate the lease in-transaction so a stale decision cannot commit.
       assertInquiryLockHeld(inquiry, admin.id, now);
+
+      if (transition.expectedVersion !== undefined && typeof inquiry.version === 'number') {
+        assertOptimisticVersion(transition.expectedVersion, inquiry.version);
+      }
 
       if (inquiry.status === InquiryStatus.CLOSED) {
         throw new ConflictException({
