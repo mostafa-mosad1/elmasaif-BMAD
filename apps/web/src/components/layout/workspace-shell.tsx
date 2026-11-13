@@ -43,6 +43,7 @@ import {
   Sliders,
   ScrollText
 } from 'lucide-react';
+import { NotificationBell } from '../notifications/notification-bell';
 
 interface WorkspaceShellProps {
   children: React.ReactNode;
@@ -324,6 +325,9 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
 
           {/* Right Action Utilities */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Notifications Bell */}
+            <NotificationBell />
+
             {/* Language Switcher */}
             <button
               onClick={handleQuickToggleLocale}

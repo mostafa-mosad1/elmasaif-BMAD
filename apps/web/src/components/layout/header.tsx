@@ -10,6 +10,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { WorkspaceRoleSwitcher } from './workspace-role-switcher';
 import { ProfileMenu } from './profile-menu';
+import { NotificationBell } from '../notifications/notification-bell';
 import { SupportedLocale } from '@elmasaif/shared';
 import {
   Building2,
@@ -120,7 +121,10 @@ export function Header() {
             <span className={divider} aria-hidden="true" />
 
             {user ? (
-              <ProfileMenu />
+              <div className="flex items-center gap-2">
+                <NotificationBell />
+                <ProfileMenu />
+              </div>
             ) : (
               <div className="flex items-center gap-2">
                 <Link href="/auth/login">
@@ -139,6 +143,7 @@ export function Header() {
 
           {/* Compact controls (mobile / tablet) */}
           <div className="flex lg:hidden items-center gap-2">
+            {user && <NotificationBell />}
             <button
               onClick={toggleTheme}
               type="button"

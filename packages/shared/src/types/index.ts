@@ -135,3 +135,4 @@ export * from './contracts';
 export * from './support';
 export * from './settings';
 export * from './audit';
+export * from './notification';

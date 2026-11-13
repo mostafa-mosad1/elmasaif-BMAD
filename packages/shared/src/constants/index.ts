@@ -37,6 +37,7 @@ export * from './support';
 export * from './settings';
 export * from './audit';
 export * from './errors';
+export * from './notifications';
 
 // Explicit re-exports to resolve ambiguity across domain modules (Story 8.6)
 export {

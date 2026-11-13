@@ -134,3 +134,4 @@ export * from './queues';
 export * from './support.schema';
 export * from './settings.schema';
 export * from './audit.schema';
+export * from './notification.schema';

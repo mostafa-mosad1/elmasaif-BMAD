@@ -1,0 +1,66 @@
+import {
+  NOTIFICATION_DEAL_TIMEOUT_CANCELLED,
+  NOTIFICATION_DEAL_DISPUTED,
+} from './deal';
+import {
+  NOTIFICATION_FAL_EXPIRY_WARNING,
+  NOTIFICATION_FAL_LICENSE_EXPIRED_RESTRICTED,
+  NOTIFICATION_LISTING_UNDER_COMPLIANCE_REVIEW,
+} from './licensing';
+
+export {
+  NOTIFICATION_DEAL_TIMEOUT_CANCELLED,
+  NOTIFICATION_DEAL_DISPUTED,
+  NOTIFICATION_FAL_EXPIRY_WARNING,
+  NOTIFICATION_FAL_LICENSE_EXPIRED_RESTRICTED,
+  NOTIFICATION_LISTING_UNDER_COMPLIANCE_REVIEW,
+};
+
+// Deals
+export const NOTIFICATION_DEAL_CREATED = 'deal.created';
+export const NOTIFICATION_DEAL_PAYMENT_DEADLINE_WARNING = 'deal.payment_deadline_warning';
+export const NOTIFICATION_DEAL_PAYMENT_UNDER_REVIEW = 'deal.payment_under_review';
+export const NOTIFICATION_DEAL_PROOF_REJECTED = 'deal.proof_rejected';
+export const NOTIFICATION_DEAL_COMPLETED = 'deal.completed';
+
+// Contracts & Direct Owners
+export const NOTIFICATION_CONTRACT_READY_FOR_SIGNATURE = 'contract.ready_for_signature';
+export const NOTIFICATION_CONTRACT_SIGNED_PENDING_FEE = 'contract.signed_pending_fee';
+export const NOTIFICATION_CONTRACT_FEE_CONFIRMED = 'contract.fee_confirmed';
+export const NOTIFICATION_CONTRACT_FEE_EXPIRED = 'contract.fee_expired';
+
+// Listings & Mediation
+export const NOTIFICATION_LISTING_APPROVED = 'listing.approved';
+export const NOTIFICATION_LISTING_REJECTED = 'listing.rejected';
+export const NOTIFICATION_LISTING_MAJOR_EDIT_REVIEW = 'listing.major_edit_review';
+
+// Demands & Proposals
+export const NOTIFICATION_DEMAND_MATCHED = 'demand.matched';
+export const NOTIFICATION_DEMAND_PROPOSAL_RECEIVED = 'demand.proposal_received';
+
+// Support & Security
+export const NOTIFICATION_SUPPORT_TICKET_SLA_ALERT = 'support.ticket_sla_alert';
+export const NOTIFICATION_AUTH_SECURITY_ALERT = 'auth.security_alert';
+export const NOTIFICATION_AUTH_POLICY_RECONSENT_REQUIRED = 'auth.policy_reconsent_required';
+
+/**
+ * Mandatory notification events that CANNOT be disabled by user preferences (A-09, FR-44).
+ */
+export const MANDATORY_NOTIFICATION_EVENTS: readonly string[] = [
+  NOTIFICATION_DEAL_CREATED,
+  NOTIFICATION_DEAL_PAYMENT_DEADLINE_WARNING,
+  NOTIFICATION_DEAL_PROOF_REJECTED,
+  NOTIFICATION_DEAL_COMPLETED,
+  NOTIFICATION_DEAL_TIMEOUT_CANCELLED,
+  NOTIFICATION_DEAL_DISPUTED,
+  NOTIFICATION_FAL_EXPIRY_WARNING,
+  NOTIFICATION_FAL_LICENSE_EXPIRED_RESTRICTED,
+  NOTIFICATION_AUTH_SECURITY_ALERT,
+  NOTIFICATION_CONTRACT_READY_FOR_SIGNATURE,
+] as const;
+
+// Notification error codes
+export const NOTIFICATION_NOT_FOUND = 'NOTIFICATION_NOT_FOUND';
+export const NOTIFICATION_UNAUTHORIZED = 'NOTIFICATION_UNAUTHORIZED';
+export const NOTIFICATION_QUERY_INVALID = 'NOTIFICATION_QUERY_INVALID';
+export const NOTIFICATION_ALREADY_READ = 'NOTIFICATION_ALREADY_READ';

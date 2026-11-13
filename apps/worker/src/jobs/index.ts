@@ -28,7 +28,11 @@ export * from './payment-deadline-expiry.job';
 export * from './offer-expiry-checker.job';
 export * from './demand-expiry-checker.job';
 export * from './fal-license-expiry.job';
-export * from './fal-expiry-warnings.job';
+export {
+  type FalExpiryWarningsDbClient,
+  createFalExpiryWarningsLogic,
+  falExpiryWarningsHandler,
+} from './fal-expiry-warnings.job';
 export * from './owner-fee-reminders.job';
 export * from './notification-retention.job';
 export * from './account-deletion-expiry.job';

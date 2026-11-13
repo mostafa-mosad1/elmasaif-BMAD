@@ -227,6 +227,23 @@ enum TicketStatus {
   CLOSED
 }
 
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+}
+
+enum NotificationCategory {
+  DEAL
+  LISTING
+  CONTRACT
+  LICENSING
+  DEMAND
+  SUPPORT
+  SECURITY
+  SYSTEM
+}
+
 model User {
   id                  String        @id @default(uuid())
   username            String        @unique
@@ -260,6 +277,7 @@ model User {
   violationReportsSubmitted ViolationReport[] @relation("UserViolationReports")
   supportTicketsCreated     SupportTicket[]   @relation("UserSupportTickets")
   ticketMessages            TicketMessage[]
+  notifications             Notification[]
 
   @@map("users")
 }
@@ -1274,4 +1292,30 @@ model PlatformSetting {
 
   @@map("platform_settings")
 }
+
+model Notification {
+  id          String               @id @default(uuid())
+  userId      String               @map("user_id")
+  eventKey    String               @map("event_key")
+  channel     NotificationChannel  @default(IN_APP)
+  category    NotificationCategory @default(SYSTEM)
+  title       String
+  message     String
+  entityType  String?              @map("entity_type")
+  entityId    String?              @map("entity_id")
+  deepLink    String?              @map("deep_link")
+  metadata    Json?
+  isRead      Boolean              @default(false) @map("is_read")
+  readAt      DateTime?            @map("read_at")
+  isCritical  Boolean              @default(false) @map("is_critical")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
 
