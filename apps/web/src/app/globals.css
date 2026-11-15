@@ -85,16 +85,76 @@ body {
 
 /* Sovereign Luxury Card Elevation Hover */
 .luxury-card {
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
 }
 
 .luxury-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 24px -6px rgba(27, 67, 50, 0.08), 0 4px 8px -4px rgba(27, 67, 50, 0.04);
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px -8px rgba(27, 67, 50, 0.12), 0 4px 12px -2px rgba(27, 67, 50, 0.06);
 }
 
 .dark .luxury-card:hover {
-  box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.35), 0 4px 8px -4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3);
+}
+
+/* Ambient Radial Mesh Gradients */
+.bg-ambient-radial {
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(27, 67, 50, 0.08) 0%, transparent 55%),
+    radial-gradient(circle at 85% 15%, rgba(198, 156, 69, 0.06) 0%, transparent 45%);
+}
+
+.dark .bg-ambient-radial {
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(45, 106, 79, 0.15) 0%, transparent 60%),
+    radial-gradient(circle at 85% 15%, rgba(212, 175, 55, 0.08) 0%, transparent 45%);
+}
+
+/* Glassmorphism Surface */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.dark .glass-panel {
+  background: rgba(19, 32, 24, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(35, 56, 44, 0.85);
+}
+
+/* Subtle Shimmer for High-Priority Buttons & Badges */
+@keyframes sheen {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.sheen-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.sheen-effect::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  transform: translateX(-100%);
+  animation: sheen 4s infinite ease-in-out;
+}
+
+/* Soft Emerald & Gold Glows */
+.glow-emerald {
+  box-shadow: 0 0 25px -4px rgba(27, 67, 50, 0.25);
+}
+
+.glow-gold {
+  box-shadow: 0 0 25px -4px rgba(198, 156, 69, 0.25);
 }
 
 /* Selection Highlight */

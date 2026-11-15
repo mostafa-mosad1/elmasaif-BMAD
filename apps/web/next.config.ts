@@ -23,6 +23,16 @@ const nextConfig: NextConfig = {
       }
     ]
   },
+  async redirects() {
+    return [
+      { source: '/terms', destination: '/pages/terms-of-service', permanent: true },
+      { source: '/privacy', destination: '/pages/privacy-policy', permanent: true },
+      { source: '/faq', destination: '/pages/faq', permanent: true },
+      { source: '/contact', destination: '/pages/contact', permanent: true },
+      { source: '/calculator', destination: '/pages/calculator', permanent: true },
+      { source: '/support', destination: '/pages/contact', permanent: true },
+    ];
+  },
   async rewrites() {
     const apiDestination =
       process.env.INTERNAL_API_URL ||

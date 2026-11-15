@@ -35,8 +35,9 @@ export function Header() {
   const navLinks = [
     { href: '/', label: isArabic ? 'الرئيسية' : 'Home' },
     { href: '/properties', label: isArabic ? 'تصفح العقارات' : 'Browse Properties' },
-    { href: '/#demands', label: isArabic ? 'الطلبات النشطة' : 'Active Demands' },
-    { href: '/#compliance', label: isArabic ? 'الامتثال والتراخيص' : 'Compliance' },
+    { href: '/pages/calculator', label: isArabic ? 'حاسبة العمولة والسعي' : 'Calculator' },
+    { href: '/pages/rega-licenses', label: isArabic ? 'الامتثال والتراخيص' : 'Compliance' },
+    { href: '/pages/faq', label: isArabic ? 'الأسئلة الشائعة' : 'FAQs' },
   ];
 
   // Hash anchors never match the pathname, so only real routes get highlighted.

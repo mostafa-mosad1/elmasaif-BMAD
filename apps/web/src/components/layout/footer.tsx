@@ -16,45 +16,45 @@ export function Footer() {
       <div className="border-b border-surface-border dark:border-dark-surface-border bg-surface-sunken dark:bg-dark-surface-sunken py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary-light dark:bg-primary-dark/30 text-primary dark:text-primary-light flex items-center justify-center shrink-0">
+            <Link href="/pages/rega-licenses" className="flex items-center gap-3 p-2 rounded-xl hover:bg-surface-base/60 dark:hover:bg-dark-surface-base/40 transition-colors group">
+              <div className="w-10 h-10 rounded-lg bg-primary-light dark:bg-primary-dark/30 text-primary dark:text-primary-light flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold">{isArabic ? 'رخصة فال العقارية' : 'REGA Fal License'}</h4>
+                <h4 className="text-sm font-bold group-hover:text-primary transition-colors">{isArabic ? 'رخصة فال العقارية' : 'REGA Fal License'}</h4>
                 <p className="text-xs text-ink-muted dark:text-dark-ink-muted">{isArabic ? 'وساطة معتمدة رقم 1200028491' : 'Certified Brokerage #1200028491'}</p>
               </div>
-            </div>
+            </Link>
 
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary-light dark:bg-primary-dark/30 text-primary dark:text-primary-light flex items-center justify-center shrink-0">
+            <Link href="/pages/rega-licenses" className="flex items-center gap-3 p-2 rounded-xl hover:bg-surface-base/60 dark:hover:bg-dark-surface-base/40 transition-colors group">
+              <div className="w-10 h-10 rounded-lg bg-primary-light dark:bg-primary-dark/30 text-primary dark:text-primary-light flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                 <Scale className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold">{isArabic ? 'الهيئة العامة للعقار' : 'Real Estate General Authority'}</h4>
+                <h4 className="text-sm font-bold group-hover:text-primary transition-colors">{isArabic ? 'الهيئة العامة للعقار' : 'Real Estate General Authority'}</h4>
                 <p className="text-xs text-ink-muted dark:text-dark-ink-muted">{isArabic ? 'مطابق لضوابط الإعلانات العقارية' : 'Compliant with Advertising Regulations'}</p>
               </div>
-            </div>
+            </Link>
 
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-accent-light text-accent-dark flex items-center justify-center shrink-0">
+            <Link href="/pages/calculator" className="flex items-center gap-3 p-2 rounded-xl hover:bg-surface-base/60 dark:hover:bg-dark-surface-base/40 transition-colors group">
+              <div className="w-10 h-10 rounded-lg bg-accent-light text-accent-dark flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                 <Lock className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold">{isArabic ? 'نظام التحويل البنكي المزدوج' : 'Dual Wire Transfer System'}</h4>
+                <h4 className="text-sm font-bold group-hover:text-accent-dark transition-colors">{isArabic ? 'نظام التحويل البنكي المزدوج' : 'Dual Wire Transfer System'}</h4>
                 <p className="text-xs text-ink-muted dark:text-dark-ink-muted">{isArabic ? 'فصل عمولة المنصة عن ثمن العقار' : 'Segregated Fee & Purchase Price'}</p>
               </div>
-            </div>
+            </Link>
 
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary-light dark:bg-primary-dark/30 text-primary dark:text-primary-light flex items-center justify-center shrink-0">
+            <Link href="/pages/privacy-policy" className="flex items-center gap-3 p-2 rounded-xl hover:bg-surface-base/60 dark:hover:bg-dark-surface-base/40 transition-colors group">
+              <div className="w-10 h-10 rounded-lg bg-primary-light dark:bg-primary-dark/30 text-primary dark:text-primary-light flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                 <FileCheck className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold">{isArabic ? 'حماية البيانات الشخصية PDPL' : 'PDPL Data Protection'}</h4>
+                <h4 className="text-sm font-bold group-hover:text-primary transition-colors">{isArabic ? 'حماية البيانات الشخصية PDPL' : 'PDPL Data Protection'}</h4>
                 <p className="text-xs text-ink-muted dark:text-dark-ink-muted">{isArabic ? 'بيانات سيادية مشفرة ومحمية' : 'Encrypted Sovereign Data'}</p>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </div>
@@ -64,14 +64,14 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand Col */}
           <div className="md:col-span-1 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-DEFAULT bg-primary flex items-center justify-center text-primary-foreground">
+            <Link href="/" className="inline-flex items-center gap-3 group">
+              <div className="w-9 h-9 rounded-DEFAULT bg-primary flex items-center justify-center text-primary-foreground group-hover:bg-primary-hover transition-colors">
                 <Building2 className="w-5 h-5" />
               </div>
-              <span className="text-xl font-bold tracking-tight">
+              <span className="text-xl font-bold tracking-tight text-ink-primary dark:text-dark-ink-primary">
                 {isArabic ? 'المصايف' : 'Elmasaif'}
               </span>
-            </div>
+            </Link>
             <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary leading-relaxed">
               {isArabic
                 ? 'السوق العقاري المؤسسي الموثوق لصفقات البيع والشراء في المملكة العربية السعودية، مدعومًا بأنظمة التحقق والتراخيص المعتمدة.'
@@ -85,9 +85,10 @@ export function Footer() {
               {isArabic ? 'المنصة' : 'Platform'}
             </h4>
             <ul className="space-y-2.5 text-xs text-ink-secondary dark:text-dark-ink-secondary">
-              <li><Link href="/#listings" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'العقارات والصفقات' : 'Property Deals'}</Link></li>
-              <li><Link href="/#demands" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'طلبات الشراء النشطة' : 'Buyer Demands'}</Link></li>
-              <li><Link href="/#calculator" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'حاسبة العمولة والرسوم' : 'Commission Calculator'}</Link></li>
+              <li><Link href="/properties" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'تصفح كافة العقارات' : 'All Properties'}</Link></li>
+              <li><Link href="/pages/buyer-guide" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'دليل المشتري والمستثمر' : 'Buyer Guide'}</Link></li>
+              <li><Link href="/pages/marketer-guide" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'دليل المسوق والوسيط' : 'Marketer Guide'}</Link></li>
+              <li><Link href="/pages/calculator" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'حاسبة العمولة والرسوم' : 'Commission Calculator'}</Link></li>
             </ul>
           </div>
 
@@ -97,10 +98,10 @@ export function Footer() {
               {isArabic ? 'الامتثال والتشريعات' : 'Compliance & Legal'}
             </h4>
             <ul className="space-y-2.5 text-xs text-ink-secondary dark:text-dark-ink-secondary">
-              <li><Link href="/#rega" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'تراخيص الهيئة العامة للعقار' : 'REGA Licenses'}</Link></li>
-              <li><Link href="/#terms" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'الشروط والأحكام' : 'Terms & Conditions'}</Link></li>
-              <li><Link href="/#privacy" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'سياسة حماية البيانات PDPL' : 'Privacy Policy (PDPL)'}</Link></li>
-              <li><Link href="/#contracts" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'عقود الوساطة الإلكترونية' : 'Brokerage Contracts'}</Link></li>
+              <li><Link href="/pages/rega-licenses" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'تراخيص الهيئة العامة للعقار' : 'REGA Licenses'}</Link></li>
+              <li><Link href="/pages/terms-of-service" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'الشروط والأحكام' : 'Terms & Conditions'}</Link></li>
+              <li><Link href="/pages/privacy-policy" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'سياسة حماية البيانات PDPL' : 'Privacy Policy (PDPL)'}</Link></li>
+              <li><Link href="/pages/brokerage-contracts" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'عقود الوساطة الإلكترونية' : 'Brokerage Contracts'}</Link></li>
             </ul>
           </div>
 
@@ -110,9 +111,9 @@ export function Footer() {
               {isArabic ? 'المساعدة والدعم' : 'Support'}
             </h4>
             <ul className="space-y-2.5 text-xs text-ink-secondary dark:text-dark-ink-secondary">
-              <li><Link href="/#support" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'مركز مساعدة المستفيدين' : 'Support Center'}</Link></li>
-              <li><Link href="/#faq" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'الأسئلة المتكررة' : 'FAQs'}</Link></li>
-              <li><Link href="/#contact" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'قنوات الاتصال المعتمدة' : 'Official Channels'}</Link></li>
+              <li><Link href="/pages/contact" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'مركز مساعدة المستفيدين' : 'Support Center'}</Link></li>
+              <li><Link href="/pages/faq" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'الأسئلة المتكررة' : 'FAQs'}</Link></li>
+              <li><Link href="/pages/contact" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'قنوات الاتصال المعتمدة' : 'Official Channels'}</Link></li>
             </ul>
           </div>
         </div>

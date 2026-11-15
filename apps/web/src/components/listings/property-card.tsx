@@ -43,6 +43,8 @@ export function PropertyCard({
   isFavorited = false,
   className,
 }: PropertyCardProps) {
+  const targetHref = href || `/properties/${listing.id}`;
+
   let user: any = null;
   try {
     const auth = useAuth();
@@ -234,14 +236,16 @@ export function PropertyCard({
       className={twMerge('overflow-hidden flex flex-col p-0 group', className)}
     >
       <div className="relative">
-        <PropertyMediaCarousel
-          photos={resolvedPhotos}
-          photoCount={listing.photoCount}
-          alt={listing.title}
-          propertyType={listing.propertyType}
-          topRightSlot={topRightBadges}
-          bottomRightSlot={bottomRightPrice}
-        />
+        <Link href={targetHref} className="block cursor-pointer" tabIndex={-1} aria-label={listing.title}>
+          <PropertyMediaCarousel
+            photos={resolvedPhotos}
+            photoCount={listing.photoCount}
+            alt={listing.title}
+            propertyType={listing.propertyType}
+            topRightSlot={topRightBadges}
+            bottomRightSlot={bottomRightPrice}
+          />
+        </Link>
 
         <button
           type="button"
@@ -275,13 +279,9 @@ export function PropertyCard({
 
           {/* Listing Title */}
           <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary line-clamp-1">
-            {href ? (
-              <Link href={href} className="hover:text-primary dark:hover:text-primary-light transition-colors">
-                {listing.title}
-              </Link>
-            ) : (
-              listing.title
-            )}
+            <Link href={targetHref} className="hover:text-primary dark:hover:text-primary-light transition-colors">
+              {listing.title}
+            </Link>
           </h3>
 
           {/* Strict Specs Strip (Area m² & Bedrooms ONLY — Bathrooms strictly omitted per BR-13) */}
@@ -323,20 +323,20 @@ export function PropertyCard({
             </span>
           </div>
 
-          {href ? (
-            <Link href={href}>
+          {onActionClick ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onActionClick(listing)}
+            >
+              {actionLabel}
+            </Button>
+          ) : (
+            <Link href={targetHref}>
               <Button variant="outline" size="sm">
                 {actionLabel}
               </Button>
             </Link>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onActionClick?.(listing)}
-            >
-              {actionLabel}
-            </Button>
           )}
         </div>
       </div>

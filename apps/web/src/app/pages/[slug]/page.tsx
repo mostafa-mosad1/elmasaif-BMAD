@@ -9,6 +9,84 @@ import { FileText, Calendar, ArrowRight, ShieldCheck, AlertCircle, RefreshCw } f
 import Link from 'next/link';
 import { CMS_PAGE_CATEGORY_LABELS_AR } from '../../../components/admin/cms-announcements-workspace';
 
+function renderMarkdownContent(content: string) {
+  const lines = content.split('\n');
+  const elements: React.ReactNode[] = [];
+  let currentList: string[] = [];
+
+  const flushList = (key: number) => {
+    if (currentList.length > 0) {
+      elements.push(
+        <ul key={`list-${key}`} className="space-y-2 my-4 list-none pr-0">
+          {currentList.map((item, i) => (
+            <li key={i} className="flex items-start gap-2.5 text-sm sm:text-base text-ink-secondary dark:text-dark-ink-secondary leading-relaxed">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2.5 shrink-0" />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      );
+      currentList = [];
+    }
+  };
+
+  lines.forEach((line, index) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushList(index);
+      return;
+    }
+
+    if (trimmed.startsWith('# ')) {
+      flushList(index);
+      elements.push(
+        <h2 key={index} className="text-xl sm:text-2xl font-bold text-ink-primary dark:text-dark-ink-primary mt-6 mb-3 border-b border-surface-border dark:border-dark-surface-border pb-2">
+          {trimmed.replace(/^#\s+/, '')}
+        </h2>
+      );
+    } else if (trimmed.startsWith('## ')) {
+      flushList(index);
+      elements.push(
+        <h3 key={index} className="text-lg sm:text-xl font-bold text-primary dark:text-primary-light mt-6 mb-2">
+          {trimmed.replace(/^##\s+/, '')}
+        </h3>
+      );
+    } else if (trimmed.startsWith('### ')) {
+      flushList(index);
+      elements.push(
+        <h4 key={index} className="text-base font-bold text-ink-primary dark:text-dark-ink-primary mt-4 mb-2">
+          {trimmed.replace(/^###\s+/, '')}
+        </h4>
+      );
+    } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      currentList.push(trimmed.replace(/^[-*]\s+/, ''));
+    } else if (/^\d+\.\s+/.test(trimmed)) {
+      flushList(index);
+      const match = trimmed.match(/^(\d+)\.\s+(.*)$/);
+      if (match) {
+        elements.push(
+          <div key={index} className="flex items-start gap-3 my-2 text-sm sm:text-base text-ink-secondary dark:text-dark-ink-secondary">
+            <span className="w-6 h-6 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0 mt-0.5 font-mono">
+              {match[1]}
+            </span>
+            <span className="leading-relaxed">{match[2]}</span>
+          </div>
+        );
+      }
+    } else {
+      flushList(index);
+      elements.push(
+        <p key={index} className="text-sm sm:text-base text-ink-secondary dark:text-dark-ink-secondary leading-relaxed my-3">
+          {trimmed}
+        </p>
+      );
+    }
+  });
+
+  flushList(lines.length);
+  return elements;
+}
+
 export default function CmsPageReader() {
   const params = useParams();
   const slug = params?.slug as string;
@@ -115,8 +193,8 @@ export default function CmsPageReader() {
             </div>
 
             {/* Main Content */}
-            <div className="prose dark:prose-invert max-w-none text-ink-primary dark:text-dark-ink-primary text-sm sm:text-base leading-relaxed whitespace-pre-wrap font-sans">
-              {page.content}
+            <div className="space-y-2 text-ink-primary dark:text-dark-ink-primary leading-relaxed">
+              {renderMarkdownContent(page.content)}
             </div>
 
             {/* Footer Trust Badge */}
