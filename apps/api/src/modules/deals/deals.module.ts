@@ -7,6 +7,8 @@ import { StorageModule } from '../storage/storage.module';
 import { UsersModule } from '../users/users.module';
 import { OffersModule } from '../offers/offers.module';
 import { SettingsModule } from '../settings/settings.module';
+import { FraudModule } from '../fraud/fraud.module';
+import { forwardRef } from '@nestjs/common';
 import { AdminSessionAuthGuard } from '../auth/guards/admin-session-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
@@ -40,6 +42,7 @@ import { DisputesService } from './disputes.service';
     UsersModule,
     OffersModule,
     SettingsModule,
+    forwardRef(() => FraudModule),
   ],
   controllers: [
     AdminDealsController,

@@ -135,3 +135,7 @@ export * from './support.schema';
 export * from './settings.schema';
 export * from './audit.schema';
 export * from './notification.schema';
+export * from './fraud.schema';
+export * from './finance.schema';
+export * from './cms.schema';
+export * from './notes.schema';

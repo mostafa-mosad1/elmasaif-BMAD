@@ -97,6 +97,10 @@ describe('SettingsWorkspace SSR & Rendering (Story 8.6 / AC5, AC7)', () => {
     expect(html).toContain('سجل تدقيق التعديلات');
     expect(html).toContain('1');
   });
+  it('renders loading skeleton safely when initialSettings is null without crashing React child rendering', () => {
+    const html = renderToString(<SettingsWorkspace initialSettings={null} initialAudit={null} />);
+    expect(html).toContain('إعدادات المنصة والعمولات');
+  });
 });
 
 describe('CommissionCalculator Dynamic Integration (Story 8.6 / AC6)', () => {

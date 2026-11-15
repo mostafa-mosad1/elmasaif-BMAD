@@ -92,7 +92,7 @@ export function AuditLogWorkspace({ initialData = null }: AuditLogWorkspaceProps
       );
       setLogsData(res.data);
     } catch (err: any) {
-      setError(describeApiError(err) || 'تعذر تحميل سجلات التدقيق الرقابي');
+      setError(describeApiError(err).message || 'تعذر تحميل سجلات التدقيق الرقابي');
     } finally {
       setIsLoading(false);
     }
@@ -121,7 +121,7 @@ export function AuditLogWorkspace({ initialData = null }: AuditLogWorkspaceProps
       );
       setDetailLog(res.data);
     } catch (err: any) {
-      setError(describeApiError(err) || 'تعذر استرجاع تفاصيل السجل');
+      setError(describeApiError(err).message || 'تعذر استرجاع تفاصيل السجل');
     } finally {
       setIsDetailLoading(false);
     }

@@ -136,3 +136,8 @@ export * from './support';
 export * from './settings';
 export * from './audit';
 export * from './notification';
+export * from './fraud';
+export * from './finance';
+export * from './cms';
+export * from './notes';
+export * from './executive';

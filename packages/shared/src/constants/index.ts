@@ -38,6 +38,10 @@ export * from './settings';
 export * from './audit';
 export * from './errors';
 export * from './notifications';
+export * from './fraud';
+export * from './finance';
+export * from './cms';
+export * from './notes';
 
 // Explicit re-exports to resolve ambiguity across domain modules (Story 8.6)
 export {

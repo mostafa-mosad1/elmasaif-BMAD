@@ -117,7 +117,7 @@ export function SupportTicketsWorkspace({
       const data = res?.data || res;
       setQueueData(data);
     } catch (err: any) {
-      setError(describeApiError(err));
+      setError(describeApiError(err).message || 'تعذر تحميل تذاكر الدعم الفني');
     } finally {
       setIsLoading(false);
     }
@@ -135,7 +135,7 @@ export function SupportTicketsWorkspace({
       const res: any = await apiClient.get(`/admin/tickets/${item.id}`);
       setSelectedDetail(res?.data || res);
     } catch (err: any) {
-      setError(describeApiError(err));
+      setError(describeApiError(err).message || 'تعذر تحميل تذاكر الدعم الفني');
     } finally {
       setIsDetailLoading(false);
     }
@@ -163,7 +163,7 @@ export function SupportTicketsWorkspace({
       handleOpenDetail(selectedDetail);
       fetchQueue();
     } catch (err: any) {
-      setError(describeApiError(err));
+      setError(describeApiError(err).message || 'تعذر تحميل تذاكر الدعم الفني');
     } finally {
       setIsSendingMessage(false);
     }
@@ -189,7 +189,7 @@ export function SupportTicketsWorkspace({
       handleOpenDetail(selectedDetail);
       fetchQueue();
     } catch (err: any) {
-      setError(describeApiError(err));
+      setError(describeApiError(err).message || 'تعذر تحديث حالة التذكرة');
     }
   };
 
@@ -201,7 +201,7 @@ export function SupportTicketsWorkspace({
       handleOpenDetail(selectedDetail);
       fetchQueue();
     } catch (err: any) {
-      setError(describeApiError(err));
+      setError(describeApiError(err).message || 'تعذر تعيين التذكرة');
     }
   };
 
@@ -229,7 +229,7 @@ export function SupportTicketsWorkspace({
       handleOpenDetail(selectedDetail);
       fetchQueue();
     } catch (err: any) {
-      setResolutionError(describeApiError(err));
+      setResolutionError(describeApiError(err).message || 'تعذر حفظ حل التذكرة');
     } finally {
       setIsSubmittingResolution(false);
     }

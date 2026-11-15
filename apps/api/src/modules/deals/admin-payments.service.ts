@@ -5,6 +5,9 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import {
   DEAL_PAYMENT_STATUS,
@@ -23,7 +26,9 @@ import {
   PAYMENT_PROOF_REJECTED,
   PAYMENT_REJECTION_NOTE_REQUIRED,
   PAYMENT_SELF_APPROVAL_FORBIDDEN,
+  FraudEventType,
 } from '@elmasaif/shared';
+import { FraudService } from '../fraud/fraud.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClockService } from '../../common/clock/clock.service';
 import { assertOptimisticVersion } from '../../common/locks/claim-lock';
@@ -49,6 +54,11 @@ const PAYMENT_REVIEW_INCLUDE = {
           title: true,
         },
       },
+      buyerProfile: {
+        select: {
+          userId: true,
+        },
+      },
     },
   },
 } as const;
@@ -62,6 +72,9 @@ export class AdminPaymentsService {
     private readonly clockService: ClockService,
     private readonly storageService: StorageService,
     private readonly dealCompletionService: DealCompletionService,
+    @Optional()
+    @Inject(forwardRef(() => FraudService))
+    private readonly fraudService?: FraudService,
   ) {}
 
   /**
@@ -622,6 +635,18 @@ export class AdminPaymentsService {
       });
 
       this.logger.log(`Payment ${id} rejected by admin ${admin.id}`);
+
+      const buyerUserId = (payment.deal as any)?.buyerProfile?.userId;
+      if (this.fraudService && buyerUserId) {
+        this.fraudService
+          .recordAutomatedFraudEventIfThresholdReached(
+            buyerUserId,
+            FraudEventType.REPEATED_REJECTED_PROOFS,
+          )
+          .catch((err) => {
+            this.logger.error(`Automated fraud threshold hook error: ${err.message}`);
+          });
+      }
 
       const nameMap = new Map([[admin.id, admin.fullName]]);
       return toAdminPaymentDetail(

@@ -2,11 +2,13 @@ import { SetMetadata } from '@nestjs/common';
 
 export const ADMIN_PERMISSION_METADATA_KEY = 'required_admin_permission';
 
-export const RequireAdminPermission = (...permissions: string[]) =>
-  SetMetadata(
+export const RequireAdminPermission = (...permissions: (string | string[])[]) => {
+  const flattened = permissions.flat();
+  return SetMetadata(
     ADMIN_PERMISSION_METADATA_KEY,
-    permissions.length === 1 ? permissions[0] : permissions,
+    flattened.length === 1 ? flattened[0] : flattened,
   );
+};
 
 export const RequirePermissions = RequireAdminPermission;
 

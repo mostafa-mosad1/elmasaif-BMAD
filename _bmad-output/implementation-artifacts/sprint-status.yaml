@@ -117,6 +117,6 @@ development_status:
   8-5-violation-reporting-support-ticketing-system: done
   8-6-dynamic-platform-settings-commission-configuration: done
   8-7-immutable-domain-audit-logging-inspection: done
-  8-8-unified-in-app-notification-feed-transactional-emails: review
-  8-9-fraud-management-log-financial-reports-cms: backlog
+  8-8-unified-in-app-notification-feed-transactional-emails: done
+  8-9-fraud-management-log-financial-reports-cms: review
   epic-8-retrospective: optional

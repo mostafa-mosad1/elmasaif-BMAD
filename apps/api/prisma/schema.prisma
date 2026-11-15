@@ -244,6 +244,46 @@ enum NotificationCategory {
   SYSTEM
 }
 
+enum FraudEventType {
+  REPEATED_REJECTED_PROOFS
+  REPEATED_IBAN_CHANGES
+  REPEATED_CANCELLATIONS
+  SUSPICIOUS_MESSAGING
+  UNAUTHORIZED_BROKER_ACTIVITY
+  MANUAL_SUSPICIOUS_REPORT
+}
+
+enum FraudSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum FraudStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  DISMISSED
+}
+
+enum NoteEntityType {
+  LISTING
+  DEAL
+  USER
+  DISPUTE
+  CONTRACT
+}
+
+enum CmsPageCategory {
+  LEGAL_TERMS
+  PRIVACY_POLICY
+  FAQ
+  GUIDE
+  ANNOUNCEMENT
+}
+
+
 model User {
   id                  String        @id @default(uuid())
   username            String        @unique
@@ -278,6 +318,7 @@ model User {
   supportTicketsCreated     SupportTicket[]   @relation("UserSupportTickets")
   ticketMessages            TicketMessage[]
   notifications             Notification[]
+  targetedFraudLogs         FraudLog[]           @relation("TargetUserFraudLogs")
 
   @@map("users")
 }
@@ -436,6 +477,11 @@ model AdminUser {
   assignedSupportTickets   SupportTicket[]   @relation("AssignedSupportTickets")
   ticketMessages           TicketMessage[]
   updatedPlatformSettings  PlatformSetting[]
+  loggedFraudCases         FraudLog[]               @relation("LoggedAdminFraudLogs")
+  resolvedFraudCases       FraudLog[]               @relation("ResolvedAdminFraudLogs")
+  authoredInternalNotes    OperationalInternalNote[] @relation("AuthoredInternalNotes")
+  authoredCmsPages         CmsPage[]                @relation("AuthoredCmsPages")
+  createdAnnouncementBanners AnnouncementBanner[]   @relation("CreatedAnnouncementBanners")
 
   @@map("admin_users")
 }
@@ -1317,5 +1363,108 @@ model Notification {
   @@index([createdAt])
   @@map("notifications")
 }
+
+model FraudLog {
+  id                String         @id @default(uuid())
+  caseNumber        String         @unique @map("case_number")
+  eventType         FraudEventType @map("event_type")
+  severity          FraudSeverity  @default(LOW)
+  status            FraudStatus    @default(OPEN)
+  targetUserId      String?        @map("target_user_id")
+  targetListingId   String?        @map("target_listing_id")
+  targetDealId      String?        @map("target_deal_id")
+  detectedReasons   String[]       @map("detected_reasons")
+  description       String
+  penaltySar        Decimal?       @db.Decimal(12, 2) @map("penalty_sar")
+  penaltyReason     String?        @map("penalty_reason")
+  marketerSuspended Boolean        @default(false) @map("marketer_suspended")
+  loggedByAdminId   String?        @map("logged_by_admin_id")
+  resolvedByAdminId String?        @map("resolved_by_admin_id")
+  resolutionNotes   String?        @map("resolution_notes")
+  metadata          Json?
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+
+  targetUser      User?      @relation("TargetUserFraudLogs", fields: [targetUserId], references: [id], onDelete: SetNull)
+  loggedByAdmin   AdminUser? @relation("LoggedAdminFraudLogs", fields: [loggedByAdminId], references: [id], onDelete: SetNull)
+  resolvedByAdmin AdminUser? @relation("ResolvedAdminFraudLogs", fields: [resolvedByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([eventType, status])
+  @@index([targetUserId])
+  @@index([createdAt])
+  @@map("fraud_logs")
+}
+
+model OperationalInternalNote {
+  id            String         @id @default(uuid())
+  entityType    NoteEntityType @map("entity_type")
+  entityId      String         @map("entity_id")
+  content       String         @db.VarChar(1000)
+  authorAdminId String         @map("author_admin_id")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  authorAdmin AdminUser @relation("AuthoredInternalNotes", fields: [authorAdminId], references: [id], onDelete: Cascade)
+
+  @@index([entityType, entityId, createdAt])
+  @@map("operational_internal_notes")
+}
+
+model CmsPage {
+  id            String          @id @default(uuid())
+  slug          String          @unique
+  title         String
+  category      CmsPageCategory
+  content       String          @db.Text
+  summary       String?         @db.Text
+  isPublished   Boolean         @default(true) @map("is_published")
+  displayOrder  Int             @default(0) @map("display_order")
+  publishedAt   DateTime?       @map("published_at")
+  authorAdminId String?         @map("author_admin_id")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  authorAdmin AdminUser? @relation("AuthoredCmsPages", fields: [authorAdminId], references: [id], onDelete: SetNull)
+
+  @@index([category, isPublished, displayOrder])
+  @@map("cms_pages")
+}
+
+model AnnouncementBanner {
+  id               String    @id @default(uuid())
+  title            String
+  content          String    @db.Text
+  bannerType       String    @default("INFO") @map("banner_type")
+  isActive         Boolean   @default(true) @map("is_active")
+  startAt          DateTime? @map("start_at")
+  endAt            DateTime? @map("end_at")
+  actionUrl        String?   @map("action_url")
+  actionText       String?   @map("action_text")
+  createdByAdminId String?   @map("created_by_admin_id")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  createdByAdmin AdminUser? @relation("CreatedAnnouncementBanners", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([isActive, startAt, endAt])
+  @@map("announcement_banners")
+}
+
+model FaqItem {
+  id           String   @id @default(uuid())
+  questionAr   String   @map("question_ar")
+  answerAr     String   @db.Text @map("answer_ar")
+  questionEn   String?  @map("question_en")
+  answerEn     String?  @db.Text @map("answer_en")
+  category     String   @default("GENERAL")
+  displayOrder Int      @default(0) @map("display_order")
+  isPublished  Boolean  @default(true) @map("is_published")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([category, isPublished, displayOrder])
+  @@map("faq_items")
+}
+
 
 

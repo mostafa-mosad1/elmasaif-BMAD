@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
 import { WorkspaceShell } from '../workspace-shell';
@@ -6,6 +6,11 @@ import { AuthContext, AuthContextType } from '../../providers/auth-provider';
 import { DirectionProvider } from '../../providers/direction-provider';
 import { ThemeProvider } from '../../providers/theme-provider';
 import { UserRole, ProfileStatus, VerificationStatus } from '@elmasaif/shared';
+
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/app/buyer',
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
+}));
 
 describe('WorkspaceShell Component (AC: 5, 7)', () => {
   const createMockContext = (activeRole: UserRole): AuthContextType => ({

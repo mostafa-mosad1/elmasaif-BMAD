@@ -99,7 +99,7 @@ export function ViolationReportsWorkspace({
       const data = res?.data || res;
       setQueueData(data);
     } catch (err: any) {
-      setError(describeApiError(err));
+      setError(describeApiError(err).message || 'تعذر تحميل بلاغات المخالفات');
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +117,7 @@ export function ViolationReportsWorkspace({
       const res: any = await apiClient.get(`/admin/reports/${item.id}`);
       setSelectedDetail(res?.data || res);
     } catch (err: any) {
-      setError(describeApiError(err));
+      setError(describeApiError(err).message || 'تعذر تحميل بلاغات المخالفات');
     } finally {
       setIsDetailLoading(false);
     }
@@ -180,7 +180,7 @@ export function ViolationReportsWorkspace({
         handleOpenDetail(modalTarget);
       }
     } catch (err: any) {
-      setModalError(describeApiError(err));
+      setModalError(describeApiError(err).message || 'تعذر اتخاذ الإجراء على البلاغ');
     } finally {
       setIsSubmittingAction(false);
     }

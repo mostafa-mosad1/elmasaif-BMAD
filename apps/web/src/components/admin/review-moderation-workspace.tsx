@@ -138,7 +138,7 @@ export function ReviewModerationWorkspace({
         setQueueData(response.data);
       }
     } catch (err) {
-      setError(describeApiError(err, 'تعذر تحميل طابور مراجعة التقييمات'));
+      setError(describeApiError(err).message || 'تعذر تحميل طابور مراجعة التقييمات');
     } finally {
       setIsLoading(false);
     }
@@ -156,7 +156,7 @@ export function ReviewModerationWorkspace({
         setSelectedDetail(response.data);
       }
     } catch (err) {
-      setError(describeApiError(err, 'تعذر تحميل سجل التدقيق للتقييم'));
+      setError(describeApiError(err).message || 'تعذر تحميل سجل التدقيق للتقييم');
     } finally {
       setIsDetailLoading(false);
     }
@@ -252,7 +252,7 @@ export function ReviewModerationWorkspace({
       await fetchReviewsQueue();
       await fetchReviewDetail(moderatedId);
     } catch (err) {
-      setModalError(describeApiError(err, 'تعذر تنفيذ إجراء المراجعة على التقييم'));
+      setModalError(describeApiError(err).message || 'تعذر تنفيذ إجراء المراجعة على التقييم');
     } finally {
       setIsSubmittingModeration(false);
     }

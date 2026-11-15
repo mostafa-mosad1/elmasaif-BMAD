@@ -167,6 +167,15 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         : []),
       ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Audit.View')
         ? [{ href: '/admin/audit', label: 'سجل التدقيق والرقابة', icon: ScrollText }]
+        : []),
+      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Fraud.View') || admin.permissions?.includes('Compliance.Manage') || admin.permissions?.includes('Security.Manage')
+        ? [{ href: '/admin/fraud', label: 'سجل مكافحة الاحتيال', icon: ShieldAlert }]
+        : []),
+      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Finance.View') || admin.permissions?.includes('Finance.Audit') || admin.permissions?.includes('Finance.Export')
+        ? [{ href: '/admin/finance', label: 'المؤشرات والتقارير المالية', icon: Wallet }]
+        : []),
+      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('CMS.Manage') || admin.permissions?.includes('Content.Manage')
+        ? [{ href: '/admin/cms', label: 'إدارة المحتوى والإعلانات (CMS)', icon: FileText }]
         : [])
     ]
   };

@@ -19,6 +19,11 @@ import { SupportModule } from './modules/support/support.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { FraudModule } from './modules/fraud/fraud.module';
+import { FinanceModule } from './modules/finance/finance.module';
+import { CmsModule } from './modules/cms/cms.module';
+import { NotesModule } from './modules/notes/notes.module';
+import { ExecutiveModule } from './modules/executive/executive.module';
 import { ClockModule } from './common/clock/clock.module';
 import { LocksModule } from './common/locks/locks.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
@@ -52,7 +57,12 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
     SupportModule,
     SettingsModule,
     AuditModule,
-    NotificationsModule
+    NotificationsModule,
+    FraudModule,
+    FinanceModule,
+    CmsModule,
+    NotesModule,
+    ExecutiveModule,
   ]
 })
 export class AppModule implements NestModule {

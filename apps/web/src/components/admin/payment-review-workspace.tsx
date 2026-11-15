@@ -29,10 +29,12 @@ import {
   DEAL_PAYMENT_TYPE_LABELS_AR,
   DEAL_STATUS_LABELS_AR,
   PAYMENT_CLAIMABLE_STATUSES,
+  NoteEntityType,
 } from '@elmasaif/shared';
 import { apiClient, describeApiError, readLockHolderName } from '../../lib/api-client';
 import { formatSar } from '../listings/commission-calculator';
 import { formatLockCountdown } from './payment-review-queue';
+import { OperationalInternalNotesCard } from './operational-internal-notes-card';
 
 /** Heartbeat cadence: 4 minutes (against 15-minute lease and 5-minute advisory). */
 export const PAYMENT_REVIEW_HEARTBEAT_INTERVAL_MS = 4 * 60 * 1000;
@@ -576,6 +578,12 @@ export function PaymentReviewWorkspace({ paymentId }: PaymentReviewWorkspaceProp
               </div>
             )}
           </div>
+
+          {/* Operational Internal Staff Notes */}
+          <OperationalInternalNotesCard
+            entityType={NoteEntityType.PAYMENT}
+            entityId={payment.id}
+          />
         </div>
       </div>
 

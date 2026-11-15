@@ -78,7 +78,7 @@ export function SettingsWorkspace({
         setFormValues(res.data);
       }
     } catch (err) {
-      setError(describeApiError(err, 'تعذر تحميل إعدادات المنصة'));
+      setError(describeApiError(err).message || 'تعذر تحميل إعدادات المنصة');
     } finally {
       setLoading(false);
     }
@@ -226,7 +226,7 @@ export function SettingsWorkspace({
         loadAuditHistory();
       }
     } catch (err) {
-      setJustificationError(describeApiError(err, 'فشل حفظ الإعدادات'));
+      setJustificationError(describeApiError(err).message || 'فشل حفظ الإعدادات');
     } finally {
       setSaving(false);
     }

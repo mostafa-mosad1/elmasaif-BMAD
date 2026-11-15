@@ -144,12 +144,15 @@ apiClient.delete = function <T>(
  * Narrows an unknown `catch` value into the standard error envelope, without `any`.
  * Use it whenever a component needs `ApiError.code` / `details` inside a `try…catch`.
  */
-export function describeApiError(err: unknown): StandardErrorEnvelope {
+export function describeApiError(err: unknown, fallbackMessage?: string): StandardErrorEnvelope {
   const failure = (err ?? {}) as { code?: unknown; message?: unknown; details?: unknown; requestId?: unknown };
 
   return {
     code: typeof failure.code === 'string' ? failure.code : undefined,
-    message: typeof failure.message === 'string' ? failure.message : undefined,
+    message:
+      typeof failure.message === 'string' && failure.message
+        ? failure.message
+        : fallbackMessage,
     details: failure.details,
     requestId: typeof failure.requestId === 'string' ? failure.requestId : undefined,
   };
