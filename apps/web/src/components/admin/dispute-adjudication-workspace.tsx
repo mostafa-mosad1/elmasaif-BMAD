@@ -10,10 +10,12 @@ import {
   CheckCircle2,
   Clock,
   Download,
+  ExternalLink,
   FileCheck2,
   FileText,
   FileX2,
   Lock,
+  RefreshCw,
   RotateCcw,
   Scale,
   ShieldAlert,
@@ -140,6 +142,103 @@ export interface AdjudicationFormState {
   action: 'COMPLETE' | 'CANCEL' | 'RETURN_TO_REVIEW';
   notes: string;
   newDeadlineHours: number;
+}
+
+export function DisputePaymentProofViewer({ paymentId }: { paymentId: string }) {
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchProof = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await apiClient.get<{ data?: { downloadUrl: string; expiresInSeconds: number } }>(
+        `/admin/payments/${paymentId}/proof-url`,
+      );
+      setDownloadUrl(res?.data?.downloadUrl ?? null);
+    } catch (err: unknown) {
+      setError(describeApiError(err).message || 'تعذر تحميل إيصال التحويل');
+    } finally {
+      setLoading(false);
+    }
+  }, [paymentId]);
+
+  useEffect(() => {
+    fetchProof();
+  }, [fetchProof]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 pt-2 text-xs text-ink-muted">
+        <RefreshCw className="h-3.5 w-3.5 animate-spin text-primary" />
+        <span>جارٍ تجهيز إيصال التحويل...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-1.5 pt-2">
+        <div className="flex items-center gap-1.5 text-xs text-status-danger">
+          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+          <span>{error}</span>
+        </div>
+        <button
+          type="button"
+          onClick={fetchProof}
+          className="text-xs text-primary underline hover:text-primary-hover font-semibold"
+        >
+          إعادة المحاولة
+        </button>
+      </div>
+    );
+  }
+
+  if (!downloadUrl) return null;
+
+  const isPdf = downloadUrl.toLowerCase().includes('.pdf');
+
+  return (
+    <div className="space-y-3 pt-2">
+      {/* Visual Image / PDF Preview */}
+      <div className="relative overflow-hidden rounded-xl border border-surface-border bg-white dark:bg-dark-surface-sunken p-2 max-w-md shadow-xs">
+        {isPdf ? (
+          <iframe
+            src={downloadUrl}
+            title="إيصال التحويل البنكي"
+            className="w-full h-56 border-0 rounded"
+          />
+        ) : (
+          <img
+            src={downloadUrl}
+            alt="إيصال التحويل البنكي"
+            className="max-h-56 w-full object-contain rounded"
+          />
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <a
+          href={downloadUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          معاينة بالحجم الكامل
+        </a>
+        <a
+          href={downloadUrl}
+          download
+          className="inline-flex items-center gap-1.5 rounded-lg border border-surface-border bg-surface px-3 py-1.5 text-xs font-semibold text-ink-primary hover:bg-surface-hover transition-colors"
+        >
+          <Download className="h-3.5 w-3.5" />
+          تحميل الإيصال
+        </a>
+      </div>
+    </div>
+  );
 }
 
 interface DisputeWorkspaceProps {
@@ -524,17 +623,7 @@ export function DisputeAdjudicationWorkspace({ disputeId }: DisputeWorkspaceProp
               </div>
 
               {payment.proofFileObjectId ? (
-                <div className="pt-2">
-                  <a
-                    href={`/api/v1/deals/${detail.dealId}/payments/${payment.paymentType}/proof-url`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    تحميل ومعاينة إيصال التحويل
-                  </a>
-                </div>
+                <DisputePaymentProofViewer paymentId={payment.id} />
               ) : (
                 <div className="text-[11px] text-ink-muted italic">لا يوجد إيصال مرفوع</div>
               )}

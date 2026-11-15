@@ -87,7 +87,7 @@ export class AdminPaymentsController {
 
   @Get(':id/proof-url')
   @HttpCode(HttpStatus.OK)
-  @RequireAdminPermission('Payments.Review')
+  @RequireAdminPermission('Payments.Review', 'Deals.DisputeResolve')
   @ApiOperation({ summary: 'Verified presigned download URL for the uploaded payment receipt (300 s)' })
   @ApiParam({ name: 'id', description: 'Payment id' })
   @ApiResponse({ status: 200, description: 'Download URL minted' })
