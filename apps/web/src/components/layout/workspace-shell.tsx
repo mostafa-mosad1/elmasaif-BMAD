@@ -193,7 +193,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const handleActiveLogout = isAdminRoute ? logoutAdmin : logout;
 
   return (
-    <div className="min-h-screen flex bg-surface-sunken dark:bg-dark-surface font-sans antialiased text-ink-primary dark:text-dark-ink-primary">
+    <div className="min-h-screen flex bg-surface-background dark:bg-dark-background font-sans antialiased text-ink-primary dark:text-dark-ink-primary">
       {/* Mobile Sidebar Overlay */}
       {mobileSidebarOpen && (
         <div
@@ -229,7 +229,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
           </Link>
           <button
             type="button"
-            className="lg:hidden p-1.5 rounded-md hover:bg-surface-sunken dark:hover:bg-dark-surface"
+            className="lg:hidden p-1.5 rounded-md hover:bg-surface-sunken dark:hover:bg-dark-surface-raised"
             onClick={() => setMobileSidebarOpen(false)}
             aria-label="Close sidebar"
           >
@@ -250,7 +250,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
                 className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
                     ? 'bg-primary text-primary-foreground shadow-sm font-bold'
-                    : 'text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface hover:text-ink-primary dark:hover:text-dark-ink-primary'
+                    : 'text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-raised hover:text-ink-primary dark:hover:text-dark-ink-primary'
                 }`}
               >
                 <Icon className={`w-4 h-4 ${isActive ? 'text-primary-foreground' : 'text-ink-muted'}`} />
@@ -262,7 +262,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
 
         {/* User / Admin Profile Footer in Sidebar */}
         {isAdminRoute && admin ? (
-          <div className="p-4 border-t border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface/40">
+          <div className="p-4 border-t border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5 overflow-hidden">
                 <div className="w-8 h-8 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-xs shrink-0">
@@ -288,7 +288,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
           </div>
         ) : (
           user && (
-            <div className="p-4 border-t border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface/40">
+            <div className="p-4 border-t border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5 overflow-hidden">
                   <div className="w-8 h-8 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-xs shrink-0">
@@ -319,11 +319,11 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
       {/* Main Workspace Content Area */}
       <div className="flex-1 flex flex-col min-w-0 w-full lg:ps-[280px]">
         {/* Workspace Top Bar */}
-        <header className="sticky top-0 z-30 h-20 w-full min-w-0 bg-surface/90 dark:bg-dark-surface-raised/90 backdrop-blur-md border-b border-surface-border dark:border-dark-surface-border px-4 sm:px-8 flex items-center justify-between">
+        <header className="sticky top-0 z-30 h-20 w-full min-w-0 bg-surface-base/90 dark:bg-dark-surface-base/90 backdrop-blur-md border-b border-surface-border dark:border-dark-surface-border px-4 sm:px-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               type="button"
-              className="lg:hidden p-2 rounded-lg border border-surface-border dark:border-dark-surface-border hover:bg-surface-sunken dark:hover:bg-dark-surface"
+              className="lg:hidden p-2 rounded-lg border border-surface-border dark:border-dark-surface-border hover:bg-surface-sunken dark:hover:bg-dark-surface-raised"
               onClick={() => setMobileSidebarOpen(true)}
               aria-label="Open sidebar"
             >
@@ -341,7 +341,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
             <button
               onClick={handleQuickToggleLocale}
               type="button"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface border border-surface-border dark:border-dark-surface-border transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border transition-colors"
               aria-label={isArabic ? 'Switch to English' : 'التبديل إلى العربية'}
             >
               <Globe className="w-3.5 h-3.5 text-primary dark:text-primary-light" />
@@ -352,7 +352,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
             <button
               onClick={handleQuickToggleTheme}
               type="button"
-              className="p-2 rounded-lg text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface border border-surface-border dark:border-dark-surface-border transition-colors"
+              className="p-2 rounded-lg text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border transition-colors"
               aria-label={resolvedTheme === 'dark' ? 'Activate Light Mode' : 'تفعيل الوضع الداكن'}
             >
               {resolvedTheme === 'dark' ? (

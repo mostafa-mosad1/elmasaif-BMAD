@@ -80,9 +80,9 @@ export function AnnouncementBannerBar() {
         };
       case AnnouncementBannerType.SUCCESS:
         return {
-          container: 'bg-emerald-700 text-white border-b border-emerald-800',
-          icon: <CheckCircle className="w-4 h-4 shrink-0 text-white" />,
-          btn: 'bg-white text-emerald-800 hover:bg-emerald-50',
+          container: 'bg-primary text-primary-foreground border-b border-surface-border',
+          icon: <CheckCircle className="w-4 h-4 shrink-0 text-accent" />,
+          btn: 'bg-accent text-white hover:bg-accent-hover',
         };
       case AnnouncementBannerType.INFO:
       default:

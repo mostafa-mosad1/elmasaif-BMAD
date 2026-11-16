@@ -30,16 +30,16 @@ export function BasicInfoStep({ formData, updateForm, errors }: BasicInfoStepPro
   return (
     <div className="space-y-6" dir="rtl">
       <div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">البيانات الأساسية للعقار</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+        <h2 className="text-xl font-bold text-ink-primary dark:text-dark-ink-primary">البيانات الأساسية للعقار</h2>
+        <p className="text-sm text-ink-secondary dark:text-dark-ink-secondary mt-1">
           حدد نوع العقار وتفاصيله الفنية الأساسية بدقة لجذب المشترين الجادين.
         </p>
       </div>
 
       {/* Property Type Grid Selector */}
       <div>
-        <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-2">
-          نوع العقار <span className="text-red-500">*</span>
+        <label className="block text-sm font-semibold text-ink-primary dark:text-dark-ink-primary mb-2">
+          نوع العقار <span className="text-status-danger">*</span>
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {PROPERTY_TYPES.map(({ type, label, icon }) => {
@@ -51,11 +51,11 @@ export function BasicInfoStep({ formData, updateForm, errors }: BasicInfoStepPro
                 onClick={() => updateForm({ propertyType: type })}
                 className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${
                   isSelected
-                    ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold shadow-sm'
-                    : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800'
+                    ? 'border-accent bg-accent-light/40 dark:bg-amber-950/30 text-accent-dark dark:text-accent font-bold shadow-sm'
+                    : 'border-surface-border dark:border-dark-surface-border hover:border-surface-borderStrong dark:hover:border-dark-surface-borderStrong text-ink-secondary dark:text-dark-ink-secondary bg-surface-sunken dark:bg-dark-surface-raised'
                 }`}
               >
-                <div className={`mb-2 ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
+                <div className={`mb-2 ${isSelected ? 'text-accent' : 'text-ink-muted dark:text-dark-ink-muted'}`}>
                   {icon}
                 </div>
                 <span className="text-sm">{label}</span>
@@ -63,16 +63,16 @@ export function BasicInfoStep({ formData, updateForm, errors }: BasicInfoStepPro
             );
           })}
         </div>
-        {errors.propertyType && <p className="text-xs text-red-500 mt-1">{errors.propertyType}</p>}
+        {errors.propertyType && <p className="text-xs text-status-danger mt-1">{errors.propertyType}</p>}
       </div>
 
       {/* Title Input */}
       <div>
         <div className="flex justify-between items-center mb-1">
-          <label htmlFor="listing-title" className="block text-sm font-semibold text-slate-800 dark:text-slate-200">
-            عنوان الإعلان <span className="text-red-500">*</span>
+          <label htmlFor="listing-title" className="block text-sm font-semibold text-ink-primary dark:text-dark-ink-primary">
+            عنوان الإعلان <span className="text-status-danger">*</span>
           </label>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-ink-muted dark:text-dark-ink-muted">
             {formData.title.length} / 150 حرفاً (الحد الأدنى 5)
           </span>
         </div>
@@ -83,22 +83,22 @@ export function BasicInfoStep({ formData, updateForm, errors }: BasicInfoStepPro
           maxLength={150}
           onChange={(e) => updateForm({ title: e.target.value })}
           placeholder="مثال: فيلا فاخرة بتصميم مودرن في حي النرجس"
-          className={`w-full px-4 py-2.5 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 ${
+          className={`w-full px-4 py-2.5 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 bg-surface-sunken dark:bg-dark-surface-sunken text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-muted dark:placeholder:text-dark-ink-muted ${
             errors.title
-              ? 'border-red-500 focus:ring-red-200'
-              : 'border-slate-300 dark:border-slate-700 focus:border-emerald-600 focus:ring-emerald-100 dark:bg-slate-800 dark:text-white'
+              ? 'border-status-danger focus:ring-status-danger/20'
+              : 'border-surface-border dark:border-dark-surface-border focus:border-accent focus:ring-accent/20'
           }`}
         />
-        {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
+        {errors.title && <p className="text-xs text-status-danger mt-1">{errors.title}</p>}
       </div>
 
       {/* Description Textarea */}
       <div>
         <div className="flex justify-between items-center mb-1">
-          <label htmlFor="listing-description" className="block text-sm font-semibold text-slate-800 dark:text-slate-200">
-            الوصف التفصيلي <span className="text-red-500">*</span>
+          <label htmlFor="listing-description" className="block text-sm font-semibold text-ink-primary dark:text-dark-ink-primary">
+            الوصف التفصيلي <span className="text-status-danger">*</span>
           </label>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-ink-muted dark:text-dark-ink-muted">
             {formData.description.length} / 3000 حرفاً (الحد الأدنى 10)
           </span>
         </div>
@@ -109,21 +109,21 @@ export function BasicInfoStep({ formData, updateForm, errors }: BasicInfoStepPro
           value={formData.description}
           onChange={(e) => updateForm({ description: e.target.value })}
           placeholder="اكتب وصفاً شاملاً يبرز مزايا العقار والموقع والتشطيبات وتوفر الخدمات والضمانات..."
-          className={`w-full px-4 py-2.5 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 resize-y ${
+          className={`w-full px-4 py-2.5 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 resize-y bg-surface-sunken dark:bg-dark-surface-sunken text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-muted dark:placeholder:text-dark-ink-muted ${
             errors.description
-              ? 'border-red-500 focus:ring-red-200'
-              : 'border-slate-300 dark:border-slate-700 focus:border-emerald-600 focus:ring-emerald-100 dark:bg-slate-800 dark:text-white'
+              ? 'border-status-danger focus:ring-status-danger/20'
+              : 'border-surface-border dark:border-dark-surface-border focus:border-accent focus:ring-accent/20'
           }`}
         />
-        {errors.description && <p className="text-xs text-red-500 mt-1">{errors.description}</p>}
+        {errors.description && <p className="text-xs text-status-danger mt-1">{errors.description}</p>}
       </div>
 
       {/* Technical Specifications Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Area Square Meters */}
         <div>
-          <label htmlFor="area-sqm" className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
-            المساحة (م²) <span className="text-red-500">*</span>
+          <label htmlFor="area-sqm" className="block text-sm font-semibold text-ink-primary dark:text-dark-ink-primary mb-1">
+            المساحة (م²) <span className="text-status-danger">*</span>
           </label>
           <input
             id="area-sqm"
@@ -134,18 +134,18 @@ export function BasicInfoStep({ formData, updateForm, errors }: BasicInfoStepPro
             value={formData.areaSquareMeters}
             onChange={(e) => updateForm({ areaSquareMeters: e.target.value ? Number(e.target.value) : '' })}
             placeholder="مثال: 450"
-            className={`w-full px-4 py-2.5 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 ${
+            className={`w-full px-4 py-2.5 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 bg-surface-sunken dark:bg-dark-surface-sunken text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-muted dark:placeholder:text-dark-ink-muted ${
               errors.areaSquareMeters
-                ? 'border-red-500 focus:ring-red-200'
-                : 'border-slate-300 dark:border-slate-700 focus:border-emerald-600 focus:ring-emerald-100 dark:bg-slate-800 dark:text-white'
+                ? 'border-status-danger focus:ring-status-danger/20'
+                : 'border-surface-border dark:border-dark-surface-border focus:border-accent focus:ring-accent/20'
             }`}
           />
-          {errors.areaSquareMeters && <p className="text-xs text-red-500 mt-1">{errors.areaSquareMeters}</p>}
+          {errors.areaSquareMeters && <p className="text-xs text-status-danger mt-1">{errors.areaSquareMeters}</p>}
         </div>
 
         {/* Bedrooms Counter - strictly no bathrooms */}
         <div>
-          <label htmlFor="bedrooms-count" className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
+          <label htmlFor="bedrooms-count" className="block text-sm font-semibold text-ink-primary dark:text-dark-ink-primary mb-1">
             عدد غرف النوم (اختياري)
           </label>
           <div className="relative">
@@ -157,16 +157,16 @@ export function BasicInfoStep({ formData, updateForm, errors }: BasicInfoStepPro
               value={formData.bedrooms}
               onChange={(e) => updateForm({ bedrooms: e.target.value ? Number(e.target.value) : '' })}
               placeholder="0"
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 text-sm transition-colors focus:outline-none focus:ring-2 focus:border-emerald-600 focus:ring-emerald-100 dark:bg-slate-800 dark:text-white pr-9"
+              className="w-full px-4 py-2.5 rounded-lg border border-surface-border dark:border-dark-surface-border bg-surface-sunken dark:bg-dark-surface-sunken text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-muted dark:placeholder:text-dark-ink-muted text-sm transition-colors focus:outline-none focus:ring-2 focus:border-accent focus:ring-accent/20 pr-9"
             />
-            <BedDouble className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+            <BedDouble className="w-4 h-4 text-ink-muted dark:text-dark-ink-muted absolute left-3 top-3" />
           </div>
-          {errors.bedrooms && <p className="text-xs text-red-500 mt-1">{errors.bedrooms}</p>}
+          {errors.bedrooms && <p className="text-xs text-status-danger mt-1">{errors.bedrooms}</p>}
         </div>
 
         {/* Year Built */}
         <div>
-          <label htmlFor="year-built" className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
+          <label htmlFor="year-built" className="block text-sm font-semibold text-ink-primary dark:text-dark-ink-primary mb-1">
             سنة البناء (اختياري)
           </label>
           <input
@@ -177,9 +177,9 @@ export function BasicInfoStep({ formData, updateForm, errors }: BasicInfoStepPro
             value={formData.yearBuilt}
             onChange={(e) => updateForm({ yearBuilt: e.target.value ? Number(e.target.value) : '' })}
             placeholder={String(currentYear)}
-            className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 text-sm transition-colors focus:outline-none focus:ring-2 focus:border-emerald-600 focus:ring-emerald-100 dark:bg-slate-800 dark:text-white"
+            className="w-full px-4 py-2.5 rounded-lg border border-surface-border dark:border-dark-surface-border bg-surface-sunken dark:bg-dark-surface-sunken text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-muted dark:placeholder:text-dark-ink-muted text-sm transition-colors focus:outline-none focus:ring-2 focus:border-accent focus:ring-accent/20"
           />
-          {errors.yearBuilt && <p className="text-xs text-red-500 mt-1">{errors.yearBuilt}</p>}
+          {errors.yearBuilt && <p className="text-xs text-status-danger mt-1">{errors.yearBuilt}</p>}
         </div>
       </div>
     </div>

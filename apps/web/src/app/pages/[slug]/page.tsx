@@ -199,7 +199,7 @@ export default function CmsPageReader() {
 
             {/* Footer Trust Badge */}
             <div className="pt-6 border-t border-border-light dark:border-dark-border flex items-center gap-3 text-xs text-ink-secondary">
-              <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+              <ShieldCheck className="w-5 h-5 text-accent shrink-0" />
               <span>
                 وثيقة معتمدة ومحدثة من الإدارة القانونية لمنصة المصايف وفق اشتراطات الهيئة العامة للعقار.
               </span>

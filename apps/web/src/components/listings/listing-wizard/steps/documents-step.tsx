@@ -120,8 +120,8 @@ export function DocumentsStep({ formData, updateForm, errors, userRole }: Docume
   return (
     <div className="space-y-6" dir="rtl">
       <div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">المستندات والوثائق الرسمية</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+        <h2 className="text-xl font-bold text-ink-primary dark:text-dark-ink-primary">المستندات والوثائق الرسمية</h2>
+        <p className="text-sm text-ink-secondary dark:text-dark-ink-secondary mt-1">
           ارفع الوثائق القانونية للتحقق من ملكية العقار وصلاحية الإعلان مع التحكم في خصوصيتها.
         </p>
       </div>
@@ -130,18 +130,18 @@ export function DocumentsStep({ formData, updateForm, errors, userRole }: Docume
       <div
         className={`p-4 rounded-xl border flex items-start gap-3 ${
           isMandatoryRequirementSatisfied
-            ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
+            ? 'bg-accent-light/30 dark:bg-amber-950/30 border-accent/30 text-accent-dark dark:text-accent'
             : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200'
         }`}
       >
-        <Lock className="w-5 h-5 text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5" />
+        <Lock className="w-5 h-5 text-accent shrink-0 mt-0.5" />
         <div className="text-xs">
           <div className="font-bold text-sm mb-0.5">
             {userRole === UserRole.MARKETER
               ? 'مستند إلزامي: عقد تفويض المالك أو اتفاقية الوساطة'
               : 'مستند إلزامي: صك الملكية الإلكتروني'}
           </div>
-          <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+          <p className="text-ink-secondary dark:text-dark-ink-secondary leading-relaxed">
             {userRole === UserRole.MARKETER
               ? 'بموجب تنظيمات الهيئة العامة للعقار، يجب إرفاق عقد تفويض وساطة رسمي. هذا المستند محمي تلقائياً بتصنيف (خاص بالإدارة) ولن يتم كشفه للمشترين أو الزوار مطلقاً.'
               : 'يجب إرفاق صك الملكية الإلكتروني المعتمد للتحقق من هوية العقار. هذا المستند مصنف تلقائياً كـ (خاص بالإدارة) ويحظر عرضه للمشترين.'}
@@ -150,15 +150,15 @@ export function DocumentsStep({ formData, updateForm, errors, userRole }: Docume
       </div>
 
       {/* Add Document Section */}
-      <div className="p-5 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-850 space-y-4">
-        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+      <div className="p-5 border border-surface-border dark:border-dark-surface-border rounded-xl bg-surface-base dark:bg-dark-surface-base space-y-4">
+        <h3 className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
           إرفاق وثيقة جديدة
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Document Type Selector */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-ink-primary dark:text-dark-ink-primary mb-1">
               نوع الوثيقة
             </label>
             <select
@@ -170,7 +170,7 @@ export function DocumentsStep({ formData, updateForm, errors, userRole }: Docume
                   setSelectedVisibility(DocumentVisibility.ADMIN_ONLY);
                 }
               }}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:border-emerald-600 dark:bg-slate-800 dark:text-white"
+              className="w-full px-3 py-2 rounded-lg border border-surface-border dark:border-dark-surface-border bg-surface-sunken dark:bg-dark-surface-sunken text-ink-primary dark:text-dark-ink-primary text-sm focus:outline-none focus:ring-2 focus:border-accent"
             >
               {userRole === UserRole.MARKETER && (
                 <option value="OWNER_AUTHORIZATION">عقد تفويض المالك / وساطة (إلزامي للوسطاء)</option>
@@ -186,22 +186,22 @@ export function DocumentsStep({ formData, updateForm, errors, userRole }: Docume
 
           {/* Visibility Selector */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-ink-primary dark:text-dark-ink-primary mb-1">
               تصنيف الخصوصية والظهور
             </label>
             {['TITLE_DEED', 'OWNER_AUTHORIZATION', 'COMMERCIAL_REGISTRATION'].includes(selectedDocType) ? (
-              <div className="px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400">
+              <div className="px-3 py-2 bg-surface-sunken dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border rounded-lg text-xs font-semibold text-ink-primary dark:text-dark-ink-primary flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-accent-dark dark:text-accent">
                   <Lock className="w-3.5 h-3.5" />
                   خاص بالإدارة فقط (إلزامي للمستندات السيادية)
                 </span>
-                <span className="text-[10px] text-slate-400">مغلق</span>
+                <span className="text-[10px] text-ink-muted">مغلق</span>
               </div>
             ) : (
               <select
                 value={selectedVisibility}
                 onChange={(e) => setSelectedVisibility(e.target.value as DocumentVisibility)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:border-emerald-600 dark:bg-slate-800 dark:text-white"
+                className="w-full px-3 py-2 rounded-lg border border-surface-border dark:border-dark-surface-border bg-surface-sunken dark:bg-dark-surface-sunken text-ink-primary dark:text-dark-ink-primary text-sm focus:outline-none focus:ring-2 focus:border-accent"
               >
                 <option value={DocumentVisibility.PUBLIC}>عام (Public - يظهر للمشترين)</option>
                 <option value={DocumentVisibility.ADMIN_ONLY}>خاص بالإدارة (AdminOnly - للإدارة فقط)</option>
@@ -225,11 +225,11 @@ export function DocumentsStep({ formData, updateForm, errors, userRole }: Docume
             type="button"
             disabled={isUploading}
             onClick={() => fileInputRef.current?.click()}
-            className="w-full py-3 px-4 border-2 border-dashed border-emerald-300 dark:border-emerald-800 hover:border-emerald-500 rounded-xl bg-emerald-50/40 dark:bg-emerald-950/20 text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
+            className="w-full py-3 px-4 border-2 border-dashed border-accent/40 hover:border-accent rounded-xl bg-accent-light/20 dark:bg-amber-950/20 text-xs font-bold text-accent-dark dark:text-accent flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
           >
             {isUploading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                <Loader2 className="w-4 h-4 animate-spin text-accent" />
                 <span>جاري فحص المستند أمنياً ورفعه...</span>
               </>
             ) : (
@@ -254,7 +254,7 @@ export function DocumentsStep({ formData, updateForm, errors, userRole }: Docume
       {/* List of Uploaded Documents */}
       {documents.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+          <h3 className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
             الوثائق المرفوعة ({documents.length})
           </h3>
 
@@ -264,15 +264,15 @@ export function DocumentsStep({ formData, updateForm, errors, userRole }: Docume
               return (
                 <div
                   key={doc.fileUrl || idx}
-                  className="p-3 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-between"
+                  className="p-3 bg-surface-base dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border rounded-xl flex items-center justify-between"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-lg bg-accent-light dark:bg-amber-950/60 text-accent-dark dark:text-accent flex items-center justify-center shrink-0">
                       <FileText className="w-5 h-5" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-slate-900 dark:text-white">
+                        <span className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
                           {DOCUMENT_TYPE_LABELS[doc.documentType] || doc.documentType}
                         </span>
                         {isAdminOnly ? (
@@ -287,7 +287,7 @@ export function DocumentsStep({ formData, updateForm, errors, userRole }: Docume
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      <div className="text-xs text-ink-muted dark:text-dark-ink-muted mt-0.5">
                         {doc.originalName || doc.fileUrl} &bull; {(doc.fileSize / 1024).toFixed(1)} كيلوبايت
                       </div>
                     </div>

@@ -5,58 +5,73 @@
 @tailwind utilities;
 
 :root {
-  /* Sovereign Emerald Primary Ramp */
-  --primary: #1B4332;
-  --primary-hover: #143326;
-  --primary-light: #E8F3EE;
+  /* Obsidian Titanium & Warm Bronze Primary Ramp */
+  --primary: #0F172A;
+  --primary-hover: #1E293B;
+  --primary-light: #F5F5F4;
   --primary-foreground: #FFFFFF;
-  --primary-dark: #2D6A4F;
-  --primary-dark-hover: #3D8565;
+  --primary-dark: #334155;
+  --primary-dark-hover: #475569;
 
-  /* Desert Gold Financial Accent Ramp */
-  --accent: #C69C45;
-  --accent-hover: #B38A38;
-  --accent-light: #FAF4E8;
-  --accent-foreground: #1A1208;
-  --accent-dark: #D4AF37;
+  /* Warm Bronze & Molten Amber Accent Ramp */
+  --accent: #D97706;
+  --accent-hover: #B45309;
+  --accent-light: #FEF3C7;
+  --accent-foreground: #1C1917;
+  --accent-dark: #F59E0B;
 
-  /* Surfaces & Canvas (Light Mode) */
-  --background: #F8FAF9;
+  /* Surfaces & Canvas (Light Mode - Warm Alabaster & Stone) */
+  --background: #FAF9F6;
   --surface-base: #FFFFFF;
   --surface-raised: #FFFFFF;
-  --surface-sunken: #F0F4F2;
-  --surface-border: #E2E8F0;
-  --surface-border-strong: #CBD5E1;
+  --surface-sunken: #F5F5F4;
+  --surface-border: #E7E5E4;
+  --surface-border-strong: #D6D3D1;
 
-  /* Text & Ink Scales (Light Mode) */
-  --ink-primary: #0F172A;
-  --ink-secondary: #475569;
-  --ink-muted: #94A3B8;
-  --ink-disabled: #CBD5E1;
+  /* Text & Ink Scales (Light Mode - Deep Warm Stone Charcoal) */
+  --ink-primary: #1C1917;
+  --ink-secondary: #57534E;
+  --ink-muted: #A8A29E;
+  --ink-disabled: #D6D3D1;
   --ink-inverse: #FFFFFF;
 
   /* Glassmorphism nav background */
-  --nav-bg: rgba(255, 255, 255, 0.88);
+  --nav-bg: rgba(250, 249, 246, 0.92);
 }
 
 .dark {
-  /* Surfaces & Canvas (Dark Mode) */
-  --background: #0B130E;
-  --surface-base: #132018;
-  --surface-raised: #1C2E24;
-  --surface-sunken: #0E1712;
-  --surface-border: #23382C;
-  --surface-border-strong: #32503E;
+  /* Obsidian Titanium & Warm Bronze (Dark Mode - Ultra Luxe) */
+  --primary: #F8FAFC;
+  --primary-hover: #E2E8F0;
+  --primary-light: #1E293B;
+  --primary-foreground: #07090C;
+  --primary-dark: #CBD5E1;
+  --primary-dark-hover: #94A3B8;
 
-  /* Text & Ink Scales (Dark Mode) */
-  --ink-primary: #F1F5F9;
-  --ink-secondary: #CBD5E1;
+  /* Glowing Warm Bronze Accent */
+  --accent: #F59E0B;
+  --accent-hover: #D97706;
+  --accent-light: #451A03;
+  --accent-foreground: #FFFBEB;
+  --accent-dark: #FBBF24;
+
+  /* Surfaces & Canvas (Deep Obsidian Charcoal - High Contrast) */
+  --background: #07090C;
+  --surface-base: #0F1318;
+  --surface-raised: #161C24;
+  --surface-sunken: #040608;
+  --surface-border: #1E2633;
+  --surface-border-strong: #2B374A;
+
+  /* Text & Ink Scales (Dark Mode - Crisp Readability) */
+  --ink-primary: #F8FAFC;
+  --ink-secondary: #94A3B8;
   --ink-muted: #64748B;
   --ink-disabled: #334155;
   --ink-inverse: #0F172A;
 
   /* Glassmorphism nav background */
-  --nav-bg: rgba(19, 32, 24, 0.88);
+  --nav-bg: rgba(15, 19, 24, 0.92);
 }
 
 body {
@@ -65,6 +80,50 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Dark Mode Global Contrast & Text Illumination */
+.dark .text-ink-primary:not([class*="dark:text-"]) {
+  color: var(--ink-primary);
+}
+
+.dark .text-ink-secondary:not([class*="dark:text-"]) {
+  color: var(--ink-secondary);
+}
+
+.dark .text-ink-muted:not([class*="dark:text-"]) {
+  color: var(--ink-muted);
+}
+
+/* Links & interactive buttons with text-primary adapt to glowing warm bronze in dark mode */
+.dark a.text-primary:not([class*="dark:text-"]),
+.dark button.text-primary:not([class*="dark:text-"]) {
+  color: var(--accent);
+}
+
+/* Headings and labels with text-primary adapt to crisp alabaster ink in dark mode */
+.dark span.text-primary:not([class*="dark:text-"]),
+.dark p.text-primary:not([class*="dark:text-"]),
+.dark h1.text-primary:not([class*="dark:text-"]),
+.dark h2.text-primary:not([class*="dark:text-"]),
+.dark h3.text-primary:not([class*="dark:text-"]),
+.dark h4.text-primary:not([class*="dark:text-"]),
+.dark div.text-primary:not([class*="dark:text-"]) {
+  color: var(--ink-primary);
+}
+
+/* Standalone SVG icons with text-primary illuminate in warm bronze in dark mode */
+.dark svg.text-primary:not([class*="dark:text-"]) {
+  color: var(--accent);
+}
+
+/* Primary tint badge and pill backgrounds in dark mode */
+.dark .bg-primary\/10:not([class*="dark:bg-"]) {
+  background-color: rgba(245, 158, 11, 0.15);
+}
+.dark .bg-primary\/10:not([class*="dark:bg-"]) .text-primary:not([class*="dark:text-"]),
+.dark .bg-primary\/10.text-primary:not([class*="dark:text-"]) {
+  color: var(--accent);
 }
 
 /* Monospace numerals, codes & IBAN styling */
@@ -90,39 +149,41 @@ body {
 
 .luxury-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 16px 32px -8px rgba(27, 67, 50, 0.12), 0 4px 12px -2px rgba(27, 67, 50, 0.06);
+  box-shadow: 0 16px 32px -8px rgba(15, 23, 42, 0.12), 0 4px 12px -2px rgba(217, 119, 6, 0.08);
 }
 
 .dark .luxury-card:hover {
-  box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.8), 0 4px 12px -2px rgba(245, 158, 11, 0.15);
+  border-color: rgba(217, 119, 6, 0.4);
 }
 
-/* Ambient Radial Mesh Gradients */
+/* Ambient Radial Mesh Gradients (Obsidian & Bronze) */
 .bg-ambient-radial {
   background-image: 
-    radial-gradient(circle at 50% 0%, rgba(27, 67, 50, 0.08) 0%, transparent 55%),
-    radial-gradient(circle at 85% 15%, rgba(198, 156, 69, 0.06) 0%, transparent 45%);
+    radial-gradient(circle at 50% 0%, rgba(15, 23, 42, 0.06) 0%, transparent 60%),
+    radial-gradient(circle at 85% 15%, rgba(217, 119, 6, 0.08) 0%, transparent 45%);
 }
 
 .dark .bg-ambient-radial {
   background-image: 
-    radial-gradient(circle at 50% 0%, rgba(45, 106, 79, 0.15) 0%, transparent 60%),
-    radial-gradient(circle at 85% 15%, rgba(212, 175, 55, 0.08) 0%, transparent 45%);
+    radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.09) 0%, transparent 60%),
+    radial-gradient(circle at 85% 15%, rgba(217, 119, 6, 0.07) 0%, transparent 45%);
 }
 
 /* Glassmorphism Surface */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  border: 1px solid rgba(231, 229, 228, 0.9);
 }
 
 .dark .glass-panel {
-  background: rgba(19, 32, 24, 0.82);
+  background: rgba(15, 19, 24, 0.88);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(35, 56, 44, 0.85);
+  border: 1px solid rgba(30, 38, 51, 0.9);
 }
 
 /* Subtle Shimmer for High-Priority Buttons & Badges */
@@ -143,28 +204,32 @@ body {
   left: 0;
   width: 50%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
   transform: translateX(-100%);
   animation: sheen 4s infinite ease-in-out;
 }
 
-/* Soft Emerald & Gold Glows */
-.glow-emerald {
-  box-shadow: 0 0 25px -4px rgba(27, 67, 50, 0.25);
+/* Soft Bronze & Titanium Glows */
+.glow-bronze {
+  box-shadow: 0 0 25px -4px rgba(217, 119, 6, 0.35);
 }
 
-.glow-gold {
-  box-shadow: 0 0 25px -4px rgba(198, 156, 69, 0.25);
+.glow-titanium {
+  box-shadow: 0 0 25px -4px rgba(255, 255, 255, 0.2);
+}
+
+.dark .glow-bronze {
+  box-shadow: 0 0 30px -4px rgba(245, 158, 11, 0.45);
 }
 
 /* Selection Highlight */
 ::selection {
-  background-color: #1B4332;
+  background-color: #0F172A;
   color: #FFFFFF;
 }
 
 .dark ::selection {
-  background-color: #2D6A4F;
+  background-color: #D97706;
   color: #FFFFFF;
 }
 
@@ -184,5 +249,44 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--primary);
+  background: var(--accent);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #1E2633;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #D97706;
+}
+
+/* Elmasaif Form Input Enhancements (Autofill & Placeholder) */
+input::placeholder,
+textarea::placeholder {
+  color: #A8A29E;
+  opacity: 1;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748B;
+  opacity: 1;
+}
+
+input:-webkit-autofill,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: #1C1917;
+  -webkit-box-shadow: 0 0 0px 1000px #F5F5F4 inset !important;
+  box-shadow: 0 0 0px 1000px #F5F5F4 inset !important;
+  caret-color: #1C1917;
+}
+
+.dark input:-webkit-autofill,
+.dark textarea:-webkit-autofill,
+.dark select:-webkit-autofill {
+  -webkit-text-fill-color: #F8FAFC;
+  -webkit-box-shadow: 0 0 0px 1000px #0F1318 inset !important;
+  box-shadow: 0 0 0px 1000px #0F1318 inset !important;
+  caret-color: #F8FAFC;
 }

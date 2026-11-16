@@ -437,7 +437,7 @@ export default function AdminGeoPage({
                               className="sr-only peer"
                               aria-label={`تغيير حالة تفعيل مدينة ${city.nameAr}`}
                             />
-                            <div className="w-8 h-4 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary" />
+                            <div className="w-8 h-4 bg-surface-borderStrong peer-focus:outline-none rounded-full peer dark:bg-dark-surface-border peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-surface-borderStrong after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary" />
                           </label>
                         </td>
                       </tr>
@@ -560,7 +560,7 @@ export default function AdminGeoPage({
                                 className="sr-only peer"
                                 aria-label={`تغيير حالة تفعيل حي ${district.nameAr}`}
                               />
-                              <div className="w-8 h-4 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary" />
+                              <div className="w-8 h-4 bg-surface-borderStrong peer-focus:outline-none rounded-full peer dark:bg-dark-surface-border peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-surface-borderStrong after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary" />
                             </label>
                           </td>
                         </tr>

@@ -251,9 +251,9 @@ export function RegisterForm({ onSuccessRedirect = '/app/buyer' }: RegisterFormP
       {successMessage && (
         <div
           role="status"
-          className="mb-6 p-4 rounded-lg bg-status-verifiedBg/10 border border-status-verified text-status-verified text-sm flex items-center gap-3"
+          className="mb-6 p-4 rounded-lg bg-accent-light border border-accent/40 text-accent-dark text-sm flex items-center gap-3"
         >
-          <CheckCircle2 className="w-5 h-5 shrink-0" />
+          <CheckCircle2 className="w-5 h-5 shrink-0 text-accent" />
           <div className="flex-1 font-bold">{successMessage}</div>
         </div>
       )}
@@ -351,16 +351,16 @@ export function RegisterForm({ onSuccessRedirect = '/app/buyer' }: RegisterFormP
 
             {/* Checklist */}
             <div className="pt-2 grid grid-cols-3 gap-2 text-xs">
-              <div className={`flex items-center gap-1.5 font-medium ${hasMinLength ? 'text-status-verified' : 'text-ink-muted'}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${hasMinLength ? 'bg-status-verified' : 'bg-surface-border'}`} />
+              <div className={`flex items-center gap-1.5 font-medium ${hasMinLength ? 'text-accent-dark dark:text-accent font-semibold' : 'text-ink-muted'}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${hasMinLength ? 'bg-accent' : 'bg-surface-border'}`} />
                 8 خانات كحد أدنى
               </div>
-              <div className={`flex items-center gap-1.5 font-medium ${hasLetter ? 'text-status-verified' : 'text-ink-muted'}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${hasLetter ? 'bg-status-verified' : 'bg-surface-border'}`} />
+              <div className={`flex items-center gap-1.5 font-medium ${hasLetter ? 'text-accent-dark dark:text-accent font-semibold' : 'text-ink-muted'}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${hasLetter ? 'bg-accent' : 'bg-surface-border'}`} />
                 حرف هجائي واحد
               </div>
-              <div className={`flex items-center gap-1.5 font-medium ${hasNumber ? 'text-status-verified' : 'text-ink-muted'}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${hasNumber ? 'bg-status-verified' : 'bg-surface-border'}`} />
+              <div className={`flex items-center gap-1.5 font-medium ${hasNumber ? 'text-accent-dark dark:text-accent font-semibold' : 'text-ink-muted'}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${hasNumber ? 'bg-accent' : 'bg-surface-border'}`} />
                 رقم واحد على الأقل
               </div>
             </div>

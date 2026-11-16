@@ -115,9 +115,9 @@ export default function AdminOwnerRequestsPage(props?: AdminOwnerRequestsPagePro
   return (
     <div dir="rtl" className="space-y-6">
       {/* Sovereign Header Banner */}
-      <div className="rounded-2xl bg-[#1B4332] text-white p-6 shadow-md flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="rounded-2xl bg-primary text-white p-6 shadow-md flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/15 text-[#D8F3DC] px-3 py-1 rounded-full">
+          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/10 text-accent-light px-3 py-1 rounded-full border border-white/10">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>نظام وساطة الملاك المباشرين • FR-69 &amp; UC-67</span>
           </div>
@@ -258,9 +258,9 @@ export default function AdminOwnerRequestsPage(props?: AdminOwnerRequestsPagePro
                   {items.map((item) => {
                     const statusConfig = OWNER_REQUEST_STATUS_MAP[item.status] || {
                       label: item.status,
-                      bg: 'bg-gray-100',
-                      text: 'text-gray-700',
-                      border: 'border-gray-200',
+                      bg: 'bg-surface-sunken dark:bg-dark-surface-sunken',
+                      text: 'text-ink-secondary dark:text-dark-ink-secondary',
+                      border: 'border-surface-border dark:border-dark-surface-border',
                     };
                     const propTypeLabel = PROPERTY_TYPE_MAP[item.propertyType] || item.propertyType;
 
@@ -330,7 +330,7 @@ export default function AdminOwnerRequestsPage(props?: AdminOwnerRequestsPagePro
                                 variant="primary"
                                 disabled={claimingId === item.id}
                                 onClick={(e) => handleClaim(item.id, e)}
-                                className="bg-[#1B4332] hover:bg-[#2D6A4F] text-white gap-1 text-xs"
+                                className="bg-primary hover:bg-primary-hover text-white gap-1 text-xs"
                               >
                                 <Lock className="w-3.5 h-3.5" />
                                 <span>استلام</span>

@@ -42,14 +42,14 @@ export function LocationStep({ formData, updateForm, errors }: LocationStepProps
   return (
     <div className="space-y-6" dir="rtl">
       <div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">الموقع الجغرافي للعقار</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+        <h2 className="text-xl font-bold text-ink-primary dark:text-dark-ink-primary">الموقع الجغرافي للعقار</h2>
+        <p className="text-sm text-ink-secondary dark:text-dark-ink-secondary mt-1">
           اختر المدينة والحي من القوائم الرسمية المعتمدة وحدد الإحداثيات الدقيقة لموقع العقار.
         </p>
       </div>
 
       {/* Cascading City and District Selector */}
-      <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+      <div className="bg-surface-sunken dark:bg-dark-surface-sunken p-4 rounded-xl border border-surface-border dark:border-dark-surface-border">
         <CityDistrictSelector
           selectedCityId={formData.cityId || null}
           selectedDistrictId={formData.districtId || null}
@@ -63,7 +63,7 @@ export function LocationStep({ formData, updateForm, errors }: LocationStepProps
 
       {/* Street Name Input (Optional) */}
       <div>
-        <label htmlFor="street-name" className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
+        <label htmlFor="street-name" className="block text-sm font-semibold text-ink-primary dark:text-dark-ink-primary mb-1">
           اسم الشارع (اختياري)
         </label>
         <div className="relative">
@@ -74,29 +74,29 @@ export function LocationStep({ formData, updateForm, errors }: LocationStepProps
             value={formData.streetName}
             onChange={(e) => updateForm({ streetName: e.target.value })}
             placeholder="مثال: شارع العليا العام / طريق أنس بن مالك"
-            className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 text-sm transition-colors focus:outline-none focus:ring-2 focus:border-emerald-600 focus:ring-emerald-100 dark:bg-slate-800 dark:text-white"
+            className="w-full px-4 py-2.5 rounded-lg border border-surface-border dark:border-dark-surface-border bg-surface-sunken dark:bg-dark-surface-sunken text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-muted dark:placeholder:text-dark-ink-muted text-sm transition-colors focus:outline-none focus:ring-2 focus:border-accent focus:ring-accent/20"
           />
-          <Compass className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+          <Compass className="w-4 h-4 text-ink-muted dark:text-dark-ink-muted absolute left-3 top-3" />
         </div>
-        {errors.streetName && <p className="text-xs text-red-500 mt-1">{errors.streetName}</p>}
+        {errors.streetName && <p className="text-xs text-status-danger mt-1">{errors.streetName}</p>}
       </div>
 
       {/* Geographic Coordinates with Saudi Range Validation */}
-      <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-4 bg-white dark:bg-slate-850">
+      <div className="border border-surface-border dark:border-dark-surface-border rounded-xl p-4 bg-surface-base dark:bg-dark-surface-base">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
           <div>
-            <label className="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-              <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              إحداثيات الموقع على الخريطة <span className="text-red-500">*</span>
+            <label className="text-sm font-semibold text-ink-primary dark:text-dark-ink-primary flex items-center gap-1.5">
+              <MapPin className="w-4 h-4 text-accent" />
+              إحداثيات الموقع على الخريطة <span className="text-status-danger">*</span>
             </label>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary mt-0.5">
               ضمن النطاق الجغرافي للمملكة العربية السعودية (العرض: 16.0 - 32.5 | الطول: 34.5 - 55.7)
             </p>
           </div>
           <button
             type="button"
             onClick={handleUseCurrentLocation}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-lg border border-emerald-200 dark:border-emerald-800 transition-colors w-fit"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-accent-dark dark:text-accent bg-accent-light/40 dark:bg-amber-950/40 hover:bg-accent-light dark:hover:bg-amber-950/60 rounded-lg border border-accent/30 transition-colors w-fit"
           >
             <Navigation className="w-3.5 h-3.5" />
             تحديد موقعي الحالي
@@ -105,8 +105,8 @@ export function LocationStep({ formData, updateForm, errors }: LocationStepProps
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="listing-lat" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-              خط العرض (Latitude) <span className="text-red-500">*</span>
+            <label htmlFor="listing-lat" className="block text-xs font-medium text-ink-secondary dark:text-dark-ink-secondary mb-1">
+              خط العرض (Latitude) <span className="text-status-danger">*</span>
             </label>
             <input
               id="listing-lat"
@@ -115,18 +115,18 @@ export function LocationStep({ formData, updateForm, errors }: LocationStepProps
               value={formData.latitude}
               onChange={(e) => updateForm({ latitude: e.target.value ? Number(e.target.value) : '' })}
               placeholder="مثال: 24.7136"
-              className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 ${
+              className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 bg-surface-sunken dark:bg-dark-surface-sunken text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-muted dark:placeholder:text-dark-ink-muted ${
                 errors.latitude || (formData.latitude !== '' && !isLatValid)
-                  ? 'border-red-500 focus:ring-red-200'
-                  : 'border-slate-300 dark:border-slate-700 focus:border-emerald-600 focus:ring-emerald-100 dark:bg-slate-800 dark:text-white'
+                  ? 'border-status-danger focus:ring-status-danger/20'
+                  : 'border-surface-border dark:border-dark-surface-border focus:border-accent focus:ring-accent/20'
               }`}
             />
-            {errors.latitude && <p className="text-xs text-red-500 mt-1">{errors.latitude}</p>}
+            {errors.latitude && <p className="text-xs text-status-danger mt-1">{errors.latitude}</p>}
           </div>
 
           <div>
-            <label htmlFor="listing-lng" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-              خط الطول (Longitude) <span className="text-red-500">*</span>
+            <label htmlFor="listing-lng" className="block text-xs font-medium text-ink-secondary dark:text-dark-ink-secondary mb-1">
+              خط الطول (Longitude) <span className="text-status-danger">*</span>
             </label>
             <input
               id="listing-lng"
@@ -135,18 +135,18 @@ export function LocationStep({ formData, updateForm, errors }: LocationStepProps
               value={formData.longitude}
               onChange={(e) => updateForm({ longitude: e.target.value ? Number(e.target.value) : '' })}
               placeholder="مثال: 46.6753"
-              className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 ${
+              className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 bg-surface-sunken dark:bg-dark-surface-sunken text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-muted dark:placeholder:text-dark-ink-muted ${
                 errors.longitude || (formData.longitude !== '' && !isLngValid)
-                  ? 'border-red-500 focus:ring-red-200'
-                  : 'border-slate-300 dark:border-slate-700 focus:border-emerald-600 focus:ring-emerald-100 dark:bg-slate-800 dark:text-white'
+                  ? 'border-status-danger focus:ring-status-danger/20'
+                  : 'border-surface-border dark:border-dark-surface-border focus:border-accent focus:ring-accent/20'
               }`}
             />
-            {errors.longitude && <p className="text-xs text-red-500 mt-1">{errors.longitude}</p>}
+            {errors.longitude && <p className="text-xs text-status-danger mt-1">{errors.longitude}</p>}
           </div>
         </div>
 
         {isLatValid && isLngValid && (
-          <div className="mt-3 p-2.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/60 rounded-lg flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300">
+          <div className="mt-3 p-2.5 bg-accent-light/30 dark:bg-amber-950/20 border border-accent/20 rounded-lg flex items-center justify-between text-xs text-accent-dark dark:text-accent">
             <span>تم التحقق من صحة الإحداثيات الجغرافية داخل المملكة العربية السعودية.</span>
             <span className="font-mono font-semibold" dir="ltr">
               {Number(formData.latitude).toFixed(4)}, {Number(formData.longitude).toFixed(4)}

@@ -87,9 +87,9 @@ export function AdminPasswordResetModal({
     >
       <div className="w-full max-w-lg bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border rounded-2xl shadow-xl overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 bg-[#1B4332] text-white">
+        <div className="flex items-center justify-between px-6 py-4 bg-primary text-white">
           <div className="flex items-center gap-2.5">
-            <KeyRound className="w-5 h-5 text-[#D8F3DC]" />
+            <KeyRound className="w-5 h-5 text-accent" />
             <h2 id="admin-reset-modal-title" className="text-base font-bold">
               إصدار رابط إعادة تعيين كلمة مرور إدارية
             </h2>
@@ -116,7 +116,7 @@ export function AdminPasswordResetModal({
                 {targetAdmin.email}
               </p>
             </div>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#1B4332]/10 text-[#1B4332] dark:text-emerald-300">
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-accent/15 text-accent-dark dark:text-accent">
               {targetAdmin.role}
             </span>
           </div>
@@ -136,7 +136,7 @@ export function AdminPasswordResetModal({
               <button
                 type="button"
                 onClick={handleClose}
-                className="w-full py-2.5 px-4 rounded-xl bg-[#1B4332] text-white text-sm font-bold hover:bg-[#143325] transition-colors"
+                className="w-full py-2.5 px-4 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary-hover transition-colors"
               >
                 إغلاق
               </button>
@@ -182,7 +182,7 @@ export function AdminPasswordResetModal({
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder="مثال: طلب رسمي موثق من المشرف بعد فقدان كلمة المرور..."
-                  className="w-full rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface dark:bg-dark-surface p-3 text-sm text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
+                  className="w-full rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface dark:bg-dark-surface p-3 text-sm text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-accent"
                 />
                 <div className="flex items-center justify-between text-[11px] text-ink-muted">
                   <span>10 أحرف على الأقل — يُحفظ في سجل التدقيق غير القابل للتعديل</span>
@@ -201,7 +201,7 @@ export function AdminPasswordResetModal({
                 <button
                   type="submit"
                   disabled={!isReasonValid || isSubmitting}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1B4332] hover:bg-[#143325] disabled:opacity-50 text-white text-xs font-bold shadow-sm transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover disabled:opacity-50 text-white text-xs font-bold shadow-sm transition-colors"
                 >
                   <Mail className="w-4 h-4" />
                   <span>

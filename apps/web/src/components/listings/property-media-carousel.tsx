@@ -171,7 +171,7 @@ export function PropertyMediaCarousel({
           className="w-full h-full object-cover transition-transform duration-300 group-hover/carousel:scale-[1.02]"
         />
       ) : (
-        <div className="w-full h-full bg-emerald-950 flex flex-col items-center justify-center text-primary-light text-sm font-medium px-4 text-center">
+        <div className="w-full h-full bg-primary flex flex-col items-center justify-center text-primary-light text-sm font-medium px-4 text-center">
           {getPlaceholderIcon(propertyType)}
           <span className="line-clamp-2">{alt}</span>
         </div>

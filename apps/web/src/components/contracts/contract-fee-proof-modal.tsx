@@ -140,10 +140,10 @@ export function ContractFeeProofModal({
           onClick={() => fileInputRef.current?.click()}
           className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
             isDragging
-              ? 'border-emerald-600 bg-emerald-50/50'
+              ? 'border-accent bg-accent/10'
               : file
-              ? 'border-emerald-400 bg-emerald-50/20'
-              : 'border-slate-300 hover:border-slate-400 bg-slate-50/50'
+              ? 'border-accent bg-accent/5'
+              : 'border-surface-borderStrong hover:border-accent bg-surface-sunken'
           }`}
           data-testid="file-dropzone"
         >
@@ -161,9 +161,9 @@ export function ContractFeeProofModal({
           />
 
           {file ? (
-            <div className="flex items-center justify-between p-3 rounded-lg bg-white border border-emerald-200 text-right">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-surface-base border border-surface-border text-right">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-lg bg-accent-light text-accent-dark flex items-center justify-center shrink-0">
                   <FileText className="w-5 h-5" />
                 </div>
                 <div>
@@ -179,7 +179,7 @@ export function ContractFeeProofModal({
                   e.stopPropagation();
                   setFile(null);
                 }}
-                className="p-1 rounded-md text-slate-400 hover:text-red-600 transition-colors"
+                className="p-1 rounded-md text-ink-muted hover:text-red-600 transition-colors"
                 title="إلغاء الملف"
               >
                 <X className="w-4 h-4" />
@@ -187,11 +187,11 @@ export function ContractFeeProofModal({
             </div>
           ) : (
             <div className="space-y-2">
-              <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-600 mx-auto flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-surface-sunken text-ink-muted mx-auto flex items-center justify-center">
                 <UploadCloud className="w-6 h-6" />
               </div>
               <p className="font-bold text-xs text-foreground">
-                اسحب وأفلت إشعار التحويل هنا، أو <span className="text-emerald-700 underline">تصفح من جهازك</span>
+                اسحب وأفلت إشعار التحويل هنا، أو <span className="text-accent underline">تصفح من جهازك</span>
               </p>
               <p className="text-[11px] text-muted-foreground">
                 الصيغ المدعومة: PDF, PNG, JPG (الحد الأقصى: 10 ميجابايت)
@@ -212,7 +212,7 @@ export function ContractFeeProofModal({
               onChange={(e) => setBankReferenceCode(e.target.value)}
               placeholder="مثال: TXN-12345678"
               maxLength={64}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-left"
+              className="w-full px-3 py-2 rounded-lg border border-surface-border bg-surface-sunken text-xs text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent font-mono text-left"
               dir="ltr"
               data-testid="bank-reference-input"
             />
@@ -228,15 +228,15 @@ export function ContractFeeProofModal({
               onChange={(e) => setSenderBankName(e.target.value)}
               placeholder="مثال: مصرف الراجحي، البنك الأهلي"
               maxLength={100}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2 rounded-lg border border-surface-border bg-surface-sunken text-xs text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent"
               data-testid="sender-bank-input"
             />
           </div>
         </div>
 
         {/* Security reassurance banner */}
-        <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 flex items-start gap-2.5 text-[11px] text-slate-600">
-          <ShieldAlert className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+        <div className="p-3 rounded-lg bg-surface-sunken border border-surface-border flex items-start gap-2.5 text-[11px] text-ink-secondary">
+          <ShieldAlert className="w-4 h-4 text-accent shrink-0 mt-0.5" />
           <p className="leading-relaxed">
             يتم فحص جميع الإيصالات والمستندات آلياً ضد البرمجيات الخبيثة وتخزينها في خوادم سيادية مشفرة ومطابقة لمعايير الأمن السيبراني السعودية.
           </p>
@@ -257,7 +257,7 @@ export function ContractFeeProofModal({
           <Button
             type="submit"
             disabled={!file || isSubmitting}
-            className="bg-[#1B4332] hover:bg-[#143326] text-white text-xs font-bold h-9 px-5 gap-2"
+            className="bg-primary hover:bg-primary-hover text-white text-xs font-bold h-9 px-5 gap-2"
             data-testid="submit-fee-proof-btn"
           >
             {isSubmitting ? (

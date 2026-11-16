@@ -106,7 +106,7 @@ export default function OwnerDashboardPage() {
             </div>
           </div>
           <Link href={`/app/owner/contracts/${pendingSignatureRequest.contractId || pendingSignatureRequest.id}`}>
-            <Button size="sm" className="bg-[#1B4332] hover:bg-[#2D6A4F] text-white text-xs font-bold gap-2 whitespace-nowrap shadow-sm">
+            <Button size="sm" className="bg-primary hover:bg-primary-hover text-white text-xs font-bold gap-2 whitespace-nowrap shadow-sm">
               <span>مراجعة وتوقيع العقد</span>
               <ArrowLeft className="w-3.5 h-3.5" />
             </Button>
@@ -253,7 +253,7 @@ export default function OwnerDashboardPage() {
                   <div className="flex items-center gap-3">
                     {isApproved ? (
                       <Link href={`/app/owner/contracts/${req.contractId || req.id}`}>
-                        <Button size="sm" className="bg-[#1B4332] hover:bg-[#2D6A4F] text-white text-xs font-bold gap-1.5 shadow-sm">
+                        <Button size="sm" className="bg-primary hover:bg-primary-hover text-white text-xs font-bold gap-1.5 shadow-sm">
                           <span>مراجعة وتوقيع العقد</span>
                           <ArrowLeft className="w-3.5 h-3.5" />
                         </Button>
@@ -319,7 +319,7 @@ export default function OwnerDashboardPage() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3">
-                    <div dir="ltr" className="font-mono font-bold text-sm text-[#1B4332] dark:text-emerald-400">
+                    <div dir="ltr" className="font-mono font-bold text-sm text-primary dark:text-accent-light">
                       {`${Number(item.askPrice).toLocaleString('en-US')} SAR`}
                     </div>
 
@@ -399,7 +399,7 @@ export default function OwnerDashboardPage() {
                 )}
 
                 {item.status === ListingStatus.ARCHIVED && item.archiveReason && (
-                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-300 text-xs">
+                  <div className="p-3 rounded-xl bg-surface-sunken dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border text-ink-primary dark:text-dark-ink-primary text-xs">
                     <span className="font-bold">سبب الأرشفة: </span>
                     <span>{item.archiveReason}</span>
                   </div>

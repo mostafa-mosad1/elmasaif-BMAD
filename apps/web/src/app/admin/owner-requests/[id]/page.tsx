@@ -296,9 +296,9 @@ export default function AdminOwnerRequestDetailPage(props?: AdminOwnerRequestDet
 
   const statusConfig = OWNER_REQUEST_STATUS_MAP[detail.status] || {
     label: detail.status,
-    bg: 'bg-gray-100',
-    text: 'text-gray-700',
-    border: 'border-gray-200',
+    bg: 'bg-surface-sunken dark:bg-dark-surface-sunken',
+    text: 'text-ink-secondary dark:text-dark-ink-secondary',
+    border: 'border-surface-border dark:border-dark-surface-border',
   };
 
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
@@ -401,7 +401,7 @@ export default function AdminOwnerRequestDetailPage(props?: AdminOwnerRequestDet
               size="sm"
               onClick={handleClaim}
               disabled={actionInProgress}
-              className="bg-[#1B4332] hover:bg-[#2D6A4F] text-white text-xs gap-1.5"
+              className="bg-primary hover:bg-primary-hover text-white text-xs gap-1.5"
             >
               <Lock className="w-3.5 h-3.5" />
               <span>استلام المهمة الآن</span>
@@ -527,7 +527,7 @@ export default function AdminOwnerRequestDetailPage(props?: AdminOwnerRequestDet
                     href={detail.titleDeedDocumentUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1B4332] text-white text-xs font-semibold hover:bg-[#2D6A4F] transition-colors shadow-sm"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary-hover transition-colors shadow-sm"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>تحميل الصك للمعاينة (300 ثانية)</span>
@@ -594,7 +594,7 @@ export default function AdminOwnerRequestDetailPage(props?: AdminOwnerRequestDet
           <Card>
             <CardHeader className="p-5 pb-3">
               <CardTitle className="text-base font-bold flex items-center gap-2">
-                <Send className="w-5 h-5 text-[#1B4332]" />
+                <Send className="w-5 h-5 text-accent" />
                 <span>إرسال العقد الإلكتروني واتخاذ القرار</span>
               </CardTitle>
               <CardDescription className="text-xs">
@@ -628,7 +628,7 @@ export default function AdminOwnerRequestDetailPage(props?: AdminOwnerRequestDet
                             تم توقيع العقد من المالك بنجاح وهو بانتظار سداد الرسوم. يتم تدقيق إشعارات التحويل البنكي وتفعيل العقد ونشر العقار عبر طابور رسوم العقود:
                           </p>
                           <Link href="/admin/contract-fees">
-                            <Button size="sm" className="bg-[#1B4332] hover:bg-[#2D6A4F] text-white text-xs w-full gap-1.5">
+                            <Button size="sm" className="bg-primary hover:bg-primary-hover text-white text-xs w-full gap-1.5">
                               <span>فتح طابور تدقيق رسوم العقود والنشر الآلي</span>
                             </Button>
                           </Link>
@@ -722,7 +722,7 @@ export default function AdminOwnerRequestDetailPage(props?: AdminOwnerRequestDet
                   <Button
                     onClick={handleDispatchContract}
                     disabled={actionInProgress || !selectedTemplateId || templates.length === 0}
-                    className="w-full bg-[#1B4332] hover:bg-[#2D6A4F] text-white font-bold py-2.5 gap-2 text-xs shadow-md"
+                    className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-2.5 gap-2 text-xs shadow-md"
                   >
                     <Send className="w-4 h-4" />
                     <span>إرسال العقد للمالك للتوقيع</span>

@@ -126,10 +126,10 @@ export function ProposalReviewQueue() {
 
   return (
     <div dir="rtl" className="space-y-6">
-      <div className="rounded-2xl bg-[#1B4332] text-white p-6 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="rounded-2xl bg-primary text-white p-6 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1.5">
           <h1 className="text-2xl font-bold flex items-center gap-2.5">
-            <HandCoins className="w-6 h-6 text-[#D8F3DC]" />
+            <HandCoins className="w-6 h-6 text-accent" />
             <span>طابور مراجعة عروض المزودين</span>
           </h1>
           <p className="text-xs text-white/80 max-w-2xl leading-relaxed">
@@ -170,7 +170,7 @@ export function ProposalReviewQueue() {
               onClick={() => setStatusFilter(filter.status)}
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
                 statusFilter === filter.status
-                  ? 'bg-[#1B4332] text-white shadow-sm'
+                  ? 'bg-primary text-white shadow-sm'
                   : 'text-ink-secondary hover:bg-surface-sunken'
               }`}
             >
@@ -240,7 +240,7 @@ export function ProposalReviewQueue() {
                       </td>
 
                       <td className="py-3.5 px-4">
-                        <span dir="ltr" className="font-mono font-bold text-sm text-[#1B4332] dark:text-emerald-400">
+                        <span dir="ltr" className="font-mono font-bold text-sm text-primary dark:text-accent">
                           {`${formatSar(item.proposedPrice)} SAR`}
                         </span>
                       </td>
@@ -300,7 +300,7 @@ export function ProposalReviewQueue() {
                               type="button"
                               onClick={() => handleApprove(item.id)}
                               disabled={busyId === item.id}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1B4332] hover:bg-[#2D6A4F] text-white text-xs font-bold disabled:opacity-50"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold disabled:opacity-50 transition-colors shadow-sm"
                               data-testid={`proposal-approve-${item.id}`}
                             >
                               <CheckCircle2 className="w-3.5 h-3.5" />

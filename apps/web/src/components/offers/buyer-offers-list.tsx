@@ -91,7 +91,7 @@ export function BuyerOffersList({ offers, detailHrefBase }: BuyerOffersListProps
                 ) : null}
                 {offer.isBackup ? (
                   <span
-                    className="inline-flex items-center rounded-pill bg-[#C69C45]/15 px-2 py-0.5 text-[11px] font-bold text-[#8a6a1f] dark:text-[#D4AF37]"
+                    className="inline-flex items-center rounded-pill bg-accent/15 px-2 py-0.5 text-[11px] font-bold text-accent-dark dark:text-accent border border-accent/20"
                     data-testid={`buyer-offer-backup-${offer.id}`}
                   >
                     عرض احتياطي

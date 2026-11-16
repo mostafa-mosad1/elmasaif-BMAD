@@ -60,7 +60,7 @@ export default function ContactSupportPage() {
             <Badge
               variant="verified"
               size="md"
-              icon={<ShieldCheck className="w-4 h-4 text-status-verified" />}
+              icon={<ShieldCheck className="w-4 h-4 text-accent" />}
             >
               قنوات خدمة العملاء المعتمدة رسمياً
             </Badge>
@@ -97,7 +97,7 @@ export default function ContactSupportPage() {
           </Card>
 
           <Card className="p-6 space-y-3 border-surface-border dark:border-dark-surface-border shadow-xs hover:border-primary/40 transition-colors">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
               <Mail className="w-6 h-6" />
             </div>
             <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
@@ -132,7 +132,7 @@ export default function ContactSupportPage() {
           </Card>
 
           <Card className="p-6 space-y-3 border-surface-border dark:border-dark-surface-border shadow-xs hover:border-primary/40 transition-colors">
-            <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-accent-light text-accent-dark flex items-center justify-center">
               <Clock className="w-6 h-6" />
             </div>
             <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
@@ -141,7 +141,7 @@ export default function ContactSupportPage() {
             <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary">
               الأحد إلى الخميس: 8:00 صباحاً – 6:00 مساءً
             </p>
-            <div className="pt-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+            <div className="pt-2 text-xs font-semibold text-accent-dark dark:text-accent">
               دعم فوري للطوارئ 24/7
             </div>
           </Card>
@@ -162,7 +162,7 @@ export default function ContactSupportPage() {
 
             {isSubmitted ? (
               <div className="py-12 text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 flex items-center justify-center mx-auto">
+                <div className="w-16 h-16 rounded-full bg-accent/15 text-accent-dark dark:bg-accent/20 dark:text-accent flex items-center justify-center mx-auto">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
                 <h3 className="text-lg font-bold text-ink-primary dark:text-dark-ink-primary">
@@ -319,7 +319,7 @@ export default function ContactSupportPage() {
                   className="flex items-center justify-between p-3 rounded-xl bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border hover:border-primary/40 text-xs font-bold text-ink-primary transition-colors group"
                 >
                   <span className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                    <ShieldCheck className="w-4 h-4 text-accent" />
                     تراخيص الهيئة العامة للعقار
                   </span>
                   <ArrowRight className="w-3.5 h-3.5 text-ink-muted group-hover:text-primary transition-colors rotate-180" />

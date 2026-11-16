@@ -284,7 +284,7 @@ export function TaskClaimLockBanner({
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1B4332]/10 text-[#1B4332]">
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
                 <Lock className="h-5 w-5" />
               </div>
               <div className="space-y-1">
@@ -309,7 +309,7 @@ export function TaskClaimLockBanner({
                 type="button"
                 disabled={isLoading}
                 onClick={() => onClaim?.()}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#1B4332] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#1B4332]/90 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-50"
               >
                 <Lock className="h-3.5 w-3.5" />
                 <span>استلام المهمة وبدء المراجعة (حجز 15 دقيقة)</span>

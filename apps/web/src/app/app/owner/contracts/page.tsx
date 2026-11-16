@@ -64,9 +64,9 @@ export default function OwnerContractsPage({ initialRequests }: OwnerContractsPa
   return (
     <div dir="rtl" className="space-y-6">
       {/* Header Banner */}
-      <div className="rounded-2xl bg-[#1B4332] text-white p-6 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="rounded-2xl bg-primary text-white p-6 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/15 text-[#D8F3DC] px-3 py-1 rounded-full">
+          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/15 text-accent-light px-3 py-1 rounded-full">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>عقود الوساطة والتسويق الإلكترونية • نظام الهيئة العامة للعقار</span>
           </div>
@@ -121,7 +121,7 @@ export default function OwnerContractsPage({ initialRequests }: OwnerContractsPa
                 عند تقديم طلب عرض عقار مباشر واعتماده من المشرفين، سيتم إرسال العقد الرسمي هنا لتتمكن من مراجعته وتوقيعه إلكترونياً.
               </p>
               <Link href="/app/owner/listings/new">
-                <Button size="sm" className="mt-2 text-xs gap-1.5 bg-[#1B4332] hover:bg-[#2D6A4F] text-white">
+                <Button size="sm" className="mt-2 text-xs gap-1.5 bg-primary hover:bg-primary-hover text-white">
                   <span>تقديم طلب عرض عقار جديد</span>
                   <ArrowLeft className="w-3.5 h-3.5" />
                 </Button>
@@ -165,7 +165,7 @@ export default function OwnerContractsPage({ initialRequests }: OwnerContractsPa
                           <Link href={`/app/owner/contracts/${item.contractId || item.id}`}>
                             <Button
                               size="sm"
-                              className="bg-[#1B4332] hover:bg-[#2D6A4F] text-white text-xs font-bold gap-1.5 shadow-sm"
+                              className="bg-primary hover:bg-primary-hover text-white text-xs font-bold gap-1.5 shadow-sm"
                             >
                               <span>مراجعة وتوقيع العقد</span>
                               <ArrowLeft className="w-3.5 h-3.5" />

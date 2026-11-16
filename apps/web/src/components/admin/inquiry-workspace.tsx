@@ -299,7 +299,7 @@ export function InquiryWorkspace({ inquiryId }: { inquiryId: string }) {
       {/* Lease banner (AD-10) */}
       {isMine && lockInfo ? (
         <div
-          className="flex items-center justify-between gap-3 rounded-xl bg-[#1B4332] p-3 text-xs font-bold text-white"
+          className="flex items-center justify-between gap-3 rounded-xl bg-primary p-3 text-xs font-bold text-white shadow-sm"
           data-testid="conversation-lock-banner"
         >
           <span className="inline-flex items-center gap-2">
@@ -397,7 +397,7 @@ export function InquiryWorkspace({ inquiryId }: { inquiryId: string }) {
               type="button"
               disabled={pendingAction !== null}
               onClick={() => runAction('claim', undefined, 'تم استلام المحادثة لمدة 15 دقيقة.')}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#1B4332] px-3.5 py-2 text-xs font-bold text-white disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-colors disabled:opacity-50"
               data-testid="conversation-claim"
             >
               <Lock className="w-3.5 h-3.5" />
@@ -482,7 +482,7 @@ export function InquiryWorkspace({ inquiryId }: { inquiryId: string }) {
                     'تم إحالة الاستفسار إلى البائع بعد مراجعته.',
                   )
                 }
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#1B4332] px-3.5 py-2 text-xs font-bold text-white disabled:opacity-40"
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-colors disabled:opacity-40"
                 data-testid="conversation-relay-to-seller"
               >
                 <Send className="w-3.5 h-3.5" />

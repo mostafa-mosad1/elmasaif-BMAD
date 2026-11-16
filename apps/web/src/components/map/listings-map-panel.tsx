@@ -41,11 +41,11 @@ function buildMapQuery(bounds: L.LatLngBounds, filters: Filters): string {
   return params.toString();
 }
 
-/** Custom cluster icon: emerald circle with count in white (DESIGN.md §5). */
+/** Custom cluster icon: obsidian slate circle with count in white. */
 function createClusterIcon(cluster: any): L.DivIcon {
   const count = cluster.getChildCount();
   return L.divIcon({
-    html: `<div style="background:#1B4332;color:#fff;border-radius:9999px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">${count}</div>`,
+    html: `<div style="background:#0F172A;color:#fff;border-radius:9999px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;border:2px solid #D97706;box-shadow:0 4px 12px rgba(15,23,42,0.25);">${count}</div>`,
     className: '',
     iconSize: L.point(36, 36),
     iconAnchor: [18, 18],
@@ -166,8 +166,8 @@ export function ListingsMapPanel({ filters, activeListingId, onMarkerClick }: Li
 
       {/* Loading / empty state overlay */}
       {mapItems.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-gray-900/60 pointer-events-none">
-          <span className="text-sm text-gray-500 dark:text-gray-400">جارِ تحميل الخريطة...</span>
+        <div className="absolute inset-0 flex items-center justify-center bg-surface-base/60 dark:bg-dark-surface-base/60 pointer-events-none">
+          <span className="text-sm text-ink-secondary dark:text-dark-ink-secondary">جارِ تحميل الخريطة...</span>
         </div>
       )}
     </div>

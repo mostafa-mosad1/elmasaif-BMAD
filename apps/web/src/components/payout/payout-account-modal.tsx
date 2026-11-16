@@ -173,19 +173,19 @@ export function PayoutAccountModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
       <div
         dir="rtl"
-        className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+        className="relative w-full max-w-lg rounded-2xl bg-surface-base p-6 shadow-2xl dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
+        <div className="flex items-center justify-between border-b border-surface-border pb-4 dark:border-dark-surface-border">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-light text-accent-dark dark:bg-amber-950/60 dark:text-accent">
               <Building2 className="h-5 w-5" />
             </span>
             <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+              <h2 className="text-lg font-bold text-ink-primary dark:text-dark-ink-primary">
                 {isEditing ? 'تعديل الحساب البنكي' : 'إضافة حساب بنكي جديد'}
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary">
                 الحساب المعتمد لتحويل عوائد البيع أو السعي العقاري
               </p>
             </div>
@@ -194,7 +194,7 @@ export function PayoutAccountModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+            className="rounded-lg p-1.5 text-ink-muted hover:bg-surface-sunken hover:text-ink-primary dark:hover:bg-dark-surface-raised dark:hover:text-dark-ink-primary transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -211,7 +211,7 @@ export function PayoutAccountModal({
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           {/* Account Holder Name */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-ink-primary dark:text-dark-ink-primary mb-1">
               اسم صاحب الحساب البنكي (كما هو مسجل لدى البنك) *
             </label>
             <input
@@ -220,16 +220,16 @@ export function PayoutAccountModal({
               value={accountHolderName}
               onChange={(e) => setAccountHolderName(e.target.value)}
               placeholder="مثال: سعد بن عبد الله القحطاني"
-              className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              className="w-full rounded-lg border border-surface-border bg-surface-sunken px-3.5 py-2.5 text-sm text-ink-primary placeholder:text-ink-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent dark:border-dark-surface-border dark:bg-dark-surface-sunken dark:text-dark-ink-primary"
             />
-            <span className="block text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+            <span className="block text-[11px] text-ink-secondary dark:text-dark-ink-secondary mt-1">
               يجب أن يتطابق مع الاسم المسجل أو الاسم التجاري المسجل برخصة فال.
             </span>
           </div>
 
           {/* Saudi IBAN with real-time Mod-97 check */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-ink-primary dark:text-dark-ink-primary mb-1">
               رقم الآيبان السعودي (IBAN) *
             </label>
             <div className="relative">
@@ -240,18 +240,18 @@ export function PayoutAccountModal({
                 value={iban}
                 onChange={handleIbanChange}
                 placeholder="SA03 8000 0000 0000 0000 0000"
-                className={`w-full rounded-lg border px-3.5 py-2.5 font-mono text-sm tracking-wider focus:outline-none focus:ring-1 dark:bg-slate-800 dark:text-white ${
+                className={`w-full rounded-lg border px-3.5 py-2.5 font-mono text-sm tracking-wider focus:outline-none focus:ring-1 dark:text-dark-ink-primary ${
                   isIbanComplete
                     ? isIbanValid
-                      ? 'border-emerald-600 focus:border-emerald-600 focus:ring-emerald-600 bg-emerald-50/20'
-                      : 'border-red-500 focus:border-red-500 focus:ring-red-500 bg-red-50/20'
-                    : 'border-slate-300 focus:border-emerald-600 focus:ring-emerald-600'
+                      ? 'border-accent focus:border-accent focus:ring-accent bg-accent/5 dark:bg-accent/10 dark:border-accent'
+                      : 'border-red-500 focus:border-red-500 focus:ring-red-500 bg-red-50/20 dark:bg-red-950/20'
+                    : 'border-surface-border bg-surface-sunken focus:border-accent focus:ring-accent dark:border-dark-surface-border dark:bg-dark-surface-sunken'
                 }`}
               />
               {isIbanComplete && (
                 <div className="absolute inset-y-0 end-3 flex items-center">
                   {isIbanValid ? (
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                    <CheckCircle2 className="h-5 w-5 text-accent" />
                   ) : (
                     <AlertCircle className="h-5 w-5 text-red-500" />
                   )}
@@ -261,7 +261,7 @@ export function PayoutAccountModal({
 
             {/* Bank Name Badge Indicator */}
             {detectedBankName && (
-              <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-emerald-800 dark:text-emerald-400">
+              <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-accent dark:text-accent">
                 <Building2 className="h-4 w-4" />
                 <span>البنك المكتشف: <strong>{detectedBankName}</strong></span>
               </div>
@@ -275,10 +275,10 @@ export function PayoutAccountModal({
           </div>
 
           {/* Step-Up OTP Verification Section */}
-          <div className="rounded-xl bg-slate-50 p-4 border border-slate-200 dark:bg-slate-950/40 dark:border-slate-800">
+          <div className="rounded-xl bg-surface-sunken p-4 border border-surface-border dark:bg-dark-surface-sunken dark:border-dark-surface-border">
             <div className="flex items-center justify-between gap-2 mb-2">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
-                <KeyRound className="h-4 w-4 text-emerald-600" />
+              <div className="flex items-center gap-1.5 text-xs font-bold text-ink-primary dark:text-dark-ink-primary">
+                <KeyRound className="h-4 w-4 text-accent" />
                 <span>التحقق الأمني (Step-Up OTP) *</span>
               </div>
 
@@ -300,7 +300,7 @@ export function PayoutAccountModal({
               </Button>
             </div>
 
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-2">
+            <p className="text-[11px] text-ink-secondary dark:text-dark-ink-secondary mb-2">
               لحماية أموالك، يتطلب تعديل أو إضافة الحساب البنكي إدخال رمز التحقق المرسل لجوالك.
             </p>
 
@@ -311,7 +311,7 @@ export function PayoutAccountModal({
               value={otpCode}
               onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
               placeholder="000000"
-              className="w-full rounded-lg border border-slate-300 px-3.5 py-2 font-mono text-center text-lg tracking-widest focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              className="w-full rounded-lg border border-surface-border bg-surface-base px-3.5 py-2 font-mono text-center text-lg tracking-widest text-ink-primary placeholder:text-ink-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent dark:border-dark-surface-border dark:bg-dark-surface-base dark:text-dark-ink-primary"
             />
           </div>
 
@@ -322,15 +322,15 @@ export function PayoutAccountModal({
               id="isDefault"
               checked={isDefault}
               onChange={(e) => setIsDefault(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-600 dark:border-slate-700 dark:bg-slate-800"
+              className="h-4 w-4 rounded border-surface-borderStrong text-accent focus:ring-accent dark:border-dark-surface-border dark:bg-dark-surface-sunken"
             />
-            <label htmlFor="isDefault" className="text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+            <label htmlFor="isDefault" className="text-xs font-medium text-ink-secondary dark:text-dark-ink-secondary cursor-pointer">
               تعيين هذا الحساب كحساب استلام افتراضي للمبيعات والصفقات
             </label>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+          <div className="flex items-center justify-end gap-2 border-t border-surface-border pt-4 dark:border-dark-surface-border">
             <Button
               type="button"
               variant="ghost"

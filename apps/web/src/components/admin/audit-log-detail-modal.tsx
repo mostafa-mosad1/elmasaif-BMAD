@@ -91,8 +91,8 @@ export function AuditLogDetailModal({
         {/* Modal Header */}
         <div className="px-6 py-5 border-b border-surface-border dark:border-dark-surface-border flex items-center justify-between gap-4 bg-surface-sunken/40 dark:bg-dark-surface/40">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <ScrollText className="w-5 h-5 text-[#1B4332] dark:text-emerald-400" />
+            <div className="w-10 h-10 rounded-xl bg-accent/10 text-accent flex items-center justify-center shrink-0">
+              <ScrollText className="w-5 h-5 text-accent" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -194,7 +194,7 @@ export function AuditLogDetailModal({
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-ink-muted">الدور / النوع:</span>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-surface-sunken dark:bg-dark-surface-sunken text-ink-secondary dark:text-dark-ink-secondary border border-surface-border dark:border-dark-surface-border">
                           {log.actorRole}
                         </span>
                         <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
@@ -318,7 +318,7 @@ export function AuditLogDetailModal({
                         </div>
                         <pre
                           dir="ltr"
-                          className="p-3 rounded-xl bg-slate-950 text-slate-200 text-xs font-mono overflow-x-auto max-h-64 border border-slate-800"
+                          className="p-3 rounded-xl bg-dark-surface-sunken text-dark-ink-primary text-xs font-mono overflow-x-auto max-h-64 border border-dark-surface-border"
                         >
                           {log.beforeSnapshot
                             ? JSON.stringify(log.beforeSnapshot, null, 2)
@@ -336,7 +336,7 @@ export function AuditLogDetailModal({
                         </div>
                         <pre
                           dir="ltr"
-                          className="p-3 rounded-xl bg-slate-950 text-slate-200 text-xs font-mono overflow-x-auto max-h-64 border border-slate-800"
+                          className="p-3 rounded-xl bg-dark-surface-sunken text-dark-ink-primary text-xs font-mono overflow-x-auto max-h-64 border border-dark-surface-border"
                         >
                           {log.afterSnapshot
                             ? JSON.stringify(log.afterSnapshot, null, 2)
@@ -351,7 +351,7 @@ export function AuditLogDetailModal({
                       </span>
                       <pre
                         dir="ltr"
-                        className="p-4 rounded-xl bg-slate-950 text-slate-200 text-xs font-mono overflow-x-auto max-h-80 border border-slate-800"
+                        className="p-4 rounded-xl bg-dark-surface-sunken text-dark-ink-primary text-xs font-mono overflow-x-auto max-h-80 border border-dark-surface-border"
                       >
                         {log.beforeSnapshot
                           ? JSON.stringify(log.beforeSnapshot, null, 2)
@@ -365,7 +365,7 @@ export function AuditLogDetailModal({
                       </span>
                       <pre
                         dir="ltr"
-                        className="p-4 rounded-xl bg-slate-950 text-slate-200 text-xs font-mono overflow-x-auto max-h-80 border border-slate-800"
+                        className="p-4 rounded-xl bg-dark-surface-sunken text-dark-ink-primary text-xs font-mono overflow-x-auto max-h-80 border border-dark-surface-border"
                       >
                         {log.afterSnapshot
                           ? JSON.stringify(log.afterSnapshot, null, 2)

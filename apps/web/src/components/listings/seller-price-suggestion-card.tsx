@@ -88,18 +88,18 @@ export function SellerPriceSuggestionCard({
   return (
     <div
       dir="rtl"
-      className="p-5 rounded-2xl bg-gradient-to-br from-[#F4F9F5] to-white border-2 border-[#1B4332]/25 shadow-sm space-y-4"
+      className="p-5 rounded-2xl bg-surface-base dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border shadow-level2 space-y-4"
     >
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#1B4332]/10 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-surface-border dark:border-dark-surface-border pb-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-[#1B4332] text-white flex items-center justify-center shrink-0">
-            <HelpCircle className="w-5 h-5 text-[#D8F3DC]" />
+          <div className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+            <HelpCircle className="w-5 h-5 text-accent" />
           </div>
           <div>
             <h4 className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
               مقترح تعديل السعر الاسترشادي من إدارة التقييم العقاري (FR-57)
             </h4>
-            <div className="text-[11px] text-ink-muted">
+            <div className="text-[11px] text-ink-muted dark:text-dark-ink-muted">
               {`المشرف المقترح: ${currentSuggestion.suggestedByAdminName}`}
             </div>
           </div>
@@ -107,22 +107,22 @@ export function SellerPriceSuggestionCard({
 
         <div>
           {currentSuggestion.status === PriceSuggestionStatus.PENDING ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-accent-light dark:bg-amber-950/40 text-accent-dark dark:text-amber-300 border border-accent/30">
               <Clock className="w-3.5 h-3.5" />
               <span>بانتظار رد البائع</span>
             </span>
           ) : currentSuggestion.status === PriceSuggestionStatus.ACCEPTED ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 border border-emerald-300">
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>تم قبول السعر المقترح</span>
             </span>
           ) : currentSuggestion.status === PriceSuggestionStatus.DECLINED ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-800 border border-gray-300">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-surface-sunken dark:bg-dark-surface-raised text-ink-secondary dark:text-dark-ink-secondary border border-surface-border dark:border-dark-surface-border">
               <XCircle className="w-3.5 h-3.5" />
               <span>تم رفض المقترح</span>
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-surface-sunken dark:bg-dark-surface-raised text-ink-muted dark:text-dark-ink-muted border border-surface-border dark:border-dark-surface-border">
               <span>تم استبداله بمقترح أحدث</span>
             </span>
           )}
@@ -131,25 +131,25 @@ export function SellerPriceSuggestionCard({
 
       {/* Comparison Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="p-3 rounded-xl bg-white dark:bg-dark-surface border border-surface-border">
-          <div className="text-[11px] text-ink-muted">السعر المطلوب السابق</div>
-          <div dir="ltr" className="font-mono font-bold text-sm text-ink-secondary mt-0.5">
+        <div className="p-3 rounded-xl bg-surface-sunken dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border">
+          <div className="text-[11px] text-ink-muted dark:text-dark-ink-muted">السعر المطلوب السابق</div>
+          <div dir="ltr" className="font-mono font-bold text-sm text-ink-secondary dark:text-dark-ink-secondary mt-0.5">
             {`${currentPrice.toLocaleString('en-US')} SAR`}
           </div>
         </div>
 
-        <div className="p-3 rounded-xl bg-[#1B4332]/5 border border-[#1B4332]/20">
-          <div className="text-[11px] font-bold text-[#1B4332] dark:text-emerald-400">
+        <div className="p-3 rounded-xl bg-accent-light/60 dark:bg-amber-950/20 border border-accent/30">
+          <div className="text-[11px] font-bold text-accent-dark dark:text-accent">
             السعر المقترح الاسترشادي
           </div>
-          <div dir="ltr" className="font-mono font-extrabold text-base text-[#1B4332] dark:text-emerald-300 mt-0.5">
+          <div dir="ltr" className="font-mono font-extrabold text-base text-accent-dark dark:text-accent mt-0.5">
             {`${suggestedPrice.toLocaleString('en-US')} SAR`}
           </div>
         </div>
 
-        <div className="p-3 rounded-xl bg-white dark:bg-dark-surface border border-surface-border flex items-center justify-between">
+        <div className="p-3 rounded-xl bg-surface-sunken dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border flex items-center justify-between">
           <div>
-            <div className="text-[11px] text-ink-muted">الفارق السوقي</div>
+            <div className="text-[11px] text-ink-muted dark:text-dark-ink-muted">الفارق السوقي</div>
             <div dir="ltr" className="font-mono font-bold text-xs mt-0.5 flex items-center gap-1">
               {diffPercent < 0 ? (
                 <>
@@ -168,8 +168,8 @@ export function SellerPriceSuggestionCard({
       </div>
 
       {/* Rationale text */}
-      <div className="p-3.5 rounded-xl bg-white/80 dark:bg-dark-surface/60 border border-surface-border space-y-1">
-        <div className="text-xs font-bold text-ink-secondary">المبررات السوقية وتحليل التقييم:</div>
+      <div className="p-3.5 rounded-xl bg-surface-sunken/60 dark:bg-dark-surface-raised/60 border border-surface-border dark:border-dark-surface-border space-y-1">
+        <div className="text-xs font-bold text-ink-secondary dark:text-dark-ink-secondary">المبررات السوقية وتحليل التقييم:</div>
         <p className="text-xs text-ink-primary dark:text-dark-ink-primary leading-relaxed whitespace-pre-line">
           {currentSuggestion.reason}
         </p>
@@ -177,9 +177,9 @@ export function SellerPriceSuggestionCard({
 
       {/* Seller Note / Response status */}
       {currentSuggestion.sellerResponseNote && (
-        <div className="p-3 rounded-xl bg-surface-sunken text-xs space-y-0.5">
-          <span className="font-bold text-ink-secondary">ملاحظة البائع: </span>
-          <span className="text-ink-primary">{currentSuggestion.sellerResponseNote}</span>
+        <div className="p-3 rounded-xl bg-surface-sunken dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border text-xs space-y-0.5">
+          <span className="font-bold text-ink-secondary dark:text-dark-ink-secondary">ملاحظة البائع: </span>
+          <span className="text-ink-primary dark:text-dark-ink-primary">{currentSuggestion.sellerResponseNote}</span>
         </div>
       )}
 
@@ -219,9 +219,9 @@ export function SellerPriceSuggestionCard({
               type="button"
               disabled={Boolean(submitting)}
               onClick={() => handleResponse('accept')}
-              className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1B4332] hover:bg-[#2D6A4F] text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-50"
+              className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-50"
             >
-              <CheckCircle2 className="w-4 h-4 text-[#D8F3DC]" />
+              <CheckCircle2 className="w-4 h-4 text-accent" />
               <span>قبول السعر المقترح وتحديث الإعلان</span>
             </button>
 
@@ -229,9 +229,9 @@ export function SellerPriceSuggestionCard({
               type="button"
               disabled={Boolean(submitting)}
               onClick={() => handleResponse('decline')}
-              className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-surface-border text-ink-primary hover:bg-surface-sunken text-xs font-bold shadow-sm transition-colors disabled:opacity-50"
+              className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface-base dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border text-ink-primary dark:text-dark-ink-primary hover:bg-surface-sunken dark:hover:bg-dark-surface-raised text-xs font-bold shadow-sm transition-colors disabled:opacity-50"
             >
-              <XCircle className="w-4 h-4 text-red-600" />
+              <XCircle className="w-4 h-4 text-status-danger" />
               <span>رفض المقترح والاحتفاظ بالسعر الحالي</span>
             </button>
           </div>

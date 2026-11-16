@@ -85,7 +85,7 @@ export function Header() {
             variant="verified"
             size="sm"
             className="hidden xl:inline-flex items-center gap-1 shrink-0"
-            icon={<ShieldCheck className="w-3.5 h-3.5 text-status-verified" />}
+            icon={<ShieldCheck className="w-3.5 h-3.5 text-accent" />}
           >
             {isArabic ? 'مرخص من فال' : 'REGA Fal Licensed'}
           </Badge>
@@ -195,7 +195,7 @@ export function Header() {
               variant="verified"
               size="sm"
               className="ms-auto items-center gap-1"
-              icon={<ShieldCheck className="w-3.5 h-3.5 text-status-verified" />}
+              icon={<ShieldCheck className="w-3.5 h-3.5 text-accent" />}
             >
               {isArabic ? 'مرخص من فال' : 'Fal Licensed'}
             </Badge>

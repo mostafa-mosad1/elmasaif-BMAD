@@ -96,14 +96,14 @@ export function PaymentReviewQueue() {
   return (
     <div dir="rtl" className="space-y-6">
       {/* Header */}
-      <div className="rounded-2xl bg-[#1B4332] text-white p-6 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="rounded-2xl bg-primary text-white p-6 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/15 text-[#D8F3DC] px-3 py-1 rounded-full">
+          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/10 text-accent-light px-3 py-1 rounded-full border border-white/10">
             <Lock className="w-3.5 h-3.5" />
             <span>قفل حصري لمدة 15 دقيقة مع نبض تلقائي • AD-10</span>
           </div>
           <h1 className="text-2xl font-bold flex items-center gap-2.5">
-            <Wallet className="w-6 h-6 text-[#D8F3DC]" />
+            <Wallet className="w-6 h-6 text-accent" />
             <span>طابور تدقيق إثباتات الدفع</span>
           </h1>
           <p className="text-xs text-white/80 max-w-2xl leading-relaxed">
@@ -113,7 +113,7 @@ export function PaymentReviewQueue() {
         </div>
         <div className="text-left bg-white/10 px-4 py-2.5 rounded-xl border border-white/15 self-start sm:self-auto">
           <div className="text-xs text-white/70">إجمالي الإثباتات في الطابور</div>
-          <div className="text-2xl font-extrabold text-[#D8F3DC]">{total}</div>
+          <div className="text-2xl font-extrabold text-accent-light">{total}</div>
         </div>
       </div>
 
@@ -134,7 +134,7 @@ export function PaymentReviewQueue() {
       )}
 
       {/* Filter tabs */}
-      <div className="flex items-center justify-between gap-4 border-b border-gray-200 pb-3">
+      <div className="flex items-center justify-between gap-4 border-b border-surface-border pb-3">
         <div className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map((f) => (
             <button
@@ -142,8 +142,8 @@ export function PaymentReviewQueue() {
               onClick={() => setStatusFilter(f.value)}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                 statusFilter === f.value
-                  ? 'bg-[#1B4332] text-white shadow-sm'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-primary text-white shadow-level1'
+                  : 'bg-surface-sunken text-ink-secondary hover:bg-surface-border'
               }`}
             >
               {f.label}
@@ -153,7 +153,7 @@ export function PaymentReviewQueue() {
         <button
           onClick={() => fetchQueue(statusFilter)}
           disabled={loading}
-          className="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 text-xs text-ink-secondary hover:text-ink-primary px-3 py-1.5 rounded-lg border border-surface-border bg-surface-base hover:bg-surface-sunken disabled:opacity-50"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>تحديث</span>
@@ -162,15 +162,15 @@ export function PaymentReviewQueue() {
 
       {/* List */}
       {loading ? (
-        <div className="p-12 text-center text-gray-500 space-y-3">
-          <RefreshCw className="w-6 h-6 animate-spin mx-auto text-emerald-600" />
+        <div className="p-12 text-center text-ink-muted space-y-3">
+          <RefreshCw className="w-6 h-6 animate-spin mx-auto text-accent" />
           <p className="text-sm">جارٍ تحميل طابور التدقيق...</p>
         </div>
       ) : items.length === 0 ? (
-        <div className="p-12 text-center bg-gray-50 rounded-2xl border border-gray-200 space-y-2">
-          <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
-          <p className="text-base font-semibold text-gray-800">لا توجد إثباتات دفع بانتظار التدقيق</p>
-          <p className="text-xs text-gray-500">تم تدقيق كافة إيصالات التحويل البنكي الواردة.</p>
+        <div className="p-12 text-center bg-surface-sunken rounded-2xl border border-surface-border space-y-2">
+          <CheckCircle2 className="w-8 h-8 text-accent mx-auto" />
+          <p className="text-base font-semibold text-ink-primary">لا توجد إثباتات دفع بانتظار التدقيق</p>
+          <p className="text-xs text-ink-secondary">تم تدقيق كافة إيصالات التحويل البنكي الواردة.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -184,11 +184,11 @@ export function PaymentReviewQueue() {
               <div
                 key={item.id}
                 data-testid={`payment-row-${item.id}`}
-                className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:border-gray-300 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                className="bg-surface-base rounded-xl border border-surface-border p-5 shadow-level1 hover:border-surface-borderStrong transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
               >
                 <div className="space-y-2 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-gray-700 bg-gray-100 px-2.5 py-0.5 rounded">
+                    <span className="font-mono text-xs font-bold text-ink-primary bg-surface-sunken border border-surface-border px-2.5 py-0.5 rounded">
                       {item.dealNumber}
                     </span>
                     <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded">
@@ -210,21 +210,21 @@ export function PaymentReviewQueue() {
                       </span>
                     )}
                     {!item.lockInfo.isLocked && (
-                      <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
-                        <Unlock className="w-3 h-3 text-gray-400" />
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-ink-secondary bg-surface-sunken border border-surface-border px-2 py-0.5 rounded-full">
+                        <Unlock className="w-3 h-3 text-ink-muted" />
                         <span>متاح للتدقيق</span>
                       </span>
                     )}
                   </div>
 
-                  <div className="text-base font-bold text-gray-900">
+                  <div className="text-base font-bold text-ink-primary">
                     {item.propertyTitle || 'صفقة عقارية'}
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-ink-secondary">
                     <span>
                       المبلغ:{' '}
-                      <strong className="text-gray-900 font-bold">
+                      <strong className="text-ink-primary font-bold">
                         {formatSar(Number(item.amount))}
                       </strong>
                     </span>
@@ -246,7 +246,7 @@ export function PaymentReviewQueue() {
                   {isMine ? (
                     <Link
                       href={`/admin/payments/${item.id}`}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-700 text-white rounded-lg text-xs font-semibold hover:bg-emerald-800 transition-colors shadow-sm"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-xs font-semibold transition-colors shadow-level1"
                     >
                       <Eye className="w-4 h-4" />
                       <span>متابعة التدقيق</span>
@@ -254,7 +254,7 @@ export function PaymentReviewQueue() {
                   ) : isOther ? (
                     <Link
                       href={`/admin/payments/${item.id}`}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 border border-gray-300 bg-white text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-50 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 border border-surface-border bg-surface-base text-ink-secondary rounded-lg text-xs font-semibold hover:bg-surface-sunken transition-colors"
                     >
                       <Eye className="w-4 h-4" />
                       <span>معاينة للقراءة</span>
@@ -263,7 +263,7 @@ export function PaymentReviewQueue() {
                     <button
                       onClick={() => handleClaim(item.id)}
                       disabled={claimingId === item.id}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1B4332] text-white rounded-lg text-xs font-semibold hover:bg-[#2d6a4f] transition-colors shadow-sm disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors shadow-level1 disabled:opacity-50"
                     >
                       {claimingId === item.id ? (
                         <>

@@ -127,23 +127,23 @@ export function MediaStep({ formData, updateForm, errors }: MediaStepProps) {
   return (
     <div className="space-y-6" dir="rtl">
       <div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">الصور والوسائط</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+        <h2 className="text-xl font-bold text-ink-primary dark:text-dark-ink-primary">الصور والوسائط</h2>
+        <p className="text-sm text-ink-secondary dark:text-dark-ink-secondary mt-1">
           ارفع صوراً حقيقية عالية الجودة تظهر كافة جوانب العقار (الحد الأدنى 3 صور، الحد الأقصى 20 صورة).
         </p>
       </div>
 
       {/* Progress & Counter Pill */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-surface-sunken dark:bg-dark-surface-sunken rounded-xl border border-surface-border dark:border-dark-surface-border text-xs">
         <div className="flex items-center gap-2">
-          <ImageIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <span className="font-semibold text-slate-800 dark:text-slate-200">
+          <ImageIcon className="w-4 h-4 text-accent" />
+          <span className="font-semibold text-ink-primary dark:text-dark-ink-primary">
             تم رفع {photos.length} من أصل {MAX_LISTING_PHOTOS} صورة
           </span>
         </div>
 
         {isCountValid ? (
-          <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-semibold">
+          <span className="inline-flex items-center gap-1 text-accent-dark dark:text-accent font-semibold">
             <CheckCircle className="w-3.5 h-3.5" />
             العدد مطابق للشروط (3 صور على الأقل)
           </span>
@@ -165,8 +165,8 @@ export function MediaStep({ formData, updateForm, errors }: MediaStepProps) {
         }}
         className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
           photos.length >= MAX_LISTING_PHOTOS
-            ? 'border-slate-200 bg-slate-50 dark:bg-slate-900 opacity-60 cursor-not-allowed'
-            : 'border-emerald-300 dark:border-emerald-800 hover:border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20'
+            ? 'border-surface-border bg-surface-sunken dark:bg-dark-surface-sunken opacity-60 cursor-not-allowed'
+            : 'border-accent/40 dark:border-accent/40 hover:border-accent bg-accent-light/20 dark:bg-amber-950/20'
         }`}
       >
         <input
@@ -181,21 +181,21 @@ export function MediaStep({ formData, updateForm, errors }: MediaStepProps) {
 
         {isUploading ? (
           <div className="flex flex-col items-center justify-center py-2">
-            <Loader2 className="w-10 h-10 text-emerald-600 animate-spin mb-3" />
-            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+            <Loader2 className="w-10 h-10 text-accent animate-spin mb-3" />
+            <p className="text-sm font-semibold text-ink-primary dark:text-dark-ink-primary">
               جاري فحص الصور أمنياً ورفعها إلى السيرفر...
             </p>
-            <p className="text-xs text-slate-500 mt-1">يتم إجراء فحص الحماية من البرمجيات الخبيثة تلقائياً</p>
+            <p className="text-xs text-ink-muted mt-1">يتم إجراء فحص الحماية من البرمجيات الخبيثة تلقائياً</p>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center">
-            <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center mb-3">
+            <div className="w-12 h-12 rounded-full bg-accent-light dark:bg-amber-950/60 text-accent-dark dark:text-accent flex items-center justify-center mb-3">
               <UploadCloud className="w-6 h-6" />
             </div>
-            <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+            <p className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
               اضغط لاختيار الصور أو اسحبها وأفلتها هنا
             </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-xs text-ink-muted dark:text-dark-ink-muted mt-1">
               يدعم تنسيقات JPEG, PNG, WebP بحجم أقصى 10 ميجابايت للصورة الواحدة
             </p>
           </div>
@@ -209,12 +209,12 @@ export function MediaStep({ formData, updateForm, errors }: MediaStepProps) {
         </div>
       )}
 
-      {errors.photos && <p className="text-xs text-red-500">{errors.photos}</p>}
+      {errors.photos && <p className="text-xs text-status-danger">{errors.photos}</p>}
 
       {/* Uploaded Photos Grid */}
       {photos.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+          <h3 className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
             الصور المرفوعة ({photos.length})
           </h3>
 
@@ -222,14 +222,14 @@ export function MediaStep({ formData, updateForm, errors }: MediaStepProps) {
             {photos.map((photo, index) => (
               <div
                 key={photo.fileUrl || index}
-                className={`relative group rounded-xl overflow-hidden border-2 transition-all bg-slate-100 dark:bg-slate-800 ${
+                className={`relative group rounded-xl overflow-hidden border-2 transition-all bg-surface-sunken dark:bg-dark-surface-raised ${
                   photo.isPrimary
-                    ? 'border-emerald-600 ring-2 ring-emerald-600/30 shadow-md'
-                    : 'border-slate-200 dark:border-slate-700'
+                    ? 'border-accent ring-2 ring-accent/30 shadow-md'
+                    : 'border-surface-border dark:border-dark-surface-border'
                 }`}
               >
                 {/* Image Preview */}
-                <div className="aspect-[4/3] w-full overflow-hidden bg-slate-200 dark:bg-slate-700">
+                <div className="aspect-[4/3] w-full overflow-hidden bg-surface-sunken dark:bg-dark-surface-sunken">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={photo.previewUrl || photo.fileUrl}
@@ -241,7 +241,7 @@ export function MediaStep({ formData, updateForm, errors }: MediaStepProps) {
                 {/* Primary Tag / Toggle Button */}
                 <div className="absolute top-2 right-2">
                   {photo.isPrimary ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-600 text-white text-[11px] font-bold rounded-md shadow-sm">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent text-white text-[11px] font-bold rounded-md shadow-sm">
                       <Star className="w-3 h-3 fill-current" />
                       الرئيسية
                     </span>
@@ -249,7 +249,7 @@ export function MediaStep({ formData, updateForm, errors }: MediaStepProps) {
                     <button
                       type="button"
                       onClick={() => handleSetPrimary(index)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-0.5 bg-slate-900/80 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-md backdrop-blur-sm shadow-sm"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-0.5 bg-primary/80 hover:bg-primary text-white text-[11px] font-semibold rounded-md backdrop-blur-sm shadow-sm"
                     >
                       تعيين كرئيسية
                     </button>

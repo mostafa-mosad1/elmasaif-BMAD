@@ -333,7 +333,7 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
           ? 'border-emerald-300 bg-emerald-50/50'
           : isHeldByOther
           ? 'border-rose-200 bg-rose-50/40'
-          : 'border-slate-200 bg-slate-50/50'
+          : 'border-surface-border bg-surface-sunken'
       }`}>
         <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-3">
@@ -365,7 +365,7 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
               </>
             ) : (
               <>
-                <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-full bg-surface-sunken text-ink-secondary border border-surface-border flex items-center justify-center shrink-0">
                   <Unlock className="w-4 h-4" />
                 </div>
                 <div>
@@ -397,7 +397,7 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
                   variant="ghost"
                   onClick={handleRelease}
                   disabled={actionInProgress}
-                  className="h-8 text-xs gap-1 text-slate-600 hover:text-slate-900"
+                  className="h-8 text-xs gap-1 text-ink-secondary hover:text-ink-primary"
                   data-testid="release-lock-btn"
                 >
                   <Unlock className="w-3 h-3" />
@@ -455,28 +455,28 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
             </CardHeader>
             <CardContent className="p-4 space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-3 rounded-lg bg-slate-50 border space-y-1">
+                <div className="p-3 rounded-lg bg-surface-sunken border border-surface-border space-y-1">
                   <span className="text-muted-foreground block text-[11px]">رقم العملية / مرجع الحوالة:</span>
                   <strong className="font-mono text-foreground text-sm dir-ltr block text-right">
                     {payment.bankReferenceCode || 'لم يحدد'}
                   </strong>
                 </div>
 
-                <div className="p-3 rounded-lg bg-slate-50 border space-y-1">
+                <div className="p-3 rounded-lg bg-surface-sunken border border-surface-border space-y-1">
                   <span className="text-muted-foreground block text-[11px]">اسم البنك المحول منه:</span>
                   <strong className="text-foreground text-sm block">
                     {payment.senderBankName || 'لم يحدد'}
                   </strong>
                 </div>
 
-                <div className="p-3 rounded-lg bg-slate-50 border space-y-1">
+                <div className="p-3 rounded-lg bg-surface-sunken border border-surface-border space-y-1">
                   <span className="text-muted-foreground block text-[11px]">تاريخ ووقت الرفع:</span>
                   <span className="text-foreground font-medium block">
                     {payment.uploadedAt ? new Date(payment.uploadedAt).toLocaleString('ar-SA') : '—'}
                   </span>
                 </div>
 
-                <div className="p-3 rounded-lg bg-slate-50 border space-y-1">
+                <div className="p-3 rounded-lg bg-surface-sunken border border-surface-border space-y-1">
                   <span className="text-muted-foreground block text-[11px]">مهلة التدقيق وفق SLA:</span>
                   <span className="text-emerald-800 font-bold block">
                     خلال 4 ساعات عمل
@@ -544,7 +544,7 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
               </div>
 
               {contract.signatureData && (
-                <div className="p-2 border rounded-lg bg-slate-50 text-center space-y-1">
+                <div className="p-2 border border-surface-border rounded-lg bg-surface-sunken text-center space-y-1">
                   <span className="text-[10px] text-muted-foreground block">توقيع المالك المعتمد:</span>
                   <img
                     src={contract.signatureData}
@@ -554,7 +554,7 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
                 </div>
               )}
 
-              <div className="p-3 rounded-lg bg-slate-50 border max-h-36 overflow-y-auto text-[11px] text-slate-700 leading-relaxed font-sans">
+              <div className="p-3 rounded-lg bg-surface-sunken border border-surface-border max-h-36 overflow-y-auto text-[11px] text-ink-primary leading-relaxed font-sans">
                 {contract.contractTerms}
               </div>
             </CardContent>
@@ -563,7 +563,7 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
 
         {/* Left Pane: Interactive Document / Image Viewer (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
-          <Card className="shadow-sm overflow-hidden border-slate-300">
+          <Card className="shadow-sm overflow-hidden border-surface-border">
             <CardHeader className="p-4 border-b bg-muted/30 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
                 <Eye className="w-4 h-4 text-emerald-700" />
@@ -583,7 +583,7 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
               )}
             </CardHeader>
 
-            <CardContent className="p-0 bg-slate-100 flex items-center justify-center min-h-[380px] max-h-[550px] overflow-hidden">
+            <CardContent className="p-0 bg-surface-sunken flex items-center justify-center min-h-[380px] max-h-[550px] overflow-hidden">
               {payment.proofFileUrl ? (
                 isPdf ? (
                   <iframe
@@ -612,7 +612,7 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
           </Card>
 
           {/* Decision Actions Bar */}
-          <Card className="shadow-sm border-slate-300">
+          <Card className="shadow-sm border-surface-border">
             <CardHeader className="p-4 border-b bg-muted/20">
               <CardTitle className="text-sm font-bold text-foreground">
                 القرار الإداري وتفعيل النشر
@@ -626,7 +626,7 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
                 type="button"
                 onClick={() => setConfirmModalOpen(true)}
                 disabled={!isHeldByMe || isDecided || actionInProgress}
-                className="w-full bg-[#1B4332] hover:bg-[#143326] text-white text-xs font-bold h-10 gap-2 shadow-sm"
+                className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold h-10 gap-2 shadow-level1"
                 data-testid="open-confirm-modal-btn"
               >
                 <CheckCircle2 className="w-4 h-4" />
@@ -659,15 +659,15 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
         >
           <div className="text-right" dir="rtl">
             {/* Modal Header */}
-            <div className="p-6 pb-4 border-b border-slate-100 flex items-start gap-3.5 bg-gradient-to-l from-emerald-50/70 via-white to-white">
-              <div className="w-11 h-11 rounded-xl bg-[#1B4332] text-white flex items-center justify-center shrink-0 shadow-sm">
+            <div className="p-6 pb-4 border-b border-surface-border flex items-start gap-3.5 bg-gradient-to-l from-accent/10 via-surface-base to-surface-base">
+              <div className="w-11 h-11 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 shadow-sm">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-slate-900">
+                <h3 className="text-base font-bold text-ink-primary">
                   تأكيد استلام رسوم العقد ونشر الإعلان
                 </h3>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <p className="text-xs text-ink-secondary leading-relaxed">
                   يرجى التحقق من مطابقة إشعار التحويل البنكي لقيمة الرسوم المعتمدة وصحة الحساب البنكي قبل التفعيل النهائي.
                 </p>
               </div>
@@ -676,22 +676,22 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
             {/* Modal Body */}
             <div className="p-6 space-y-5 text-xs">
               {/* Summary Strip */}
-              <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+              <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-surface-sunken border border-surface-border">
                 <div className="space-y-0.5">
-                  <span className="text-[11px] text-slate-500 block">قيمة الرسوم المستلمة</span>
-                  <strong className="text-sm font-bold text-[#1B4332] block">
+                  <span className="text-[11px] text-ink-secondary block">قيمة الرسوم المستلمة</span>
+                  <strong className="text-sm font-bold text-accent block">
                     {payment.amount.toLocaleString()} ر.س
                   </strong>
                 </div>
-                <div className="space-y-0.5 border-r border-slate-200 pr-3">
-                  <span className="text-[11px] text-slate-500 block">مرجع الحوالة البنكية</span>
-                  <strong className="text-xs font-mono font-bold text-slate-800 block dir-ltr text-right">
+                <div className="space-y-0.5 border-r border-surface-border pr-3">
+                  <span className="text-[11px] text-ink-secondary block">مرجع الحوالة البنكية</span>
+                  <strong className="text-xs font-mono font-bold text-ink-primary block dir-ltr text-right">
                     {payment.bankReferenceCode || 'غير محدد'}
                   </strong>
                 </div>
-                <div className="col-span-2 pt-2 border-t border-slate-200/70 flex items-center justify-between text-[11px]">
-                  <span className="text-slate-500">العقار المرتبط:</span>
-                  <span className="font-bold text-slate-800 truncate max-w-[260px]">{listing.title}</span>
+                <div className="col-span-2 pt-2 border-t border-surface-border flex items-center justify-between text-[11px]">
+                  <span className="text-ink-secondary">العقار المرتبط:</span>
+                  <span className="font-bold text-ink-primary truncate max-w-[260px]">{listing.title}</span>
                 </div>
               </div>
 
@@ -704,17 +704,17 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
                   <span>الإجراءات النظامية المترتبة على الاعتماد:</span>
                 </div>
 
-                <ul className="space-y-2 text-[11px] text-slate-700 leading-relaxed pr-1">
+                <ul className="space-y-2 text-[11px] text-ink-secondary leading-relaxed pr-1">
                   <li className="flex items-start gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 shrink-0" />
                     <span>
-                      تفعيل عقد التسويق الإلكتروني فوراً وتحويل حالته إلى <strong className="text-emerald-800 font-bold">نشط (ACTIVE)</strong>.
+                      تفعيل عقد التسويق الإلكتروني فوراً وتحويل حالته إلى <strong className="text-accent font-bold">نشط (ACTIVE)</strong>.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 shrink-0" />
                     <span>
-                      <strong className="text-slate-900">نشر إعلان العقار تلقائياً في السوق العام</strong> وإتاحته للمشترين والوسطاء.
+                      <strong className="text-ink-primary">نشر إعلان العقار تلقائياً في السوق العام</strong> وإتاحته للمشترين والوسطاء.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
@@ -734,7 +734,7 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200/80 flex items-center justify-end gap-3">
+            <div className="px-6 py-4 bg-surface-sunken border-t border-surface-border flex items-center justify-end gap-3">
               <Button
                 type="button"
                 variant="outline"
@@ -748,7 +748,7 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
                 type="button"
                 onClick={handleConfirmPayment}
                 disabled={actionInProgress}
-                className="bg-[#1B4332] hover:bg-[#143326] text-white text-xs font-bold h-9 px-5 gap-2 shadow-sm"
+                className="bg-primary hover:bg-primary-hover text-white text-xs font-bold h-9 px-5 gap-2 shadow-sm"
                 data-testid="execute-confirm-payment-btn"
               >
                 {actionInProgress ? (
@@ -777,15 +777,15 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
           panelClassName="max-w-lg"
         >
           <div className="text-right" dir="rtl">
-            <div className="p-6 pb-4 border-b border-slate-100 flex items-start gap-3.5 bg-gradient-to-l from-red-50/70 via-white to-white">
+            <div className="p-6 pb-4 border-b border-surface-border flex items-start gap-3.5 bg-gradient-to-l from-red-50/70 via-surface-base to-surface-base">
               <div className="w-11 h-11 rounded-xl bg-red-100 text-red-700 flex items-center justify-center shrink-0">
                 <XCircle className="w-5 h-5" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-slate-900">
+                <h3 className="text-base font-bold text-ink-primary">
                   رفض إشعار التحويل البنكي
                 </h3>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <p className="text-xs text-ink-secondary leading-relaxed">
                   يرجى كتابة سبب الرفض بوضوح ليتمكن المالك من تصحيحه وإعادة رفع إشعار تحويل جديد.
                 </p>
               </div>
@@ -793,7 +793,7 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
 
             <div className="p-6 space-y-4 text-xs">
               <div className="space-y-2">
-                <label className="font-bold text-slate-800 block">
+                <label className="font-bold text-ink-primary block">
                   سبب الرفض الموجه للمالك <span className="text-red-600">*</span>
                 </label>
                 <textarea
@@ -801,7 +801,7 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
                   onChange={(e) => setRejectionReason(e.target.value)}
                   placeholder="اكتب سبب الرفض (مثال: الإشعار غير واضح، المبلغ المحول أقل من 1,000 ريال، اسم المحول غير مطابق...)"
                   rows={4}
-                  className="w-full p-3 rounded-xl border border-slate-200 bg-white text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-red-500 leading-relaxed"
+                  className="w-full p-3 rounded-xl border border-surface-border bg-surface-sunken text-xs text-ink-primary focus:outline-none focus:ring-2 focus:ring-red-500 leading-relaxed"
                   data-testid="rejection-reason-textarea"
                 />
                 <span className="text-[11px] text-muted-foreground block">
@@ -810,13 +810,13 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
               </div>
             </div>
 
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200/80 flex items-center justify-end gap-3">
+            <div className="px-6 py-4 bg-surface-sunken border-t border-surface-border flex items-center justify-end gap-3">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setRejectModalOpen(false)}
                 disabled={actionInProgress}
-                className="text-xs h-9 px-4 bg-white"
+                className="text-xs h-9 px-4 bg-surface-base"
               >
                 إلغاء
               </Button>
@@ -853,15 +853,15 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
           panelClassName="max-w-lg"
         >
           <div className="text-right" dir="rtl">
-            <div className="p-6 pb-4 border-b border-slate-100 flex items-start gap-3.5 bg-gradient-to-l from-amber-50/70 via-white to-white">
+            <div className="p-6 pb-4 border-b border-surface-border flex items-start gap-3.5 bg-gradient-to-l from-amber-50/70 via-surface-base to-surface-base">
               <div className="w-11 h-11 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
                 <Unlock className="w-5 h-5" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-slate-900">
+                <h3 className="text-base font-bold text-ink-primary">
                   فك القفل الإجباري (Super Admin)
                 </h3>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <p className="text-xs text-ink-secondary leading-relaxed">
                   إلغاء قفل المشرف الحالي يتيح إرجاع المهمة للطابور العام فوراً مع توثيق العملية في سجل التدقيق.
                 </p>
               </div>
@@ -869,7 +869,7 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
 
             <div className="p-6 space-y-4 text-xs">
               <div className="space-y-2">
-                <label className="font-bold text-slate-800 block">
+                <label className="font-bold text-ink-primary block">
                   سبب فك القفل الإجباري <span className="text-red-600">*</span>
                 </label>
                 <textarea
@@ -877,13 +877,13 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
                   onChange={(e) => setForceUnlockReason(e.target.value)}
                   placeholder="اكتب مبرر فك القفل الإجباري للتوثيق في سجل التدقيق (Audit Log)..."
                   rows={3}
-                  className="w-full p-3 rounded-xl border border-slate-200 bg-white text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 leading-relaxed"
+                  className="w-full p-3 rounded-xl border border-surface-border bg-surface-sunken text-xs text-ink-primary focus:outline-none focus:ring-2 focus:ring-amber-500 leading-relaxed"
                   data-testid="force-unlock-reason-textarea"
                 />
               </div>
             </div>
 
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200/80 flex items-center justify-end gap-3">
+            <div className="px-6 py-4 bg-surface-sunken border-t border-surface-border flex items-center justify-end gap-3">
               <Button
                 type="button"
                 variant="outline"

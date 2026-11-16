@@ -128,9 +128,9 @@ export function AdminCreateStaffModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto"
     >
       <div className="w-full max-w-4xl bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border rounded-2xl shadow-xl overflow-hidden my-8">
-        <div className="flex items-center justify-between px-6 py-4 bg-[#1B4332] text-white">
+        <div className="flex items-center justify-between px-6 py-4 bg-primary text-white">
           <div className="flex items-center gap-2.5">
-            <UserPlus className="w-5 h-5 text-[#D8F3DC]" />
+            <UserPlus className="w-5 h-5 text-accent" />
             <h2 id="create-staff-modal-title" className="text-base font-bold">
               إنشاء حساب موظف إداري جديد وتخصيص الصلاحيات (RBAC)
             </h2>
@@ -232,7 +232,7 @@ export function AdminCreateStaffModal({
                   onClick={() => handleRoleChange(roleOption)}
                   className={`p-3 rounded-xl border text-start transition-colors ${
                     role === roleOption
-                      ? 'border-[#1B4332] bg-[#1B4332]/10 text-[#1B4332] dark:text-emerald-300 font-bold'
+                      ? 'border-accent bg-accent/10 text-accent-dark dark:text-accent font-bold'
                       : 'border-surface-border dark:border-dark-surface-border text-ink-secondary hover:bg-surface-sunken'
                   }`}
                 >
@@ -253,7 +253,7 @@ export function AdminCreateStaffModal({
               <button
                 type="button"
                 onClick={() => setSelectedPermissions([...(rolePresets[role] ?? [])])}
-                className="text-xs font-semibold text-[#1B4332] dark:text-emerald-400 hover:underline"
+                className="text-xs font-semibold text-accent hover:underline"
               >
                 إعادة ضبط حسب القالب الافتراضي للدور
               </button>
@@ -266,7 +266,7 @@ export function AdminCreateStaffModal({
                   className="p-3.5 rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface-sunken/50 dark:bg-dark-surface/40 space-y-2"
                 >
                   <div className="flex items-center justify-between border-b border-surface-border dark:border-dark-surface-border pb-1.5">
-                    <span className="text-xs font-bold text-[#1B4332] dark:text-emerald-300">
+                    <span className="text-xs font-bold text-accent-dark dark:text-accent">
                       {group.groupLabelAr}
                     </span>
                     <button
@@ -290,7 +290,7 @@ export function AdminCreateStaffModal({
                               type="checkbox"
                               checked={checked}
                               onChange={() => togglePermission(perm.key)}
-                              className="rounded border-surface-border text-[#1B4332] focus:ring-[#1B4332]"
+                              className="rounded border-surface-border text-accent focus:ring-accent accent-accent"
                             />
                             <span className="text-ink-primary dark:text-dark-ink-primary">
                               {perm.labelAr}
@@ -319,7 +319,7 @@ export function AdminCreateStaffModal({
             <button
               type="submit"
               disabled={isSubmitting || selectedPermissions.length === 0}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1B4332] hover:bg-[#143325] disabled:opacity-50 text-white text-xs font-bold shadow-sm transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover disabled:opacity-50 text-white text-xs font-bold shadow-sm transition-colors"
             >
               <UserPlus className="w-4 h-4" />
               <span>{isSubmitting ? 'جاري الإنشاء...' : 'إنشاء حساب الموظف وحفظ الصلاحيات'}</span>
@@ -430,9 +430,9 @@ export function AdminPermissionsModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto"
     >
       <div className="w-full max-w-4xl bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border rounded-2xl shadow-xl overflow-hidden my-8">
-        <div className="flex items-center justify-between px-6 py-4 bg-[#1B4332] text-white">
+        <div className="flex items-center justify-between px-6 py-4 bg-primary text-white">
           <div className="flex items-center gap-2.5">
-            <Sliders className="w-5 h-5 text-[#D8F3DC]" />
+            <Sliders className="w-5 h-5 text-accent" />
             <h2 id="edit-permissions-modal-title" className="text-base font-bold">
               تعديل مصفوفة الصلاحيات الدقيقة (Dynamic RBAC) — {targetStaff.fullName}
             </h2>
@@ -497,7 +497,7 @@ export function AdminPermissionsModal({
                 key={group.groupKey}
                 className="p-3.5 rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface-sunken/50 dark:bg-dark-surface/40 space-y-2"
               >
-                <div className="text-xs font-bold text-[#1B4332] dark:text-emerald-300 border-b border-surface-border pb-1.5">
+                <div className="text-xs font-bold text-accent-dark dark:text-accent border-b border-surface-border pb-1.5">
                   {group.groupLabelAr}
                 </div>
                 <div className="space-y-1.5">
@@ -513,7 +513,7 @@ export function AdminPermissionsModal({
                             type="checkbox"
                             checked={checked}
                             onChange={() => togglePermission(perm.key)}
-                            className="rounded border-surface-border text-[#1B4332]"
+                            className="rounded border-surface-border text-accent focus:ring-accent accent-accent"
                           />
                           <span>{perm.labelAr}</span>
                         </div>
@@ -561,7 +561,7 @@ export function AdminPermissionsModal({
             <button
               type="submit"
               disabled={isSubmitting || reason.trim().length < 3 || selectedPermissions.length === 0}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1B4332] hover:bg-[#143325] disabled:opacity-50 text-white text-xs font-bold shadow-sm transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover disabled:opacity-50 text-white text-xs font-bold shadow-sm transition-colors"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>{isSubmitting ? 'جاري الحفظ...' : 'حفظ مصفوفة الصلاحيات وإلغاء الجلسات'}</span>
@@ -762,9 +762,9 @@ export function AdminStaffManagement({
   return (
     <div dir="rtl" className="space-y-6">
       {/* Header Banner */}
-      <div className="rounded-2xl bg-[#1B4332] text-white p-6 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="rounded-2xl bg-primary text-white p-6 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/15 text-[#D8F3DC] px-3 py-1 rounded-full">
+          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/10 text-accent-light px-3 py-1 rounded-full border border-white/10">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>الصلاحيات الديناميكية الدقيقة وحوكمة الحسابات • FR-40 &amp; FR-43 &amp; BR-18</span>
           </div>
@@ -781,7 +781,7 @@ export function AdminStaffManagement({
             <button
               type="button"
               onClick={() => setIsCreateModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-[#1B4332] text-xs font-bold shadow-sm hover:bg-[#D8F3DC] transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-primary text-xs font-bold shadow-sm hover:bg-accent-light transition-colors"
             >
               <UserPlus className="w-4 h-4" />
               <span>إنشاء حساب موظف جديد</span>
@@ -825,7 +825,7 @@ export function AdminStaffManagement({
           onClick={() => setActiveTab('STAFF')}
           className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors ${
             activeTab === 'STAFF'
-              ? 'bg-[#1B4332] text-white shadow-sm'
+              ? 'bg-primary text-white shadow-sm'
               : 'bg-surface dark:bg-dark-surface-raised text-ink-secondary hover:bg-surface-sunken'
           }`}
         >
@@ -839,7 +839,7 @@ export function AdminStaffManagement({
             onClick={() => setActiveTab('USERS')}
             className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors ${
               activeTab === 'USERS'
-                ? 'bg-[#1B4332] text-white shadow-sm'
+                ? 'bg-primary text-white shadow-sm'
                 : 'bg-surface dark:bg-dark-surface-raised text-ink-secondary hover:bg-surface-sunken'
             }`}
           >
@@ -893,7 +893,7 @@ export function AdminStaffManagement({
                       </td>
 
                       <td className="py-3.5 px-4">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#1B4332]/10 text-[#1B4332] dark:text-emerald-300">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-accent/15 text-accent-dark dark:text-accent">
                           {ADMIN_ROLE_LABELS[staff.role] || staff.role}
                         </span>
                       </td>
@@ -916,7 +916,7 @@ export function AdminStaffManagement({
 
                       <td className="py-3.5 px-4">
                         <div className="flex flex-wrap items-center gap-1">
-                          <span className="font-bold text-[#1B4332] dark:text-emerald-300 me-1">
+                          <span className="font-bold text-accent-dark dark:text-accent me-1">
                             ({staff.permissions?.length ?? 0}) صلاحية:
                           </span>
                           {previewPerms.map((p) => (
@@ -954,7 +954,7 @@ export function AdminStaffManagement({
                           <button
                             type="button"
                             onClick={() => setEditingStaffPermissions(staff)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#1B4332] text-white font-bold hover:bg-[#143325] transition-colors"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary text-white font-bold hover:bg-primary-hover transition-colors"
                           >
                             <Sliders className="w-3.5 h-3.5" />
                             <span>تعديل الصلاحيات</span>
@@ -1036,7 +1036,7 @@ export function AdminStaffManagement({
                             type="button"
                             disabled={!staff.isActive}
                             onClick={() => setSelectedAdminForReset(staff)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#1B4332] text-[#1B4332] dark:text-emerald-300 hover:bg-[#1B4332] hover:text-white disabled:opacity-40 font-bold transition-colors"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-surface-border text-ink-primary dark:text-dark-ink-primary hover:bg-surface-sunken dark:hover:bg-dark-surface-sunken disabled:opacity-40 font-bold transition-colors"
                           >
                             <KeyRound className="w-3.5 h-3.5" />
                             <span>رابط استعادة كلمة المرور</span>
@@ -1212,7 +1212,7 @@ export function AdminStaffManagement({
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
         >
           <div className="w-full max-w-lg bg-surface dark:bg-dark-surface-raised border border-surface-border rounded-2xl shadow-xl overflow-hidden">
-            <div className="px-6 py-4 bg-[#1B4332] text-white flex items-center justify-between">
+            <div className="px-6 py-4 bg-primary text-white flex items-center justify-between">
               <h3 className="text-sm font-bold">
                 تأكيد إجراء حوكمة الحساب — {lifecycleModal.targetName}
               </h3>
@@ -1270,7 +1270,7 @@ export function AdminStaffManagement({
                 <button
                   type="submit"
                   disabled={isLifecycleSubmitting || lifecycleReason.trim().length < 3}
-                  className="px-5 py-2 rounded-xl bg-[#1B4332] text-white text-xs font-bold disabled:opacity-50"
+                  className="px-5 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold disabled:opacity-50 transition-colors"
                 >
                   {isLifecycleSubmitting ? 'جاري التنفيذ...' : 'تأكيد الإجراء'}
                 </button>

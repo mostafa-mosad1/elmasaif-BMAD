@@ -436,7 +436,7 @@ export function OfferMediationWorkspace({ offerId }: { offerId: string }) {
       {/* Lease banner (AD-10) */}
       {isMine && lockInfo ? (
         <div
-          className="flex items-center justify-between gap-3 rounded-xl bg-[#1B4332] p-3 text-xs font-bold text-white"
+          className="flex items-center justify-between gap-3 rounded-xl bg-primary p-3 text-xs font-bold text-white shadow-sm"
           data-testid="mediation-lock-banner"
         >
           <span className="inline-flex items-center gap-2">
@@ -539,7 +539,7 @@ export function OfferMediationWorkspace({ offerId }: { offerId: string }) {
                 successBanner: 'تم استلام مهمة الوساطة لمدة 15 دقيقة.',
               })
             }
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#1B4332] px-3.5 py-2 text-xs font-bold text-white disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-colors disabled:opacity-50"
           >
             <Lock className="w-3.5 h-3.5" />
             <span>{pendingAction === 'claim' ? 'جارٍ الاستلام...' : 'استلام المهمة'}</span>
@@ -595,7 +595,7 @@ export function OfferMediationWorkspace({ offerId }: { offerId: string }) {
                     successBanner: 'تم إرسال العرض إلى البائع بعد اعتماده.',
                   })
                 }
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#1B4332] px-3.5 py-2 text-xs font-bold text-white disabled:opacity-40"
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-colors disabled:opacity-40"
                 data-testid="mediation-relay-to-seller"
               >
                 <Send className="w-3.5 h-3.5" />

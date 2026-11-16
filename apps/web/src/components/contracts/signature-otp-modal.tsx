@@ -93,12 +93,12 @@ export function SignatureOtpModal({
           <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center shadow-inner">
             <ShieldCheck className="w-6 h-6" />
           </div>
-          <h2 className="text-lg font-bold text-slate-900">
+          <h2 className="text-lg font-bold text-ink-primary dark:text-dark-ink-primary">
             تأكيد التوقيع الإلكتروني
           </h2>
-          <p className="text-xs text-slate-600 leading-relaxed">
+          <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary leading-relaxed">
             تم إرسال رمز تحقق مؤلف من 6 أرقام إلى رقم جوالك المسجل:
-            <span className="font-bold text-slate-800 dir-ltr inline-block mx-1">
+            <span className="font-bold text-ink-primary dark:text-dark-ink-primary dir-ltr inline-block mx-1">
               {maskedMobile}
             </span>
           </p>
@@ -133,7 +133,7 @@ export function SignatureOtpModal({
 
         {/* OTP Input Fields */}
         <div className="py-2">
-          <label className="block text-center text-xs font-medium text-slate-700 mb-2">
+          <label className="block text-center text-xs font-medium text-ink-primary dark:text-dark-ink-primary mb-2">
             أدخل رمز التحقق المكون من 6 أرقام
           </label>
           <OtpInput
@@ -156,10 +156,10 @@ export function SignatureOtpModal({
         </div>
 
         {/* Resend Cooldown */}
-        <div className="flex items-center justify-center text-xs text-slate-500">
+        <div className="flex items-center justify-center text-xs text-ink-muted dark:text-dark-ink-muted">
           {cooldown > 0 ? (
-            <span className="inline-flex items-center gap-1.5 text-slate-500">
-              <Clock className="w-3.5 h-3.5 text-slate-400" />
+            <span className="inline-flex items-center gap-1.5 text-ink-muted dark:text-dark-ink-muted">
+              <Clock className="w-3.5 h-3.5 text-ink-muted dark:text-dark-ink-muted" />
               <span>إعادة إرسال الرمز متاحة خلال {cooldown} ثانية</span>
             </span>
           ) : (
@@ -184,7 +184,7 @@ export function SignatureOtpModal({
             type="button"
             onClick={handleConfirm}
             disabled={otpCode.length !== 6 || isSubmitting}
-            className="flex-1 bg-[#1B4332] hover:bg-[#2D6A4F] text-white font-bold text-xs h-10 shadow-sm"
+            className="flex-1 bg-primary hover:bg-primary-hover text-white font-bold text-xs h-10 shadow-sm"
             data-testid="confirm-signature-btn"
           >
             {isSubmitting ? (

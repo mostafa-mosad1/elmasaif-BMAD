@@ -90,14 +90,14 @@ export function OfferMediationQueue() {
 
   return (
     <div dir="rtl" className="space-y-6">
-      <div className="rounded-2xl bg-[#1B4332] text-white p-6 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="rounded-2xl bg-primary text-white p-6 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/15 text-[#D8F3DC] px-3 py-1 rounded-full">
+          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/10 text-accent-light px-3 py-1 rounded-full border border-white/10">
             <Lock className="w-3.5 h-3.5" />
             <span>قفل حصري لمدة 15 دقيقة مع نبض تلقائي • AD-10</span>
           </div>
           <h1 className="text-2xl font-bold flex items-center gap-2.5">
-            <HandCoins className="w-6 h-6 text-[#D8F3DC]" />
+            <HandCoins className="w-6 h-6 text-accent" />
             <span>طابور وساطة عروض الشراء</span>
           </h1>
           <p className="text-xs text-white/80 max-w-2xl leading-relaxed">
@@ -142,7 +142,7 @@ export function OfferMediationQueue() {
                 onClick={() => setStatusFilter(filter.value)}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
                   isActive
-                    ? 'bg-[#1B4332] text-white shadow-sm'
+                    ? 'bg-primary text-white shadow-sm'
                     : 'text-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface'
                 }`}
               >
@@ -221,7 +221,7 @@ export function OfferMediationQueue() {
                       <td className="py-3.5 px-4">
                         <span
                           dir="ltr"
-                          className="font-mono font-bold text-sm text-[#1B4332] dark:text-emerald-400"
+                          className="font-mono font-bold text-sm text-primary dark:text-accent"
                         >
                           {formatSar(item.offerPrice)}
                         </span>
@@ -247,7 +247,7 @@ export function OfferMediationQueue() {
                             <span>متاح للوساطة</span>
                           </span>
                         ) : lockInfo.isLockedByCurrentAdmin ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#1B4332] text-white">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-primary text-white">
                             <Lock className="w-3 h-3" />
                             <span>قيد المعالجة بواسطتك</span>
                             <span dir="ltr" className="font-mono text-[10px] opacity-90">
@@ -273,7 +273,7 @@ export function OfferMediationQueue() {
                               type="button"
                               disabled={claimingId === item.id}
                               onClick={() => handleClaim(item.id)}
-                              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1B4332] hover:bg-[#2D6A4F] text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-50"
+                              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-50"
                             >
                               <Lock className="w-3.5 h-3.5" />
                               <span>

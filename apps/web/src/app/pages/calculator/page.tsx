@@ -50,7 +50,7 @@ export default function CommissionCalculatorPage() {
             <Badge
               variant="verified"
               size="md"
-              icon={<Scale className="w-4 h-4 text-status-verified" />}
+              icon={<Scale className="w-4 h-4 text-accent" />}
             >
               مطابق لضوابط الهيئة العامة للعقار (REGA)
             </Badge>
@@ -165,16 +165,16 @@ export default function CommissionCalculatorPage() {
               </div>
 
               {/* Leg 2: Seller Net Purchase Price */}
-              <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-3">
+              <div className="p-4 rounded-xl border border-accent/30 bg-accent-light/40 dark:bg-accent/10 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/40 px-2.5 py-0.5 rounded-full">
+                  <span className="text-xs font-bold text-accent-dark dark:text-accent bg-accent-light dark:bg-accent/20 px-2.5 py-0.5 rounded-full">
                     الدفعة الثانية (البائع)
                   </span>
                   <span className="text-xs text-ink-muted">ثمن العقار الصافي</span>
                 </div>
                 <div>
                   <div className="text-xs text-ink-secondary">المبلغ المحول لحساب المالك:</div>
-                  <div className="text-xl font-bold font-mono text-emerald-700 dark:text-emerald-400 mt-1">
+                  <div className="text-xl font-bold font-mono text-accent-dark dark:text-accent mt-1">
                     {formatSar(netSellerPrice)}
                   </div>
                 </div>

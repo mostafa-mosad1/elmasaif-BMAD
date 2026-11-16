@@ -210,7 +210,7 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
   if (isLoadingProfile) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-ink-secondary">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary dark:text-accent mb-3" />
         <p className="text-sm">جاري تحميل بيانات الحساب...</p>
       </div>
     );
@@ -293,7 +293,7 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
         {/* Card Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-surface-border dark:border-dark-surface-border gap-4 mb-6">
           <div className="flex items-start sm:items-center gap-3.5">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary dark:bg-primary/20 flex items-center justify-center shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary dark:bg-accent/20 dark:text-accent flex items-center justify-center shrink-0">
               <User className="h-6 w-6" />
             </div>
             <div>
@@ -418,7 +418,7 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
                   </span>
                   <Link
                     href="/app/settings/mobile"
-                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                    className="text-xs font-bold text-primary dark:text-accent hover:underline flex items-center gap-1"
                   >
                     تحديث رقم الجوال
                     <ArrowLeft className="h-3 w-3" />
@@ -437,7 +437,7 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
                   </span>
                   <Link
                     href="/app/settings/identity"
-                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                    className="text-xs font-bold text-primary dark:text-accent hover:underline flex items-center gap-1"
                   >
                     توثيق الهوية
                     <ArrowLeft className="h-3 w-3" />

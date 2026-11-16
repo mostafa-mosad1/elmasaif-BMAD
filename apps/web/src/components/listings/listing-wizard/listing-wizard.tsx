@@ -217,15 +217,15 @@ export function ListingWizard({ userRole, onSuccessRedirectUrl }: ListingWizardP
     <div className="max-w-4xl mx-auto py-6 px-4 sm:px-6" dir="rtl">
       {/* Wizard Header & Progress Stepper */}
       <div className="mb-8">
-        <h1 className="text-2xl font-black text-slate-900 dark:text-white mb-2">
+        <h1 className="text-2xl font-black text-ink-primary dark:text-dark-ink-primary mb-2">
           إضافة عقار جديد للبيع
         </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-sm text-ink-secondary dark:text-dark-ink-secondary">
           أكمل خطوات المعالج لنشر العقار مع ضمان حماية الوثائق القانونية الحساسة.
         </p>
 
         {/* Stepper Bar */}
-        <div className="mt-6 border-b border-slate-200 dark:border-slate-800 pb-5">
+        <div className="mt-6 border-b border-surface-border dark:border-dark-surface-border pb-5">
           <div className="flex items-center justify-between">
             {WIZARD_STEPS.map((step) => {
               const isPassed = currentStep > step.id;
@@ -235,10 +235,10 @@ export function ListingWizard({ userRole, onSuccessRedirectUrl }: ListingWizardP
                   <div
                     className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
                       isPassed
-                        ? 'bg-emerald-600 text-white shadow-sm'
+                        ? 'bg-accent text-white shadow-sm'
                         : isCurrent
-                        ? 'bg-emerald-700 text-white ring-4 ring-emerald-100 dark:ring-emerald-950 font-black'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                        ? 'bg-primary text-primary-foreground ring-4 ring-primary/20 font-black'
+                        : 'bg-surface-sunken dark:bg-dark-surface-raised text-ink-muted dark:text-dark-ink-muted'
                     }`}
                   >
                     {isPassed ? <Check className="w-4 h-4" /> : step.id}
@@ -246,10 +246,10 @@ export function ListingWizard({ userRole, onSuccessRedirectUrl }: ListingWizardP
                   <span
                     className={`text-[11px] mt-2 hidden sm:block text-center font-semibold ${
                       isCurrent
-                        ? 'text-emerald-700 dark:text-emerald-400 font-bold'
+                        ? 'text-primary dark:text-primary-light font-bold'
                         : isPassed
-                        ? 'text-slate-700 dark:text-slate-300'
-                        : 'text-slate-400'
+                        ? 'text-ink-primary dark:text-dark-ink-primary'
+                        : 'text-ink-muted dark:text-dark-ink-muted'
                     }`}
                   >
                     {step.shortTitle}
@@ -270,7 +270,7 @@ export function ListingWizard({ userRole, onSuccessRedirectUrl }: ListingWizardP
       )}
 
       {/* Step Content */}
-      <div className="bg-white dark:bg-slate-850 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm">
+      <div className="bg-surface-base dark:bg-dark-surface-base rounded-2xl border border-surface-border dark:border-dark-surface-border p-6 sm:p-8 shadow-level1">
         {currentStep === 1 && (
           <BasicInfoStep formData={formData} updateForm={updateForm} errors={errors} />
         )}
@@ -301,13 +301,13 @@ export function ListingWizard({ userRole, onSuccessRedirectUrl }: ListingWizardP
         )}
 
         {/* Step Navigation Actions */}
-        <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
+        <div className="mt-8 pt-6 border-t border-surface-border dark:border-dark-surface-border flex items-center justify-between gap-4">
           {currentStep > 1 ? (
             <button
               type="button"
               onClick={handlePrev}
               disabled={isSubmitting}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-200 transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-surface-border dark:border-dark-surface-border hover:bg-surface-sunken dark:hover:bg-dark-surface-raised text-sm font-semibold text-ink-primary dark:text-dark-ink-primary transition-colors disabled:opacity-50"
             >
               <ChevronRight className="w-4 h-4" />
               السابق
@@ -320,7 +320,7 @@ export function ListingWizard({ userRole, onSuccessRedirectUrl }: ListingWizardP
             <button
               type="button"
               onClick={handleNext}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-bold shadow-sm hover:shadow transition-all"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-bold shadow-sm hover:shadow transition-all"
             >
               التالي
               <ChevronLeft className="w-4 h-4" />
@@ -330,7 +330,7 @@ export function ListingWizard({ userRole, onSuccessRedirectUrl }: ListingWizardP
               type="button"
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-60"
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-60"
             >
               {isSubmitting ? (
                 <>
@@ -350,17 +350,17 @@ export function ListingWizard({ userRole, onSuccessRedirectUrl }: ListingWizardP
 
       {/* Success Modal */}
       {isSuccessModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-850 rounded-2xl max-w-md w-full p-6 text-center border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
-            <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-surface-base dark:bg-dark-surface-base rounded-2xl max-w-md w-full p-6 text-center border border-surface-border dark:border-dark-surface-border shadow-level3 space-y-4">
+            <div className="w-14 h-14 rounded-full bg-accent-light dark:bg-amber-950/60 text-accent dark:text-amber-400 flex items-center justify-center mx-auto">
               <Check className="w-7 h-7" />
             </div>
 
-            <h3 className="text-lg font-black text-slate-900 dark:text-white">
+            <h3 className="text-lg font-black text-ink-primary dark:text-dark-ink-primary">
               تم إرسال العقار بنجاح!
             </h3>
 
-            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+            <p className="text-sm text-ink-secondary dark:text-dark-ink-secondary leading-relaxed">
               تم استلام بيانات العقار وحفظ الوثائق المشفرة، والإعلان الآن قيد مراجعة وتدقيق الإدارة (PendingAdminReview).
             </p>
 
@@ -368,7 +368,7 @@ export function ListingWizard({ userRole, onSuccessRedirectUrl }: ListingWizardP
               <button
                 type="button"
                 onClick={() => router.push(targetRedirect)}
-                className="w-full py-2.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl shadow-sm transition-colors text-sm"
+                className="w-full py-2.5 px-4 bg-primary hover:bg-primary-hover text-primary-foreground font-bold rounded-xl shadow-sm transition-colors text-sm"
               >
                 الانتقال إلى قائمة العقارات
               </button>

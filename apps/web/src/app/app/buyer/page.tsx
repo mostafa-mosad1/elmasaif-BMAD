@@ -194,7 +194,7 @@ export default function BuyerDashboardPage() {
       )}
 
       {identityStatus && !identityStatus.canUploadDealPaymentProof && !identityPromptDismissed && (
-        <section className="relative rounded-xl border border-[#C69C45]/30 bg-[#C69C45]/10 p-5 pe-12" role="status">
+        <section className="relative rounded-xl border border-accent/30 bg-accent/10 p-5 pe-12" role="status">
           <button
             type="button"
             className="absolute end-3 top-3 rounded p-1 text-ink-muted hover:bg-black/5"
@@ -204,7 +204,7 @@ export default function BuyerDashboardPage() {
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
           <div className="flex items-start gap-3">
-            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#C69C45]" aria-hidden="true" />
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
             <div className="space-y-2">
               <h2 className="font-bold text-ink-primary dark:text-dark-ink-primary">
                 أكمل توثيق هويتك لتفعيل إثباتات الدفع

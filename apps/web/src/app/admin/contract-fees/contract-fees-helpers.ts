@@ -43,9 +43,9 @@ export const CONTRACT_FEE_STATUS_CONFIG: Record<
   },
   [CONTRACT_FEE_PAYMENT_STATUS.EXPIRED]: {
     label: 'منتهي الصلاحية',
-    bg: 'bg-slate-50 dark:bg-slate-900',
-    text: 'text-slate-600 dark:text-slate-400',
-    border: 'border-slate-200 dark:border-slate-800',
+    bg: 'bg-surface-sunken dark:bg-dark-surface-sunken',
+    text: 'text-ink-secondary dark:text-dark-ink-secondary',
+    border: 'border-surface-border dark:border-dark-surface-border',
   },
 };
 
