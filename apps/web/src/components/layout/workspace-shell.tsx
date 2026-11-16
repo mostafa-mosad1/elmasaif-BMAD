@@ -44,6 +44,7 @@ import {
   ScrollText
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/notification-bell';
+import { SupportTicketModal } from '../support/support-ticket-modal';
 
 interface WorkspaceShellProps {
   children: React.ReactNode;
@@ -56,6 +57,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const { locale, toggleLocale } = useDirection();
   const { resolvedTheme, toggleTheme } = useTheme();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [supportModalOpen, setSupportModalOpen] = useState(false);
 
   const isArabic = locale === SupportedLocale.AR;
   const isAdminRoute = Boolean(pathname?.startsWith('/admin'));
@@ -386,6 +388,20 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
           })}
         </nav>
 
+        {/* User Help / Support Action */}
+        {!isAdminRoute && (
+          <div className="px-3.5 py-2 border-t border-surface-border dark:border-dark-surface-border">
+            <button
+              type="button"
+              onClick={() => setSupportModalOpen(true)}
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold border border-surface-border dark:border-dark-surface-border hover:bg-surface-sunken dark:hover:bg-dark-surface-raised text-ink-secondary dark:text-dark-ink-secondary transition-colors cursor-pointer"
+            >
+              <LifeBuoy className="w-4 h-4 text-accent" />
+              <span>{isArabic ? 'طلب دعم فني ومساعدة' : 'Help & Support'}</span>
+            </button>
+          </div>
+        )}
+
         {/* User / Admin Profile Footer in Sidebar */}
         {isAdminRoute && admin ? (
           <div className="p-4 border-t border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40">
@@ -455,13 +471,25 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
             >
               <Menu className="w-5 h-5" />
             </button>
-            <WorkspaceRoleSwitcher />
+            {!isAdminRoute ? (
+              <WorkspaceRoleSwitcher />
+            ) : (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-accent/25 bg-accent/10 text-accent font-semibold text-xs">
+                <ShieldCheck className="w-3.5 h-3.5 text-accent" />
+                <span>لوحة الإدارة والتحكم</span>
+                {admin?.role && (
+                  <span className="hidden sm:inline font-mono text-[11px] opacity-80 border-s border-accent/30 ps-2">
+                    {admin.role}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right Action Utilities */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Notifications Bell */}
-            <NotificationBell />
+            {/* Notifications Bell (Customer workspaces only) */}
+            {!isAdminRoute && <NotificationBell />}
 
             {/* Language Switcher */}
             <button
@@ -505,6 +533,12 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
           {children}
         </main>
       </div>
+
+      <SupportTicketModal
+        isOpen={supportModalOpen}
+        onClose={() => setSupportModalOpen(false)}
+        defaultContactName={user?.fullName || ''}
+      />
     </div>
   );
 }

@@ -1,14 +1,16 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useDirection } from '../providers/direction-provider';
 import { SupportedLocale } from '@elmasaif/shared';
-import { Building2, ShieldCheck, FileCheck, Scale, Lock } from 'lucide-react';
+import { Building2, ShieldCheck, FileCheck, Scale, Lock, LifeBuoy } from 'lucide-react';
+import { SupportTicketModal } from '../support/support-ticket-modal';
 
 export function Footer() {
   const { locale } = useDirection();
   const isArabic = locale === SupportedLocale.AR;
+  const [supportModalOpen, setSupportModalOpen] = useState(false);
 
   return (
     <footer className="w-full border-t border-surface-border dark:border-dark-surface-border bg-surface-base dark:bg-dark-surface-base text-ink-primary dark:text-dark-ink-primary transition-colors duration-200">
@@ -111,6 +113,16 @@ export function Footer() {
               {isArabic ? 'المساعدة والدعم' : 'Support'}
             </h4>
             <ul className="space-y-2.5 text-xs text-ink-secondary dark:text-dark-ink-secondary">
+              <li>
+                <button
+                  type="button"
+                  onClick={() => setSupportModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 text-accent hover:underline font-semibold transition-colors cursor-pointer"
+                >
+                  <LifeBuoy className="w-3.5 h-3.5" />
+                  <span>{isArabic ? 'فتح تذكرة دعم ومساعدة' : 'Submit Support Ticket'}</span>
+                </button>
+              </li>
               <li><Link href="/pages/contact" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'مركز مساعدة المستفيدين' : 'Support Center'}</Link></li>
               <li><Link href="/pages/faq" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'الأسئلة المتكررة' : 'FAQs'}</Link></li>
               <li><Link href="/pages/contact" className="hover:text-primary dark:hover:text-primary-light transition-colors">{isArabic ? 'قنوات الاتصال المعتمدة' : 'Official Channels'}</Link></li>
@@ -131,6 +143,11 @@ export function Footer() {
           </div>
         </div>
       </div>
+
+      <SupportTicketModal
+        isOpen={supportModalOpen}
+        onClose={() => setSupportModalOpen(false)}
+      />
     </footer>
   );
 }

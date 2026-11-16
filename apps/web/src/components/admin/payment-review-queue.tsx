@@ -134,7 +134,7 @@ export function PaymentReviewQueue() {
       )}
 
       {/* Filter tabs */}
-      <div className="flex items-center justify-between gap-4 border-b border-surface-border pb-3">
+      <div className="flex items-center justify-between gap-4 border-b border-surface-border dark:border-dark-surface-border pb-3">
         <div className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map((f) => (
             <button
@@ -142,8 +142,8 @@ export function PaymentReviewQueue() {
               onClick={() => setStatusFilter(f.value)}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                 statusFilter === f.value
-                  ? 'bg-primary text-white shadow-level1'
-                  : 'bg-surface-sunken text-ink-secondary hover:bg-surface-border'
+                  ? 'bg-primary text-white shadow-level1 dark:bg-primary dark:text-white'
+                  : 'bg-surface-sunken dark:bg-dark-surface-raised text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-border dark:hover:bg-dark-surface-border'
               }`}
             >
               {f.label}
@@ -153,7 +153,7 @@ export function PaymentReviewQueue() {
         <button
           onClick={() => fetchQueue(statusFilter)}
           disabled={loading}
-          className="inline-flex items-center gap-1.5 text-xs text-ink-secondary hover:text-ink-primary px-3 py-1.5 rounded-lg border border-surface-border bg-surface-base hover:bg-surface-sunken disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 text-xs text-ink-secondary dark:text-dark-ink-secondary hover:text-ink-primary dark:hover:text-dark-ink-primary px-3 py-1.5 rounded-lg border border-surface-border dark:border-dark-surface-border bg-surface-base dark:bg-dark-surface-base hover:bg-surface-sunken dark:hover:bg-dark-surface-raised disabled:opacity-50"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>تحديث</span>
@@ -162,15 +162,15 @@ export function PaymentReviewQueue() {
 
       {/* List */}
       {loading ? (
-        <div className="p-12 text-center text-ink-muted space-y-3">
+        <div className="p-12 text-center text-ink-muted dark:text-dark-ink-muted space-y-3">
           <RefreshCw className="w-6 h-6 animate-spin mx-auto text-accent" />
           <p className="text-sm">جارٍ تحميل طابور التدقيق...</p>
         </div>
       ) : items.length === 0 ? (
-        <div className="p-12 text-center bg-surface-sunken rounded-2xl border border-surface-border space-y-2">
+        <div className="p-12 text-center bg-surface-sunken dark:bg-dark-surface-base rounded-2xl border border-surface-border dark:border-dark-surface-border space-y-2">
           <CheckCircle2 className="w-8 h-8 text-accent mx-auto" />
-          <p className="text-base font-semibold text-ink-primary">لا توجد إثباتات دفع بانتظار التدقيق</p>
-          <p className="text-xs text-ink-secondary">تم تدقيق كافة إيصالات التحويل البنكي الواردة.</p>
+          <p className="text-base font-semibold text-ink-primary dark:text-dark-ink-primary">لا توجد إثباتات دفع بانتظار التدقيق</p>
+          <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary">تم تدقيق كافة إيصالات التحويل البنكي الواردة.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -184,24 +184,24 @@ export function PaymentReviewQueue() {
               <div
                 key={item.id}
                 data-testid={`payment-row-${item.id}`}
-                className="bg-surface-base rounded-xl border border-surface-border p-5 shadow-level1 hover:border-surface-borderStrong transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                className="bg-surface-base dark:bg-dark-surface-base rounded-xl border border-surface-border dark:border-dark-surface-border p-5 shadow-level1 hover:border-surface-borderStrong dark:hover:border-dark-surface-border-strong transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
               >
                 <div className="space-y-2 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-ink-primary bg-surface-sunken border border-surface-border px-2.5 py-0.5 rounded">
+                    <span className="font-mono text-xs font-bold text-ink-primary dark:text-dark-ink-primary bg-surface-sunken dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border px-2.5 py-0.5 rounded">
                       {item.dealNumber}
                     </span>
-                    <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded">
+                    <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-0.5 rounded">
                       {typeLabel}
                     </span>
                     {isMine && (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded-full">
                         <Lock className="w-3 h-3" />
                         <span>قيد تدقيقك • {formatLockCountdown(item.lockInfo.remainingSeconds)}</span>
                       </span>
                     )}
                     {isOther && (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/50 px-2.5 py-0.5 rounded-full">
                         <Lock className="w-3 h-3" />
                         <span>
                           قيد التدقيق بواسطة {item.lockInfo.lockedByAdminName || 'مشرف آخر'} •{' '}
@@ -210,21 +210,21 @@ export function PaymentReviewQueue() {
                       </span>
                     )}
                     {!item.lockInfo.isLocked && (
-                      <span className="inline-flex items-center gap-1 text-xs font-medium text-ink-secondary bg-surface-sunken border border-surface-border px-2 py-0.5 rounded-full">
-                        <Unlock className="w-3 h-3 text-ink-muted" />
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-ink-secondary dark:text-dark-ink-secondary bg-surface-sunken dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border px-2 py-0.5 rounded-full">
+                        <Unlock className="w-3 h-3 text-ink-muted dark:text-dark-ink-muted" />
                         <span>متاح للتدقيق</span>
                       </span>
                     )}
                   </div>
 
-                  <div className="text-base font-bold text-ink-primary">
+                  <div className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
                     {item.propertyTitle || 'صفقة عقارية'}
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-ink-secondary">
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-ink-secondary dark:text-dark-ink-secondary">
                     <span>
                       المبلغ:{' '}
-                      <strong className="text-ink-primary font-bold">
+                      <strong className="text-ink-primary dark:text-dark-ink-primary font-bold">
                         {formatSar(Number(item.amount))}
                       </strong>
                     </span>
@@ -246,7 +246,7 @@ export function PaymentReviewQueue() {
                   {isMine ? (
                     <Link
                       href={`/admin/payments/${item.id}`}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-xs font-semibold transition-colors shadow-level1"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold transition-colors shadow-sm"
                     >
                       <Eye className="w-4 h-4" />
                       <span>متابعة التدقيق</span>
@@ -254,7 +254,7 @@ export function PaymentReviewQueue() {
                   ) : isOther ? (
                     <Link
                       href={`/admin/payments/${item.id}`}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 border border-surface-border bg-surface-base text-ink-secondary rounded-lg text-xs font-semibold hover:bg-surface-sunken transition-colors"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 border border-surface-border dark:border-dark-surface-border bg-surface-base dark:bg-dark-surface-base text-ink-secondary dark:text-dark-ink-secondary rounded-lg text-xs font-semibold hover:bg-surface-sunken dark:hover:bg-dark-surface-raised transition-colors"
                     >
                       <Eye className="w-4 h-4" />
                       <span>معاينة للقراءة</span>
@@ -263,7 +263,7 @@ export function PaymentReviewQueue() {
                     <button
                       onClick={() => handleClaim(item.id)}
                       disabled={claimingId === item.id}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors shadow-level1 disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary-hover transition-colors shadow-sm disabled:opacity-50"
                     >
                       {claimingId === item.id ? (
                         <>

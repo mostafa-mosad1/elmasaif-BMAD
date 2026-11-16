@@ -95,10 +95,126 @@ body {
   color: var(--ink-muted);
 }
 
+/* Surfaces and Borders automatic dark mode adaptation */
+.dark .bg-surface:not([class*="dark:bg-"]),
+.dark .bg-surface-base:not([class*="dark:bg-"]) {
+  background-color: var(--surface-base);
+}
+
+.dark .bg-surface-raised:not([class*="dark:bg-"]) {
+  background-color: var(--surface-raised);
+}
+
+.dark .bg-surface-sunken:not([class*="dark:bg-"]) {
+  background-color: var(--surface-sunken);
+}
+
+.dark .border-surface-border:not([class*="dark:border-"]) {
+  border-color: var(--surface-border);
+}
+
+.dark .border-surface-borderStrong:not([class*="dark:border-"]),
+.dark .border-surface-border-strong:not([class*="dark:border-"]) {
+  border-color: var(--surface-border-strong);
+}
+
+/* Light tint badge backgrounds & text in dark mode */
+.dark .bg-emerald-50:not([class*="dark:bg-"]),
+.dark .bg-emerald-100:not([class*="dark:bg-"]),
+.dark .bg-emerald-200:not([class*="dark:bg-"]) {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+}
+.dark .text-emerald-950:not([class*="dark:text-"]),
+.dark .text-emerald-900:not([class*="dark:text-"]),
+.dark .text-emerald-800:not([class*="dark:text-"]),
+.dark .text-emerald-700:not([class*="dark:text-"]) {
+  color: #6EE7B7 !important;
+}
+.dark .border-emerald-200:not([class*="dark:border-"]),
+.dark .border-emerald-300:not([class*="dark:border-"]),
+.dark .border-emerald-400:not([class*="dark:border-"]) {
+  border-color: rgba(16, 185, 129, 0.35) !important;
+}
+
+.dark .bg-amber-50:not([class*="dark:bg-"]),
+.dark .bg-amber-100:not([class*="dark:bg-"]),
+.dark .bg-amber-200:not([class*="dark:bg-"]) {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+}
+.dark .text-amber-950:not([class*="dark:text-"]),
+.dark .text-amber-900:not([class*="dark:text-"]),
+.dark .text-amber-800:not([class*="dark:text-"]),
+.dark .text-amber-700:not([class*="dark:text-"]) {
+  color: #FCD34D !important;
+}
+.dark .border-amber-200:not([class*="dark:border-"]),
+.dark .border-amber-300:not([class*="dark:border-"]),
+.dark .border-amber-400:not([class*="dark:border-"]) {
+  border-color: rgba(245, 158, 11, 0.35) !important;
+}
+
+.dark .bg-blue-50:not([class*="dark:bg-"]),
+.dark .bg-blue-100:not([class*="dark:bg-"]),
+.dark .bg-blue-200:not([class*="dark:bg-"]) {
+  background-color: rgba(59, 130, 246, 0.18) !important;
+}
+.dark .text-blue-950:not([class*="dark:text-"]),
+.dark .text-blue-900:not([class*="dark:text-"]),
+.dark .text-blue-800:not([class*="dark:text-"]),
+.dark .text-blue-700:not([class*="dark:text-"]) {
+  color: #93C5FD !important;
+}
+.dark .border-blue-200:not([class*="dark:border-"]),
+.dark .border-blue-300:not([class*="dark:border-"]),
+.dark .border-blue-400:not([class*="dark:border-"]) {
+  border-color: rgba(59, 130, 246, 0.35) !important;
+}
+
+.dark .bg-red-50:not([class*="dark:bg-"]),
+.dark .bg-red-100:not([class*="dark:bg-"]),
+.dark .bg-red-200:not([class*="dark:bg-"]) {
+  background-color: rgba(239, 68, 68, 0.18) !important;
+}
+.dark .text-red-950:not([class*="dark:text-"]),
+.dark .text-red-900:not([class*="dark:text-"]),
+.dark .text-red-800:not([class*="dark:text-"]),
+.dark .text-red-700:not([class*="dark:text-"]) {
+  color: #FCA5A5 !important;
+}
+.dark .border-red-200:not([class*="dark:border-"]),
+.dark .border-red-300:not([class*="dark:border-"]),
+.dark .border-red-400:not([class*="dark:border-"]) {
+  border-color: rgba(239, 68, 68, 0.35) !important;
+}
+
+/* Dark mode Form Controls adaptation */
+.dark select {
+  background-color: var(--surface-base);
+  color: var(--ink-primary);
+  border-color: var(--surface-border);
+}
+.dark select option {
+  background-color: var(--surface-base);
+  color: var(--ink-primary);
+}
+
+/* Universal Dark Mode fallback for text-primary: never let text-primary be dark obsidian slate in dark mode */
+.dark .text-primary:not([class*="dark:text-"]) {
+  color: var(--ink-primary);
+}
+
 /* Links & interactive buttons with text-primary adapt to glowing warm bronze in dark mode */
 .dark a.text-primary:not([class*="dark:text-"]),
-.dark button.text-primary:not([class*="dark:text-"]) {
+.dark a .text-primary:not([class*="dark:text-"]),
+.dark button.text-primary:not([class*="dark:text-"]),
+.dark button .text-primary:not([class*="dark:text-"]),
+.dark svg.text-primary:not([class*="dark:text-"]) {
   color: var(--accent);
+}
+
+/* Hover states with hover:text-primary illuminate in glowing warm bronze in dark mode */
+.dark [class*="hover:text-primary"]:hover:not([class*="dark:hover:text-"]) {
+  color: var(--accent) !important;
 }
 
 /* Headings and labels with text-primary adapt to crisp alabaster ink in dark mode */
@@ -108,21 +224,25 @@ body {
 .dark h2.text-primary:not([class*="dark:text-"]),
 .dark h3.text-primary:not([class*="dark:text-"]),
 .dark h4.text-primary:not([class*="dark:text-"]),
-.dark div.text-primary:not([class*="dark:text-"]) {
+.dark div.text-primary:not([class*="dark:text-"]),
+.dark td.text-primary:not([class*="dark:text-"]),
+.dark th.text-primary:not([class*="dark:text-"]),
+.dark label.text-primary:not([class*="dark:text-"]) {
   color: var(--ink-primary);
 }
 
-/* Standalone SVG icons with text-primary illuminate in warm bronze in dark mode */
-.dark svg.text-primary:not([class*="dark:text-"]) {
-  color: var(--accent);
-}
-
 /* Primary tint badge and pill backgrounds in dark mode */
-.dark .bg-primary\/10:not([class*="dark:bg-"]) {
-  background-color: rgba(245, 158, 11, 0.15);
+.dark .bg-primary\/5:not([class*="dark:bg-"]) {
+  background-color: rgba(217, 119, 6, 0.08);
 }
-.dark .bg-primary\/10:not([class*="dark:bg-"]) .text-primary:not([class*="dark:text-"]),
-.dark .bg-primary\/10.text-primary:not([class*="dark:text-"]) {
+.dark .bg-primary\/10:not([class*="dark:bg-"]) {
+  background-color: rgba(217, 119, 6, 0.15);
+}
+.dark .bg-primary\/20:not([class*="dark:bg-"]) {
+  background-color: rgba(217, 119, 6, 0.22);
+}
+.dark [class*="bg-primary/"] .text-primary:not([class*="dark:text-"]),
+.dark [class*="bg-primary/"][class*="text-primary"]:not([class*="dark:text-"]) {
   color: var(--accent);
 }
 

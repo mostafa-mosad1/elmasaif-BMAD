@@ -734,13 +734,13 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 bg-surface-sunken border-t border-surface-border flex items-center justify-end gap-3">
+            <div className="px-6 py-4 bg-surface-sunken dark:bg-dark-surface-sunken border-t border-surface-border dark:border-dark-surface-border flex items-center justify-end gap-3">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setConfirmModalOpen(false)}
                 disabled={actionInProgress}
-                className="text-xs h-9 px-4 bg-white"
+                className="text-xs h-9 px-4 bg-surface-base dark:bg-dark-surface-base text-ink-primary dark:text-dark-ink-primary border-surface-border dark:border-dark-surface-border"
               >
                 تراجع
               </Button>
@@ -883,13 +883,13 @@ export default function AdminContractFeeDetailPage(props?: AdminContractFeeDetai
               </div>
             </div>
 
-            <div className="px-6 py-4 bg-surface-sunken border-t border-surface-border flex items-center justify-end gap-3">
+            <div className="px-6 py-4 bg-surface-sunken dark:bg-dark-surface-sunken border-t border-surface-border dark:border-dark-surface-border flex items-center justify-end gap-3">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setForceUnlockModalOpen(false)}
                 disabled={actionInProgress}
-                className="text-xs h-9 px-4 bg-white"
+                className="text-xs h-9 px-4 bg-surface-base dark:bg-dark-surface-base text-ink-primary dark:text-dark-ink-primary border-surface-border dark:border-dark-surface-border"
               >
                 إلغاء
               </Button>
