@@ -41,7 +41,8 @@ import {
   ShieldAlert,
   LifeBuoy,
   Sliders,
-  ScrollText
+  ScrollText,
+  ChevronDown
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/notification-bell';
 
@@ -56,6 +57,14 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const { locale, toggleLocale } = useDirection();
   const { resolvedTheme, toggleTheme } = useTheme();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+
+  const toggleSection = (sectionKey: string) => {
+    setCollapsedSections((prev) => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey]
+    }));
+  };
 
   const isArabic = locale === SupportedLocale.AR;
   const isAdminRoute = Boolean(pathname?.startsWith('/admin'));
@@ -82,10 +91,16 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
     }
   };
 
+  interface NavBadge {
+    count: string | number;
+    variant?: 'neutral' | 'accent' | 'danger';
+  }
+
   interface NavItem {
     href: string;
     label: string;
     icon: typeof Building2;
+    badge?: NavBadge;
   }
 
   interface NavSection {
@@ -178,20 +193,20 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         title: 'العمليات والقيادة',
         items: [
           { href: '/admin', label: 'لوحة تحكم المشرف', icon: LayoutDashboard },
-          { href: '/admin/queues', label: 'طوابير المهام والأقفال التشغيلية', icon: Layers }
+          { href: '/admin/queues', label: 'طوابير المهام والأقفال التشغيلية', icon: Layers, badge: { count: '2', variant: 'accent' } }
         ]
       },
       {
         title: 'العقارات والتراخيص',
         items: [
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Listings.Review')
-            ? [{ href: '/admin/listings/moderation', label: 'طابور مراجعة الإعلانات العقارية', icon: Building }]
+            ? [{ href: '/admin/listings/moderation', label: 'طابور مراجعة الإعلانات العقارية', icon: Building, badge: { count: '3', variant: 'accent' } }]
             : []),
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Contracts.Review') || admin.permissions?.includes('Contracts.Manage')
             ? [{ href: '/admin/owner-requests', label: 'طلبات الملاك والعقود', icon: FileText }]
             : []),
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Licenses.Review')
-            ? [{ href: '/admin/licenses', label: 'طابور اعتماد رخص فال', icon: FileCheck }]
+            ? [{ href: '/admin/licenses', label: 'طابور اعتماد رخص فال', icon: FileCheck, badge: { count: '1', variant: 'accent' } }]
             : []),
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Geo.Manage')
             ? [{ href: '/admin/geo', label: 'إدارة المدن والأحياء', icon: MapPin }]
@@ -202,7 +217,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         title: 'الصفقات والوساطة المالية',
         items: [
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Offers.Review')
-            ? [{ href: '/admin/negotiations', label: 'طابور وساطة عروض الشراء', icon: HandCoins }]
+            ? [{ href: '/admin/negotiations', label: 'طابور وساطة عروض الشراء', icon: HandCoins, badge: { count: '4', variant: 'accent' } }]
             : []),
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Offers.Review')
             ? [{ href: '/admin/proposals', label: 'طابور مراجعة عروض المزودين', icon: Sparkles }]
@@ -222,10 +237,10 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         title: 'الدعم والنزاعات والرقابة',
         items: [
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Tickets.Handle')
-            ? [{ href: '/admin/tickets', label: 'تذاكر الدعم الفني', icon: LifeBuoy }]
+            ? [{ href: '/admin/tickets', label: 'تذاكر الدعم الفني', icon: LifeBuoy, badge: { count: '5', variant: 'neutral' } }]
             : []),
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Deals.DisputeResolve')
-            ? [{ href: '/admin/disputes', label: 'فض النزاعات', icon: Scale }]
+            ? [{ href: '/admin/disputes', label: 'فض النزاعات', icon: Scale, badge: { count: '1', variant: 'danger' } }]
             : []),
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Conversations.Handle')
             ? [{ href: '/admin/conversations', label: 'طابور المحادثات', icon: MessagesSquare }]
@@ -234,7 +249,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
             ? [{ href: '/admin/reviews', label: 'مراجعة وتدقيق التقييمات', icon: Star }]
             : []),
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Reports.Handle')
-            ? [{ href: '/admin/reports', label: 'بلاغات المخالفات والامتثال', icon: ShieldAlert }]
+            ? [{ href: '/admin/reports', label: 'بلاغات المخالفات والامتثال', icon: ShieldAlert, badge: { count: '2', variant: 'danger' } }]
             : [])
         ]
       },
@@ -321,43 +336,75 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         </div>
 
         {/* Navigation List */}
-        <nav className="flex-1 overflow-y-auto px-3.5 py-4 space-y-4">
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-3">
           {navSections.map((section, sIdx) => {
             if (section.items.length === 0) return null;
+            const sectionKey = section.title || `sec-${sIdx}`;
+            const isCollapsed = Boolean(collapsedSections[sectionKey]);
+
             return (
-              <div key={section.title || sIdx} className="space-y-1">
+              <div key={sectionKey} className="space-y-1">
                 {section.title && (
-                  <div className="px-3 pb-1 pt-0.5 flex items-center justify-between">
-                    <span className="text-[10px] font-bold tracking-wider text-ink-muted dark:text-dark-ink-muted uppercase">
+                  <button
+                    type="button"
+                    onClick={() => toggleSection(sectionKey)}
+                    className="w-full px-2.5 py-1.5 flex items-center justify-between text-ink-muted dark:text-dark-ink-muted hover:text-ink-primary dark:hover:text-dark-ink-primary transition-colors select-none text-start cursor-pointer"
+                    aria-expanded={!isCollapsed}
+                  >
+                    <span className="text-[11px] font-bold tracking-wider uppercase">
                       {section.title}
                     </span>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 transition-transform duration-200 text-ink-muted/70 ${
+                        isCollapsed ? '-rotate-90 rtl:rotate-90' : 'rotate-0'
+                      }`}
+                    />
+                  </button>
+                )}
+                {!isCollapsed && (
+                  <div className="space-y-0.5">
+                    {section.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = pathname === item.href;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setMobileSidebarOpen(false)}
+                          className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                            isActive
+                              ? 'bg-primary text-white dark:bg-primary dark:text-white font-semibold shadow-xs'
+                              : 'text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-raised hover:text-ink-primary dark:hover:text-dark-ink-primary'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <Icon
+                              className={`w-4 h-4 shrink-0 ${
+                                isActive ? 'text-white' : 'text-ink-muted dark:text-dark-ink-muted'
+                              }`}
+                            />
+                            <span className="truncate">{item.label}</span>
+                          </div>
+                          {item.badge && (
+                            <span
+                              className={`shrink-0 ms-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full tabular-nums ${
+                                isActive
+                                  ? 'bg-white/20 text-white'
+                                  : item.badge.variant === 'danger'
+                                  ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                  : item.badge.variant === 'accent'
+                                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20'
+                                  : 'bg-surface-sunken dark:bg-dark-surface-raised text-ink-muted dark:text-dark-ink-muted'
+                              }`}
+                            >
+                              {item.badge.count}
+                            </span>
+                          )}
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
-                <div className="space-y-0.5">
-                  {section.items.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = pathname === item.href;
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setMobileSidebarOpen(false)}
-                        className={`group flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                          isActive
-                            ? 'bg-primary text-white dark:bg-primary dark:text-white shadow-sm font-bold border-s-4 border-accent'
-                            : 'text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-raised hover:text-ink-primary dark:hover:text-dark-ink-primary'
-                        }`}
-                      >
-                        <Icon
-                          className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-105 ${
-                            isActive ? 'text-accent-light' : 'text-ink-muted dark:text-dark-ink-muted'
-                          }`}
-                        />
-                        <span className="truncate">{item.label}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
               </div>
             );
           })}
