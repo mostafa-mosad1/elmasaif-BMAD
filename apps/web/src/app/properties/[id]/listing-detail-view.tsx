@@ -304,7 +304,7 @@ export function ListingDetailView({
 
             <div className="pt-3 border-t border-surface-border dark:border-dark-surface-border">
               <div className="flex items-center justify-between gap-2 mb-3">
-                {detail.sellerProfile?.id ? (
+                {detail.sellerProfile?.id && (detail.sellerProfile?.role === 'MARKETER' || falVerified) ? (
                   <Link
                     href={`/brokers/${detail.sellerProfile.id}`}
                     className="flex items-center gap-2 min-w-0 group hover:opacity-90 transition-opacity"
@@ -318,7 +318,7 @@ export function ListingDetailView({
                         {detail.sellerProfile?.user?.fullName || 'بائع العقار'}
                       </p>
                       <p className="text-[11px] text-ink-secondary dark:text-dark-ink-secondary">
-                        {falVerified ? 'معلن مرخص (فال)' : 'مالك مباشر'}
+                        {falVerified ? 'معلن مرخص (فال)' : 'وسيط عقاري'}
                       </p>
                     </div>
                   </Link>

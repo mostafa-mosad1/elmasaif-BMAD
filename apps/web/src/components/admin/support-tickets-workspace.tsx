@@ -277,7 +277,14 @@ export function SupportTicketsWorkspace({
       </div>
 
       {/* KPI Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+        <div className="rounded-xl border border-surface-border bg-white p-4 shadow-sm dark:border-dark-surface-border dark:bg-dark-surface-base">
+          <span className="text-xs font-medium text-ink-muted dark:text-dark-ink-muted">إجمالي التذاكر</span>
+          <p className="mt-1 text-2xl font-bold font-mono text-ink-primary dark:text-dark-ink-primary">
+            {counts.total}
+          </p>
+        </div>
+
         <div className="rounded-xl border border-surface-border bg-white p-4 shadow-sm dark:border-dark-surface-border dark:bg-dark-surface-base">
           <span className="text-xs font-medium text-ink-muted dark:text-dark-ink-muted">تذاكر مفتوحة</span>
           <p className="mt-1 text-2xl font-bold font-mono text-ink-primary dark:text-dark-ink-primary">
@@ -314,10 +321,10 @@ export function SupportTicketsWorkspace({
 
         <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm dark:border-emerald-900/50 dark:bg-emerald-950/20">
           <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
-            تم الحل
+            تم الحل / الإغلاق
           </span>
           <p className="mt-1 text-2xl font-bold font-mono text-emerald-900 dark:text-emerald-200">
-            {counts.resolved}
+            {counts.resolved + counts.closed}
           </p>
         </div>
       </div>

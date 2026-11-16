@@ -58,12 +58,11 @@ export function ViolationReportModal({
   const [successReportNumber, setSuccessReportNumber] = useState<string | null>(
     null,
   );
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) {
     return null;
   }
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
