@@ -167,7 +167,7 @@ export function DealPaymentCard({
           <p
             dir="ltr"
             className={`mt-0.5 font-mono text-2xl sm:text-3xl font-extrabold ${
-              isPlatform ? 'text-deal-platform-fee' : 'text-deal-seller-price dark:text-slate-100'
+              isPlatform ? 'text-deal-platform-fee' : 'text-deal-seller-price dark:text-dark-ink-primary'
             }`}
             data-testid={`deal-card-amount-${accent}`}
           >

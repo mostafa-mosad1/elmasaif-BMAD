@@ -67,13 +67,13 @@ export function DealDisputeModal({
       data-testid="deal-dispute-modal"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
     >
-      <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+      <div className="relative w-full max-w-lg rounded-2xl bg-surface-base p-6 shadow-2xl dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border">
         <button
           type="button"
           onClick={onClose}
           disabled={isLoading}
           aria-label="إغلاق النافذة"
-          className="absolute left-4 top-4 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
+          className="absolute left-4 top-4 rounded-lg p-1.5 text-ink-muted hover:bg-surface-sunken hover:text-ink-primary dark:hover:bg-dark-surface-raised dark:hover:text-dark-ink-primary transition-colors"
         >
           <X className="h-5 w-5" />
         </button>
@@ -83,11 +83,11 @@ export function DealDisputeModal({
             <AlertCircle className="h-6 w-6" />
           </div>
           <div>
-            <h2 id="dispute-modal-title" className="text-lg font-bold text-slate-900 dark:text-white">
+            <h2 id="dispute-modal-title" className="text-lg font-bold text-ink-primary dark:text-dark-ink-primary">
               تقديم نزاع رسمي حول الصفقة
             </h2>
             {dealNumber ? (
-              <p className="text-xs text-slate-500 font-mono mt-0.5">{dealNumber}</p>
+              <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary font-mono mt-0.5">{dealNumber}</p>
             ) : null}
           </div>
         </div>
@@ -98,7 +98,7 @@ export function DealDisputeModal({
           </div>
 
           <div>
-            <label htmlFor="dispute-reason" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+            <label htmlFor="dispute-reason" className="block text-xs font-medium text-ink-primary dark:text-dark-ink-primary mb-1.5">
               تفاصيل وأسباب النزاع <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -111,9 +111,9 @@ export function DealDisputeModal({
               required
               minLength={10}
               maxLength={1000}
-              className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              className="w-full rounded-xl border border-surface-border bg-surface-sunken p-3 text-sm text-ink-primary placeholder:text-ink-muted focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 dark:border-dark-surface-border dark:bg-dark-surface-sunken dark:text-dark-ink-primary"
             />
-            <div className="mt-1 flex justify-between text-xs text-slate-400">
+            <div className="mt-1 flex justify-between text-xs text-ink-muted dark:text-dark-ink-muted">
               <span>الحد الأدنى: 10 أحرف</span>
               <span>{trimmedReason.length} / 1000</span>
             </div>

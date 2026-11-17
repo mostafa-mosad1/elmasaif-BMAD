@@ -35,7 +35,7 @@ export function BrokerProfileHeader({ profile, className = '' }: BrokerProfileHe
                 <Badge
                   variant="verified"
                   size="md"
-                  icon={<ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
+                  icon={<ShieldCheck className="w-4 h-4 text-accent" />}
                 >
                   <span>مرخص وموثق من فال REGA</span>
                   <span className="font-mono font-medium text-[11px] opacity-90">({falLicense.licenseNumber})</span>
@@ -80,7 +80,7 @@ export function BrokerProfileHeader({ profile, className = '' }: BrokerProfileHe
         <div className="flex items-center gap-3 sm:gap-4 border-t md:border-t-0 md:border-r border-surface-border dark:border-dark-surface-border pt-4 md:pt-0 md:pr-6">
           <div className="flex-1 sm:flex-initial text-center px-4 py-3 rounded-card bg-surface-sunken/60 dark:bg-dark-surface-sunken/60 border border-surface-border/50 dark:border-dark-surface-border/50 min-w-[110px]">
             <div className="flex items-center justify-center gap-1.5 text-ink-secondary dark:text-dark-ink-secondary text-xs mb-1">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-accent shrink-0" />
               <span>صفقات مكتملة</span>
             </div>
             <p className="text-2xl font-bold font-mono text-ink-primary dark:text-dark-ink-primary">

@@ -106,13 +106,13 @@ export function AdminLoginForm({
       className="w-full max-w-md mx-auto bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border rounded-2xl shadow-lg overflow-hidden"
     >
       {/* Executive Sovereign Header */}
-      <div className="bg-[#1B4332] text-white px-6 py-6 border-b border-white/10">
+      <div className="bg-primary text-white px-6 py-6 border-b border-white/10">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
-            <ShieldCheck className="w-6 h-6 text-[#D8F3DC]" />
+            <ShieldCheck className="w-6 h-6 text-accent" />
           </div>
           <div>
-            <span className="inline-block text-[11px] font-semibold tracking-wide bg-white/15 text-[#D8F3DC] px-2.5 py-0.5 rounded-full mb-1">
+            <span className="inline-block text-[11px] font-semibold tracking-wide bg-white/10 text-accent-light px-2.5 py-0.5 rounded-full mb-1 border border-white/10">
               نطاق أمني معزول • AD-5
             </span>
             <h1 className="text-xl font-bold">بوابة الإدارة السيادية — المصايف</h1>
@@ -179,7 +179,7 @@ export function AdminLoginForm({
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               placeholder="superadmin / admin@elmasaif.sa"
-              className="w-full rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface dark:bg-dark-surface px-3.5 py-2.5 ps-10 text-sm text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
+              className="w-full rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface dark:bg-dark-surface px-3.5 py-2.5 ps-10 text-sm text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-accent"
             />
             <UserCheck className="w-4 h-4 text-ink-muted absolute start-3.5 top-3" />
           </div>
@@ -205,7 +205,7 @@ export function AdminLoginForm({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••••••"
-              className="w-full rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface dark:bg-dark-surface px-3.5 py-2.5 ps-10 pe-10 text-sm text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
+              className="w-full rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface dark:bg-dark-surface px-3.5 py-2.5 ps-10 pe-10 text-sm text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-accent"
             />
             <Lock className="w-4 h-4 text-ink-muted absolute start-3.5 top-3" />
             <button
@@ -223,7 +223,7 @@ export function AdminLoginForm({
         <button
           type="submit"
           disabled={lockoutSeconds > 0 || isSubmitting}
-          className="w-full py-3 px-4 rounded-xl bg-[#1B4332] hover:bg-[#143325] disabled:opacity-50 text-white font-bold text-sm shadow-sm transition-colors flex items-center justify-center gap-2"
+          className="w-full py-3 px-4 rounded-xl bg-primary hover:bg-primary-hover disabled:opacity-50 text-white font-bold text-sm shadow-sm transition-colors flex items-center justify-center gap-2"
         >
           <ShieldCheck className="w-4 h-4" />
           <span>
@@ -234,14 +234,14 @@ export function AdminLoginForm({
         {/* Session & Password Reset Governance Footnote */}
         <div className="pt-3 border-t border-surface-border dark:border-dark-surface-border space-y-2 text-[11px] text-ink-secondary dark:text-dark-ink-secondary">
           <div className="flex items-center gap-2">
-            <Clock className="w-3.5 h-3.5 text-[#1B4332] shrink-0" />
+            <Clock className="w-3.5 h-3.5 text-accent shrink-0" />
             <span>
               تنتهي صلاحية الجلسة الإدارية تلقائياً بعد{' '}
               <strong>{`${ADMIN_SESSION_INACTIVITY_HOURS} ساعات`}</strong> من عدم النشاط.
             </span>
           </div>
           <div className="flex items-start gap-2">
-            <KeyRound className="w-3.5 h-3.5 text-[#1B4332] shrink-0 mt-0.5" />
+            <KeyRound className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
             <span>
               في حال نسيان كلمة المرور، يقوم <strong>المشرف العام (Super Admin)</strong> بإصدار رابط إعادة تعيين صالح للاستخدام مرة واحدة ولمدة 15 دقيقة إلى بريدك الوظيفي.
             </span>

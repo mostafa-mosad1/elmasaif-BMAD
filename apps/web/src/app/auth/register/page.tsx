@@ -30,8 +30,8 @@ export default function RegisterPage() {
               </p>
             </div>
 
-            <div className="pt-1 flex items-center justify-center gap-1.5 text-xs text-status-verified font-medium">
-              <ShieldCheck className="w-4 h-4 text-status-verified" />
+            <div className="pt-1 flex items-center justify-center gap-1.5 text-xs text-accent font-medium">
+              <ShieldCheck className="w-4 h-4 text-accent" />
               <span>بيانات مشفرة ومتوافقة بالكامل مع نظام حماية البيانات (PDPL)</span>
             </div>
           </CardHeader>

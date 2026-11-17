@@ -30,8 +30,8 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <div className="pt-1 flex items-center justify-center gap-1.5 text-xs text-status-verified font-medium">
-              <ShieldCheck className="w-4 h-4 text-status-verified" />
+            <div className="pt-1 flex items-center justify-center gap-1.5 text-xs text-accent font-medium">
+              <ShieldCheck className="w-4 h-4 text-accent" />
               <span>دخول آمن عبر الجلسات المعتمدة ورمز التحقق الإضافي</span>
             </div>
           </CardHeader>

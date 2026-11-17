@@ -250,16 +250,16 @@ export function SupportTicketsWorkspace({
   return (
     <div className="space-y-6 font-sans" dir="rtl">
       {/* Workspace Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-200 dark:border-neutral-800 pb-5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-surface-border dark:border-dark-surface-border pb-5">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-950/50 dark:text-primary-400">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary dark:bg-primary-950/50 dark:text-accent-light">
             <LifeBuoy className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-ink-primary dark:text-dark-ink-primary">
               طابور تذاكر الدعم الفني وخدمة العملاء
             </h1>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-ink-muted dark:text-dark-ink-muted dark:text-dark-ink-muted">
               إدارة وحل استفسارات ومشاكل المستخدمين مع مراقبة مؤشرات اتفاقية مستوى الخدمة SLA (Tickets.Handle)
             </p>
           </div>
@@ -269,7 +269,7 @@ export function SupportTicketsWorkspace({
           type="button"
           onClick={fetchQueue}
           disabled={isLoading}
-          className="inline-flex items-center gap-2 rounded-lg border border-neutral-300 bg-white px-3.5 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
+          className="inline-flex items-center gap-2 rounded-lg border border-surface-border bg-white px-3.5 py-2 text-xs font-medium text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken disabled:opacity-50 dark:border-dark-surface-border dark:bg-dark-surface-raised dark:text-dark-ink-primary"
         >
           <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           <span>تحديث التذاكر</span>
@@ -277,10 +277,17 @@ export function SupportTicketsWorkspace({
       </div>
 
       {/* KPI Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
-          <span className="text-xs font-medium text-neutral-500">تذاكر مفتوحة</span>
-          <p className="mt-1 text-2xl font-bold font-mono text-neutral-900 dark:text-white">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+        <div className="rounded-xl border border-surface-border bg-white p-4 shadow-sm dark:border-dark-surface-border dark:bg-dark-surface-base">
+          <span className="text-xs font-medium text-ink-muted dark:text-dark-ink-muted">إجمالي التذاكر</span>
+          <p className="mt-1 text-2xl font-bold font-mono text-ink-primary dark:text-dark-ink-primary">
+            {counts.total}
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-surface-border bg-white p-4 shadow-sm dark:border-dark-surface-border dark:bg-dark-surface-base">
+          <span className="text-xs font-medium text-ink-muted dark:text-dark-ink-muted">تذاكر مفتوحة</span>
+          <p className="mt-1 text-2xl font-bold font-mono text-ink-primary dark:text-dark-ink-primary">
             {counts.open}
           </p>
         </div>
@@ -314,10 +321,10 @@ export function SupportTicketsWorkspace({
 
         <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm dark:border-emerald-900/50 dark:bg-emerald-950/20">
           <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
-            تم الحل
+            تم الحل / الإغلاق
           </span>
           <p className="mt-1 text-2xl font-bold font-mono text-emerald-900 dark:text-emerald-200">
-            {counts.resolved}
+            {counts.resolved + counts.closed}
           </p>
         </div>
       </div>
@@ -346,7 +353,7 @@ export function SupportTicketsWorkspace({
       )}
 
       {/* Filter Tabs & Search Bar */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 pb-3">
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 border-b border-surface-border dark:border-dark-surface-border pb-3">
         {/* Status Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
           {(['ALL', ...TICKET_STATUSES] as TicketStatusTab[]).map((tab) => {
@@ -362,8 +369,8 @@ export function SupportTicketsWorkspace({
                 onClick={() => setStatusTab(tab)}
                 className={`rounded-lg px-3.5 py-1.5 text-xs font-medium whitespace-nowrap transition-colors ${
                   isSelected
-                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
-                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-surface-sunken text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-border dark:bg-dark-surface-raised dark:text-dark-ink-muted dark:hover:bg-dark-surface-raised'
                 }`}
               >
                 {label}
@@ -380,7 +387,7 @@ export function SupportTicketsWorkspace({
             onChange={(e) =>
               setSlaFilter(e.target.value as TicketSlaState | 'ALL')
             }
-            className="rounded-lg border border-neutral-300 bg-white px-2.5 py-1.5 text-xs text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
+            className="rounded-lg border border-surface-border bg-white px-2.5 py-1.5 text-xs text-ink-secondary dark:text-dark-ink-secondary dark:border-dark-surface-border dark:bg-dark-surface-raised dark:text-dark-ink-primary"
           >
             <option value="ALL">كافة حالات SLA</option>
             <option value="ON_TRACK">ضمن المهلة (On Track)</option>
@@ -394,7 +401,7 @@ export function SupportTicketsWorkspace({
             onChange={(e) =>
               setPriorityFilter(e.target.value as TicketPriority | 'ALL')
             }
-            className="rounded-lg border border-neutral-300 bg-white px-2.5 py-1.5 text-xs text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
+            className="rounded-lg border border-surface-border bg-white px-2.5 py-1.5 text-xs text-ink-secondary dark:text-dark-ink-secondary dark:border-dark-surface-border dark:bg-dark-surface-raised dark:text-dark-ink-primary"
           >
             <option value="ALL">كافة الأولويات</option>
             {TICKET_PRIORITIES.map((pri) => (
@@ -406,13 +413,13 @@ export function SupportTicketsWorkspace({
 
           {/* Search Input */}
           <div className="relative flex-1 sm:w-56">
-            <Search className="absolute right-2.5 top-2 h-3.5 w-3.5 text-neutral-400" />
+            <Search className="absolute right-2.5 top-2 h-3.5 w-3.5 text-ink-muted dark:text-dark-ink-muted" />
             <input
               type="text"
               placeholder="بحث بالرقم أو الموضوع..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 bg-white py-1.5 pr-8 pl-3 text-xs text-neutral-900 focus:border-primary-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+              className="w-full rounded-lg border border-surface-border bg-white py-1.5 pr-8 pl-3 text-xs text-ink-primary dark:text-dark-ink-primary focus:border-accent focus:outline-none dark:border-dark-surface-border dark:bg-dark-surface-raised dark:text-white"
             />
           </div>
         </div>
@@ -427,12 +434,12 @@ export function SupportTicketsWorkspace({
           }`}
         >
           {items.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-neutral-300 p-12 text-center dark:border-neutral-800">
-              <Headphones className="mx-auto h-12 w-12 text-neutral-400" />
-              <h3 className="mt-3 text-sm font-semibold text-neutral-900 dark:text-white">
+            <div className="rounded-xl border border-dashed border-surface-border p-12 text-center dark:border-dark-surface-border">
+              <Headphones className="mx-auto h-12 w-12 text-ink-muted dark:text-dark-ink-muted" />
+              <h3 className="mt-3 text-sm font-semibold text-ink-primary dark:text-dark-ink-primary">
                 لا توجد تذاكر تطابق الفلاتر المحددة
               </h3>
-              <p className="mt-1 text-xs text-neutral-500">
+              <p className="mt-1 text-xs text-ink-muted dark:text-dark-ink-muted">
                 لا توجد تذاكر دعم فني مفتوحة حالياً.
               </p>
             </div>
@@ -449,15 +456,15 @@ export function SupportTicketsWorkspace({
                 <div
                   key={t.id}
                   onClick={() => handleOpenDetail(t)}
-                  className={`rounded-xl border bg-white p-4 cursor-pointer transition-all hover:shadow-md dark:bg-neutral-900 ${
+                  className={`rounded-xl border bg-white p-4 cursor-pointer transition-all hover:shadow-md dark:bg-dark-surface-base ${
                     isSelected
-                      ? 'border-primary-500 ring-1 ring-primary-500 dark:border-primary-400'
-                      : 'border-neutral-200 dark:border-neutral-800'
+                      ? 'border-accent ring-1 ring-accent dark:border-accent-light'
+                      : 'border-surface-border dark:border-dark-surface-border'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-2 border-b border-neutral-100 pb-2.5 dark:border-neutral-800">
+                  <div className="flex items-center justify-between gap-2 border-b border-surface-border pb-2.5 dark:border-dark-surface-border">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-neutral-900 dark:text-white">
+                      <span className="font-mono text-xs font-bold text-ink-primary dark:text-dark-ink-primary">
                         {t.ticketNumber}
                       </span>
                       <span
@@ -466,7 +473,7 @@ export function SupportTicketsWorkspace({
                             ? 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300'
                             : t.priority === 'HIGH'
                             ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
-                            : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
+                            : 'bg-surface-sunken text-ink-secondary dark:text-dark-ink-secondary dark:bg-dark-surface-raised dark:text-dark-ink-secondary'
                         }`}
                       >
                         {TICKET_PRIORITY_LABELS_AR[t.priority]}
@@ -498,18 +505,18 @@ export function SupportTicketsWorkspace({
                   </div>
 
                   <div className="pt-2.5 space-y-1.5">
-                    <h4 className="text-xs font-bold text-neutral-900 dark:text-white truncate">
+                    <h4 className="text-xs font-bold text-ink-primary dark:text-dark-ink-primary truncate">
                       {t.subject}
                     </h4>
-                    <p className="text-[11px] text-neutral-500 line-clamp-1">
+                    <p className="text-[11px] text-ink-muted dark:text-dark-ink-muted line-clamp-1">
                       {t.description}
                     </p>
 
-                    <div className="flex items-center justify-between text-[11px] text-neutral-500 pt-1">
+                    <div className="flex items-center justify-between text-[11px] text-ink-muted dark:text-dark-ink-muted pt-1">
                       <span>{t.contactName}</span>
                       <div className="flex items-center gap-2">
                         {t.assignedAdminName && (
-                          <span className="text-neutral-700 dark:text-neutral-300 font-medium">
+                          <span className="text-ink-secondary dark:text-dark-ink-secondary dark:text-dark-ink-secondary font-medium">
                             المسؤول: {t.assignedAdminName}
                           </span>
                         )}
@@ -528,22 +535,22 @@ export function SupportTicketsWorkspace({
 
         {/* Selected Ticket Thread View & Actions */}
         {selectedDetail && (
-          <div className="lg:col-span-7 rounded-2xl border border-neutral-200 bg-white p-5 shadow-lg dark:border-neutral-800 dark:bg-neutral-900 space-y-4">
+          <div className="lg:col-span-7 rounded-2xl border border-surface-border bg-white p-5 shadow-lg dark:border-dark-surface-border dark:bg-dark-surface-base space-y-4">
             {/* Thread Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-100 pb-3 dark:border-neutral-800">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-surface-border pb-3 dark:border-dark-surface-border">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-base font-bold text-neutral-900 dark:text-white">
+                  <span className="font-mono text-base font-bold text-ink-primary dark:text-dark-ink-primary">
                     {selectedDetail.ticketNumber}
                   </span>
                   <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800 dark:bg-blue-950/60 dark:text-blue-300">
                     {TICKET_STATUS_LABELS_AR[selectedDetail.status]}
                   </span>
-                  <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                  <span className="rounded-full bg-surface-sunken px-2.5 py-0.5 text-xs font-medium text-ink-secondary dark:text-dark-ink-secondary dark:bg-dark-surface-raised dark:text-dark-ink-secondary">
                     {TICKET_CATEGORY_LABELS_AR[selectedDetail.category]}
                   </span>
                 </div>
-                <h3 className="text-sm font-bold text-neutral-900 dark:text-white mt-1">
+                <h3 className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary mt-1">
                   {selectedDetail.subject}
                 </h3>
               </div>
@@ -564,7 +571,7 @@ export function SupportTicketsWorkspace({
                   <button
                     type="button"
                     onClick={handleAssignToMe}
-                    className="inline-flex items-center gap-1 rounded-lg border border-neutral-300 px-2.5 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300"
+                    className="inline-flex items-center gap-1 rounded-lg border border-surface-border px-2.5 py-1 text-xs font-medium text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:border-dark-surface-border dark:text-dark-ink-secondary"
                   >
                     <UserCheck className="h-3.5 w-3.5" />
                     <span>تعيين لي</span>
@@ -586,7 +593,7 @@ export function SupportTicketsWorkspace({
                   <button
                     type="button"
                     onClick={() => handleQuickStatusChange('CLOSED')}
-                    className="rounded-lg bg-neutral-800 px-3 py-1 text-xs font-medium text-white hover:bg-neutral-900"
+                    className="rounded-lg bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary-hover"
                   >
                     إغلاق التذكرة
                   </button>
@@ -596,7 +603,7 @@ export function SupportTicketsWorkspace({
 
             {/* SLA Status Bar */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-              <div className="rounded-lg bg-neutral-50 p-2.5 border border-neutral-100 dark:bg-neutral-800/40 dark:border-neutral-800 flex items-center justify-between">
+              <div className="rounded-lg bg-surface-sunken p-2.5 border border-surface-border dark:bg-dark-surface-raised/40 dark:border-dark-surface-border flex items-center justify-between">
                 <span>مهلة الرد الأول:</span>
                 <span
                   className={`font-semibold ${
@@ -613,7 +620,7 @@ export function SupportTicketsWorkspace({
                 </span>
               </div>
 
-              <div className="rounded-lg bg-neutral-50 p-2.5 border border-neutral-100 dark:bg-neutral-800/40 dark:border-neutral-800 flex items-center justify-between">
+              <div className="rounded-lg bg-surface-sunken p-2.5 border border-surface-border dark:bg-dark-surface-raised/40 dark:border-dark-surface-border flex items-center justify-between">
                 <span>مهلة الحل النهائي:</span>
                 <span
                   className={`font-semibold ${
@@ -632,25 +639,25 @@ export function SupportTicketsWorkspace({
             </div>
 
             {/* Customer Details Box */}
-            <div className="rounded-lg border border-neutral-100 bg-neutral-50/50 p-3 text-xs dark:border-neutral-800 dark:bg-neutral-800/30 flex items-center justify-between">
+            <div className="rounded-lg border border-surface-border bg-surface-sunken/50 p-3 text-xs dark:border-dark-surface-border dark:bg-dark-surface-raised/30 flex items-center justify-between">
               <div>
-                <span className="font-semibold text-neutral-800 dark:text-neutral-200">
+                <span className="font-semibold text-ink-primary dark:text-dark-ink-primary dark:text-dark-ink-primary">
                   {selectedDetail.contactName}
                 </span>
-                <span className="text-neutral-500 mr-2">
+                <span className="text-ink-muted dark:text-dark-ink-muted mr-2">
                   ({selectedDetail.contactEmail})
                 </span>
               </div>
               {selectedDetail.contactPhone && (
-                <span className="font-mono text-neutral-600 dark:text-neutral-400">
+                <span className="font-mono text-ink-secondary dark:text-dark-ink-secondary dark:text-dark-ink-muted">
                   {selectedDetail.contactPhone}
                 </span>
               )}
             </div>
 
             {/* Initial description */}
-            <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 text-xs leading-relaxed text-neutral-900 dark:border-neutral-800 dark:bg-neutral-800/50 dark:text-neutral-200">
-              <span className="block font-semibold text-neutral-500 mb-1">
+            <div className="rounded-xl border border-surface-border bg-surface-sunken p-3.5 text-xs leading-relaxed text-ink-primary dark:text-dark-ink-primary dark:border-dark-surface-border dark:bg-dark-surface-raised/50 dark:text-dark-ink-primary">
+              <span className="block font-semibold text-ink-muted dark:text-dark-ink-muted mb-1">
                 وصف المشكلة الأساسي:
               </span>
               {selectedDetail.description}
@@ -659,7 +666,7 @@ export function SupportTicketsWorkspace({
             {/* Attachments preview */}
             {selectedDetail.signedAttachments.length > 0 && (
               <div className="space-y-1">
-                <span className="text-xs font-semibold text-neutral-500">
+                <span className="text-xs font-semibold text-ink-muted dark:text-dark-ink-muted">
                   المرفقات:
                 </span>
                 <div className="flex gap-2 flex-wrap">
@@ -669,7 +676,7 @@ export function SupportTicketsWorkspace({
                       href={url}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 rounded bg-neutral-100 px-2 py-1 text-xs text-primary-600 hover:underline dark:bg-neutral-800 dark:text-primary-400"
+                      className="inline-flex items-center gap-1 rounded bg-surface-sunken px-2 py-1 text-xs text-primary hover:underline dark:bg-dark-surface-raised dark:text-accent-light"
                     >
                       <Paperclip className="h-3 w-3" />
                       <span>مرفق {i + 1}</span>
@@ -693,14 +700,14 @@ export function SupportTicketsWorkspace({
             )}
 
             {/* Messages Thread (Customer replies, Staff replies, and Internal Staff Notes) */}
-            <div className="border-t border-neutral-100 pt-3 dark:border-neutral-800">
-              <h4 className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-2">
+            <div className="border-t border-surface-border pt-3 dark:border-dark-surface-border">
+              <h4 className="text-xs font-bold text-ink-secondary dark:text-dark-ink-secondary dark:text-dark-ink-secondary mb-2">
                 سجل المحادثة والملاحظات:
               </h4>
 
               <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
                 {selectedDetail.messages.length === 0 ? (
-                  <p className="text-xs text-neutral-400 text-center py-4">
+                  <p className="text-xs text-ink-muted dark:text-dark-ink-muted text-center py-4">
                     لا توجد رسائل أو ردود حتى الآن
                   </p>
                 ) : (
@@ -712,7 +719,7 @@ export function SupportTicketsWorkspace({
                           ? 'bg-amber-50/80 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900/60'
                           : msg.authorType === 'ADMIN'
                           ? 'bg-blue-50/80 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900/60'
-                          : 'bg-white border-neutral-200 dark:bg-neutral-800 dark:border-neutral-700'
+                          : 'bg-white border-surface-border dark:bg-dark-surface-raised dark:border-dark-surface-border'
                       }`}
                     >
                       <div className="flex items-center justify-between text-[11px] mb-1">
@@ -727,20 +734,20 @@ export function SupportTicketsWorkspace({
                             className={
                               msg.authorType === 'ADMIN'
                                 ? 'text-primary-700 dark:text-primary-300'
-                                : 'text-neutral-900 dark:text-white'
+                                : 'text-ink-primary dark:text-dark-ink-primary'
                             }
                           >
                             {msg.authorName}
                           </span>
                         </div>
-                        <span className="text-neutral-400">
+                        <span className="text-ink-muted dark:text-dark-ink-muted">
                           {new Date(msg.createdAt).toLocaleTimeString('ar-SA', {
                             hour: '2-digit',
                             minute: '2-digit',
                           })}
                         </span>
                       </div>
-                      <p className="text-neutral-800 dark:text-neutral-200">
+                      <p className="text-ink-primary dark:text-dark-ink-primary dark:text-dark-ink-primary">
                         {msg.message}
                       </p>
                     </div>
@@ -750,9 +757,9 @@ export function SupportTicketsWorkspace({
             </div>
 
             {/* Reply Composer */}
-            <form onSubmit={handleSendMessage} className="pt-2 border-t border-neutral-100 dark:border-neutral-800 space-y-2">
+            <form onSubmit={handleSendMessage} className="pt-2 border-t border-surface-border dark:border-dark-surface-border space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                <span className="text-xs font-semibold text-ink-secondary dark:text-dark-ink-secondary dark:text-dark-ink-secondary">
                   كتابة رد أو ملاحظة:
                 </span>
                 {canManageNotes && (
@@ -780,10 +787,10 @@ export function SupportTicketsWorkspace({
                       : 'اكتب الرد الرسمي للعميل...'
                   }
                   required
-                  className={`flex-1 rounded-lg border p-2.5 text-xs text-neutral-900 dark:text-white focus:outline-none ${
+                  className={`flex-1 rounded-lg border p-2.5 text-xs text-ink-primary dark:text-dark-ink-primary focus:outline-none ${
                     isInternalNote
                       ? 'border-amber-300 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20'
-                      : 'border-neutral-300 bg-white dark:border-neutral-700 dark:bg-neutral-800'
+                      : 'border-surface-border bg-white dark:border-dark-surface-border dark:bg-dark-surface-raised'
                   }`}
                 />
                 <button
@@ -792,7 +799,7 @@ export function SupportTicketsWorkspace({
                   className={`self-end rounded-lg px-4 py-2.5 text-xs font-semibold text-white transition-colors disabled:opacity-50 ${
                     isInternalNote
                       ? 'bg-amber-600 hover:bg-amber-700'
-                      : 'bg-primary-600 hover:bg-primary-700'
+                      : 'bg-primary hover:bg-primary-700'
                   }`}
                 >
                   <Send className="h-4 w-4" />
@@ -810,9 +817,9 @@ export function SupportTicketsWorkspace({
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
         >
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
-            <div className="flex items-center justify-between border-b border-neutral-100 pb-3 dark:border-neutral-800">
-              <h3 className="font-bold text-neutral-900 dark:text-white">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border">
+            <div className="flex items-center justify-between border-b border-surface-border pb-3 dark:border-dark-surface-border">
+              <h3 className="font-bold text-ink-primary dark:text-dark-ink-primary">
                 {resolutionStatus === 'RESOLVED'
                   ? 'اعتماد حل التذكرة'
                   : 'إغلاق التذكرة نهائياً'}
@@ -820,7 +827,7 @@ export function SupportTicketsWorkspace({
               <button
                 type="button"
                 onClick={() => setIsResolutionModalOpen(false)}
-                className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                className="rounded-lg p-1 text-ink-muted dark:text-dark-ink-muted hover:bg-surface-sunken dark:hover:bg-dark-surface-raised"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -834,7 +841,7 @@ export function SupportTicketsWorkspace({
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+                <label className="block text-xs font-semibold text-ink-secondary dark:text-dark-ink-secondary dark:text-dark-ink-secondary mb-1">
                   ملخص الحل والنتيجة * (إلزامي)
                 </label>
                 <textarea
@@ -843,15 +850,15 @@ export function SupportTicketsWorkspace({
                   onChange={(e) => setResolutionSummary(e.target.value)}
                   placeholder="اكتب الإجراءات التي تمت لحل طلب العميل بالتفصيل..."
                   required
-                  className="w-full rounded-lg border border-neutral-300 p-2.5 text-xs text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                  className="w-full rounded-lg border border-surface-border p-2.5 text-xs text-ink-primary dark:text-dark-ink-primary dark:border-dark-surface-border dark:bg-dark-surface-raised dark:text-white"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-border dark:border-dark-surface-border">
                 <button
                   type="button"
                   onClick={() => setIsResolutionModalOpen(false)}
-                  className="rounded-lg px-4 py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                  className="rounded-lg px-4 py-2 text-xs font-medium text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:text-dark-ink-muted dark:hover:bg-dark-surface-raised"
                 >
                   إلغاء
                 </button>

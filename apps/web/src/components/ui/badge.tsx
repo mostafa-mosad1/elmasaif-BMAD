@@ -27,7 +27,7 @@ export function Badge({
 
   const variantStyles: Record<StatusBadgeVariant, string> = {
     verified:
-      'bg-status-verifiedBg text-status-verified border border-status-verifiedBorder dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60',
+      'bg-accent-light text-accent-foreground border border-accent/30 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60',
     pending:
       'bg-status-pendingBg text-status-pending border border-status-pendingBorder dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/60',
     warning:
@@ -37,7 +37,7 @@ export function Badge({
     info:
       'bg-status-infoBg text-status-info border border-status-infoBorder dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/60',
     neutral:
-      'bg-status-neutralBg text-status-neutral border border-status-neutralBorder dark:bg-slate-800/40 dark:text-slate-300 dark:border-slate-700',
+      'bg-status-neutralBg text-status-neutral border border-status-neutralBorder dark:bg-dark-surface-raised dark:text-dark-ink-secondary dark:border-dark-surface-border',
   };
 
   return (

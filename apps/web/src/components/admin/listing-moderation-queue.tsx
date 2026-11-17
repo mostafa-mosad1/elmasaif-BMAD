@@ -122,14 +122,14 @@ export function ListingModerationQueue({
   return (
     <div dir="rtl" className="space-y-6">
       {/* Header Banner */}
-      <div className="rounded-2xl bg-[#1B4332] text-white p-6 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="rounded-2xl bg-primary text-white p-6 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/15 text-[#D8F3DC] px-3 py-1 rounded-full">
+          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/10 text-accent-light px-3 py-1 rounded-full border border-white/10">
             <Lock className="w-3.5 h-3.5" />
             <span>نظام القفل الحصري للمهام (15 دقيقة + نبض تلقائي كل 5 دقائق) • AD-10</span>
           </div>
           <h1 className="text-2xl font-bold flex items-center gap-2.5">
-            <Building2 className="w-6 h-6 text-[#D8F3DC]" />
+            <Building2 className="w-6 h-6 text-accent" />
             <span>طابور مراجعة الإعلانات العقارية</span>
           </h1>
           <p className="text-xs text-white/80 max-w-2xl leading-relaxed">
@@ -185,7 +185,7 @@ export function ListingModerationQueue({
             onClick={() => setStatusFilter(ListingStatus.PENDING_REVIEW)}
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
               statusFilter === ListingStatus.PENDING_REVIEW
-                ? 'bg-[#1B4332] text-white shadow-sm'
+                ? 'bg-primary text-white shadow-sm'
                 : 'text-ink-secondary hover:bg-surface-sunken'
             }`}
           >
@@ -203,7 +203,7 @@ export function ListingModerationQueue({
             onClick={() => setStatusFilter(ListingStatus.ACTIVE)}
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
               statusFilter === ListingStatus.ACTIVE
-                ? 'bg-[#1B4332] text-white shadow-sm'
+                ? 'bg-primary text-white shadow-sm'
                 : 'text-ink-secondary hover:bg-surface-sunken'
             }`}
           >
@@ -216,7 +216,7 @@ export function ListingModerationQueue({
             onClick={() => setStatusFilter(ListingStatus.REJECTED)}
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
               statusFilter === ListingStatus.REJECTED
-                ? 'bg-[#1B4332] text-white shadow-sm'
+                ? 'bg-primary text-white shadow-sm'
                 : 'text-ink-secondary hover:bg-surface-sunken'
             }`}
           >
@@ -229,7 +229,7 @@ export function ListingModerationQueue({
             onClick={() => setStatusFilter(ListingStatus.SUSPENDED)}
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
               statusFilter === ListingStatus.SUSPENDED
-                ? 'bg-[#1B4332] text-white shadow-sm'
+                ? 'bg-primary text-white shadow-sm'
                 : 'text-ink-secondary hover:bg-surface-sunken'
             }`}
           >
@@ -242,7 +242,7 @@ export function ListingModerationQueue({
             onClick={() => setStatusFilter(ListingStatus.BLOCKED)}
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
               statusFilter === ListingStatus.BLOCKED
-                ? 'bg-[#1B4332] text-white shadow-sm'
+                ? 'bg-primary text-white shadow-sm'
                 : 'text-ink-secondary hover:bg-surface-sunken'
             }`}
           >
@@ -327,7 +327,7 @@ export function ListingModerationQueue({
                       <td className="py-3.5 px-4">
                         <span
                           dir="ltr"
-                          className="font-mono font-bold text-sm text-[#1B4332] dark:text-emerald-400"
+                          className="font-mono font-bold text-sm text-primary dark:text-accent"
                         >
                           {`${Number(item.askPrice).toLocaleString('en-US')} SAR`}
                         </span>
@@ -365,7 +365,7 @@ export function ListingModerationQueue({
                             <span>متاح للمراجعة</span>
                           </span>
                         ) : lockInfo.isLockedByCurrentAdmin ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#1B4332] text-white">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-primary text-white">
                             <Lock className="w-3 h-3" />
                             <span>قيد المراجعة بواسطتك</span>
                             <span dir="ltr" className="font-mono text-[10px] opacity-90">
@@ -393,7 +393,7 @@ export function ListingModerationQueue({
                               type="button"
                               disabled={claimingId === item.id}
                               onClick={() => handleClaimAndReview(item.id)}
-                              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1B4332] hover:bg-[#2D6A4F] text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-50"
+                              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-50"
                             >
                               <Lock className="w-3.5 h-3.5" />
                               <span>

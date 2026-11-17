@@ -76,7 +76,7 @@ describe('Sovereign UI Primitives', () => {
         React.createElement(Badge, { variant: 'verified' }, 'معتمد من فال')
       );
       expect(html).toContain('معتمد من فال');
-      expect(html).toContain('bg-status-verifiedBg');
+      expect(html).toContain('bg-accent-light');
     });
 
     it('should render pending, danger, info, and neutral variants', () => {

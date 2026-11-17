@@ -315,7 +315,7 @@ export default function AdminContractFeesPage(props?: AdminContractFeesPageProps
                       {/* Transfer metadata */}
                       <td className="py-3.5 px-4">
                         <div className="flex flex-col text-[11px]">
-                          <span className="font-mono text-slate-800 font-bold" dir="ltr">
+                          <span className="font-mono text-ink-primary dark:text-dark-ink-primary font-bold" dir="ltr">
                             {item.bankReferenceCode || '—'}
                           </span>
                           <span className="text-muted-foreground">{item.senderBankName || '—'}</span>
@@ -354,7 +354,7 @@ export default function AdminContractFeesPage(props?: AdminContractFeesPageProps
                           </div>
                         ) : (
                           <div className="inline-flex items-center gap-1.5 text-muted-foreground text-[11px]">
-                            <Unlock className="w-3 h-3 text-slate-400" />
+                            <Unlock className="w-3 h-3 text-ink-muted" />
                             <span>متاح للمعاينة</span>
                           </div>
                         )}

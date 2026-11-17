@@ -53,9 +53,9 @@ export default function AdminListingsAnalyticsPage() {
   return (
     <div dir="rtl" className="space-y-8">
       {/* Header Banner */}
-      <div className="rounded-2xl bg-[#1B4332] text-white p-6 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="rounded-2xl bg-primary text-white p-6 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/15 text-[#D8F3DC] px-3 py-1 rounded-full">
+          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/10 text-accent-light px-3 py-1 rounded-full border border-white/10">
             <BarChart2 className="w-3.5 h-3.5" />
             <span>لوحة المؤشرات والتحليلات العامة • FR-66 / FR-67</span>
           </div>
@@ -208,7 +208,7 @@ export default function AdminListingsAnalyticsPage() {
                             className="flex-1 flex flex-col items-center gap-1 group relative h-full justify-end"
                           >
                             {/* Tooltip on hover */}
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-full mb-2 z-20 pointer-events-none bg-slate-900 text-white text-[10px] p-2 rounded-lg shadow-lg whitespace-nowrap">
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-full mb-2 z-20 pointer-events-none bg-primary text-white text-[10px] p-2 rounded-lg shadow-level2 whitespace-nowrap">
                               <div className="font-bold">{trend.date}</div>
                               <div>مشاهدات: {trend.detailViews}</div>
                               <div>ظهور: {trend.impressions}</div>

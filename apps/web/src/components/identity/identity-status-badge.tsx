@@ -13,11 +13,11 @@ const statusPresentation: Record<VerificationStatus, { label: string; className:
   },
   [VerificationStatus.PENDING_REVIEW]: {
     label: 'قيد المراجعة والتدقيق',
-    className: 'bg-[#C69C45]/10 text-[#C69C45] border-[#C69C45]/20'
+    className: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
   },
   [VerificationStatus.VERIFIED]: {
     label: 'الهوية موثقة ومعتمدة',
-    className: 'bg-[#1B4332]/10 text-[#1B4332] dark:text-emerald-400 border-[#1B4332]/20'
+    className: 'bg-accent/10 text-accent border-accent/20'
   },
   [VerificationStatus.REJECTED]: {
     label: 'تم رفض وثيقة الهوية',

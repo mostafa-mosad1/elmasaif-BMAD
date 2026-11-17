@@ -217,10 +217,10 @@ export function ProfileMenu() {
                     <div className="p-2 rounded-lg border border-surface-border dark:border-dark-surface-border bg-surface-sunken dark:bg-dark-surface-base opacity-85">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-xs font-medium text-ink-secondary dark:text-dark-ink-secondary">
-                          <Lock className="w-3.5 h-3.5 text-[#C69C45]" />
+                          <Lock className="w-3.5 h-3.5 text-accent" />
                           <span>ترقية لحساب مسوق معتمد</span>
                         </div>
-                        <span className="text-[9px] bg-[#C69C45]/20 text-[#9A7328] dark:text-[#E0B865] px-1 py-0.5 rounded font-medium">
+                        <span className="text-[9px] bg-accent/15 text-accent-dark dark:text-accent border border-accent/25 px-1.5 py-0.5 rounded font-medium">
                           رخصة فال
                         </span>
                       </div>

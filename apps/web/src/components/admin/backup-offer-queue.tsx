@@ -144,14 +144,14 @@ export function BackupOfferQueue({ initialGroups, initialTotal }: BackupOfferQue
 
   return (
     <div dir="rtl" className="space-y-6">
-      <div className="rounded-2xl bg-[#1B4332] text-white p-6 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="rounded-2xl bg-primary text-white p-6 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/15 text-[#D8F3DC] px-3 py-1 rounded-full">
+          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/10 text-accent-light px-3 py-1 rounded-full border border-white/10">
             <Lock className="w-3.5 h-3.5" />
             <span>قفل حصري لمدة 15 دقيقة لكل مهمة • AD-10</span>
           </div>
           <h1 className="text-2xl font-bold flex items-center gap-2.5">
-            <HandCoins className="w-6 h-6 text-[#D8F3DC]" />
+            <HandCoins className="w-6 h-6 text-accent" />
             <span>طابور العروض الاحتياطية</span>
           </h1>
           <p className="text-xs text-white/80 max-w-2xl leading-relaxed">
@@ -244,7 +244,7 @@ export function BackupOfferQueue({ initialGroups, initialTotal }: BackupOfferQue
                         <div className="min-w-0 space-y-0.5">
                           <div className="flex items-center gap-2">
                             <span
-                              className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#1B4332] text-white text-[11px] font-bold font-mono"
+                              className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-[11px] font-bold font-mono"
                               data-testid={`backup-offer-position-${item.id}`}
                             >
                               {item.queuePosition}
@@ -282,7 +282,7 @@ export function BackupOfferQueue({ initialGroups, initialTotal }: BackupOfferQue
                               <span>متاح للاستلام</span>
                             </span>
                           ) : lockInfo.isLockedByCurrentAdmin ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold bg-[#1B4332] text-white">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold bg-primary text-white">
                               <Lock className="w-3 h-3" />
                               <span>قيد المعالجة بواسطتك</span>
                             </span>

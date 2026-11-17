@@ -11,8 +11,8 @@ const ListingsMapPanel = dynamic<ListingsMapPanelProps>(
   () => import('../../components/map/listings-map-panel'),
   {
     loading: () => (
-      <div className="w-full h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <span className="text-sm text-gray-400">جارِ تحميل الخريطة...</span>
+      <div className="w-full h-full flex items-center justify-center bg-surface-sunken dark:bg-dark-surface-sunken">
+        <span className="text-sm text-ink-muted dark:text-dark-ink-muted">جارِ تحميل الخريطة...</span>
       </div>
     ),
     ssr: false,
@@ -68,14 +68,14 @@ export function PropertiesSplitView({
         )}
 
         {/* Floating pill toggle */}
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 p-1">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center bg-surface-base dark:bg-dark-surface-raised rounded-full shadow-level3 border border-surface-border dark:border-dark-surface-border p-1">
           <button
             type="button"
             onClick={() => setMobileView('list')}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-colors ${
               mobileView === 'list'
-                ? 'bg-emerald-800 text-white'
-                : 'text-gray-600 dark:text-gray-300'
+                ? 'bg-primary text-white'
+                : 'text-ink-secondary dark:text-dark-ink-secondary hover:text-ink-primary'
             }`}
             aria-pressed={mobileView === 'list'}
           >
@@ -87,8 +87,8 @@ export function PropertiesSplitView({
             onClick={() => setMobileView('map')}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-colors ${
               mobileView === 'map'
-                ? 'bg-emerald-800 text-white'
-                : 'text-gray-600 dark:text-gray-300'
+                ? 'bg-primary text-white'
+                : 'text-ink-secondary dark:text-dark-ink-secondary hover:text-ink-primary'
             }`}
             aria-pressed={mobileView === 'map'}
           >

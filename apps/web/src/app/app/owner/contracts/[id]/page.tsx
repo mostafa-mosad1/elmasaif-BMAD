@@ -192,7 +192,7 @@ export default function OwnerContractSigningPage({
     return (
       <div dir="rtl" className="flex flex-col items-center justify-center p-12 space-y-3">
         <RefreshCw className="w-8 h-8 text-primary animate-spin" />
-        <span className="text-sm font-semibold text-slate-600">جاري تحميل بيانات عقد الوساطة...</span>
+        <span className="text-sm font-semibold text-ink-secondary">جاري تحميل بيانات عقد الوساطة...</span>
       </div>
     );
   }
@@ -217,18 +217,18 @@ export default function OwnerContractSigningPage({
   return (
     <div dir="rtl" className="space-y-6 pb-12" data-testid="owner-contract-signing-page">
       {/* Header Banner */}
-      <div className="rounded-2xl bg-[#1B4332] text-white p-6 shadow-md flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="rounded-2xl bg-primary text-white p-6 shadow-md flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <Link
               href="/app/owner/contracts"
-              className="inline-flex items-center gap-1.5 text-xs text-[#D8F3DC] hover:text-white transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs text-accent-light hover:text-white transition-colors"
             >
               <ArrowRight className="w-3.5 h-3.5" />
               <span>العودة لعقود الوساطة</span>
             </Link>
             <span className="text-white/40">•</span>
-            <div className="inline-flex items-center gap-1 text-[11px] font-semibold bg-white/15 text-[#D8F3DC] px-2.5 py-0.5 rounded-full">
+            <div className="inline-flex items-center gap-1 text-[11px] font-semibold bg-white/15 text-accent-light px-2.5 py-0.5 rounded-full">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>عقد وساطة معتمد • الهيئة العامة للعقار</span>
             </div>
@@ -322,7 +322,7 @@ export default function OwnerContractSigningPage({
 
       {/* Property & Contract Overview Card */}
       <Card>
-        <CardHeader className="p-5 border-b bg-slate-50/50">
+        <CardHeader className="p-5 border-b bg-surface-sunken">
           <CardTitle className="text-base font-bold flex items-center gap-2">
             <Building className="w-4 h-4 text-primary" />
             <span>بيانات العقار موضوع العقد</span>
@@ -372,7 +372,7 @@ export default function OwnerContractSigningPage({
 
       {/* Contract Terms Legal Viewer */}
       <Card>
-        <CardHeader className="p-5 border-b bg-slate-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <CardHeader className="p-5 border-b bg-surface-sunken flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <CardTitle className="text-base font-bold flex items-center gap-2">
               <FileText className="w-4 h-4 text-primary" />
@@ -389,7 +389,7 @@ export default function OwnerContractSigningPage({
         </CardHeader>
         <CardContent className="p-5">
           <div
-            className="p-4 sm:p-6 rounded-xl bg-slate-50 border text-slate-800 text-xs sm:text-sm leading-relaxed whitespace-pre-line max-h-96 overflow-y-auto font-sans shadow-inner border-slate-200"
+            className="p-4 sm:p-6 rounded-xl bg-surface-sunken border text-ink-primary text-xs sm:text-sm leading-relaxed whitespace-pre-line max-h-96 overflow-y-auto font-sans shadow-inner border-surface-border"
             data-testid="contract-terms-viewer"
           >
             {contract.contractTerms}
@@ -418,17 +418,17 @@ export default function OwnerContractSigningPage({
             />
 
             {/* Legal Declaration & Consent Checkbox */}
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+            <div className="p-4 rounded-xl bg-surface-sunken border border-surface-border space-y-2">
               <label className="flex items-start gap-3 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={legalConsentChecked}
                   onChange={(e) => setLegalConsentChecked(e.target.checked)}
                   disabled={isRequestingOtp}
-                  className="mt-1 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary cursor-pointer"
+                  className="mt-1 w-4 h-4 rounded border-surface-borderStrong text-accent focus:ring-accent cursor-pointer"
                   data-testid="legal-consent-checkbox"
                 />
-                <span className="text-xs text-slate-700 leading-relaxed font-medium">
+                <span className="text-xs text-ink-primary leading-relaxed font-medium">
                   أقر أنا الموقع أدناه بصفتي المالك النظامي للعقار بصحة كافة البيانات المذكورة أعلاه، وموافقتي التامة والملزمة على كافة بنود وشروط هذا العقد وفق نظام الوساطة العقارية ولائحته التنفيذية بالمملكة العربية السعودية.
                 </span>
               </label>
@@ -436,7 +436,7 @@ export default function OwnerContractSigningPage({
 
             {/* Signature CTA */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-              <div className="text-xs text-slate-500 flex items-center gap-1.5">
+              <div className="text-xs text-ink-muted flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-amber-600" />
                 <span>مهلة التوقيع تنتهي بتاريخ: {new Date(contract.expiresAt).toLocaleDateString('ar-SA')}</span>
               </div>
@@ -445,7 +445,7 @@ export default function OwnerContractSigningPage({
                 type="button"
                 onClick={handleRequestSignatureOtp}
                 disabled={!signatureData || !legalConsentChecked || isRequestingOtp}
-                className="w-full sm:w-auto bg-[#1B4332] hover:bg-[#2D6A4F] text-white text-xs font-bold h-10 px-6 gap-2 shadow-sm"
+                className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white text-xs font-bold h-10 px-6 gap-2 shadow-level1"
                 data-testid="request-otp-and-sign-cta"
               >
                 {isRequestingOtp ? (
@@ -513,27 +513,27 @@ export default function OwnerContractSigningPage({
                   <span className="text-[11px] text-emerald-700 font-medium">موثق بـ OTP</span>
                 </div>
 
-                <div className="p-3 rounded-lg bg-white border border-emerald-100 space-y-1">
+                <div className="p-3 rounded-lg bg-surface-base border border-surface-border space-y-1">
                   <span className="text-muted-foreground flex items-center gap-1">
-                    <Laptop className="w-3.5 h-3.5 text-emerald-600" />
+                    <Laptop className="w-3.5 h-3.5 text-accent" />
                     <span>بصمة الجهاز وعنوان IP</span>
                   </span>
-                  <p className="font-mono text-[11px] text-slate-700 truncate" title={contract.ipAddress || '—'}>
+                  <p className="font-mono text-[11px] text-ink-primary truncate" title={contract.ipAddress || '—'}>
                     {`IP: ${contract.ipAddress || '127.0.0.1'}`}
                   </p>
-                  <p className="text-[10px] text-slate-500 truncate" title={contract.userAgent || '—'}>
+                  <p className="text-[10px] text-ink-muted truncate" title={contract.userAgent || '—'}>
                     {contract.userAgent || 'متصفح موثق'}
                   </p>
                 </div>
 
                 {/* Rendered signature raster */}
-                <div className="p-3 rounded-lg bg-white border border-emerald-100 flex flex-col items-center justify-center space-y-1 text-center">
+                <div className="p-3 rounded-lg bg-surface-base border border-surface-border flex flex-col items-center justify-center space-y-1 text-center">
                   <span className="text-[11px] text-muted-foreground">صورة التوقيع المعتمدة</span>
                   {contract.signatureData ? (
                     <img
                       src={contract.signatureData}
                       alt="توقيع المالك المعتمد"
-                      className="max-h-16 w-auto object-contain border rounded p-1 bg-slate-50 shadow-inner"
+                      className="max-h-16 w-auto object-contain border border-surface-border rounded p-1 bg-surface-sunken shadow-inner"
                       data-testid="rendered-signature-image"
                     />
                   ) : (
@@ -546,12 +546,12 @@ export default function OwnerContractSigningPage({
 
           {/* Story 7.3: Active Certified Contract Banner */}
           {contract.status === OwnerContractStatus.ACTIVE && (
-            <Card className="border-emerald-300 bg-emerald-50/40 shadow-sm" data-testid="active-contract-banner">
+            <Card className="border-accent/40 bg-accent/5 shadow-level1" data-testid="active-contract-banner">
               <CardContent className="p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <Badge className="bg-emerald-600 text-white font-bold text-xs gap-1 py-1 px-3">
+                      <Badge className="bg-accent text-white font-bold text-xs gap-1 py-1 px-3">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>عقد سارٍ ومعتمد</span>
                       </Badge>
@@ -559,11 +559,11 @@ export default function OwnerContractSigningPage({
                         {contract.signedAt ? new Date(contract.signedAt).toLocaleDateString('ar-SA') : ''}
                       </span>
                     </div>
-                    <p className="text-sm font-bold text-emerald-950 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-emerald-700" />
+                    <p className="text-sm font-bold text-ink-primary flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-accent" />
                       <span>تم تأكيد سداد الرسوم ونشر العقار في السوق العام بنجاح</span>
                     </p>
-                    <p className="text-xs text-slate-600 leading-relaxed max-w-xl">
+                    <p className="text-xs text-ink-secondary leading-relaxed max-w-xl">
                       تم توثيق العقد إلكترونياً واستلام رسوم التسويق، وإعلان عقارك متاح الآن للمشترين والوسطاء المعتمدين في السوق العام.
                     </p>
                   </div>
@@ -573,7 +573,7 @@ export default function OwnerContractSigningPage({
                       <Link href={`/listings/${contract.listingId}`} target="_blank">
                         <Button
                           type="button"
-                          className="w-full bg-[#1B4332] hover:bg-[#143326] text-white text-xs font-bold h-9 px-4 gap-2"
+                          className="w-full bg-primary hover:bg-primary-hover text-white text-xs font-bold h-9 px-4 gap-2"
                           data-testid="view-live-listing-btn"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
@@ -621,9 +621,9 @@ export default function OwnerContractSigningPage({
                       </div>
                     </div>
 
-                    <div className="p-3.5 rounded-lg bg-white border border-red-200 text-xs space-y-1.5">
+                    <div className="p-3.5 rounded-lg bg-surface-base border border-red-200 text-xs space-y-1.5">
                       <span className="font-bold text-red-900 block">سبب الرفض من الإدارة:</span>
-                      <p className="text-slate-800 leading-relaxed" data-testid="rejection-reason-text">
+                      <p className="text-ink-primary leading-relaxed" data-testid="rejection-reason-text">
                         {feePayment.rejectionReason || 'الإشعار البنكي غير مكتمل أو غير مطابق لبيانات العقد.'}
                       </p>
                     </div>
@@ -674,9 +674,9 @@ export default function OwnerContractSigningPage({
                       )}
                     </div>
 
-                    <div className="p-3.5 rounded-lg bg-white border border-blue-200 text-xs flex items-start gap-2.5">
+                    <div className="p-3.5 rounded-lg bg-surface-base border border-blue-200 text-xs flex items-start gap-2.5">
                       <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                      <p className="text-slate-700 leading-relaxed">
+                      <p className="text-ink-secondary leading-relaxed">
                         يتم تدقيق الإشعار البنكي من قبل الفريق الإداري خلال 4 ساعات عمل وفق اتفاقية مستوى الخدمة (SLA). سيتم نشر العقار تلقائياً في السوق العام فور اعتماد التحويل.
                       </p>
                     </div>
@@ -686,7 +686,7 @@ export default function OwnerContractSigningPage({
                         type="button"
                         variant="outline"
                         onClick={() => setShowFeeModal(true)}
-                        className="text-xs h-9 px-4 gap-2 border-slate-300 text-slate-700 hover:bg-slate-100"
+                        className="text-xs h-9 px-4 gap-2 border-surface-border text-ink-secondary hover:bg-surface-sunken"
                         data-testid="replace-fee-proof-cta"
                       >
                         <RefreshCw className="w-3.5 h-3.5" />
@@ -720,7 +720,7 @@ export default function OwnerContractSigningPage({
                   </CardHeader>
 
                   <CardContent className="p-5 space-y-4">
-                    <div className="p-4 rounded-xl bg-white border border-amber-200 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                    <div className="p-4 rounded-xl bg-surface-base border border-amber-200 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                       <div>
                         <span className="text-muted-foreground block mb-0.5">اسم المستفيد:</span>
                         <strong className="text-foreground">شركة المصايف العقارية</strong>
@@ -732,7 +732,7 @@ export default function OwnerContractSigningPage({
                       <div className="space-y-1">
                         <span className="text-muted-foreground block mb-0.5">رقم الآيبان (IBAN):</span>
                         <div className="flex items-center gap-2">
-                          <code className="px-2 py-0.5 rounded bg-slate-100 font-mono font-bold text-slate-800 text-[11px] dir-ltr">
+                          <code className="px-2 py-0.5 rounded bg-surface-sunken font-mono font-bold text-ink-primary border border-surface-border text-[11px] dir-ltr">
                             {PLATFORM_IBAN}
                           </code>
                           <CopyButton value={PLATFORM_IBAN} label="نسخ الآيبان" />
@@ -748,7 +748,7 @@ export default function OwnerContractSigningPage({
                       <Button
                         type="button"
                         onClick={() => setShowFeeModal(true)}
-                        className="w-full sm:w-auto bg-[#1B4332] hover:bg-[#143326] text-white text-xs font-bold h-10 px-6 gap-2"
+                        className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white text-xs font-bold h-10 px-6 gap-2"
                         data-testid="pay-fee-cta"
                       >
                         <span>سداد رسوم العقد ورفع الإشعار البنكي</span>

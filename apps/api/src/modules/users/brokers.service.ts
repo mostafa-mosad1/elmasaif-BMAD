@@ -115,6 +115,50 @@ export class BrokersService {
     }
 
     if (!profile) {
+      // Fallback: If id is an associated UserProfile (e.g. OWNER), check if the same user has a MARKETER profile
+      const associatedProfile = await this.prisma.userProfile.findUnique({
+        where: { id },
+        select: { userId: true },
+      });
+      if (associatedProfile?.userId) {
+        profile = await this.prisma.userProfile.findFirst({
+          where: {
+            userId: associatedProfile.userId,
+            role: UserRole.MARKETER,
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                createdAt: true,
+                status: true,
+              },
+            },
+            falLicense: true,
+            listings: {
+              where: {
+                status: ListingStatus.ACTIVE,
+              },
+              include: {
+                city: { select: { nameAr: true } },
+                district: { select: { nameAr: true } },
+                documents: {
+                  where: {
+                    documentType: 'PHOTO',
+                  },
+                },
+              },
+              orderBy: {
+                createdAt: 'desc',
+              },
+            },
+          },
+        });
+      }
+    }
+
+    if (!profile) {
       throw new NotFoundException({
         statusCode: 404,
         code: BROKER_NOT_FOUND,

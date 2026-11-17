@@ -100,29 +100,29 @@ export function TaskClaimLockBanner({
         <div
           role="alert"
           data-lock-state="LOCKED_BY_OTHER"
-          className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 text-amber-950 shadow-sm"
+          className="rounded-2xl border-2 border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/30 p-4 text-amber-950 dark:text-amber-100 shadow-sm"
         >
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-200/80 text-amber-900">
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-200/80 dark:bg-amber-900/60 text-amber-900 dark:text-amber-300">
                 <AlertTriangle className="h-5 w-5" />
               </div>
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-bold text-amber-950">
+                  <span className="text-sm font-bold text-amber-950 dark:text-amber-100">
                     {`هذه المهمة قيد المراجعة حالياً من قِبل: ${holderName}`}
                   </span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-200/90 px-2.5 py-0.5 text-xs font-bold text-amber-950">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-200/90 dark:bg-amber-900/60 px-2.5 py-0.5 text-xs font-bold text-amber-950 dark:text-amber-200">
                     <Clock className="h-3.5 w-3.5" />
                     <span dir="ltr">{countdownLabel}</span>
                   </span>
                   {typeof version === 'number' && (
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-amber-900">
+                    <span className="rounded-full bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 font-mono text-[11px] font-semibold text-amber-900 dark:text-amber-300">
                       {`v${version}`}
                     </span>
                   )}
                 </div>
-                <p className="text-xs font-medium text-amber-900">
+                <p className="text-xs font-medium text-amber-900 dark:text-amber-300">
                   وضع القراءة فقط — جميع أزرار القرار معطلة لمنع التعارض (AD-10 &amp; FR-62). ينتهي الحجز تلقائياً عند انتهاء المؤقت.
                 </p>
               </div>
@@ -137,7 +137,7 @@ export function TaskClaimLockBanner({
                     setValidationError(null);
                     setShowForceUnlockModal((prev) => !prev);
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-red-300 bg-red-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-red-700 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-red-300 dark:border-red-800 bg-red-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-red-700 disabled:opacity-50"
                 >
                   <ShieldAlert className="h-4 w-4" />
                   <span>فك القفل قسرياً (Super Admin)</span>
@@ -149,17 +149,17 @@ export function TaskClaimLockBanner({
           {showForceUnlockModal && canForceUnlock && (
             <form
               onSubmit={handleConfirmForceUnlock}
-              className="mt-4 rounded-xl border border-amber-300 bg-white p-4 text-ink-primary shadow-inner space-y-3"
+              className="mt-4 rounded-xl border border-amber-300 dark:border-amber-800 bg-surface-base dark:bg-dark-surface-raised p-4 text-ink-primary dark:text-dark-ink-primary shadow-inner space-y-3"
               data-testid="force-unlock-modal"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-red-700">
+                <div className="flex items-center gap-2 text-xs font-bold text-red-700 dark:text-red-400">
                   <ShieldAlert className="h-4 w-4" />
                   <span>
                     كسر القفل القسري للمهمة ({queueLabelAr || 'طابور العمليات'}) — سجل التدقيق الإلزامي (AuditLog)
                   </span>
                 </div>
-                <span className="text-[11px] font-semibold text-ink-secondary">
+                <span className="text-[11px] font-semibold text-ink-secondary dark:text-dark-ink-secondary">
                   الصلاحية: Tasks.ForceUnlock
                 </span>
               </div>
@@ -167,7 +167,7 @@ export function TaskClaimLockBanner({
               <div className="space-y-1.5">
                 <label
                   htmlFor="force-unlock-reason-input"
-                  className="block text-xs font-semibold text-ink-primary"
+                  className="block text-xs font-semibold text-ink-primary dark:text-dark-ink-primary"
                 >
                   سبب فك القفل القسري (إلزامي - 5 أحرف على الأقل)
                 </label>
@@ -177,10 +177,10 @@ export function TaskClaimLockBanner({
                   value={forceUnlockReason}
                   onChange={(e) => setForceUnlockReason(e.target.value)}
                   placeholder="مثال: المشرف المناوب في إجازة طارئة والمهمة تتطلب معالجة فورية..."
-                  className="w-full rounded-xl border border-surface-border px-3 py-2 text-xs focus:border-red-600 focus:outline-none"
+                  className="w-full rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface-sunken dark:bg-dark-surface-sunken px-3 py-2 text-xs text-ink-primary dark:text-dark-ink-primary focus:border-red-600 focus:outline-none"
                 />
                 {validationError && (
-                  <p className="text-xs font-bold text-red-600">
+                  <p className="text-xs font-bold text-red-600 dark:text-red-400">
                     {validationError}
                   </p>
                 )}
@@ -193,7 +193,7 @@ export function TaskClaimLockBanner({
                     setShowForceUnlockModal(false);
                     setValidationError(null);
                   }}
-                  className="rounded-xl border border-surface-border px-3 py-1.5 text-xs font-semibold text-ink-secondary hover:bg-surface-sunken"
+                  className="rounded-xl border border-surface-border dark:border-dark-surface-border px-3 py-1.5 text-xs font-semibold text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-sunken"
                 >
                   إلغاء
                 </button>
@@ -216,33 +216,33 @@ export function TaskClaimLockBanner({
         <div
           role="status"
           data-lock-state="LOCKED_BY_ME"
-          className="rounded-2xl border-2 border-emerald-300 bg-emerald-50 p-4 text-emerald-950 shadow-sm"
+          className="rounded-2xl border-2 border-emerald-300 dark:border-emerald-700/60 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-emerald-950 dark:text-emerald-100 shadow-sm"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-200/80 text-emerald-900">
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-200/80 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-300">
                 <CheckCircle2 className="h-5 w-5" />
               </div>
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-bold text-emerald-950">
+                  <span className="text-sm font-bold text-emerald-950 dark:text-emerald-100">
                     المهمة محجوزة باسمك للمراجعة الحصرية
                   </span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-200/90 px-2.5 py-0.5 text-xs font-bold text-emerald-950">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-200/90 dark:bg-emerald-900/60 px-2.5 py-0.5 text-xs font-bold text-emerald-950 dark:text-emerald-200">
                     <Clock className="h-3.5 w-3.5" />
                     <span dir="ltr">{countdownLabel}</span>
                   </span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">
                     <RefreshCw className="h-3 w-3" />
                     <span>تجديد تلقائي كل 5 دقائق</span>
                   </span>
                   {typeof version === 'number' && (
-                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-emerald-900">
+                    <span className="rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 font-mono text-[11px] font-semibold text-emerald-900 dark:text-emerald-300">
                       {`If-Match: "${version}"`}
                     </span>
                   )}
                 </div>
-                <p className="text-xs font-medium text-emerald-900">
+                <p className="text-xs font-medium text-emerald-900 dark:text-emerald-300">
                   أزرار اتخاذ القرار مفعّلة لك الآن. يتم تمديد الحجز تلقائياً لمدة 15 دقيقة طالما أن نافذة المراجعة نشطة.
                 </p>
               </div>
@@ -254,7 +254,7 @@ export function TaskClaimLockBanner({
                   type="button"
                   disabled={isLoading}
                   onClick={() => onHeartbeat()}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-400 bg-white px-3 py-2 text-xs font-bold text-emerald-900 hover:bg-emerald-100 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-400 dark:border-emerald-600 bg-surface-base dark:bg-dark-surface-raised px-3 py-2 text-xs font-bold text-emerald-900 dark:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-dark-surface-sunken disabled:opacity-50"
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
                   <span>تجديد القفل الآن</span>
@@ -264,7 +264,7 @@ export function TaskClaimLockBanner({
                 type="button"
                 disabled={isLoading}
                 onClick={() => onRelease?.()}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-800 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-900 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-800 dark:bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-900 dark:hover:bg-emerald-600 disabled:opacity-50"
               >
                 <Unlock className="h-3.5 w-3.5" />
                 <span>تحرير المهمة</span>
@@ -280,25 +280,25 @@ export function TaskClaimLockBanner({
           role="region"
           aria-label="حالة قفل المهمة"
           data-lock-state="UNLOCKED"
-          className="rounded-2xl border border-surface-border bg-surface p-4 text-ink-primary shadow-sm"
+          className="rounded-2xl border border-surface-border dark:border-dark-surface-border bg-surface-base dark:bg-dark-surface-base p-4 text-ink-primary dark:text-dark-ink-primary shadow-sm"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1B4332]/10 text-[#1B4332]">
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
                 <Lock className="h-5 w-5" />
               </div>
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-bold text-ink-primary">
+                  <span className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
                     المهمة متاحة للاستلام والمراجعة
                   </span>
                   {typeof version === 'number' && (
-                    <span className="rounded-full bg-surface-sunken px-2 py-0.5 font-mono text-[11px] font-semibold text-ink-secondary">
+                    <span className="rounded-full bg-surface-sunken dark:bg-dark-surface-raised px-2 py-0.5 font-mono text-[11px] font-semibold text-ink-secondary dark:text-dark-ink-secondary">
                       v{version}
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-ink-secondary">
+                <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary">
                   يجب استلام المهمة أولاً لتفعيل أزرار الاعتماد أو الرفض ومنع تداخل قرارات المشرفين (حجز حصري لمدة 15 دقيقة).
                 </p>
               </div>
@@ -309,7 +309,7 @@ export function TaskClaimLockBanner({
                 type="button"
                 disabled={isLoading}
                 onClick={() => onClaim?.()}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#1B4332] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#1B4332]/90 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-50"
               >
                 <Lock className="h-3.5 w-3.5" />
                 <span>استلام المهمة وبدء المراجعة (حجز 15 دقيقة)</span>

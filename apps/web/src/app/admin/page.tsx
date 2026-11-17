@@ -139,9 +139,9 @@ export default function AdminDashboardPage() {
   return (
     <div dir="rtl" className="space-y-6">
       {/* Executive Sovereign Banner */}
-      <div className="rounded-2xl bg-[#1B4332] text-white p-6 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="rounded-2xl bg-primary text-white p-6 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/15 text-[#D8F3DC] px-3 py-1 rounded-full">
+          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/10 text-accent-light px-3 py-1 rounded-full border border-white/10">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>النطاق الإداري المعزول • لوحة القيادة والعمليات التنفيذية (FR-66)</span>
           </div>
@@ -156,7 +156,7 @@ export default function AdminDashboardPage() {
         <div className="flex flex-wrap items-center gap-2.5">
           <Link
             href="/admin/queues"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-[#1B4332] text-xs font-bold shadow-sm hover:bg-[#D8F3DC] transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-primary text-xs font-bold shadow-sm hover:bg-accent-light transition-colors"
           >
             <Layers className="w-4 h-4" />
             <span>طوابير العمليات والأقفال</span>
@@ -165,7 +165,7 @@ export default function AdminDashboardPage() {
           {canViewFinance && (
             <Link
               href="/admin/finance"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-[#1B4332] text-xs font-bold shadow-sm hover:bg-[#D8F3DC] transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-primary text-xs font-bold shadow-sm hover:bg-accent-light transition-colors"
             >
               <Wallet className="w-4 h-4" />
               <span>التقارير المالية</span>
@@ -175,7 +175,7 @@ export default function AdminDashboardPage() {
           {canViewFraud && (
             <Link
               href="/admin/fraud"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-[#1B4332] text-xs font-bold shadow-sm hover:bg-[#D8F3DC] transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-primary text-xs font-bold shadow-sm hover:bg-accent-light transition-colors"
             >
               <ShieldAlert className="w-4 h-4 text-red-600" />
               <span>مكافحة الاحتيال</span>
@@ -308,7 +308,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div>
-            <div className="text-2xl font-black text-[#1B4332] dark:text-emerald-400">
+            <div className="text-2xl font-black text-primary dark:text-accent">
               {(
                 (metrics?.financialThroughput30d.commissionsSar || 0) +
                 (metrics?.financialThroughput30d.contractFeesSar || 0)
@@ -327,14 +327,14 @@ export default function AdminDashboardPage() {
       <section className="rounded-2xl bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Layers className="w-5 h-5 text-[#1B4332] dark:text-emerald-400" />
+            <Layers className="w-5 h-5 text-accent" />
             <h2 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
               طوابير العمليات ومراكز التدقيق والمراجعة
             </h2>
           </div>
           <Link
             href="/admin/queues"
-            className="text-xs font-bold text-[#1B4332] dark:text-emerald-400 hover:underline inline-flex items-center gap-1"
+            className="text-xs font-bold text-accent hover:underline inline-flex items-center gap-1"
           >
             <span>عرض كافة الطوابير والأقفال</span>
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -344,22 +344,22 @@ export default function AdminDashboardPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <Link
             href="/admin/payments"
-            className="p-4 rounded-xl border border-surface-border dark:border-dark-surface-border hover:border-[#1B4332] dark:hover:border-emerald-400 transition-colors text-center space-y-1.5 group"
+            className="p-4 rounded-xl border border-surface-border dark:border-dark-surface-border hover:border-accent transition-colors text-center space-y-1.5 group"
           >
-            <div className="w-9 h-9 mx-auto rounded-lg bg-emerald-50 text-[#1B4332] flex items-center justify-center group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 mx-auto rounded-lg bg-accent/10 text-accent flex items-center justify-center group-hover:scale-105 transition-transform">
               <CreditCard className="w-5 h-5" />
             </div>
             <div className="text-xs font-bold text-ink-primary dark:text-dark-ink-primary">
               إيصالات السداد
             </div>
-            <span className="inline-block px-2 py-0.5 rounded-full bg-emerald-100 text-[#1B4332] text-[10px] font-bold">
+            <span className="inline-block px-2 py-0.5 rounded-full bg-accent/15 text-accent-dark dark:text-accent text-[10px] font-bold">
               {metrics?.pendingQueues.paymentProofReviews || 0} معلق
             </span>
           </Link>
 
           <Link
             href="/admin/listings/moderation"
-            className="p-4 rounded-xl border border-surface-border dark:border-dark-surface-border hover:border-[#1B4332] dark:hover:border-emerald-400 transition-colors text-center space-y-1.5 group"
+            className="p-4 rounded-xl border border-surface-border dark:border-dark-surface-border hover:border-accent transition-colors text-center space-y-1.5 group"
           >
             <div className="w-9 h-9 mx-auto rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center group-hover:scale-105 transition-transform">
               <Building2 className="w-5 h-5" />
@@ -374,7 +374,7 @@ export default function AdminDashboardPage() {
 
           <Link
             href="/admin/licenses"
-            className="p-4 rounded-xl border border-surface-border dark:border-dark-surface-border hover:border-[#1B4332] dark:hover:border-emerald-400 transition-colors text-center space-y-1.5 group"
+            className="p-4 rounded-xl border border-surface-border dark:border-dark-surface-border hover:border-accent transition-colors text-center space-y-1.5 group"
           >
             <div className="w-9 h-9 mx-auto rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center group-hover:scale-105 transition-transform">
               <FileCheck className="w-5 h-5" />
@@ -389,7 +389,7 @@ export default function AdminDashboardPage() {
 
           <Link
             href="/admin/contract-fees"
-            className="p-4 rounded-xl border border-surface-border dark:border-dark-surface-border hover:border-[#1B4332] dark:hover:border-emerald-400 transition-colors text-center space-y-1.5 group"
+            className="p-4 rounded-xl border border-surface-border dark:border-dark-surface-border hover:border-accent transition-colors text-center space-y-1.5 group"
           >
             <div className="w-9 h-9 mx-auto rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center group-hover:scale-105 transition-transform">
               <FileText className="w-5 h-5" />
@@ -419,7 +419,7 @@ export default function AdminDashboardPage() {
 
           <Link
             href="/admin/finance"
-            className="p-4 rounded-xl border border-surface-border dark:border-dark-surface-border hover:border-[#1B4332] transition-colors text-center space-y-1.5 group"
+            className="p-4 rounded-xl border border-surface-border dark:border-dark-surface-border hover:border-accent transition-colors text-center space-y-1.5 group"
           >
             <div className="w-9 h-9 mx-auto rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center group-hover:scale-105 transition-transform">
               <TrendingUp className="w-5 h-5" />
@@ -437,7 +437,7 @@ export default function AdminDashboardPage() {
       {/* Security & Session Policy Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="p-5 rounded-2xl bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border space-y-2">
-          <div className="flex items-center gap-2 text-[#1B4332] dark:text-emerald-400 font-bold text-sm">
+          <div className="flex items-center gap-2 text-accent font-bold text-sm">
             <Lock className="w-4 h-4" />
             <span>عزل الجلسات (Dual-Realm)</span>
           </div>
@@ -447,7 +447,7 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="p-5 rounded-2xl bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border space-y-2">
-          <div className="flex items-center gap-2 text-[#1B4332] dark:text-emerald-400 font-bold text-sm">
+          <div className="flex items-center gap-2 text-accent font-bold text-sm">
             <Clock className="w-4 h-4" />
             <span>مهلة عدم النشاط ({ADMIN_SESSION_INACTIVITY_HOURS} ساعات)</span>
           </div>
@@ -457,7 +457,7 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="p-5 rounded-2xl bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border space-y-2">
-          <div className="flex items-center gap-2 text-[#1B4332] dark:text-emerald-400 font-bold text-sm">
+          <div className="flex items-center gap-2 text-accent font-bold text-sm">
             <KeyRound className="w-4 h-4" />
             <span>إعادة تعيين كلمات المرور (FR-70)</span>
           </div>
@@ -472,7 +472,7 @@ export default function AdminDashboardPage() {
         <section className="rounded-2xl bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border overflow-hidden">
           <div className="px-6 py-4 border-b border-surface-border dark:border-dark-surface-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <Users className="w-5 h-5 text-[#1B4332]" />
+              <Users className="w-5 h-5 text-accent" />
               <div>
                 <h2 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
                   إدارة حسابات المشرفين وإعادة تعيين كلمات المرور (Rbac.Manage)
@@ -484,7 +484,7 @@ export default function AdminDashboardPage() {
             </div>
             <Link
               href="/admin/staff"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1B4332] text-white text-xs font-bold hover:bg-[#1B4332]/90 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition-colors"
             >
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>إدارة الموظفين والصلاحيات (RBAC)</span>
@@ -502,7 +502,7 @@ export default function AdminDashboardPage() {
                     <span className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
                       {staff.fullName}
                     </span>
-                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#1B4332]/10 text-[#1B4332] dark:text-emerald-300">
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-accent/15 text-accent-dark dark:text-accent">
                       {staff.role}
                     </span>
                     {!staff.isActive && (
@@ -520,7 +520,7 @@ export default function AdminDashboardPage() {
                   type="button"
                   disabled={!staff.isActive}
                   onClick={() => setSelectedAdminForReset(staff)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#1B4332] text-[#1B4332] dark:text-emerald-300 hover:bg-[#1B4332] hover:text-white disabled:opacity-40 text-xs font-bold transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-surface-border dark:border-dark-surface-border text-ink-primary dark:text-dark-ink-primary hover:bg-surface-sunken dark:hover:bg-dark-surface-sunken disabled:opacity-40 text-xs font-bold transition-colors"
                 >
                   <KeyRound className="w-3.5 h-3.5" />
                   <span>إرسال رابط إعادة تعيين كلمة المرور</span>

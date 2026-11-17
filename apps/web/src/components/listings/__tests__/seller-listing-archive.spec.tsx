@@ -13,10 +13,10 @@ describe('SellerListingArchiveActions & ListingStatusBadge (Story 2.6 / AC #1, #
       expect(html).toContain('bg-emerald-100');
     });
 
-    it('renders ARCHIVED status with slate styling and archived label', () => {
+    it('renders ARCHIVED status with stone styling and archived label', () => {
       const html = renderToString(<ListingStatusBadge status={ListingStatus.ARCHIVED} />);
       expect(html).toContain('مؤرشف');
-      expect(html).toContain('bg-slate-100');
+      expect(html).toContain('bg-stone-100');
     });
 
     it('renders SUSPENDED status with amber styling and compliance label', () => {

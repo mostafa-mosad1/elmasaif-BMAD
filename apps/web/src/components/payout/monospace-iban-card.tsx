@@ -73,18 +73,18 @@ export function MonospaceIbanCard({
     <Card
       className={`relative overflow-hidden border transition-all duration-200 ${
         account.isDefault
-          ? 'border-emerald-600/40 bg-gradient-to-br from-emerald-50/40 via-white to-emerald-50/20 dark:from-emerald-950/20 dark:via-slate-900 dark:to-emerald-950/10 dark:border-emerald-700/50 shadow-sm'
-          : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900'
+          ? 'border-accent/40 bg-gradient-to-br from-accent/5 via-surface-base to-accent/10 dark:from-accent/10 dark:via-dark-surface-base dark:to-accent/5 dark:border-accent/50 shadow-level1'
+          : 'border-surface-border bg-surface-base dark:border-dark-surface-border dark:bg-dark-surface-base'
       }`}
     >
       <div className="p-5 flex flex-col gap-4">
         {/* Top Meta Header: Bank Badge + Default Badge + Status Tags */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-border pb-3 dark:border-dark-surface-border">
           <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-light text-accent-dark dark:bg-amber-950/60 dark:text-accent">
               <Building2 className="h-4 w-4" />
             </span>
-            <span className="text-sm font-bold text-slate-800 dark:text-slate-100">
+            <span className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
               {account.bankName || 'حساب مصرفي سعودي'}
             </span>
           </div>
@@ -111,10 +111,10 @@ export function MonospaceIbanCard({
 
         {/* Account Holder Name */}
         <div>
-          <span className="block text-xs font-medium text-slate-500 dark:text-slate-400">
+          <span className="block text-xs font-medium text-ink-secondary dark:text-dark-ink-secondary">
             اسم صاحب الحساب
           </span>
-          <span className="text-sm font-semibold text-slate-900 dark:text-white">
+          <span className="text-sm font-semibold text-ink-primary dark:text-dark-ink-primary">
             {account.accountHolderName}
           </span>
         </div>
@@ -130,14 +130,14 @@ export function MonospaceIbanCard({
         )}
 
         {/* Monospace Grouped IBAN Display */}
-        <div className="flex flex-col gap-1.5 rounded-lg bg-slate-50 p-3.5 border border-slate-200/80 dark:bg-slate-950/60 dark:border-slate-800">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+        <div className="flex flex-col gap-1.5 rounded-lg bg-surface-sunken p-3.5 border border-surface-border dark:bg-dark-surface-sunken dark:border-dark-surface-border">
+          <div className="flex items-center justify-between text-xs text-ink-secondary dark:text-dark-ink-secondary">
             <span className="font-medium">رقم الآيبان (IBAN)</span>
             {account.ibanFormatted && (
               <button
                 type="button"
                 onClick={() => setIsRevealed(!isRevealed)}
-                className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 text-xs font-medium focus:outline-none transition-colors"
+                className="inline-flex items-center gap-1 text-accent hover:text-accent-dark dark:text-accent text-xs font-medium focus:outline-none transition-colors"
                 title={isRevealed ? 'إخفاء رقم الآيبان' : 'إظهار رقم الآيبان'}
               >
                 {isRevealed ? (
@@ -158,7 +158,7 @@ export function MonospaceIbanCard({
           <div className="flex items-center justify-between gap-3">
             <div
               dir="ltr"
-              className="font-mono text-base md:text-lg font-bold tracking-widest text-slate-900 dark:text-slate-100 select-all"
+              className="font-mono text-base md:text-lg font-bold tracking-widest text-ink-primary dark:text-dark-ink-primary select-all"
             >
               {displayIban}
             </div>
@@ -191,7 +191,7 @@ export function MonospaceIbanCard({
                 <div
                   role="status"
                   aria-live="polite"
-                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-md bg-slate-900 px-2.5 py-1 text-xs font-medium text-white shadow-lg animate-in fade-in slide-in-from-bottom-1 dark:bg-slate-100 dark:text-slate-900"
+                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-white shadow-level2 animate-in fade-in slide-in-from-bottom-1 dark:bg-dark-surface-raised dark:text-dark-ink-primary border border-surface-border dark:border-dark-surface-border"
                 >
                   تم نسخ رقم الآيبان بنجاح
                 </div>
@@ -201,14 +201,14 @@ export function MonospaceIbanCard({
         </div>
 
         {/* Card Footer Actions */}
-        <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+        <div className="flex items-center justify-end gap-2 border-t border-surface-border pt-3 dark:border-dark-surface-border">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={() => onEdit?.(account)}
             disabled={account.isBoundToActiveDeal}
-            className="h-8 gap-1 text-xs text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white disabled:opacity-50"
+            className="h-8 gap-1 text-xs text-ink-secondary hover:text-ink-primary dark:text-dark-ink-secondary dark:hover:text-dark-ink-primary disabled:opacity-50"
             title={account.isBoundToActiveDeal ? 'غير قابل للتعديل لوجود صفقات نشطة' : 'تعديل الحساب'}
           >
             <Edit3 className="h-3.5 w-3.5" />

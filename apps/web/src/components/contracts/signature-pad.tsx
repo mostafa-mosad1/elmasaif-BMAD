@@ -161,13 +161,13 @@ export function SignaturePad({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/50 p-2 sm:p-3 transition-colors focus-within:border-primary ${className}`}
+      className={`relative w-full rounded-xl border-2 border-dashed border-surface-borderStrong bg-surface-sunken p-2 sm:p-3 transition-colors focus-within:border-accent ${className}`}
       data-testid={testId}
       dir="rtl"
     >
-      <div className="flex items-center justify-between pb-2 text-xs text-muted-foreground border-b border-slate-200/80 mb-2">
-        <div className="inline-flex items-center gap-1.5 font-medium text-slate-700">
-          <PenTool className="w-3.5 h-3.5 text-primary" />
+      <div className="flex items-center justify-between pb-2 text-xs text-muted-foreground border-b border-surface-border mb-2">
+        <div className="inline-flex items-center gap-1.5 font-medium text-ink-primary dark:text-dark-ink-primary">
+          <PenTool className="w-3.5 h-3.5 text-accent" />
           <span>ارسم توقيعك هنا (باستخدام اللمس أو الفأرة أو القلم)</span>
         </div>
         <Button
@@ -184,7 +184,7 @@ export function SignaturePad({
         </Button>
       </div>
 
-      <div className="relative w-full bg-white rounded-lg border border-slate-200 shadow-inner overflow-hidden cursor-crosshair">
+      <div className="relative w-full bg-surface-base rounded-lg border border-surface-border shadow-inner overflow-hidden cursor-crosshair">
         <canvas
           ref={canvasRef}
           role="img"
@@ -202,15 +202,15 @@ export function SignaturePad({
         />
 
         {!hasDrawn && (
-          <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center text-slate-400 text-xs">
+          <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center text-ink-muted dark:text-dark-ink-muted text-xs">
             <span className="opacity-80">التوقيع مطلوب للاعتماد</span>
           </div>
         )}
       </div>
 
-      <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
+      <div className="mt-2 flex items-center justify-between text-[11px] text-ink-muted dark:text-dark-ink-muted">
         <span>توقيع إلكتروني ملزم ومشفّر بنظام الهيئة العامة للعقار</span>
-        <span className={hasDrawn ? 'text-emerald-600 font-semibold' : 'text-slate-400'}>
+        <span className={hasDrawn ? 'text-accent font-semibold' : 'text-ink-muted dark:text-dark-ink-muted'}>
           {hasDrawn ? '✓ تم رسم التوقيع' : 'في انتظار التوقيع'}
         </span>
       </div>

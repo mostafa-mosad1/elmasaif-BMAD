@@ -17,26 +17,26 @@ export const roleConfig: Record<string, RoleMeta> = {
     title: 'مساحة المشتري',
     icon: UserCheck,
     badgeClass:
-      'bg-[#1B4332]/10 text-[#1B4332] border-[#1B4332]/30 dark:bg-[#1B4332]/30 dark:text-[#52B788] dark:border-[#52B788]/40',
+      'bg-primary/10 text-primary border-primary/25 dark:bg-primary-light/10 dark:text-primary-light dark:border-primary-light/30',
   },
   [UserRole.OWNER]: {
     label: 'مالك عقار',
     title: 'مساحة المالك',
     icon: Building,
     badgeClass:
-      'bg-[#132018]/10 text-stone-800 border-stone-400 dark:bg-[#132018]/50 dark:text-stone-200 dark:border-stone-600',
+      'bg-surface-sunken text-ink-primary border-surface-border dark:bg-dark-surface-raised dark:text-dark-ink-primary dark:border-dark-surface-border',
   },
   [UserRole.MARKETER]: {
     label: 'مسوق معتمد',
     title: 'مساحة الوسيط',
     icon: Shield,
     badgeClass:
-      'bg-[#C69C45]/15 text-[#9A7328] border-[#C69C45]/40 dark:bg-[#C69C45]/25 dark:text-[#E0B865] dark:border-[#C69C45]/50',
+      'bg-accent/15 text-accent-dark border-accent/30 dark:bg-accent/20 dark:text-accent dark:border-accent/40',
   },
   [UserRole.ADMIN]: {
     label: 'مشرف النظام',
     title: 'لوحة الإشراف',
     icon: Shield,
-    badgeClass: 'bg-red-500/10 text-red-700 border-red-300',
+    badgeClass: 'bg-red-500/10 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800/60',
   },
 };

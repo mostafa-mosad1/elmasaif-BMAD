@@ -553,7 +553,7 @@ export function CmsAnnouncementsWorkspace({
                             <span>منشورة</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs text-slate-700 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded-full font-medium">
+                          <span className="inline-flex items-center gap-1 text-xs text-ink-secondary bg-surface-sunken dark:bg-dark-surface-sunken dark:text-dark-ink-secondary border border-surface-border dark:border-dark-surface-border px-2 py-0.5 rounded-full font-medium">
                             <EyeOff className="w-3.5 h-3.5" />
                             <span>مسودة</span>
                           </span>
@@ -648,7 +648,7 @@ export function CmsAnnouncementsWorkspace({
                             نشط
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs text-slate-700 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded-full font-medium">
+                          <span className="inline-flex items-center gap-1 text-xs text-ink-secondary bg-surface-sunken dark:bg-dark-surface-sunken dark:text-dark-ink-secondary border border-surface-border dark:border-dark-surface-border px-2 py-0.5 rounded-full font-medium">
                             معطل
                           </span>
                         )}
@@ -739,7 +739,7 @@ export function CmsAnnouncementsWorkspace({
                             منشور
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs text-slate-700 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded-full font-medium">
+                          <span className="inline-flex items-center gap-1 text-xs text-ink-secondary bg-surface-sunken dark:bg-dark-surface-sunken dark:text-dark-ink-secondary border border-surface-border dark:border-dark-surface-border px-2 py-0.5 rounded-full font-medium">
                             مسودة
                           </span>
                         )}
@@ -781,19 +781,19 @@ export function CmsAnnouncementsWorkspace({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-3xl bg-white dark:bg-[#132018] rounded-2xl border border-slate-200 dark:border-[#23382C] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
+            className="w-full max-w-3xl bg-surface-base dark:bg-dark-surface-base rounded-2xl border border-surface-border dark:border-dark-surface-border shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
           >
             {/* Modal Header */}
-            <div className="px-6 py-4 bg-slate-50 dark:bg-[#0E1712] border-b border-slate-200 dark:border-[#23382C] flex items-center justify-between shrink-0">
+            <div className="px-6 py-4 bg-surface-sunken dark:bg-dark-surface-sunken border-b border-surface-border dark:border-dark-surface-border flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 dark:bg-emerald-950/40 text-primary dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-accent-light dark:bg-amber-950/60 text-accent-dark dark:text-accent flex items-center justify-center shrink-0">
                   <FileText className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  <h2 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
                     {editingPage ? 'تعديل صفحة المحتوى' : 'إنشاء صفحة محتوى جديدة'}
                   </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary mt-0.5">
                     {editingPage ? 'تحديث النصوص والصياغة القانونية والمعلوماتية للمنصة' : 'إضافة صفحة ثابتة جديدة برابط دائم مخصص'}
                   </p>
                 </div>
@@ -801,7 +801,7 @@ export function CmsAnnouncementsWorkspace({
               <button
                 type="button"
                 onClick={() => setIsPageModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-xl hover:bg-slate-200/60 dark:hover:bg-[#1C2E24] transition-colors"
+                className="p-2 text-ink-muted hover:text-ink-primary dark:hover:text-dark-ink-primary rounded-xl hover:bg-surface-sunken dark:hover:bg-dark-surface-raised transition-colors"
                 aria-label="إغلاق النافذة"
               >
                 <X className="w-5 h-5" />
@@ -809,7 +809,7 @@ export function CmsAnnouncementsWorkspace({
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleSavePage} className="p-6 space-y-5 overflow-y-auto bg-white dark:bg-[#132018]">
+            <form onSubmit={handleSavePage} className="p-6 space-y-5 overflow-y-auto bg-surface-base dark:bg-dark-surface-base">
               {formError && (
                 <div className="p-3 bg-rose-50 text-rose-800 text-xs rounded-xl border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/60 flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
@@ -819,7 +819,7 @@ export function CmsAnnouncementsWorkspace({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  <label className="block text-xs font-semibold text-ink-primary dark:text-dark-ink-primary mb-1.5">
                     عنوان الصفحة <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -828,12 +828,12 @@ export function CmsAnnouncementsWorkspace({
                     placeholder="مثال: الشروط والأحكام"
                     value={pageTitle}
                     onChange={(e) => setPageTitle(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0E1712] border border-slate-300 dark:border-[#23382C] rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors shadow-xs"
+                    className="w-full px-3.5 py-2.5 text-sm bg-surface-base dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-xl text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors shadow-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  <label className="block text-xs font-semibold text-ink-primary dark:text-dark-ink-primary mb-1.5">
                     الرابط الدائم (Slug) <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -843,18 +843,18 @@ export function CmsAnnouncementsWorkspace({
                     placeholder="terms-of-service"
                     value={pageSlug}
                     onChange={(e) => setPageSlug(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0E1712] border border-slate-300 dark:border-[#23382C] rounded-xl text-slate-900 dark:text-slate-100 font-mono text-left placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors shadow-xs"
+                    className="w-full px-3.5 py-2.5 text-sm bg-surface-base dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-xl text-ink-primary dark:text-dark-ink-primary font-mono text-left placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors shadow-xs"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">التصنيف</label>
+                  <label className="block text-xs font-semibold text-ink-primary dark:text-dark-ink-primary mb-1.5">التصنيف</label>
                   <select
                     value={pageCategory}
                     onChange={(e) => setPageCategory(e.target.value as CmsPageCategory)}
-                    className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0E1712] border border-slate-300 dark:border-[#23382C] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors shadow-xs"
+                    className="w-full px-3.5 py-2.5 text-sm bg-surface-base dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-xl text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors shadow-xs"
                   >
                     {Object.values(CmsPageCategory).map((c) => (
                       <option key={c} value={c}>
@@ -865,55 +865,55 @@ export function CmsAnnouncementsWorkspace({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">ترتيب العرض</label>
+                  <label className="block text-xs font-semibold text-ink-primary dark:text-dark-ink-primary mb-1.5">ترتيب العرض</label>
                   <input
                     type="number"
                     value={pageDisplayOrder}
                     onChange={(e) => setPageDisplayOrder(parseInt(e.target.value, 10) || 0)}
-                    className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0E1712] border border-slate-300 dark:border-[#23382C] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors shadow-xs"
+                    className="w-full px-3.5 py-2.5 text-sm bg-surface-base dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-xl text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors shadow-xs"
                   />
                 </div>
 
                 <div className="flex items-end">
-                  <label className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 dark:border-[#23382C] bg-slate-50 dark:bg-[#0E1712] cursor-pointer hover:bg-slate-100 dark:hover:bg-[#1C2E24]/60 transition-colors">
+                  <label className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface-sunken dark:bg-dark-surface-sunken cursor-pointer hover:bg-surface-sunken/80 dark:hover:bg-dark-surface-raised transition-colors">
                     <input
                       type="checkbox"
                       checked={pageIsPublished}
                       onChange={(e) => setPageIsPublished(e.target.checked)}
-                      className="w-4 h-4 text-primary rounded-sm focus:ring-primary accent-[#1B4332]"
+                      className="w-4 h-4 text-accent rounded-sm focus:ring-accent accent-accent"
                     />
                     <div>
-                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block">نشر الصفحة للعامة</span>
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400 block">إتاحة الصفحة عبر الرابط</span>
+                      <span className="text-xs font-bold text-ink-primary dark:text-dark-ink-primary block">نشر الصفحة للعامة</span>
+                      <span className="text-[11px] text-ink-secondary dark:text-dark-ink-secondary block">إتاحة الصفحة عبر الرابط</span>
                     </div>
                   </label>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">الملخص الموجز</label>
+                <label className="block text-xs font-semibold text-ink-primary dark:text-dark-ink-primary mb-1.5">الملخص الموجز</label>
                 <input
                   type="text"
                   placeholder="ملخص يظهر في بطاقات البحث ومعاينات المشاركة..."
                   value={pageSummary}
                   onChange={(e) => setPageSummary(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0E1712] border border-slate-300 dark:border-[#23382C] rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors shadow-xs"
+                  className="w-full px-3.5 py-2.5 text-sm bg-surface-base dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-xl text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors shadow-xs"
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="text-xs font-semibold text-ink-primary dark:text-dark-ink-primary">
                     محتوى الصفحة (Markdown) <span className="text-rose-500">*</span>
                   </label>
-                  <div className="inline-flex rounded-lg border border-slate-200 dark:border-[#23382C] bg-slate-100 dark:bg-[#0E1712] p-0.5 text-xs">
+                  <div className="inline-flex rounded-lg border border-surface-border dark:border-dark-surface-border bg-surface-sunken dark:bg-dark-surface-sunken p-0.5 text-xs">
                     <button
                       type="button"
                       onClick={() => setPreviewPageMarkdown(false)}
                       className={`px-3 py-1 rounded-md font-medium transition-all ${
                         !previewPageMarkdown
-                          ? 'bg-white dark:bg-[#1C2E24] text-slate-900 dark:text-white shadow-xs font-bold'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                          ? 'bg-surface-base dark:bg-dark-surface-raised text-ink-primary dark:text-dark-ink-primary shadow-xs font-bold'
+                          : 'text-ink-secondary dark:text-dark-ink-secondary hover:text-ink-primary'
                       }`}
                     >
                       تحرير النصوص
@@ -923,8 +923,8 @@ export function CmsAnnouncementsWorkspace({
                       onClick={() => setPreviewPageMarkdown(true)}
                       className={`px-3 py-1 rounded-md font-medium transition-all ${
                         previewPageMarkdown
-                          ? 'bg-white dark:bg-[#1C2E24] text-slate-900 dark:text-white shadow-xs font-bold'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                          ? 'bg-surface-base dark:bg-dark-surface-raised text-ink-primary dark:text-dark-ink-primary shadow-xs font-bold'
+                          : 'text-ink-secondary dark:text-dark-ink-secondary hover:text-ink-primary'
                       }`}
                     >
                       معاينة المحتوى
@@ -933,7 +933,7 @@ export function CmsAnnouncementsWorkspace({
                 </div>
 
                 {previewPageMarkdown ? (
-                  <div className="p-4 border border-slate-200 dark:border-[#23382C] rounded-xl bg-slate-50 dark:bg-[#0E1712] min-h-[220px] max-h-[350px] overflow-y-auto text-sm text-slate-900 dark:text-slate-100 leading-relaxed" dir="rtl">
+                  <div className="p-4 border border-surface-border dark:border-dark-surface-border rounded-xl bg-surface-sunken dark:bg-dark-surface-sunken min-h-[220px] max-h-[350px] overflow-y-auto text-sm text-ink-primary dark:text-dark-ink-primary leading-relaxed" dir="rtl">
                     <div className="whitespace-pre-wrap font-sans space-y-2">{pageContent || 'لا يوجد محتوى للمعاينة'}</div>
                   </div>
                 ) : (
@@ -944,17 +944,17 @@ export function CmsAnnouncementsWorkspace({
                     placeholder="# عنوان الصفحة&#10;&#10;اكتب المحتوى بصيغة Markdown..."
                     value={pageContent}
                     onChange={(e) => setPageContent(e.target.value)}
-                    className="w-full p-3.5 text-sm font-sans leading-relaxed bg-white dark:bg-[#0E1712] border border-slate-300 dark:border-[#23382C] rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors resize-y shadow-xs"
+                    className="w-full p-3.5 text-sm font-sans leading-relaxed bg-surface-base dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-xl text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors resize-y shadow-xs"
                   />
                 )}
               </div>
 
               {/* Modal Footer */}
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-200 dark:border-[#23382C]">
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-surface-border dark:border-dark-surface-border">
                 <button
                   type="button"
                   onClick={() => setIsPageModalOpen(false)}
-                  className="px-4 py-2 border border-slate-300 dark:border-[#23382C] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#1C2E24] font-semibold text-xs rounded-xl transition-colors"
+                  className="px-4 py-2 border border-surface-border dark:border-dark-surface-border text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-raised font-semibold text-xs rounded-xl transition-colors"
                 >
                   إلغاء
                 </button>
@@ -982,19 +982,19 @@ export function CmsAnnouncementsWorkspace({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg bg-white dark:bg-[#132018] rounded-2xl border border-slate-200 dark:border-[#23382C] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
+            className="w-full max-w-lg bg-surface-base dark:bg-dark-surface-base rounded-2xl border border-surface-border dark:border-dark-surface-border shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
           >
             {/* Modal Header */}
-            <div className="px-6 py-4 bg-slate-50 dark:bg-[#0E1712] border-b border-slate-200 dark:border-[#23382C] flex items-center justify-between shrink-0">
+            <div className="px-6 py-4 bg-surface-sunken dark:bg-dark-surface-sunken border-b border-surface-border dark:border-dark-surface-border flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 dark:bg-emerald-950/40 text-primary dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-accent-light dark:bg-amber-950/60 text-accent-dark dark:text-accent flex items-center justify-center shrink-0">
                   <Megaphone className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  <h2 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
                     {editingBanner ? 'تعديل شريط الإعلانات' : 'إنشاء شريط إعلاني جديد'}
                   </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary mt-0.5">
                     {editingBanner ? 'تعديل تفاصيل الشريط الإعلاني والتنبيهات العلوية' : 'إضافة شريط تنبيه جديد يظهر في أعلى صفحات المنصة'}
                   </p>
                 </div>
@@ -1002,7 +1002,7 @@ export function CmsAnnouncementsWorkspace({
               <button
                 type="button"
                 onClick={() => setIsBannerModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-xl hover:bg-slate-200/60 dark:hover:bg-[#1C2E24] transition-colors"
+                className="p-2 text-ink-muted hover:text-ink-primary dark:hover:text-dark-ink-primary rounded-xl hover:bg-surface-sunken dark:hover:bg-dark-surface-raised transition-colors"
                 aria-label="إغلاق النافذة"
               >
                 <X className="w-5 h-5" />
@@ -1010,7 +1010,7 @@ export function CmsAnnouncementsWorkspace({
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleSaveBanner} className="p-6 space-y-4 overflow-y-auto bg-white dark:bg-[#132018]">
+            <form onSubmit={handleSaveBanner} className="p-6 space-y-4 overflow-y-auto bg-surface-base dark:bg-dark-surface-base">
               {formError && (
                 <div className="p-3 bg-rose-50 text-rose-800 text-xs rounded-xl border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/60 flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
@@ -1019,7 +1019,7 @@ export function CmsAnnouncementsWorkspace({
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-ink-secondary dark:text-dark-ink-secondary mb-1.5">
                   عنوان الإعلان <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -1028,12 +1028,12 @@ export function CmsAnnouncementsWorkspace({
                   placeholder="مثال: تنبيه بخصوص تحديث الصيانة"
                   value={bannerTitle}
                   onChange={(e) => setBannerTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0E1712] border border-slate-300 dark:border-[#23382C] rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors shadow-xs"
+                  className="w-full px-3.5 py-2.5 text-sm bg-surface-base dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-xl text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors shadow-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-ink-secondary dark:text-dark-ink-secondary mb-1.5">
                   محتوى التنبيه <span className="text-rose-500">*</span>
                 </label>
                 <textarea
@@ -1043,17 +1043,17 @@ export function CmsAnnouncementsWorkspace({
                   placeholder="نص التنبيه الذي سيظهر في الشريط العلوي..."
                   value={bannerContent}
                   onChange={(e) => setBannerContent(e.target.value)}
-                  className="w-full p-3 text-sm font-sans leading-relaxed bg-white dark:bg-[#0E1712] border border-slate-300 dark:border-[#23382C] rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors resize-y shadow-xs"
+                  className="w-full p-3 text-sm font-sans leading-relaxed bg-surface-base dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-xl text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors resize-y shadow-xs"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">نوع الشريط</label>
+                  <label className="block text-xs font-semibold text-ink-secondary dark:text-dark-ink-secondary mb-1.5">نوع الشريط</label>
                   <select
                     value={bannerType}
                     onChange={(e) => setBannerType(e.target.value as AnnouncementBannerType)}
-                    className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0E1712] border border-slate-300 dark:border-[#23382C] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors shadow-xs"
+                    className="w-full px-3.5 py-2.5 text-sm bg-surface-base dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-xl text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors shadow-xs"
                   >
                     {Object.values(AnnouncementBannerType).map((t) => (
                       <option key={t} value={t}>
@@ -1064,16 +1064,16 @@ export function CmsAnnouncementsWorkspace({
                 </div>
 
                 <div className="flex items-end">
-                  <label className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 dark:border-[#23382C] bg-slate-50 dark:bg-[#0E1712] cursor-pointer hover:bg-slate-100 dark:hover:bg-[#1C2E24]/60 transition-colors">
+                  <label className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface-sunken dark:bg-dark-surface-sunken cursor-pointer hover:bg-surface-sunken/80 dark:hover:bg-dark-surface-raised transition-colors">
                     <input
                       type="checkbox"
                       checked={bannerIsActive}
                       onChange={(e) => setBannerIsActive(e.target.checked)}
-                      className="w-4 h-4 text-primary rounded-sm focus:ring-primary accent-[#1B4332]"
+                      className="w-4 h-4 text-accent rounded-sm focus:ring-accent accent-accent"
                     />
                     <div>
-                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block">تفعيل الشريط فوراً</span>
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400 block">إظهار الإعلان للمستخدمين</span>
+                      <span className="text-xs font-bold text-ink-primary dark:text-dark-ink-primary block">تفعيل الشريط فوراً</span>
+                      <span className="text-[11px] text-ink-muted dark:text-dark-ink-secondary block">إظهار الإعلان للمستخدمين</span>
                     </div>
                   </label>
                 </div>
@@ -1081,55 +1081,55 @@ export function CmsAnnouncementsWorkspace({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">تاريخ البدء</label>
+                  <label className="block text-xs font-semibold text-ink-secondary dark:text-dark-ink-secondary mb-1.5">تاريخ البدء</label>
                   <input
                     type="datetime-local"
                     value={bannerStartAt}
                     onChange={(e) => setBannerStartAt(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#0E1712] border border-slate-300 dark:border-[#23382C] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors shadow-xs"
+                    className="w-full px-3 py-2 text-xs bg-surface-base dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-xl text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors shadow-xs"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">تاريخ الانتهاء</label>
+                  <label className="block text-xs font-semibold text-ink-secondary dark:text-dark-ink-secondary mb-1.5">تاريخ الانتهاء</label>
                   <input
                     type="datetime-local"
                     value={bannerEndAt}
                     onChange={(e) => setBannerEndAt(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#0E1712] border border-slate-300 dark:border-[#23382C] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors shadow-xs"
+                    className="w-full px-3 py-2 text-xs bg-surface-base dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-xl text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors shadow-xs"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">رابط الإجراء (URL)</label>
+                  <label className="block text-xs font-semibold text-ink-secondary dark:text-dark-ink-secondary mb-1.5">رابط الإجراء (URL)</label>
                   <input
                     type="text"
                     dir="ltr"
                     placeholder="https://... أو /pages/..."
                     value={bannerActionUrl}
                     onChange={(e) => setBannerActionUrl(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#0E1712] border border-slate-300 dark:border-[#23382C] rounded-xl text-slate-900 dark:text-slate-100 font-mono text-left focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors shadow-xs"
+                    className="w-full px-3 py-2 text-xs bg-surface-base dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-xl text-ink-primary dark:text-dark-ink-primary font-mono text-left focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors shadow-xs"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">نص زر الإجراء</label>
+                  <label className="block text-xs font-semibold text-ink-secondary dark:text-dark-ink-secondary mb-1.5">نص زر الإجراء</label>
                   <input
                     type="text"
                     placeholder="مثال: اعرف المزيد"
                     value={bannerActionText}
                     onChange={(e) => setBannerActionText(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#0E1712] border border-slate-300 dark:border-[#23382C] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors shadow-xs"
+                    className="w-full px-3 py-2 text-xs bg-surface-base dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-xl text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors shadow-xs"
                   />
                 </div>
               </div>
 
               {/* Modal Footer */}
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-200 dark:border-[#23382C]">
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-surface-border dark:border-dark-surface-border">
                 <button
                   type="button"
                   onClick={() => setIsBannerModalOpen(false)}
-                  className="px-4 py-2 border border-slate-300 dark:border-[#23382C] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#1C2E24] font-semibold text-xs rounded-xl transition-colors"
+                  className="px-4 py-2 border border-surface-border dark:border-dark-surface-border text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-raised font-semibold text-xs rounded-xl transition-colors"
                 >
                   إلغاء
                 </button>
@@ -1157,19 +1157,19 @@ export function CmsAnnouncementsWorkspace({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg bg-white dark:bg-[#132018] rounded-2xl border border-slate-200 dark:border-[#23382C] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
+            className="w-full max-w-lg bg-surface-base dark:bg-dark-surface-base rounded-2xl border border-surface-border dark:border-dark-surface-border shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
           >
             {/* Modal Header */}
-            <div className="px-6 py-4 bg-slate-50 dark:bg-[#0E1712] border-b border-slate-200 dark:border-[#23382C] flex items-center justify-between shrink-0">
+            <div className="px-6 py-4 bg-surface-sunken dark:bg-dark-surface-sunken border-b border-surface-border dark:border-dark-surface-border flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 dark:bg-emerald-950/40 text-primary dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-accent-light dark:bg-amber-950/60 text-accent-dark dark:text-accent flex items-center justify-center shrink-0">
                   <HelpCircle className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  <h2 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
                     {editingFaq ? 'تعديل السؤال الشائع' : 'إضافة سؤال شائع جديد'}
                   </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary mt-0.5">
                     {editingFaq ? 'تحديث صيغة السؤال والإجابة المعتمدة' : 'إضافة سؤال جديد إلى بنك الأسئلة الشائعة'}
                   </p>
                 </div>
@@ -1177,7 +1177,7 @@ export function CmsAnnouncementsWorkspace({
               <button
                 type="button"
                 onClick={() => setIsFaqModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-xl hover:bg-slate-200/60 dark:hover:bg-[#1C2E24] transition-colors"
+                className="p-2 text-ink-muted hover:text-ink-primary dark:hover:text-dark-ink-primary rounded-xl hover:bg-surface-sunken dark:hover:bg-dark-surface-raised transition-colors"
                 aria-label="إغلاق النافذة"
               >
                 <X className="w-5 h-5" />
@@ -1185,7 +1185,7 @@ export function CmsAnnouncementsWorkspace({
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleSaveFaq} className="p-6 space-y-4 overflow-y-auto bg-white dark:bg-[#132018]">
+            <form onSubmit={handleSaveFaq} className="p-6 space-y-4 overflow-y-auto bg-surface-base dark:bg-dark-surface-base">
               {formError && (
                 <div className="p-3 bg-rose-50 text-rose-800 text-xs rounded-xl border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/60 flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
@@ -1194,7 +1194,7 @@ export function CmsAnnouncementsWorkspace({
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-ink-secondary dark:text-dark-ink-secondary mb-1.5">
                   السؤال (بالعربية) <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -1203,12 +1203,12 @@ export function CmsAnnouncementsWorkspace({
                   placeholder="كيف يتم توثيق رخصة فال في المنصة؟"
                   value={faqQuestionAr}
                   onChange={(e) => setFaqQuestionAr(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0E1712] border border-slate-300 dark:border-[#23382C] rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors shadow-xs"
+                  className="w-full px-3.5 py-2.5 text-sm bg-surface-base dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-xl text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors shadow-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-ink-secondary dark:text-dark-ink-secondary mb-1.5">
                   الإجابة (بالعربية) <span className="text-rose-500">*</span>
                 </label>
                 <textarea
@@ -1218,17 +1218,17 @@ export function CmsAnnouncementsWorkspace({
                   placeholder="اكتب الإجابة المفصلة..."
                   value={faqAnswerAr}
                   onChange={(e) => setFaqAnswerAr(e.target.value)}
-                  className="w-full p-3 text-sm font-sans leading-relaxed bg-white dark:bg-[#0E1712] border border-slate-300 dark:border-[#23382C] rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors resize-y shadow-xs"
+                  className="w-full p-3 text-sm font-sans leading-relaxed bg-surface-base dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-xl text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors resize-y shadow-xs"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">التصنيف</label>
+                  <label className="block text-xs font-semibold text-ink-secondary dark:text-dark-ink-secondary mb-1.5">التصنيف</label>
                   <select
                     value={faqCategory}
                     onChange={(e) => setFaqCategory(e.target.value as FaqCategory)}
-                    className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0E1712] border border-slate-300 dark:border-[#23382C] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors shadow-xs"
+                    className="w-full px-3.5 py-2.5 text-sm bg-surface-base dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-xl text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors shadow-xs"
                   >
                     {Object.values(FaqCategory).map((c) => (
                       <option key={c} value={c}>
@@ -1239,37 +1239,37 @@ export function CmsAnnouncementsWorkspace({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">الترتيب</label>
+                  <label className="block text-xs font-semibold text-ink-secondary dark:text-dark-ink-secondary mb-1.5">الترتيب</label>
                   <input
                     type="number"
                     value={faqDisplayOrder}
                     onChange={(e) => setFaqDisplayOrder(parseInt(e.target.value, 10) || 0)}
-                    className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0E1712] border border-slate-300 dark:border-[#23382C] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors shadow-xs"
+                    className="w-full px-3.5 py-2.5 text-sm bg-surface-base dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-xl text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors shadow-xs"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 dark:border-[#23382C] bg-slate-50 dark:bg-[#0E1712] cursor-pointer hover:bg-slate-100 dark:hover:bg-[#1C2E24]/60 transition-colors">
+                <label className="flex items-center gap-3 p-2.5 rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface-sunken dark:bg-dark-surface-sunken cursor-pointer hover:bg-surface-sunken/80 dark:hover:bg-dark-surface-raised transition-colors">
                   <input
                     type="checkbox"
                     checked={faqIsPublished}
                     onChange={(e) => setFaqIsPublished(e.target.checked)}
-                    className="w-4 h-4 text-primary rounded-sm focus:ring-primary accent-[#1B4332]"
+                    className="w-4 h-4 text-accent rounded-sm focus:ring-accent accent-accent"
                   />
                   <div>
-                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block">نشر السؤال في صفحة الأسئلة الشائعة</span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 block">إظهار السؤال والإجابة للمستخدمين والزوار</span>
+                    <span className="text-xs font-bold text-ink-primary dark:text-dark-ink-primary block">نشر السؤال في صفحة الأسئلة الشائعة</span>
+                    <span className="text-[11px] text-ink-muted dark:text-dark-ink-secondary block">إظهار السؤال والإجابة للمستخدمين والزوار</span>
                   </div>
                 </label>
               </div>
 
               {/* Modal Footer */}
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-200 dark:border-[#23382C]">
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-surface-border dark:border-dark-surface-border">
                 <button
                   type="button"
                   onClick={() => setIsFaqModalOpen(false)}
-                  className="px-4 py-2 border border-slate-300 dark:border-[#23382C] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#1C2E24] font-semibold text-xs rounded-xl transition-colors"
+                  className="px-4 py-2 border border-surface-border dark:border-dark-surface-border text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-raised font-semibold text-xs rounded-xl transition-colors"
                 >
                   إلغاء
                 </button>

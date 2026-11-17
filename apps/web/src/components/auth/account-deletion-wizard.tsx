@@ -285,12 +285,12 @@ export function AccountDeletionWizard({
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
               <Link href="/app/deals">
-                <Button variant="outline" size="sm" className="bg-white/80 dark:bg-zinc-900/80">
+                <Button variant="outline" size="sm" className="bg-surface-base dark:bg-dark-surface-base">
                   عرض الصفقات العقارية
                 </Button>
               </Link>
               <Link href="/app/disputes">
-                <Button variant="outline" size="sm" className="bg-white/80 dark:bg-zinc-900/80">
+                <Button variant="outline" size="sm" className="bg-surface-base dark:bg-dark-surface-base">
                   عرض النزاعات المفتوحة
                 </Button>
               </Link>
@@ -369,7 +369,7 @@ export function AccountDeletionWizard({
 
             {step === 'otp' && (
               <form onSubmit={handleConfirm} className="space-y-5">
-                <div className="rounded-lg bg-slate-50 dark:bg-zinc-900/60 p-4 border border-border/60 text-sm space-y-1 text-ink-secondary dark:text-dark-ink-secondary">
+                <div className="rounded-lg bg-surface-sunken dark:bg-dark-surface-sunken p-4 border border-surface-border dark:border-dark-surface-border text-sm space-y-1 text-ink-secondary dark:text-dark-ink-secondary">
                   <p>تم إرسال رمز تحقق مؤلف من 6 أرقام إلى جوالك المسجل:</p>
                   <p className="font-mono text-base font-bold text-ink-primary dark:text-dark-ink-primary dir-ltr text-right">
                     {maskedMobileNumber}
@@ -449,7 +449,7 @@ export function AccountDeletionWizard({
                   )}
                   .
                 </p>
-                <div className="p-3 bg-white dark:bg-zinc-900 rounded-lg border border-border text-xs text-ink-secondary">
+                <div className="p-3 bg-surface-base dark:bg-dark-surface-raised rounded-lg border border-surface-border dark:border-dark-surface-border text-xs text-ink-secondary dark:text-dark-ink-secondary">
                   💡 <strong>ملاحظة هامة:</strong> يمكنك إلغاء طلب الحذف في أي وقت وبكل سهولة بمجرد تسجيل الدخول مجدداً إلى حسابك خلال هذه المهلة.
                 </div>
               </CardContent>
@@ -473,7 +473,7 @@ export function AccountDeletionWizard({
                 <p>
                   تم تعطيل حسابك وإخفاء ملفك الشخصي من البحث العام بنجاح.
                 </p>
-                <div className="p-3 bg-white dark:bg-zinc-900 rounded-lg border border-border text-xs text-ink-secondary text-right space-y-1">
+                <div className="p-3 bg-surface-base dark:bg-dark-surface-raised rounded-lg border border-surface-border dark:border-dark-surface-border text-xs text-ink-secondary dark:text-dark-ink-secondary text-right space-y-1">
                   <div className="flex items-center gap-2 font-bold text-ink-primary">
                     <FileText className="h-4 w-4 text-primary" />
                     الاحتفاظ بالسجلات التجارية والمالية (BR-18):

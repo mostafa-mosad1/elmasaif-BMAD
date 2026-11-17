@@ -44,6 +44,7 @@ import {
   ScrollText
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/notification-bell';
+import { SupportTicketModal } from '../support/support-ticket-modal';
 
 interface WorkspaceShellProps {
   children: React.ReactNode;
@@ -56,6 +57,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const { locale, toggleLocale } = useDirection();
   const { resolvedTheme, toggleTheme } = useTheme();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [supportModalOpen, setSupportModalOpen] = useState(false);
 
   const isArabic = locale === SupportedLocale.AR;
   const isAdminRoute = Boolean(pathname?.startsWith('/admin'));
@@ -82,101 +84,188 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
     }
   };
 
-  const roleNavItems = {
+  interface NavBadge {
+    count: string | number;
+    variant?: 'neutral' | 'accent' | 'danger';
+  }
+
+  interface NavItem {
+    href: string;
+    label: string;
+    icon: typeof Building2;
+    badge?: NavBadge;
+  }
+
+  interface NavSection {
+    title?: string;
+    items: NavItem[];
+  }
+
+  const roleNavSections: Record<UserRole, NavSection[]> = {
     [UserRole.BUYER]: [
-      { href: '/app/buyer', label: 'لوحة التحكم', icon: LayoutDashboard },
-      { href: '/', label: 'تصفح العقارات', icon: Search },
-      { href: '/app/buyer/offers', label: 'عروضي النشطة', icon: HandCoins },
-      { href: '/app/buyer/deals', label: 'صفقاتي والدفع', icon: Wallet },
-      { href: '/app/buyer/inquiries', label: 'استفساراتي', icon: MessagesSquare },
-      { href: '/app/buyer/favorites', label: 'العقارات المفضلة', icon: Heart },
-      { href: '/app/buyer/demands', label: 'طلبات الشراء', icon: FileQuestion },
-      { href: '/app/settings/profile', label: 'إعدادات الحساب', icon: User },
-      { href: '/app/settings/identity', label: 'توثيق الهوية', icon: ShieldCheck }
+      {
+        title: 'الرئيسية والاستكشاف',
+        items: [
+          { href: '/app/buyer', label: 'لوحة التحكم', icon: LayoutDashboard },
+          { href: '/', label: 'تصفح العقارات', icon: Search }
+        ]
+      },
+      {
+        title: 'العمليات والصفقات',
+        items: [
+          { href: '/app/buyer/offers', label: 'عروضي النشطة', icon: HandCoins },
+          { href: '/app/buyer/deals', label: 'صفقاتي والدفع', icon: Wallet },
+          { href: '/app/buyer/inquiries', label: 'استفساراتي', icon: MessagesSquare },
+          { href: '/app/buyer/favorites', label: 'العقارات المفضلة', icon: Heart },
+          { href: '/app/buyer/demands', label: 'طلبات الشراء', icon: FileQuestion }
+        ]
+      },
+      {
+        title: 'الحساب والتوثيق',
+        items: [
+          { href: '/app/settings/profile', label: 'إعدادات الحساب', icon: User },
+          { href: '/app/settings/identity', label: 'توثيق الهوية', icon: ShieldCheck }
+        ]
+      }
     ],
     [UserRole.OWNER]: [
-      { href: '/app/owner', label: 'لوحة تحكم المالك', icon: LayoutDashboard },
-      { href: '/app/owner/listings/new', label: 'طلب عرض عقار مباشر', icon: PlusCircle },
-      { href: '/app/owner/offers', label: 'العروض الواردة', icon: HandCoins },
-      { href: '/app/owner/inquiries', label: 'استفسارات العقارات', icon: MessagesSquare },
-      { href: '/app/owner/demands', label: 'مطابقات طلبات الشراء', icon: Sparkles },
-      { href: '/app/owner/contracts', label: 'عقود الوساطة الإلكترونية', icon: FileText },
-      { href: '/app/settings/payout', label: 'حسابات التحويل (IBAN)', icon: CreditCard },
-      { href: '/app/settings/profile', label: 'إعدادات الحساب', icon: User },
-      { href: '/app/settings/identity', label: 'توثيق الهوية', icon: ShieldCheck }
+      {
+        title: 'الرئيسية والعقارات',
+        items: [
+          { href: '/app/owner', label: 'لوحة تحكم المالك', icon: LayoutDashboard },
+          { href: '/app/owner/listings/new', label: 'طلب عرض عقار مباشر', icon: PlusCircle },
+          { href: '/app/owner/contracts', label: 'عقود الوساطة الإلكترونية', icon: FileText }
+        ]
+      },
+      {
+        title: 'العروض والمحادثات',
+        items: [
+          { href: '/app/owner/offers', label: 'العروض الواردة', icon: HandCoins },
+          { href: '/app/owner/inquiries', label: 'استفسارات العقارات', icon: MessagesSquare },
+          { href: '/app/owner/demands', label: 'مطابقات طلبات الشراء', icon: Sparkles }
+        ]
+      },
+      {
+        title: 'المالية والحساب',
+        items: [
+          { href: '/app/settings/payout', label: 'حسابات التحويل (IBAN)', icon: CreditCard },
+          { href: '/app/settings/profile', label: 'إعدادات الحساب', icon: User },
+          { href: '/app/settings/identity', label: 'توثيق الهوية', icon: ShieldCheck }
+        ]
+      }
     ],
     [UserRole.MARKETER]: [
-      { href: '/app/marketer', label: 'لوحة تحكم الوسيط', icon: LayoutDashboard },
-      { href: '/app/marketer/listings', label: 'إدارة العقارات', icon: Building },
-      { href: '/app/marketer/listings/new', label: 'إضافة عقار جديد', icon: PlusCircle },
-      { href: '/app/marketer/offers', label: 'العروض الواردة', icon: HandCoins },
-      { href: '/app/marketer/inquiries', label: 'استفسارات العقارات', icon: MessagesSquare },
-      { href: '/app/marketer/demands', label: 'مطابقات طلبات الشراء', icon: Sparkles },
-      { href: '/app/marketer/fal-license', label: 'رخصة فال العقارية', icon: ShieldCheck },
-      { href: '/app/settings/payout', label: 'حسابات التحويل (IBAN)', icon: CreditCard },
-      { href: '/app/settings/profile', label: 'إعدادات الحساب', icon: User },
-      { href: '/app/settings/identity', label: 'توثيق الهوية', icon: ShieldCheck }
+      {
+        title: 'الرئيسية وإدارة العقارات',
+        items: [
+          { href: '/app/marketer', label: 'لوحة تحكم الوسيط', icon: LayoutDashboard },
+          { href: '/app/marketer/listings', label: 'إدارة العقارات', icon: Building },
+          { href: '/app/marketer/listings/new', label: 'إضافة عقار جديد', icon: PlusCircle },
+          { href: '/app/marketer/fal-license', label: 'رخصة فال العقارية', icon: ShieldCheck }
+        ]
+      },
+      {
+        title: 'العروض والمطابقات',
+        items: [
+          { href: '/app/marketer/offers', label: 'العروض الواردة', icon: HandCoins },
+          { href: '/app/marketer/inquiries', label: 'استفسارات العقارات', icon: MessagesSquare },
+          { href: '/app/marketer/demands', label: 'مطابقات طلبات الشراء', icon: Sparkles }
+        ]
+      },
+      {
+        title: 'المالية والحساب',
+        items: [
+          { href: '/app/settings/payout', label: 'حسابات التحويل (IBAN)', icon: CreditCard },
+          { href: '/app/settings/profile', label: 'إعدادات الحساب', icon: User },
+          { href: '/app/settings/identity', label: 'توثيق الهوية', icon: ShieldCheck }
+        ]
+      }
     ],
     [UserRole.ADMIN]: [
-      { href: '/admin', label: 'لوحة تحكم المشرف', icon: LayoutDashboard },
-      { href: '/admin/queues', label: 'طوابير المهام والأقفال التشغيلية', icon: Layers },
-      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Contracts.Review') || admin.permissions?.includes('Contracts.Manage')
-        ? [{ href: '/admin/owner-requests', label: 'طلبات الملاك والعقود', icon: FileText }]
-        : []),
-      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Licenses.Review')
-        ? [{ href: '/admin/licenses', label: 'طابور اعتماد رخص فال', icon: FileCheck }]
-        : []),
-      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Listings.Review')
-        ? [{ href: '/admin/listings/moderation', label: 'طابور مراجعة الإعلانات العقارية', icon: Building }]
-        : []),
-      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Geo.Manage')
-        ? [{ href: '/admin/geo', label: 'إدارة المدن والأحياء', icon: MapPin }]
-        : []),
-      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Offers.Review')
-        ? [{ href: '/admin/proposals', label: 'طابور مراجعة عروض المزودين', icon: HandCoins }]
-        : []),
-      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Offers.Review')
-        ? [{ href: '/admin/negotiations', label: 'طابور وساطة عروض الشراء', icon: HandCoins }]
-        : []),
-      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Conversations.Handle')
-        ? [{ href: '/admin/conversations', label: 'طابور المحادثات', icon: MessagesSquare }]
-        : []),
-      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Offers.Review')
-        ? [{ href: '/admin/backup-offers', label: 'طابور العروض الاحتياطية', icon: HandCoins }]
-        : []),
-      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Payments.Review')
-        ? [{ href: '/admin/payments', label: 'الدفع والتسويات', icon: Wallet }]
-        : []),
-      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Deals.DisputeResolve')
-        ? [{ href: '/admin/disputes', label: 'فض النزاعات', icon: Scale }]
-        : []),
-      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Reviews.Moderate')
-        ? [{ href: '/admin/reviews', label: 'مراجعة وتدقيق التقييمات', icon: Star }]
-        : []),
-      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Reports.Handle')
-        ? [{ href: '/admin/reports', label: 'بلاغات المخالفات والامتثال', icon: ShieldAlert }]
-        : []),
-      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Tickets.Handle')
-        ? [{ href: '/admin/tickets', label: 'تذاكر الدعم الفني', icon: LifeBuoy }]
-        : []),
-      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Rbac.Manage')
-        ? [{ href: '/admin/staff', label: 'إدارة الموظفين والصلاحيات (RBAC)', icon: Users }]
-        : []),
-      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Settings.Manage') || admin.permissions?.includes('Settings.Commission')
-        ? [{ href: '/admin/settings', label: 'إعدادات المنصة والعمولات', icon: Sliders }]
-        : []),
-      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Audit.View')
-        ? [{ href: '/admin/audit', label: 'سجل التدقيق والرقابة', icon: ScrollText }]
-        : []),
-      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Fraud.View') || admin.permissions?.includes('Compliance.Manage') || admin.permissions?.includes('Security.Manage')
-        ? [{ href: '/admin/fraud', label: 'سجل مكافحة الاحتيال', icon: ShieldAlert }]
-        : []),
-      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Finance.View') || admin.permissions?.includes('Finance.Audit') || admin.permissions?.includes('Finance.Export')
-        ? [{ href: '/admin/finance', label: 'المؤشرات والتقارير المالية', icon: Wallet }]
-        : []),
-      ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('CMS.Manage') || admin.permissions?.includes('Content.Manage')
-        ? [{ href: '/admin/cms', label: 'إدارة المحتوى والإعلانات (CMS)', icon: FileText }]
-        : [])
+      {
+        title: 'العمليات والقيادة',
+        items: [
+          { href: '/admin', label: 'لوحة تحكم المشرف', icon: LayoutDashboard },
+          { href: '/admin/queues', label: 'طوابير المهام والأقفال التشغيلية', icon: Layers, badge: { count: '2', variant: 'accent' } }
+        ]
+      },
+      {
+        title: 'العقارات والتراخيص',
+        items: [
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Listings.Review')
+            ? [{ href: '/admin/listings/moderation', label: 'طابور مراجعة الإعلانات العقارية', icon: Building, badge: { count: '3', variant: 'accent' } }]
+            : []),
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Contracts.Review') || admin.permissions?.includes('Contracts.Manage')
+            ? [{ href: '/admin/owner-requests', label: 'طلبات الملاك والعقود', icon: FileText }]
+            : []),
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Licenses.Review')
+            ? [{ href: '/admin/licenses', label: 'طابور اعتماد رخص فال', icon: FileCheck, badge: { count: '1', variant: 'accent' } }]
+            : []),
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Geo.Manage')
+            ? [{ href: '/admin/geo', label: 'إدارة المدن والأحياء', icon: MapPin }]
+            : [])
+        ]
+      },
+      {
+        title: 'الصفقات والوساطة المالية',
+        items: [
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Offers.Review')
+            ? [{ href: '/admin/negotiations', label: 'طابور وساطة عروض الشراء', icon: HandCoins, badge: { count: '4', variant: 'accent' } }]
+            : []),
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Offers.Review')
+            ? [{ href: '/admin/proposals', label: 'طابور مراجعة عروض المزودين', icon: Sparkles }]
+            : []),
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Offers.Review')
+            ? [{ href: '/admin/backup-offers', label: 'طابور العروض الاحتياطية', icon: HandCoins }]
+            : []),
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Payments.Review')
+            ? [{ href: '/admin/payments', label: 'الدفع والتسويات البنكية', icon: Wallet }]
+            : []),
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Finance.View') || admin.permissions?.includes('Finance.Audit') || admin.permissions?.includes('Finance.Export')
+            ? [{ href: '/admin/finance', label: 'المؤشرات والتقارير المالية', icon: CreditCard }]
+            : [])
+        ]
+      },
+      {
+        title: 'الدعم والنزاعات والرقابة',
+        items: [
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Tickets.Handle')
+            ? [{ href: '/admin/tickets', label: 'تذاكر الدعم الفني', icon: LifeBuoy, badge: { count: '5', variant: 'neutral' } }]
+            : []),
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Deals.DisputeResolve')
+            ? [{ href: '/admin/disputes', label: 'فض النزاعات', icon: Scale, badge: { count: '1', variant: 'danger' } }]
+            : []),
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Conversations.Handle')
+            ? [{ href: '/admin/conversations', label: 'طابور المحادثات', icon: MessagesSquare }]
+            : []),
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Reviews.Moderate')
+            ? [{ href: '/admin/reviews', label: 'مراجعة وتدقيق التقييمات', icon: Star }]
+            : []),
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Reports.Handle')
+            ? [{ href: '/admin/reports', label: 'بلاغات المخالفات والامتثال', icon: ShieldAlert, badge: { count: '2', variant: 'danger' } }]
+            : [])
+        ]
+      },
+      {
+        title: 'النظام والأمان والمحتوى',
+        items: [
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Rbac.Manage')
+            ? [{ href: '/admin/staff', label: 'إدارة الموظفين والصلاحيات (RBAC)', icon: Users }]
+            : []),
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Fraud.View') || admin.permissions?.includes('Compliance.Manage') || admin.permissions?.includes('Security.Manage')
+            ? [{ href: '/admin/fraud', label: 'سجل مكافحة الاحتيال', icon: ShieldCheck }]
+            : []),
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Audit.View')
+            ? [{ href: '/admin/audit', label: 'سجل التدقيق والرقابة', icon: ScrollText }]
+            : []),
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('CMS.Manage') || admin.permissions?.includes('Content.Manage')
+            ? [{ href: '/admin/cms', label: 'إدارة المحتوى والإعلانات (CMS)', icon: FileText }]
+            : []),
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Settings.Manage') || admin.permissions?.includes('Settings.Commission')
+            ? [{ href: '/admin/settings', label: 'إعدادات المنصة والعمولات', icon: Sliders }]
+            : [])
+        ]
+      }
     ]
   };
 
@@ -188,12 +277,14 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   };
 
   const effectiveRole = isAdminRoute ? UserRole.ADMIN : activeRole;
-  const navItems = roleNavItems[effectiveRole] || roleNavItems[UserRole.BUYER];
+  const navSections = (roleNavSections[effectiveRole] || roleNavSections[UserRole.BUYER]).filter(
+    (section) => section.items.length > 0
+  );
   const workspaceTitle = roleTitleMap[effectiveRole] || 'مساحة العمل';
   const handleActiveLogout = isAdminRoute ? logoutAdmin : logout;
 
   return (
-    <div className="min-h-screen flex bg-surface-sunken dark:bg-dark-surface font-sans antialiased text-ink-primary dark:text-dark-ink-primary">
+    <div className="min-h-screen flex bg-surface-background dark:bg-dark-background font-sans antialiased text-ink-primary dark:text-dark-ink-primary">
       {/* Mobile Sidebar Overlay */}
       {mobileSidebarOpen && (
         <div
@@ -229,7 +320,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
           </Link>
           <button
             type="button"
-            className="lg:hidden p-1.5 rounded-md hover:bg-surface-sunken dark:hover:bg-dark-surface"
+            className="lg:hidden p-1.5 rounded-md hover:bg-surface-sunken dark:hover:bg-dark-surface-raised"
             onClick={() => setMobileSidebarOpen(false)}
             aria-label="Close sidebar"
           >
@@ -238,31 +329,82 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         </div>
 
         {/* Navigation List */}
-        <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1.5">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-3">
+          {navSections.map((section, sIdx) => {
+            if (section.items.length === 0) return null;
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileSidebarOpen(false)}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground shadow-sm font-bold'
-                    : 'text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface hover:text-ink-primary dark:hover:text-dark-ink-primary'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-primary-foreground' : 'text-ink-muted'}`} />
-                <span>{item.label}</span>
-              </Link>
+              <div key={section.title || sIdx} className="space-y-1">
+                {section.title && (
+                  <div className="px-2.5 py-1">
+                    <span className="text-[11px] font-bold tracking-wider text-ink-muted dark:text-dark-ink-muted uppercase">
+                      {section.title}
+                    </span>
+                  </div>
+                )}
+                <div className="space-y-0.5">
+                  {section.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = pathname === item.href;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMobileSidebarOpen(false)}
+                        className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                          isActive
+                            ? 'bg-primary text-white dark:bg-primary dark:text-white font-semibold shadow-xs'
+                            : 'text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-raised hover:text-ink-primary dark:hover:text-dark-ink-primary'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Icon
+                            className={`w-4 h-4 shrink-0 ${
+                              isActive ? 'text-white' : 'text-ink-muted dark:text-dark-ink-muted'
+                            }`}
+                          />
+                          <span className="truncate">{item.label}</span>
+                        </div>
+                        {item.badge && (
+                          <span
+                            className={`shrink-0 ms-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full tabular-nums ${
+                              isActive
+                                ? 'bg-white/20 text-white'
+                                : item.badge.variant === 'danger'
+                                ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                : item.badge.variant === 'accent'
+                                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20'
+                                : 'bg-surface-sunken dark:bg-dark-surface-raised text-ink-muted dark:text-dark-ink-muted'
+                            }`}
+                          >
+                            {item.badge.count}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </nav>
 
+        {/* User Help / Support Action */}
+        {!isAdminRoute && (
+          <div className="px-3.5 py-2 border-t border-surface-border dark:border-dark-surface-border">
+            <button
+              type="button"
+              onClick={() => setSupportModalOpen(true)}
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold border border-surface-border dark:border-dark-surface-border hover:bg-surface-sunken dark:hover:bg-dark-surface-raised text-ink-secondary dark:text-dark-ink-secondary transition-colors cursor-pointer"
+            >
+              <LifeBuoy className="w-4 h-4 text-accent" />
+              <span>{isArabic ? 'طلب دعم فني ومساعدة' : 'Help & Support'}</span>
+            </button>
+          </div>
+        )}
+
         {/* User / Admin Profile Footer in Sidebar */}
         {isAdminRoute && admin ? (
-          <div className="p-4 border-t border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface/40">
+          <div className="p-4 border-t border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5 overflow-hidden">
                 <div className="w-8 h-8 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-xs shrink-0">
@@ -288,7 +430,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
           </div>
         ) : (
           user && (
-            <div className="p-4 border-t border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface/40">
+            <div className="p-4 border-t border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5 overflow-hidden">
                   <div className="w-8 h-8 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-xs shrink-0">
@@ -319,29 +461,41 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
       {/* Main Workspace Content Area */}
       <div className="flex-1 flex flex-col min-w-0 w-full lg:ps-[280px]">
         {/* Workspace Top Bar */}
-        <header className="sticky top-0 z-30 h-20 w-full min-w-0 bg-surface/90 dark:bg-dark-surface-raised/90 backdrop-blur-md border-b border-surface-border dark:border-dark-surface-border px-4 sm:px-8 flex items-center justify-between">
+        <header className="sticky top-0 z-30 h-20 w-full min-w-0 bg-surface-base/90 dark:bg-dark-surface-base/90 backdrop-blur-md border-b border-surface-border dark:border-dark-surface-border px-4 sm:px-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               type="button"
-              className="lg:hidden p-2 rounded-lg border border-surface-border dark:border-dark-surface-border hover:bg-surface-sunken dark:hover:bg-dark-surface"
+              className="lg:hidden p-2 rounded-lg border border-surface-border dark:border-dark-surface-border hover:bg-surface-sunken dark:hover:bg-dark-surface-raised"
               onClick={() => setMobileSidebarOpen(true)}
               aria-label="Open sidebar"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <WorkspaceRoleSwitcher />
+            {!isAdminRoute ? (
+              <WorkspaceRoleSwitcher />
+            ) : (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-accent/25 bg-accent/10 text-accent font-semibold text-xs">
+                <ShieldCheck className="w-3.5 h-3.5 text-accent" />
+                <span>لوحة الإدارة والتحكم</span>
+                {admin?.role && (
+                  <span className="hidden sm:inline font-mono text-[11px] opacity-80 border-s border-accent/30 ps-2">
+                    {admin.role}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right Action Utilities */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Notifications Bell */}
-            <NotificationBell />
+            {/* Notifications Bell (Customer workspaces only) */}
+            {!isAdminRoute && <NotificationBell />}
 
             {/* Language Switcher */}
             <button
               onClick={handleQuickToggleLocale}
               type="button"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface border border-surface-border dark:border-dark-surface-border transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border transition-colors"
               aria-label={isArabic ? 'Switch to English' : 'التبديل إلى العربية'}
             >
               <Globe className="w-3.5 h-3.5 text-primary dark:text-primary-light" />
@@ -352,7 +506,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
             <button
               onClick={handleQuickToggleTheme}
               type="button"
-              className="p-2 rounded-lg text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface border border-surface-border dark:border-dark-surface-border transition-colors"
+              className="p-2 rounded-lg text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border transition-colors"
               aria-label={resolvedTheme === 'dark' ? 'Activate Light Mode' : 'تفعيل الوضع الداكن'}
             >
               {resolvedTheme === 'dark' ? (
@@ -379,6 +533,12 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
           {children}
         </main>
       </div>
+
+      <SupportTicketModal
+        isOpen={supportModalOpen}
+        onClose={() => setSupportModalOpen(false)}
+        defaultContactName={user?.fullName || ''}
+      />
     </div>
   );
 }

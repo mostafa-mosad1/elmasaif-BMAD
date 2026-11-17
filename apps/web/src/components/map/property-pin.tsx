@@ -33,9 +33,9 @@ export function PropertyPin({ item, isActive, onMarkerClick }: PropertyPinProps)
   const typeColor = PROPERTY_TYPE_MAP_COLORS[item.propertyType as PropertyType] || '#6B7280';
   const priceLabel = formatPinPrice(item.askPrice);
 
-  const bg = isActive ? '#1B4332' : '#FFFFFF';
+  const bg = isActive ? '#0F172A' : '#FFFFFF';
   const color = isActive ? '#FFFFFF' : '#0F172A';
-  const borderColor = isActive ? '#1B4332' : typeColor;
+  const borderColor = isActive ? '#0F172A' : typeColor;
 
   const icon = L.divIcon({
     html: `<div

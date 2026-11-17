@@ -174,7 +174,7 @@ export function OfferSubmitForm({
 
           {belowHalf ? (
             <div
-              className="rounded-xl border border-[#C69C45]/30 bg-[#C69C45]/10 p-3 space-y-2"
+              className="rounded-xl border border-accent/30 bg-accent/10 p-3 space-y-2"
               data-testid="offer-low-price-gate"
             >
               <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary leading-relaxed">

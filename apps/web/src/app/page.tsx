@@ -165,9 +165,9 @@ export default function HomePage() {
 
         <div className="max-w-4xl mx-auto px-4">
           {/* Institutional Trust Live Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-status-verifiedBg border border-status-verifiedBorder text-status-verified text-xs sm:text-sm font-semibold shadow-sm mb-6">
-            <span className="w-2 h-2 rounded-full bg-status-verified animate-ping" />
-            <ShieldCheck className="w-4 h-4 shrink-0" />
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent-light dark:bg-accent/15 border border-accent/30 text-accent-dark dark:text-accent text-xs sm:text-sm font-semibold shadow-sm mb-6">
+            <span className="w-2 h-2 rounded-full bg-accent animate-ping" />
+            <ShieldCheck className="w-4 h-4 shrink-0 text-accent" />
             <span>نظام وساطة رقمي متكامل وفق أنظمة الهيئة العامة للعقار (REGA)</span>
           </div>
 
@@ -300,7 +300,7 @@ export default function HomePage() {
           </div>
 
           <div className="p-4 rounded-xl bg-surface-base dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border shadow-sm flex flex-col items-center text-center">
-            <div className="flex items-baseline gap-1 text-2xl sm:text-3xl font-extrabold text-status-verified font-bold" dir="ltr">
+            <div className="flex items-baseline gap-1 text-2xl sm:text-3xl font-extrabold text-accent-dark dark:text-accent font-bold" dir="ltr">
               <span>0</span>
               <span className="text-sm font-sans font-semibold">ر.س</span>
             </div>
@@ -322,7 +322,7 @@ export default function HomePage() {
         {/* 3 Core Pillars */}
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto text-start px-2">
           <div className="p-6 rounded-2xl bg-surface-base dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border shadow-sm luxury-card">
-            <div className="w-12 h-12 rounded-xl bg-status-verifiedBg border border-status-verifiedBorder text-status-verified flex items-center justify-center mb-4">
+            <div className="w-12 h-12 rounded-xl bg-accent-light dark:bg-accent/20 border border-accent/30 text-accent-dark dark:text-accent flex items-center justify-center mb-4">
               <FileCheck className="w-6 h-6" />
             </div>
             <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
@@ -483,7 +483,7 @@ export default function HomePage() {
                 </p>
               </div>
               <div className="mt-4 pt-3 border-t border-primary/20 text-[11px] text-primary dark:text-primary-light font-semibold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-status-verified" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-accent" />
                 <span>تدقيق إداري فوري للإيصال</span>
               </div>
             </div>
@@ -512,24 +512,24 @@ export default function HomePage() {
                 </p>
               </div>
               <div className="mt-4 pt-3 border-t border-accent/20 text-[11px] text-accent-dark font-semibold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-status-verified" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-accent" />
                 <span>ضمان استلام الثمن</span>
               </div>
             </div>
 
             {/* Step 4 */}
-            <div className="p-5 rounded-2xl border border-surface-border dark:border-dark-surface-border bg-surface-sunken dark:bg-dark-surface-sunken flex flex-col justify-between">
+            <div className="p-5 rounded-2xl border border-accent/30 bg-accent-light/20 dark:bg-accent/5 flex flex-col justify-between shadow-sm">
               <div>
                 <div className="flex items-center justify-between gap-2 mb-3.5">
                   <div className="flex items-center gap-2">
-                    <span className="w-8 h-8 rounded-full bg-status-verified text-white text-sm font-extrabold flex items-center justify-center shrink-0 shadow-sm leading-none">
+                    <span className="w-8 h-8 rounded-full bg-primary text-white text-sm font-extrabold flex items-center justify-center shrink-0 shadow-sm leading-none">
                       4
                     </span>
-                    <span className="text-xs font-bold text-status-verified">
+                    <span className="text-xs font-bold text-accent-dark dark:text-accent">
                       المرحلة الأخيرة
                     </span>
                   </div>
-                  <span className="text-[11px] font-semibold text-status-verified bg-status-verifiedBg dark:bg-status-verified/20 px-2.5 py-1 rounded-full border border-status-verifiedBorder">
+                  <span className="text-[11px] font-semibold text-accent-dark dark:text-accent bg-accent-light dark:bg-accent/20 px-2.5 py-1 rounded-full border border-accent/30">
                     الإفراغ الرسمي
                   </span>
                 </div>
@@ -540,8 +540,8 @@ export default function HomePage() {
                   فك حجب بيانات البائع والصك، وإتمام الإفراغ الإلكتروني عبر البورصة العقارية / ناجز.
                 </p>
               </div>
-              <div className="mt-4 pt-3 border-t border-surface-border dark:border-dark-surface-border text-[11px] text-status-verified font-semibold flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5" />
+              <div className="mt-4 pt-3 border-t border-surface-border dark:border-dark-surface-border text-[11px] text-accent-dark dark:text-accent font-semibold flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-accent" />
                 <span>إصدار الصك باسم المشتري</span>
               </div>
             </div>
@@ -688,10 +688,10 @@ export default function HomePage() {
 
       {/* High-Converting Institutional CTA Banner */}
       <section className="py-12 border-t border-surface-border dark:border-dark-surface-border">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1B4332] via-[#143326] to-[#0A1A13] text-white p-8 sm:p-14 shadow-level3">
-          {/* Subtle decorative gold glow */}
-          <div className="absolute -left-20 -bottom-20 w-80 h-80 rounded-full bg-accent/15 blur-3xl pointer-events-none" />
-          <div className="absolute right-0 top-0 w-96 h-96 rounded-full bg-primary-light/10 blur-3xl pointer-events-none" />
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#07090C] text-white p-8 sm:p-14 shadow-level3 border border-surface-border dark:border-dark-surface-border">
+          {/* Subtle decorative warm bronze glow */}
+          <div className="absolute -left-20 -bottom-20 w-80 h-80 rounded-full bg-accent/20 blur-3xl pointer-events-none" />
+          <div className="absolute right-0 top-0 w-96 h-96 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
 
           <div className="relative z-10 max-w-3xl">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-accent text-xs font-bold mb-4">
@@ -710,7 +710,7 @@ export default function HomePage() {
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link
                 href="/listings/new"
-                className="px-6 py-3 rounded-xl bg-accent hover:bg-accent-hover text-ink-primary font-bold text-sm shadow-lg transition-all sheen-effect flex items-center gap-2"
+                className="px-6 py-3 rounded-xl bg-accent hover:bg-accent-hover text-white font-bold text-sm shadow-lg transition-all sheen-effect flex items-center gap-2 glow-bronze"
               >
                 <span>إضافة عقار جديد للبيع</span>
                 <ChevronLeft className="w-4 h-4" />

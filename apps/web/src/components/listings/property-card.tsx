@@ -190,7 +190,7 @@ export function PropertyCard({
         <Badge
           variant="verified"
           size="sm"
-          icon={<CheckCircle2 className="w-3.5 h-3.5 text-status-verified" />}
+          icon={<CheckCircle2 className="w-3.5 h-3.5 text-accent" />}
         >
           معلن مرخص (فال)
         </Badge>

@@ -83,7 +83,7 @@ describe('PropertyMediaCarousel & PropertyCard (Story 2.3)', () => {
       React.createElement(PropertyCard, { listing: emptyPhotoListing }),
     );
 
-    expect(html).toContain('bg-emerald-950');
+    expect(html).toContain('bg-primary');
     expect(html).toContain('فيلا درج صالة مودرن مع مسبح ومصعد');
     expect(html).toContain('1/12');
     expect(html).not.toContain('<img');

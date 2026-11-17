@@ -20,43 +20,43 @@ describe('Tailwind Design Tokens Configuration (DESIGN.md Compliance)', () => {
 
   it('should extend colors with Sovereign Emerald and Desert Gold palettes', () => {
     const colors = theme?.colors as Record<string, any>;
-    expect(colors.primary.DEFAULT).toBe('#1B4332');
-    expect(colors.primary.hover).toBe('#143326');
-    expect(colors.primary.light).toBe('#E8F3EE');
+    expect(colors.primary.DEFAULT).toBe('#0F172A');
+    expect(colors.primary.hover).toBe('#1E293B');
+    expect(colors.primary.light).toBe('#F5F5F4');
     expect(colors.primary.foreground).toBe('#FFFFFF');
-    expect(colors.primary.dark).toBe('#2D6A4F');
+    expect(colors.primary.dark).toBe('#1E293B');
 
-    expect(colors.accent.DEFAULT).toBe('#C69C45');
-    expect(colors.accent.hover).toBe('#B38A38');
-    expect(colors.accent.light).toBe('#FAF4E8');
-    expect(colors.accent.foreground).toBe('#1A1208');
+    expect(colors.accent.DEFAULT).toBe('#D97706');
+    expect(colors.accent.hover).toBe('#B45309');
+    expect(colors.accent.light).toBe('#FEF3C7');
+    expect(colors.accent.foreground).toBe('#1C1917');
   });
 
   it('should define dark mode surfaces and ink scales', () => {
     const colors = theme?.colors as Record<string, any>;
-    expect(colors['dark-background']).toBe('#0B130E');
-    expect(colors['dark-surface-base']).toBe('#132018');
-    expect(colors['dark-surface-raised']).toBe('#1C2E24');
-    expect(colors['dark-surface-sunken']).toBe('#0E1712');
-    expect(colors['dark-surface-border']).toBe('#23382C');
-    expect(colors['dark-surface-border-strong']).toBe('#32503E');
+    expect(colors['dark-background']).toBe('#07090C');
+    expect(colors['dark-surface-base']).toBe('#0F1318');
+    expect(colors['dark-surface-raised']).toBe('#161C24');
+    expect(colors['dark-surface-sunken']).toBe('#040608');
+    expect(colors['dark-surface-border']).toBe('#1E2633');
+    expect(colors['dark-surface-border-strong']).toBe('#2B374A');
 
-    expect(colors['dark-ink-primary']).toBe('#F1F5F9');
-    expect(colors['dark-ink-secondary']).toBe('#CBD5E1');
+    expect(colors['dark-ink-primary']).toBe('#F8FAFC');
+    expect(colors['dark-ink-secondary']).toBe('#94A3B8');
     expect(colors['dark-ink-muted']).toBe('#64748B');
     expect(colors['dark-ink-disabled']).toBe('#334155');
   });
 
   it('should define status badge tokens and dual wire transfer segregation', () => {
     const colors = theme?.colors as Record<string, any>;
-    expect(colors.status.verified).toBe('#059669');
+    expect(colors.status.verified).toBe('#D97706');
     expect(colors.status.pending).toBe('#D97706');
     expect(colors.status.danger).toBe('#DC2626');
     expect(colors.status.info).toBe('#2563EB');
     expect(colors.status.neutral).toBe('#64748B');
 
-    expect(colors['deal-platform-fee']).toBe('#1B4332');
-    expect(colors['deal-seller-price']).toBe('#0F172A');
+    expect(colors['deal-platform-fee']).toBe('#0F172A');
+    expect(colors['deal-seller-price']).toBe('#D97706');
   });
 
   it('should define radii matching DESIGN.md scale', () => {

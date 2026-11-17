@@ -31,7 +31,7 @@ export function ListingStatusBadge({ status, className = '' }: ListingStatusBadg
     case ListingStatus.ARCHIVED:
       return (
         <span
-          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold ${className}`}
+          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 text-xs font-bold ${className}`}
           data-testid="status-badge-archived"
         >
           <Archive className="w-3.5 h-3.5" />

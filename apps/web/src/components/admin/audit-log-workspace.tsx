@@ -157,7 +157,7 @@ export function AuditLogWorkspace({ initialData = null }: AuditLogWorkspaceProps
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border shadow-xs">
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-[#1B4332]/10 dark:bg-emerald-950/40 text-[#1B4332] dark:text-emerald-400 flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-accent/10 text-accent flex items-center justify-center shrink-0">
             <ScrollText className="w-6 h-6" />
           </div>
           <div>
@@ -369,7 +369,7 @@ export function AuditLogWorkspace({ initialData = null }: AuditLogWorkspaceProps
                             <span className="font-semibold text-ink-primary dark:text-dark-ink-primary">
                               {log.actorName}
                             </span>
-                            <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                            <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-surface-sunken dark:bg-dark-surface-sunken text-ink-secondary dark:text-dark-ink-secondary border border-surface-border dark:border-dark-surface-border">
                               {log.actorType}
                             </span>
                           </div>

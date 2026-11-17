@@ -289,10 +289,10 @@ export function OperationalQueuesWorkspace({
   return (
     <div dir="rtl" className="space-y-6" data-testid="operational-queues-workspace">
       {/* Executive Header */}
-      <div className="rounded-2xl bg-[#1B4332] p-6 text-white shadow-md">
+      <div className="rounded-2xl bg-primary p-6 text-white shadow-md">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-[#D8F3DC]">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-accent-light border border-white/10">
               <Layers className="h-3.5 w-3.5" />
               <span>مركز التحكم في طوابير المهام والأقفال التشغيلية • AD-10 &amp; FR-62</span>
             </div>
@@ -309,7 +309,7 @@ export function OperationalQueuesWorkspace({
               type="button"
               onClick={() => fetchHubData()}
               disabled={isLoading}
-              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-[#1B4332] shadow-sm transition-colors hover:bg-[#D8F3DC] disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15 px-4 py-2.5 text-xs font-bold shadow-sm transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               <span>تحديث حالة الأقفال</span>
@@ -331,8 +331,8 @@ export function OperationalQueuesWorkspace({
               data-testid={`queue-card-${meta.slug}`}
               className={`rounded-2xl border p-4 transition-all ${
                 isSelectedQueue
-                  ? 'border-[#1B4332] bg-[#1B4332]/5 shadow-sm'
-                  : 'border-surface-border bg-surface hover:border-[#1B4332]/40'
+                  ? 'border-accent bg-accent/5 dark:bg-accent/10 shadow-sm'
+                  : 'border-surface-border dark:border-dark-surface-border bg-surface-base dark:bg-dark-surface-base hover:border-accent/40'
               }`}
             >
               <div className="flex items-start justify-between gap-2">
@@ -344,37 +344,37 @@ export function OperationalQueuesWorkspace({
                         prev === queueType ? 'ALL' : queueType,
                       )
                     }
-                    className="text-right text-sm font-bold text-ink-primary hover:text-[#1B4332]"
+                    className="text-right text-sm font-bold text-ink-primary dark:text-dark-ink-primary hover:text-accent"
                   >
                     {meta.labelAr}
                   </button>
-                  <p className="text-[11px] font-mono text-ink-secondary">
+                  <p className="text-[11px] font-mono text-ink-secondary dark:text-dark-ink-secondary">
                     {meta.reviewPermission}
                   </p>
                 </div>
-                <span className="rounded-full bg-[#1B4332]/10 px-2.5 py-0.5 text-xs font-bold text-[#1B4332]">
+                <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-bold text-accent-dark dark:text-accent">
                   {counts.totalOpen}
                 </span>
               </div>
 
               <div className="mt-3 grid grid-cols-3 gap-1.5 text-center text-[11px]">
-                <div className="rounded-lg bg-surface-sunken px-2 py-1">
-                  <span className="block font-bold text-ink-primary">
+                <div className="rounded-lg bg-surface-sunken dark:bg-dark-surface-raised px-2 py-1">
+                  <span className="block font-bold text-ink-primary dark:text-dark-ink-primary">
                     {counts.unlocked}
                   </span>
-                  <span className="text-ink-secondary">متاحة</span>
+                  <span className="text-ink-secondary dark:text-dark-ink-secondary">متاحة</span>
                 </div>
-                <div className="rounded-lg bg-emerald-50 px-2 py-1 text-emerald-900">
+                <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 px-2 py-1 text-emerald-800 dark:text-emerald-300">
                   <span className="block font-bold">{counts.lockedByMe}</span>
                   <span>مهامي</span>
                 </div>
-                <div className="rounded-lg bg-amber-50 px-2 py-1 text-amber-900">
+                <div className="rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40 px-2 py-1 text-amber-800 dark:text-amber-300">
                   <span className="block font-bold">{counts.lockedByOther}</span>
                   <span>مشرف آخر</span>
                 </div>
               </div>
 
-              <div className="mt-3 flex items-center justify-between border-t border-surface-border pt-2.5 text-xs">
+              <div className="mt-3 flex items-center justify-between border-t border-surface-border dark:border-dark-surface-border pt-2.5 text-xs">
                 <button
                   type="button"
                   onClick={() =>
@@ -382,13 +382,13 @@ export function OperationalQueuesWorkspace({
                       prev === queueType ? 'ALL' : queueType,
                     )
                   }
-                  className="font-semibold text-[#1B4332] hover:underline"
+                  className="font-semibold text-accent hover:underline"
                 >
                   {isSelectedQueue ? 'عرض كل الطوابير' : 'تصفية هذا الطابور'}
                 </button>
                 <Link
                   href={meta.adminWorkspaceHref}
-                  className="inline-flex items-center gap-1 font-semibold text-ink-secondary hover:text-[#1B4332]"
+                  className="inline-flex items-center gap-1 font-semibold text-ink-secondary dark:text-dark-ink-secondary hover:text-accent"
                 >
                   <span>مساحة الطابور</span>
                   <ExternalLink className="h-3 w-3" />
@@ -403,13 +403,13 @@ export function OperationalQueuesWorkspace({
       {selectedItem && (
         <section className="space-y-2">
           <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-bold text-ink-secondary">
+            <span className="text-xs font-bold text-ink-secondary dark:text-dark-ink-secondary">
               المهمة المحددة للمعاينة والتحكم في القفل: {selectedItem.titleAr} (
               {selectedItem.referenceCode ?? selectedItem.referenceNumber})
             </span>
             <Link
               href={selectedItem.workspaceHref}
-              className="inline-flex items-center gap-1 text-xs font-bold text-[#1B4332] hover:underline"
+              className="inline-flex items-center gap-1 text-xs font-bold text-accent hover:underline"
             >
               <span>الانتقال إلى مساحة المراجعة الكاملة</span>
               <ExternalLink className="h-3.5 w-3.5" />
@@ -437,9 +437,9 @@ export function OperationalQueuesWorkspace({
       )}
 
       {/* Filter Bar */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-surface-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-2xl border border-surface-border dark:border-dark-surface-border bg-surface-base dark:bg-dark-surface-base p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-ink-secondary">
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-ink-secondary dark:text-dark-ink-secondary">
             <Filter className="h-3.5 w-3.5" />
             <span>حالة القفل:</span>
           </span>
@@ -450,8 +450,8 @@ export function OperationalQueuesWorkspace({
               onClick={() => setLockStateFilter(tab.id)}
               className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-colors ${
                 lockStateFilter === tab.id
-                  ? 'bg-[#1B4332] text-white'
-                  : 'bg-surface-sunken text-ink-secondary hover:text-ink-primary'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'bg-surface-sunken dark:bg-dark-surface-raised text-ink-secondary dark:text-dark-ink-secondary hover:text-ink-primary dark:hover:text-dark-ink-primary'
               }`}
             >
               {tab.labelAr}
@@ -460,7 +460,7 @@ export function OperationalQueuesWorkspace({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <label htmlFor="queue-type-select" className="text-xs font-bold text-ink-secondary">
+          <label htmlFor="queue-type-select" className="text-xs font-bold text-ink-secondary dark:text-dark-ink-secondary">
             الطابور التشغيلي:
           </label>
           <select
@@ -469,7 +469,7 @@ export function OperationalQueuesWorkspace({
             onChange={(e) =>
               setQueueFilter(e.target.value as OperationalQueueType | 'ALL')
             }
-            className="rounded-xl border border-surface-border bg-surface px-3 py-1.5 text-xs font-bold text-ink-primary"
+            className="rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface-base dark:bg-dark-surface-raised px-3 py-1.5 text-xs font-bold text-ink-primary dark:text-dark-ink-primary focus:outline-none"
           >
             <option value="ALL">جميع الطوابير (8)</option>
             {OPERATIONAL_QUEUE_TYPES.map((q) => (
@@ -485,25 +485,25 @@ export function OperationalQueuesWorkspace({
       {forceUnlockTarget && canForceUnlock && (
         <form
           onSubmit={handleSubmitInlineForceUnlock}
-          className="rounded-2xl border-2 border-red-300 bg-red-50 p-4 space-y-3"
+          className="rounded-2xl border-2 border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-4 space-y-3"
           data-testid="table-force-unlock-modal"
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-bold text-red-900">
+            <div className="flex items-center gap-2 text-sm font-bold text-red-900 dark:text-red-200">
               <ShieldAlert className="h-4 w-4" />
               <span>
                 فك القفل قسرياً للمهمة: {forceUnlockTarget.titleAr} (
                 {forceUnlockTarget.referenceCode ?? forceUnlockTarget.referenceNumber})
               </span>
             </div>
-            <span className="text-xs font-semibold text-red-800">
+            <span className="text-xs font-semibold text-red-800 dark:text-red-300">
               المشرف الحالي: {forceUnlockTarget.lockInfo.lockedByAdminName || 'مشرف آخر'}
             </span>
           </div>
           <div className="space-y-1">
             <label
               htmlFor="table-force-unlock-reason"
-              className="block text-xs font-bold text-red-950"
+              className="block text-xs font-bold text-red-950 dark:text-red-200"
             >
               سبب فك القفل القسري (إلزامي لسجل التدقيق AuditLog — 5 أحرف على الأقل)
             </label>
@@ -512,11 +512,11 @@ export function OperationalQueuesWorkspace({
               rows={2}
               value={forceUnlockReason}
               onChange={(e) => setForceUnlockReason(e.target.value)}
-              className="w-full rounded-xl border border-red-300 bg-white px-3 py-2 text-xs text-ink-primary"
+              className="w-full rounded-xl border border-red-300 dark:border-red-800 bg-surface-base dark:bg-dark-surface-raised px-3 py-2 text-xs text-ink-primary dark:text-dark-ink-primary focus:outline-none"
               placeholder="اكتب مبرر كسر القفل الإداري..."
             />
             {forceUnlockError && (
-              <p className="text-xs font-bold text-red-700">{forceUnlockError}</p>
+              <p className="text-xs font-bold text-red-700 dark:text-red-400">{forceUnlockError}</p>
             )}
           </div>
           <div className="flex justify-end gap-2">
@@ -527,7 +527,7 @@ export function OperationalQueuesWorkspace({
                 setForceUnlockReason('');
                 setForceUnlockError(null);
               }}
-              className="rounded-xl border border-red-300 bg-white px-3 py-1.5 text-xs font-semibold text-ink-secondary"
+              className="rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface-base dark:bg-dark-surface-raised px-3 py-1.5 text-xs font-semibold text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-sunken"
             >
               إلغاء
             </button>
@@ -543,22 +543,22 @@ export function OperationalQueuesWorkspace({
       )}
 
       {/* Unified Queue Tasks List */}
-      <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface">
-        <div className="border-b border-surface-border px-6 py-4 flex items-center justify-between">
-          <h2 className="text-base font-bold text-ink-primary">
+      <div className="overflow-hidden rounded-2xl border border-surface-border dark:border-dark-surface-border bg-surface-base dark:bg-dark-surface-base">
+        <div className="border-b border-surface-border dark:border-dark-surface-border px-6 py-4 flex items-center justify-between">
+          <h2 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
             قائمة المهام التشغيلية النشطة ({filteredItems.length})
           </h2>
-          <span className="text-xs text-ink-secondary">
+          <span className="text-xs text-ink-secondary dark:text-dark-ink-secondary">
             مدة الحجز القياسية: 15 دقيقة • نبضة التجديد: 5 دقائق
           </span>
         </div>
 
         {filteredItems.length === 0 ? (
-          <div className="p-8 text-center text-xs text-ink-secondary">
+          <div className="p-8 text-center text-xs text-ink-secondary dark:text-dark-ink-secondary">
             لا توجد مهام مطابقة لمعايير التصفية الحالية.
           </div>
         ) : (
-          <div className="divide-y divide-surface-border">
+          <div className="divide-y divide-surface-border dark:divide-dark-surface-border">
             {filteredItems.map((item) => {
               const itemQueue = (item.queue ?? item.queueType) as OperationalQueueType;
               const meta = OPERATIONAL_QUEUE_METADATA[itemQueue];
@@ -576,22 +576,22 @@ export function OperationalQueuesWorkspace({
                   onClick={() => setSelectedItemId(item.id)}
                   className={`flex flex-col gap-3 px-6 py-4 transition-colors lg:flex-row lg:items-center lg:justify-between cursor-pointer ${
                     selectedItem?.id === item.id
-                      ? 'bg-[#1B4332]/5'
-                      : 'hover:bg-surface-sunken/50'
+                      ? 'bg-accent/5 dark:bg-accent/10'
+                      : 'hover:bg-surface-sunken/50 dark:hover:bg-dark-surface-raised/50'
                   }`}
                 >
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-lg bg-[#1B4332]/10 px-2.5 py-0.5 text-xs font-bold text-[#1B4332]">
+                      <span className="rounded-lg bg-accent/15 px-2.5 py-0.5 text-xs font-bold text-accent-dark dark:text-accent">
                         {meta?.labelAr || item.queueLabelAr}
                       </span>
-                      <span className="font-mono text-xs font-bold text-ink-secondary">
+                      <span className="font-mono text-xs font-bold text-ink-secondary dark:text-dark-ink-secondary">
                         {item.referenceCode ?? item.referenceNumber}
                       </span>
-                      <span className="text-sm font-bold text-ink-primary">
+                      <span className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
                         {item.titleAr}
                       </span>
-                      <span className="rounded-full bg-surface-sunken px-2 py-0.5 font-mono text-[11px] text-ink-secondary">
+                      <span className="rounded-full bg-surface-sunken dark:bg-dark-surface-raised px-2 py-0.5 font-mono text-[11px] text-ink-secondary dark:text-dark-ink-secondary">
                         {item.status} • v{item.version ?? 1}
                       </span>
                     </div>
@@ -599,7 +599,7 @@ export function OperationalQueuesWorkspace({
                     {/* Lock Status Pill */}
                     <div className="flex flex-wrap items-center gap-2 text-xs">
                       {isMine && (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-0.5 font-bold text-emerald-900">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 px-3 py-0.5 font-bold text-emerald-900 dark:text-emerald-200">
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           <span>محجوزة باسمك</span>
                           <span dir="ltr" className="font-mono">
@@ -609,7 +609,7 @@ export function OperationalQueuesWorkspace({
                       )}
 
                       {isOther && (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-0.5 font-bold text-amber-950">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 px-3 py-0.5 font-bold text-amber-950 dark:text-amber-200">
                           <AlertTriangle className="h-3.5 w-3.5" />
                           <span>
                             {`محجوزة بواسطة: ${item.lockInfo.lockedByAdminName || 'مشرف آخر'} (وضع القراءة فقط)`}
@@ -621,7 +621,7 @@ export function OperationalQueuesWorkspace({
                       )}
 
                       {!isLocked && (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-sunken px-3 py-0.5 font-semibold text-ink-secondary">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-sunken dark:bg-dark-surface-raised px-3 py-0.5 font-semibold text-ink-secondary dark:text-dark-ink-secondary">
                           <Clock className="h-3.5 w-3.5" />
                           <span>متاحة للاستلام (غير محجوزة)</span>
                         </span>
@@ -639,7 +639,7 @@ export function OperationalQueuesWorkspace({
                         type="button"
                         disabled={isBusy}
                         onClick={() => handleQueueAction(item, 'claim')}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#1B4332] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#1B4332]/90 disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-white hover:bg-primary-hover disabled:opacity-50 transition-colors shadow-sm"
                       >
                         <Lock className="h-3.5 w-3.5" />
                         <span>استلام المهمة</span>
@@ -652,7 +652,7 @@ export function OperationalQueuesWorkspace({
                           type="button"
                           disabled={isBusy}
                           onClick={() => handleQueueAction(item, 'heartbeat')}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-400 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-900 hover:bg-emerald-100 disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-400 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-2 text-xs font-bold text-emerald-900 dark:text-emerald-200 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 disabled:opacity-50"
                         >
                           <RefreshCw className="h-3.5 w-3.5" />
                           <span>تجديد القفل</span>
@@ -661,7 +661,7 @@ export function OperationalQueuesWorkspace({
                           type="button"
                           disabled={isBusy}
                           onClick={() => handleQueueAction(item, 'release')}
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-800 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-900 disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-800 dark:bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-900 dark:hover:bg-emerald-600 disabled:opacity-50"
                         >
                           <Unlock className="h-3.5 w-3.5" />
                           <span>تحرير المهمة</span>
@@ -687,7 +687,7 @@ export function OperationalQueuesWorkspace({
 
                     <Link
                       href={item.workspaceHref}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-surface-border bg-surface px-3.5 py-2 text-xs font-bold text-ink-primary hover:bg-surface-sunken"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface-base dark:bg-dark-surface-raised px-3.5 py-2 text-xs font-bold text-ink-primary dark:text-dark-ink-primary hover:bg-surface-sunken dark:hover:bg-dark-surface-sunken"
                     >
                       <span>فتح مساحة المراجعة</span>
                       <ExternalLink className="h-3.5 w-3.5" />

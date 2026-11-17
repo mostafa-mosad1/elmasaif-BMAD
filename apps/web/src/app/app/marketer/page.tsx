@@ -411,10 +411,10 @@ export default function MarketerDashboardPage({
           </div>
         </div>
       ) : (
-        <div className="relative overflow-hidden rounded-2xl border border-[#C69C45]/40 bg-gradient-to-r from-[#C69C45]/15 via-[#C69C45]/5 to-transparent dark:from-[#C69C45]/20 dark:via-[#C69C45]/10 dark:to-transparent p-5 sm:p-6 shadow-sm">
+        <div className="relative overflow-hidden rounded-2xl border border-accent/40 bg-gradient-to-r from-accent/15 via-accent/5 to-transparent dark:from-accent/20 dark:via-accent/10 dark:to-transparent p-5 sm:p-6 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start sm:items-center gap-3.5">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#9A7328] text-white flex items-center justify-center shrink-0 shadow-md">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-accent-dark text-white flex items-center justify-center shrink-0 shadow-md">
                 <ShieldCheck className="w-6 h-6" />
               </div>
               <div className="space-y-1">
@@ -441,7 +441,7 @@ export default function MarketerDashboardPage({
               <Button
                 variant="outline"
                 size="sm"
-                className="border-[#C69C45]/60 hover:bg-[#C69C45]/10 text-ink-primary dark:text-dark-ink-primary text-xs font-semibold px-3.5 py-2 gap-1.5 rounded-xl shadow-xs"
+                className="border-accent/60 hover:bg-accent/10 text-ink-primary dark:text-dark-ink-primary text-xs font-semibold px-3.5 py-2 gap-1.5 rounded-xl shadow-xs"
               >
                 <span>تفاصيل الرخصة والامتثال</span>
                 <ChevronLeft className="w-3.5 h-3.5" />
@@ -846,7 +846,7 @@ export default function MarketerDashboardPage({
                 onClick={() => setActiveTab('archived')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
                   activeTab === 'archived'
-                    ? 'bg-slate-700 text-white shadow-xs'
+                    ? 'bg-primary text-white shadow-xs'
                     : 'text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-sunken'
                 }`}
               >
@@ -943,7 +943,7 @@ export default function MarketerDashboardPage({
                       </span>
                       <div
                         dir="ltr"
-                        className="font-mono font-extrabold text-base sm:text-lg text-[#1B4332] dark:text-emerald-400"
+                        className="font-mono font-extrabold text-base sm:text-lg text-primary dark:text-accent-light"
                       >
                         {`${Number(item.askPrice || 0).toLocaleString('en-US')} SAR`}
                       </div>
@@ -1031,7 +1031,7 @@ export default function MarketerDashboardPage({
                 )}
 
                 {item.status === ListingStatus.ARCHIVED && item.archiveReason && (
-                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-300 text-xs">
+                  <div className="p-3 rounded-xl bg-surface-sunken dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border text-ink-primary dark:text-dark-ink-primary text-xs">
                     <span className="font-bold">سبب الأرشفة: </span>
                     <span>{item.archiveReason}</span>
                   </div>

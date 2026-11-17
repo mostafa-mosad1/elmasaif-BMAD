@@ -214,7 +214,7 @@ export function FraudManagementWorkspace({ initialData = null }: FraudManagement
         return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200';
       case FraudStatus.DISMISSED:
       default:
-        return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300';
+        return 'bg-surface-sunken text-ink-secondary dark:bg-dark-surface-sunken dark:text-dark-ink-secondary border border-surface-border dark:border-dark-surface-border';
     }
   };
 
@@ -735,7 +735,7 @@ export function FraudManagementWorkspace({ initialData = null }: FraudManagement
                   <label
                     className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-colors ${
                       resolveStatus === FraudStatus.DISMISSED
-                        ? 'border-slate-500 bg-slate-50 dark:bg-slate-800/40 text-slate-900 dark:text-slate-300 font-semibold'
+                        ? 'border-accent bg-accent/10 dark:bg-accent/20 text-ink-primary dark:text-dark-ink-primary font-semibold'
                         : 'border-surface-border dark:border-dark-surface-border text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-sunken'
                     }`}
                   >
@@ -745,7 +745,7 @@ export function FraudManagementWorkspace({ initialData = null }: FraudManagement
                       value={FraudStatus.DISMISSED}
                       checked={resolveStatus === FraudStatus.DISMISSED}
                       onChange={() => setResolveStatus(FraudStatus.DISMISSED)}
-                      className="text-slate-600 focus:ring-slate-500"
+                      className="text-accent focus:ring-accent"
                     />
                     <span>حفظ لعدم الثبوت (DISMISSED)</span>
                   </label>

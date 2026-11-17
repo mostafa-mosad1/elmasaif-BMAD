@@ -55,9 +55,9 @@ describe('identity verification components', () => {
     );
 
     expect(verified).toContain('الهوية موثقة ومعتمدة');
-    expect(verified).toContain('bg-[#1B4332]/10');
+    expect(verified).toContain('bg-accent/10');
     expect(pending).toContain('قيد المراجعة والتدقيق');
-    expect(pending).toContain('bg-[#C69C45]/10');
+    expect(pending).toContain('bg-amber-500/10');
     expect(rejected).toContain('تم رفض وثيقة الهوية');
     expect(rejected).toContain('text-status-rejected');
   });

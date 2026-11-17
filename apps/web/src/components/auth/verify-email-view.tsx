@@ -42,8 +42,8 @@ export function VerifyEmailView({
         {state === 'success' && (
           <CardContent className="pt-8 pb-8 text-center space-y-5">
             <div className="flex justify-center">
-              <div className="h-16 w-16 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center">
-                <CheckCircle2 className="h-9 w-9 text-emerald-500" />
+              <div className="h-16 w-16 rounded-full bg-accent/10 dark:bg-accent/20 border border-accent/30 flex items-center justify-center">
+                <CheckCircle2 className="h-9 w-9 text-accent" />
               </div>
             </div>
             <div className="space-y-2">
@@ -55,7 +55,7 @@ export function VerifyEmailView({
               </p>
               {verifiedEmail && (
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted text-xs font-mono text-ink-primary">
-                  <MailCheck className="h-3.5 w-3.5 text-emerald-600" />
+                  <MailCheck className="h-3.5 w-3.5 text-accent" />
                   <span>{verifiedEmail}</span>
                 </div>
               )}

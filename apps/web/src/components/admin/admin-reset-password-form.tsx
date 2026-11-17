@@ -50,7 +50,7 @@ export function AdminResetPasswordForm({ token }: AdminResetPasswordFormProps) {
         </p>
         <Link
           href="/admin/login"
-          className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-[#1B4332] text-white text-sm font-bold hover:bg-[#143325] transition-colors"
+          className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary-hover transition-colors"
         >
           <span>العودة إلى بوابة دخول المشرفين</span>
           <ArrowLeft className="w-4 h-4" />
@@ -65,7 +65,7 @@ export function AdminResetPasswordForm({ token }: AdminResetPasswordFormProps) {
         dir="rtl"
         className="w-full max-w-md mx-auto bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border rounded-2xl shadow-lg p-6 text-center space-y-4"
       >
-        <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-[#1B4332] dark:text-emerald-300 flex items-center justify-center mx-auto">
+        <div className="w-12 h-12 rounded-full bg-accent/15 text-accent flex items-center justify-center mx-auto">
           <CheckCircle2 className="w-6 h-6" />
         </div>
         <h1 className="text-lg font-bold text-ink-primary dark:text-dark-ink-primary">
@@ -76,7 +76,7 @@ export function AdminResetPasswordForm({ token }: AdminResetPasswordFormProps) {
         </p>
         <Link
           href="/admin/login"
-          className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-[#1B4332] text-white text-sm font-bold hover:bg-[#143325] transition-colors"
+          className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary-hover transition-colors"
         >
           <span>الانتقال إلى تسجيل الدخول الإداري</span>
           <ArrowLeft className="w-4 h-4" />
@@ -119,13 +119,13 @@ export function AdminResetPasswordForm({ token }: AdminResetPasswordFormProps) {
       dir="rtl"
       className="w-full max-w-md mx-auto bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border rounded-2xl shadow-lg overflow-hidden"
     >
-      <div className="bg-[#1B4332] text-white px-6 py-5 border-b border-white/10">
+      <div className="bg-primary text-white px-6 py-5 border-b border-white/10">
         <div className="flex items-center gap-3 mb-1.5">
           <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
-            <KeyRound className="w-5 h-5 text-[#D8F3DC]" />
+            <KeyRound className="w-5 h-5 text-accent" />
           </div>
           <div>
-            <span className="inline-block text-[11px] font-semibold bg-white/15 text-[#D8F3DC] px-2 py-0.5 rounded-full">
+            <span className="inline-block text-[11px] font-semibold bg-white/10 text-accent-light px-2 py-0.5 rounded-full border border-white/10">
               FR-70 • رابط أحادي الاستخدام
             </span>
             <h1 className="text-lg font-bold">تعيين كلمة مرور إدارية جديدة</h1>
@@ -163,7 +163,7 @@ export function AdminResetPasswordForm({ token }: AdminResetPasswordFormProps) {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="••••••••••••"
-              className="w-full rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface dark:bg-dark-surface px-3.5 py-2.5 pe-10 text-sm text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
+              className="w-full rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface dark:bg-dark-surface px-3.5 py-2.5 pe-10 text-sm text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-accent"
             />
             <button
               type="button"
@@ -191,7 +191,7 @@ export function AdminResetPasswordForm({ token }: AdminResetPasswordFormProps) {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="••••••••••••"
-            className="w-full rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface dark:bg-dark-surface px-3.5 py-2.5 text-sm text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
+            className="w-full rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface dark:bg-dark-surface px-3.5 py-2.5 text-sm text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-accent"
           />
         </div>
 
@@ -239,7 +239,7 @@ export function AdminResetPasswordForm({ token }: AdminResetPasswordFormProps) {
         <button
           type="submit"
           disabled={!isFormValid || isSubmitting}
-          className="w-full py-3 px-4 rounded-xl bg-[#1B4332] hover:bg-[#143325] disabled:opacity-50 text-white font-bold text-sm shadow-sm transition-colors flex items-center justify-center gap-2"
+          className="w-full py-3 px-4 rounded-xl bg-primary hover:bg-primary-hover disabled:opacity-50 text-white font-bold text-sm shadow-sm transition-colors flex items-center justify-center gap-2"
         >
           <ShieldCheck className="w-4 h-4" />
           <span>

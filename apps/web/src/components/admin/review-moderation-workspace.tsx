@@ -65,7 +65,7 @@ function renderStarIcons(score: number) {
             className={`w-4 h-4 ${
               filled
                 ? 'text-[#D97706] fill-[#D97706]'
-                : 'text-slate-300 dark:text-slate-600'
+                : 'text-surface-borderStrong dark:text-dark-surface-border'
             }`}
           />
         );
@@ -261,9 +261,9 @@ export function ReviewModerationWorkspace({
   return (
     <div dir="rtl" className="space-y-6">
       {/* Sovereign Header Banner */}
-      <div className="rounded-2xl bg-[#1B4332] text-white p-6 shadow-md flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="rounded-2xl bg-primary text-white p-6 shadow-md flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/15 text-[#D8F3DC] px-3 py-1 rounded-full">
+          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/10 text-accent-light px-3 py-1 rounded-full border border-white/10">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>
               مساحة تدقيق التقييمات والسمعة • Reviews.Moderate (FR-19, FR-52, AD-6)
@@ -282,7 +282,7 @@ export function ReviewModerationWorkspace({
             type="button"
             onClick={fetchReviewsQueue}
             disabled={isLoading}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-[#1B4332] text-xs font-bold shadow-sm hover:bg-[#D8F3DC] transition-colors disabled:opacity-60"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-primary text-xs font-bold shadow-sm hover:bg-accent-light transition-colors disabled:opacity-60"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             <span>تحديث القائمة</span>
@@ -408,7 +408,7 @@ export function ReviewModerationWorkspace({
                   onClick={() => setVisibilityTab(tab.id)}
                   className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-colors ${
                     active
-                      ? 'bg-[#1B4332] text-white shadow-sm'
+                      ? 'bg-primary text-white shadow-sm'
                       : 'bg-surface-sunken dark:bg-dark-surface text-ink-secondary hover:text-ink-primary'
                   }`}
                 >
@@ -426,7 +426,7 @@ export function ReviewModerationWorkspace({
               onClick={() => setScoreFilter(null)}
               className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors ${
                 scoreFilter === null
-                  ? 'bg-[#D97706] text-white border-[#D97706]'
+                  ? 'bg-accent text-white border-accent'
                   : 'border-surface-border text-ink-secondary hover:bg-surface-sunken'
               }`}
             >
@@ -441,7 +441,7 @@ export function ReviewModerationWorkspace({
                 }
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors ${
                   scoreFilter === starValue
-                    ? 'bg-[#D97706] text-white border-[#D97706]'
+                    ? 'bg-accent text-white border-accent'
                     : 'border-surface-border text-ink-secondary hover:bg-surface-sunken'
                 }`}
               >
@@ -459,7 +459,7 @@ export function ReviewModerationWorkspace({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ابحث بنص التعليق، رقم الصفقة (ELM-...)، اسم الوسيط أو المنشأة العقارية، أو اسم المشتري..."
-            className="w-full ps-10 pe-4 py-2.5 rounded-xl bg-surface-sunken dark:bg-dark-surface border border-surface-border dark:border-dark-surface-border text-xs text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
+            className="w-full ps-10 pe-4 py-2.5 rounded-xl bg-surface-sunken dark:bg-dark-surface border border-surface-border dark:border-dark-surface-border text-xs text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-accent"
           />
         </div>
       </div>
@@ -489,7 +489,7 @@ export function ReviewModerationWorkspace({
                     item.isHidden
                       ? 'border-red-300 dark:border-red-900/60 bg-red-50/20 dark:bg-red-950/10'
                       : isSelected
-                      ? 'border-[#1B4332] ring-1 ring-[#1B4332]'
+                      ? 'border-accent ring-1 ring-accent'
                       : 'border-surface-border dark:border-dark-surface-border'
                   }`}
                 >
@@ -541,7 +541,7 @@ export function ReviewModerationWorkspace({
                       </div>
                       <div className="font-bold text-ink-primary dark:text-dark-ink-primary flex items-center gap-2">
                         <span>{item.rater.fullName}</span>
-                        <span className="px-2 py-0.5 rounded bg-slate-200/70 dark:bg-slate-800 text-[11px] font-mono text-ink-secondary">
+                        <span className="px-2 py-0.5 rounded bg-surface-sunken dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border text-[11px] font-mono text-ink-secondary dark:text-dark-ink-secondary">
                           الاسم العام: {item.rater.maskedName}
                         </span>
                       </div>
@@ -569,7 +569,7 @@ export function ReviewModerationWorkspace({
                         {item.targetBroker.profileId && (
                           <Link
                             href={`/brokers/${item.targetBroker.profileId}`}
-                            className="inline-flex items-center gap-1 text-[11px] text-[#1B4332] dark:text-emerald-400 hover:underline"
+                            className="inline-flex items-center gap-1 text-[11px] text-accent hover:underline"
                           >
                             <span>ملف الوسيط العام</span>
                             <ExternalLink className="w-3 h-3" />
@@ -660,7 +660,7 @@ export function ReviewModerationWorkspace({
         <aside className="rounded-2xl bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border p-5 space-y-4 h-fit sticky top-24">
           <div className="flex items-center justify-between border-b border-surface-border dark:border-dark-surface-border pb-3">
             <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-[#1B4332]" />
+              <FileText className="w-4 h-4 text-accent" />
               <h2 className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
                 سجل التدقيق غير القابل للتعديل (AuditLog)
               </h2>
@@ -755,7 +755,7 @@ export function ReviewModerationWorkspace({
           <div className="w-full max-w-lg rounded-2xl bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border shadow-2xl overflow-hidden">
             <div
               className={`px-6 py-4 flex items-center justify-between text-white ${
-                modalMode === 'HIDE' ? 'bg-red-800' : 'bg-[#1B4332]'
+                modalMode === 'HIDE' ? 'bg-red-800' : 'bg-primary'
               }`}
             >
               <div className="flex items-center gap-2 font-bold text-sm">
@@ -808,7 +808,7 @@ export function ReviewModerationWorkspace({
                       key={preset}
                       type="button"
                       onClick={() => setModerationReason(preset)}
-                      className="px-2.5 py-1 rounded-lg bg-surface-sunken dark:bg-dark-surface hover:bg-[#1B4332]/10 border border-surface-border text-[11px] text-ink-secondary hover:text-ink-primary transition-colors"
+                      className="px-2.5 py-1 rounded-lg bg-surface-sunken dark:bg-dark-surface hover:bg-accent/10 border border-surface-border text-[11px] text-ink-secondary hover:text-ink-primary transition-colors"
                     >
                       {preset}
                     </button>
@@ -829,7 +829,7 @@ export function ReviewModerationWorkspace({
                   value={moderationReason}
                   onChange={(e) => setModerationReason(e.target.value)}
                   placeholder="أدخل مبررات الحجب أو الاستعادة بوضوح (3 إلى 500 حرف)..."
-                  className="w-full p-3 rounded-xl bg-surface-sunken dark:bg-dark-surface border border-surface-border dark:border-dark-surface-border text-xs text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
+                  className="w-full p-3 rounded-xl bg-surface-sunken dark:bg-dark-surface border border-surface-border dark:border-dark-surface-border text-xs text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-accent"
                 />
                 <div className="flex items-center justify-between text-[11px] text-ink-muted">
                   <span>
