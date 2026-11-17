@@ -16,6 +16,7 @@ import {
   MAX_LISTING_FILE_SIZE_BYTES,
 } from '@elmasaif/shared';
 import { apiClient } from '../../../../lib/api-client';
+import { compressImageIfNeeded } from '../../../../lib/image-compression';
 import { ListingWizardFormState, WizardDocumentItem } from '../types';
 
 interface DocumentsStepProps {
@@ -54,11 +55,17 @@ export function DocumentsStep({ formData, updateForm, errors, userRole }: Docume
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
-    const file = files[0];
+    let file = files[0];
     setUploadError(null);
 
-    if (file.size > MAX_LISTING_FILE_SIZE_BYTES) {
-      setUploadError(`الملف '${file.name}' يتجاوز الحد الأقصى المسموح (10 ميجابايت)`);
+    try {
+      file = await compressImageIfNeeded(file);
+    } catch {
+      // keep original
+    }
+
+    if (file.size > 4.2 * 1024 * 1024) {
+      setUploadError(`الملف '${file.name}' يتجاوز الحد الأقصى المسموح (4 ميجابايت)`);
       return;
     }
 

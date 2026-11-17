@@ -4,6 +4,7 @@ import React, { FormEvent, useRef, useState } from 'react';
 import { FileCheck, UploadCloud } from 'lucide-react';
 import { IdentityDocumentType, IDENTITY_FILE_TOO_LARGE, IDENTITY_INVALID_DOCUMENT, IDENTITY_UNSUPPORTED_TYPE } from '@elmasaif/shared';
 import { getApiBaseUrl } from '../../lib/api-client';
+import { compressImageIfNeeded } from '../../lib/image-compression';
 import { Button } from '../ui/button';
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -74,15 +75,28 @@ export function IdentityUploadForm({ onUploaded, maskedIdNumber }: IdentityUploa
     setSelectedFile(file);
   };
 
-  const submitUpload = (event: FormEvent<HTMLFormElement>) => {
+  const submitUpload = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selectedFile) {
       setErrorMessage('يرجى اختيار وثيقة الهوية أولاً.');
       return;
     }
 
+    // Automatically compress image if needed to remain within Vercel's 4.5MB payload limit
+    let fileToUpload = selectedFile;
+    try {
+      fileToUpload = await compressImageIfNeeded(selectedFile);
+    } catch {
+      fileToUpload = selectedFile;
+    }
+
+    if (fileToUpload.size > 4.2 * 1024 * 1024) {
+      setErrorMessage('حجم الملف يتجاوز الحد الأقصى المسموح به (4 ميجابايت). يرجى اختيار ملف أصغر أو ضغط ملف الـ PDF.');
+      return;
+    }
+
     const formData = new FormData();
-    formData.append('file', selectedFile);
+    formData.append('file', fileToUpload);
     formData.append('documentType', documentType);
 
     const request = new XMLHttpRequest();
@@ -103,6 +117,13 @@ export function IdentityUploadForm({ onUploaded, maskedIdNumber }: IdentityUploa
     };
 
     request.onload = () => {
+      if (request.status === 413) {
+        setErrorMessage('حجم الملف كبير جداً ويتجاوز الحد الأقصى المسموح به على الخادم (4 ميجابايت).');
+        setIsUploading(false);
+        setIsScanning(false);
+        return;
+      }
+
       let payload: { message?: string; data?: unknown } | null = null;
       try {
         payload = JSON.parse(request.responseText);

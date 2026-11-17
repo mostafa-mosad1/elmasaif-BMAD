@@ -16,6 +16,7 @@ import {
   MAX_LISTING_FILE_SIZE_BYTES,
 } from '@elmasaif/shared';
 import { apiClient } from '../../../../lib/api-client';
+import { compressImageIfNeeded } from '../../../../lib/image-compression';
 import { ListingWizardFormState, WizardPhotoItem } from '../types';
 
 interface MediaStepProps {
@@ -47,10 +48,18 @@ export function MediaStep({ formData, updateForm, errors }: MediaStepProps) {
     try {
       const uploadedItems: WizardPhotoItem[] = [];
 
-      for (const file of filesToUpload) {
+      for (const originalFile of filesToUpload) {
+        // Automatically compress image if needed to remain within Vercel 4.5MB limit
+        let file = originalFile;
+        try {
+          file = await compressImageIfNeeded(originalFile);
+        } catch {
+          file = originalFile;
+        }
+
         // Validate size
-        if (file.size > MAX_LISTING_FILE_SIZE_BYTES) {
-          throw new Error(`الملف '${file.name}' يتجاوز الحد الأقصى المسموح (10 ميجابايت)`);
+        if (file.size > 4.2 * 1024 * 1024) {
+          throw new Error(`الملف '${file.name}' يتجاوز الحد الأقصى المسموح (4 ميجابايت)`);
         }
 
         // Validate type
