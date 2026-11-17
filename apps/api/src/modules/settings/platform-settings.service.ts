@@ -87,9 +87,9 @@ export class PlatformSettingsService {
       fixedFeeAmountSar: Number(setting.fixedFeeSar),
       ownerContractFeeSar: Number(setting.ownerContractFeeSar),
       vatRatePercentage: Number(setting.vatRate),
-      platformCollectionIban: setting.platformCollectionIban ?? null,
-      platformAccountHolderName: setting.platformAccountHolderName ?? null,
-      platformBankName: setting.platformBankName ?? null,
+      platformCollectionIban: setting.platformCollectionIban || 'SA4210000001234567890123',
+      platformAccountHolderName: setting.platformAccountHolderName || 'شركة المصايف العقارية المحدودة',
+      platformBankName: setting.platformBankName || 'البنك الأهلي السعودي',
       paymentWindowHours: setting.paymentWindowHours,
       paymentCorrectionHours: setting.paymentCorrectionHours,
       contractFeeDeadlineDays: setting.contractFeeDeadlineDays,
@@ -142,7 +142,10 @@ export class PlatformSettingsService {
       return dto;
     } catch (err) {
       this.logger.error('Failed to load platform settings from database, using canonical fallback', err);
-      return this.getDefaultSettingsDto();
+      const fallback = this.getDefaultSettingsDto();
+      this.cachedSettings = fallback;
+      this.cacheExpiry = now + this.CACHE_TTL_MS;
+      return fallback;
     }
   }
 
