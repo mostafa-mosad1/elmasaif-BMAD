@@ -95,6 +95,7 @@ export class QuarantineService {
         fileSize,
         scanStatus: ScanStatus.PENDING,
         scannedAt: null,
+        data: buffer || null,
       },
     });
 
