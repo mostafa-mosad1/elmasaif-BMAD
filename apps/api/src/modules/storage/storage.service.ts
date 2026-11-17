@@ -9,6 +9,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import {
   S3Client,
@@ -98,6 +99,19 @@ export class StorageService {
     if (process.cwd().includes('apps' + path.sep + 'api') || process.cwd().endsWith('apps/api') || process.cwd().endsWith('apps\\api')) {
       baseStorage = path.resolve(process.cwd(), '..', '..', '.storage');
     }
+
+    // In serverless environments (Vercel, AWS Lambda), process.cwd() is read-only (/var/task).
+    // Fall back to os.tmpdir() to guarantee a writable partition for file operations.
+    if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+      baseStorage = path.resolve(os.tmpdir(), '.storage');
+    } else {
+      try {
+        fs.mkdirSync(baseStorage, { recursive: true });
+      } catch {
+        baseStorage = path.resolve(os.tmpdir(), '.storage');
+      }
+    }
+
     this.localBasePath = path.resolve(baseStorage, this.bucketName);
     try {
       if (!fs.existsSync(this.localBasePath)) {
@@ -129,6 +143,7 @@ export class StorageService {
       path.resolve(process.cwd(), '.storage', this.bucketName, trimmed),
       path.resolve(process.cwd(), '..', '..', '.storage', this.bucketName, trimmed),
       path.resolve(process.cwd(), 'apps', 'api', '.storage', this.bucketName, trimmed),
+      path.resolve(os.tmpdir(), '.storage', this.bucketName, trimmed),
     ];
 
     for (const p of candidatePaths) {
@@ -320,6 +335,20 @@ export class StorageService {
       return true;
     }
 
+    if (this.prisma) {
+      try {
+        const found = await this.prisma.fileObject.findFirst({
+          where: { key: key.trim(), data: { not: null } },
+          select: { id: true },
+        });
+        if (found) {
+          return true;
+        }
+      } catch {
+        // ignore db query error
+      }
+    }
+
     if (this.storageDriver === 'local') {
       return false;
     }
@@ -339,6 +368,9 @@ export class StorageService {
       if (fs.existsSync(localPath)) {
         return true;
       }
+      if (this.isNetworkOrDevError(error)) {
+        return false;
+      }
       this.logger.error(`Error checking object existence for key '${key}': ${error.message}`);
       throw error;
     }
@@ -356,6 +388,17 @@ export class StorageService {
     if (fs.existsSync(localPath)) {
       try {
         fs.unlinkSync(localPath);
+      } catch {
+        // ignore
+      }
+    }
+
+    if (this.prisma) {
+      try {
+        await this.prisma.fileObject.updateMany({
+          where: { key: key.trim() },
+          data: { data: null },
+        });
       } catch {
         // ignore
       }
@@ -388,7 +431,7 @@ export class StorageService {
       throw new BadRequestException('Source and destination keys are required');
     }
 
-    const sourceLocal = path.join(this.localBasePath, sourceKey.trim());
+    const sourceLocal = this.resolveLocalPath(sourceKey.trim());
     const destLocal = path.join(this.localBasePath, destinationKey.trim());
 
     if (fs.existsSync(sourceLocal)) {
@@ -397,6 +440,35 @@ export class StorageService {
         fs.copyFileSync(sourceLocal, destLocal);
       } catch (err: any) {
         this.logger.warn(`Local copy failed from '${sourceLocal}' to '${destLocal}': ${err.message}`);
+      }
+    }
+
+    if (this.prisma) {
+      try {
+        const sourceFo = await this.prisma.fileObject.findUnique({
+          where: { key: sourceKey.trim() },
+        });
+        if (sourceFo?.data) {
+          await this.prisma.fileObject.upsert({
+            where: { key: destinationKey.trim() },
+            create: {
+              bucket: this.bucketName,
+              key: destinationKey.trim(),
+              mimeType: sourceFo.mimeType,
+              fileSize: sourceFo.fileSize,
+              data: sourceFo.data,
+              scanStatus: ScanStatus.CLEAN,
+              scannedAt: new Date(),
+            },
+            update: {
+              data: sourceFo.data,
+              scanStatus: ScanStatus.CLEAN,
+              scannedAt: new Date(),
+            },
+          });
+        }
+      } catch (dbErr: any) {
+        this.logger.warn(`Failed copying file data in database: ${dbErr.message}`);
       }
     }
 
@@ -414,6 +486,9 @@ export class StorageService {
       );
     } catch (err: any) {
       if (fs.existsSync(destLocal)) {
+        return;
+      }
+      if (this.isNetworkOrDevError(err)) {
         return;
       }
       throw err;
@@ -474,6 +549,26 @@ export class StorageService {
       return fs.readFileSync(localPath);
     }
 
+    if (this.prisma) {
+      try {
+        const fo = await this.prisma.fileObject.findUnique({
+          where: { key: key.trim() },
+          select: { data: true },
+        });
+        if (fo?.data) {
+          try {
+            fs.mkdirSync(path.dirname(localPath), { recursive: true });
+            fs.writeFileSync(localPath, fo.data);
+          } catch {
+            // ignore cache write error
+          }
+          return fo.data;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     if (this.storageDriver === 'local') {
       throw new NotFoundException(`File not found in local storage: ${key}`);
     }
@@ -507,14 +602,38 @@ export class StorageService {
       throw new BadRequestException('Object key is required');
     }
 
-    if (this.storageDriver === 'local') {
-      const fullPath = path.join(this.localBasePath, key.trim());
+    const fullPath = path.join(this.localBasePath, key.trim());
+    try {
+      fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+      fs.writeFileSync(fullPath, buffer);
+    } catch (err: any) {
+      this.logger.warn(`Failed writing to local storage fallback: ${err.message}`);
+    }
+
+    if (this.prisma) {
       try {
-        fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-        fs.writeFileSync(fullPath, buffer);
-      } catch (err: any) {
-        this.logger.warn(`Failed writing to local storage fallback: ${err.message}`);
+        await this.prisma.fileObject.upsert({
+          where: { key: key.trim() },
+          create: {
+            bucket: this.bucketName,
+            key: key.trim(),
+            mimeType: contentType,
+            fileSize: buffer.length,
+            data: buffer,
+            scanStatus: ScanStatus.PENDING,
+          },
+          update: {
+            data: buffer,
+            fileSize: buffer.length,
+            mimeType: contentType,
+          },
+        });
+      } catch (dbErr: any) {
+        this.logger.warn(`Failed persisting file data into database: ${dbErr.message}`);
       }
+    }
+
+    if (this.storageDriver === 'local') {
       return;
     }
 
@@ -529,13 +648,6 @@ export class StorageService {
       await this.s3Client.send(command);
     } catch (err: any) {
       if (this.isNetworkOrDevError(err)) {
-        const fullPath = path.join(this.localBasePath, key.trim());
-        try {
-          fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-          fs.writeFileSync(fullPath, buffer);
-        } catch (fsErr: any) {
-          this.logger.warn(`Failed writing to local storage fallback: ${fsErr.message}`);
-        }
         this.logger.warn(
           `S3 putObject unreachable (${err.message}). Stored file '${key}' in local storage fallback.`,
         );
