@@ -11,6 +11,19 @@ export function getApiBaseUrl(): string {
   return `${base.replace(/\/$/, '')}/api/v1`;
 }
 
+/**
+ * Normalizes any storage or download URLs returned by the backend.
+ * If running in a browser, replaces any legacy localhost:4000/api/v1 with /api/v1
+ * so it cleanly proxies through the frontend same-origin rewrite.
+ */
+export function normalizeStorageUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  if (url.includes('localhost:4000/api/v1')) {
+    return url.replace(/http:\/\/localhost:4000\/api\/v1/, '/api/v1');
+  }
+  return url;
+}
+
 export interface StandardErrorEnvelope {
   code?: string;
   message?: string;

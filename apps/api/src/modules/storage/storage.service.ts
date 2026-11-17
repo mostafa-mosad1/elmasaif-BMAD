@@ -136,6 +136,23 @@ export class StorageService {
     );
   }
 
+  public getApiBaseUrl(): string {
+    const configured = this.configService.get<string>('API_URL');
+    if (configured && !configured.includes('localhost')) {
+      return configured.replace(/\/$/, '');
+    }
+    if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+      return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+    }
+    if (process.env.VERCEL_URL) {
+      return `https://${process.env.VERCEL_URL}`;
+    }
+    if (process.env.VERCEL) {
+      return 'https://elmasaif-api.vercel.app';
+    }
+    return configured || 'http://localhost:4000';
+  }
+
   public resolveLocalPath(key: string): string {
     const trimmed = key.trim();
     const candidatePaths = [
@@ -187,7 +204,7 @@ export class StorageService {
 
     const localPath = this.resolveLocalPath(key);
     if (this.storageDriver === 'local' || fs.existsSync(localPath)) {
-      const apiBase = this.configService.get<string>('API_URL') || 'http://localhost:4000';
+      const apiBase = this.getApiBaseUrl();
       return `${apiBase}/api/v1/storage/raw?key=${encodeURIComponent(key.trim())}`;
     }
 
@@ -200,7 +217,7 @@ export class StorageService {
       return await getSignedUrl(this.s3Client, command, { expiresIn: clampedExpiry });
     } catch (err: any) {
       if (this.isNetworkOrDevError(err)) {
-        const apiBase = this.configService.get<string>('API_URL') || 'http://localhost:4000';
+        const apiBase = this.getApiBaseUrl();
         return `${apiBase}/api/v1/storage/raw?key=${encodeURIComponent(key.trim())}`;
       }
       throw err;
@@ -229,7 +246,7 @@ export class StorageService {
     const clampedExpiry = Math.min(Math.max(1, expiresInSeconds), MAX_EXPIRATION_SECONDS);
 
     if (this.storageDriver === 'local') {
-      const apiBase = this.configService.get<string>('API_URL') || 'http://localhost:4000';
+      const apiBase = this.getApiBaseUrl();
       return {
         uploadUrl: `${apiBase}/api/v1/storage/raw-upload?key=${encodeURIComponent(key.trim())}`,
         key: key.trim(),
@@ -250,7 +267,7 @@ export class StorageService {
       };
     } catch (err: any) {
       if (this.isNetworkOrDevError(err)) {
-        const apiBase = this.configService.get<string>('API_URL') || 'http://localhost:4000';
+        const apiBase = this.getApiBaseUrl();
         return {
           uploadUrl: `${apiBase}/api/v1/storage/raw-upload?key=${encodeURIComponent(key.trim())}`,
           key: key.trim(),

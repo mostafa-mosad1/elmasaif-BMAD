@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Eye } from 'lucide-react';
-import { apiClient } from '../../lib/api-client';
+import { apiClient, normalizeStorageUrl } from '../../lib/api-client';
 import { Button } from '../ui/button';
 
 interface IdentityDocumentPreviewProps {
@@ -36,9 +36,10 @@ export function IdentityDocumentPreview({ isUploaded }: IdentityDocumentPreviewP
 
     try {
       const response = await apiClient.get<DocumentUrlResponse>('/users/identity/document-url');
-      setFallbackUrl(response.data.downloadUrl);
+      const targetUrl = normalizeStorageUrl(response.data.downloadUrl);
+      setFallbackUrl(targetUrl);
       if (previewWindow) {
-        previewWindow.location.href = response.data.downloadUrl;
+        previewWindow.location.href = targetUrl;
       }
     } catch (error) {
       previewWindow?.close();
