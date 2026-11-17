@@ -201,6 +201,9 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Licenses.Review')
             ? [{ href: '/admin/licenses', label: 'طابور اعتماد رخص فال', icon: FileCheck, badge: { count: '1', variant: 'accent' } }]
             : []),
+          ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Users.Review') || admin.permissions?.includes('Users.Verify') || admin.permissions?.includes('Licenses.Review') || admin.permissions?.includes('Compliance.Manage')
+            ? [{ href: '/admin/identity', label: 'توثيق الهويات الوطنية', icon: ShieldCheck }]
+            : []),
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Geo.Manage')
             ? [{ href: '/admin/geo', label: 'إدارة المدن والأحياء', icon: MapPin }]
             : [])
