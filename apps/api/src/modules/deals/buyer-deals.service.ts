@@ -337,7 +337,9 @@ export class BuyerDealsService {
     dealId: string,
   ): Promise<DealPaymentView> {
     const profile = await this.resolveBuyerProfile(userId, activeRole);
-    const account = this.platformAccount.getAccount();
+    const account = this.platformAccount.getAccountAsync
+      ? await this.platformAccount.getAccountAsync()
+      : this.platformAccount.getAccount();
     const now = this.clockService.now();
 
     const { deal, payments, invoiceRecord } = await this.prisma.$transaction(async (tx: any) => {
