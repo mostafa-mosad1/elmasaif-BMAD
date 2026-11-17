@@ -18,6 +18,8 @@ import {
   User,
   Phone,
   AlertTriangle,
+  X,
+  Sparkles,
 } from 'lucide-react';
 import { apiClient, normalizeStorageUrl } from '../../../lib/api-client';
 
@@ -52,8 +54,10 @@ export default function AdminIdentityReviewPage() {
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-  const [rejectingDocId, setRejectingDocId] = useState<string | null>(null);
+  const [verifyingItem, setVerifyingItem] = useState<PendingIdentityItem | null>(null);
+  const [rejectingItem, setRejectingItem] = useState<PendingIdentityItem | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [rejectError, setRejectError] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const fetchPending = useCallback(async () => {
@@ -102,12 +106,20 @@ export default function AdminIdentityReviewPage() {
     }
   };
 
-  const handleVerify = async (docId: string) => {
-    if (!confirm('هل أنت متأكد من اعتماد وتوثيق هذه الهوية الوطنية؟')) return;
+  const handleVerifyClick = (item: PendingIdentityItem) => {
+    setVerifyingItem(item);
+  };
+
+  const executeVerify = async () => {
+    if (!verifyingItem) return;
     try {
-      setActionLoadingId(docId);
-      await apiClient.post(`/admin/identity/${docId}/verify`, {});
-      setMessage({ type: 'success', text: 'تم توثيق واعتماد الهوية الوطنية بنجاح.' });
+      setActionLoadingId(verifyingItem.id);
+      await apiClient.post(`/admin/identity/${verifyingItem.id}/verify`, {});
+      setMessage({
+        type: 'success',
+        text: `تم توثيق واعتماد الهوية الوطنية للمستخدم (${verifyingItem.fullName}) بنجاح.`
+      });
+      setVerifyingItem(null);
       fetchPending();
     } catch (err: any) {
       setMessage({
@@ -119,21 +131,31 @@ export default function AdminIdentityReviewPage() {
     }
   };
 
+  const handleRejectClick = (item: PendingIdentityItem) => {
+    setRejectingItem(item);
+    setRejectReason('');
+    setRejectError(null);
+  };
+
   const handleRejectSubmit = async () => {
-    if (!rejectingDocId) return;
+    if (!rejectingItem) return;
     if (!rejectReason.trim()) {
-      alert('يرجى كتابة سبب الرفض لتوضيحه للمستخدم.');
+      setRejectError('يرجى توضيح سبب الرفض لإرشاد المستخدم لتصحيح المشكلة.');
       return;
     }
 
     try {
-      setActionLoadingId(rejectingDocId);
-      await apiClient.post(`/admin/identity/${rejectingDocId}/reject`, {
+      setActionLoadingId(rejectingItem.id);
+      await apiClient.post(`/admin/identity/${rejectingItem.id}/reject`, {
         reason: rejectReason.trim(),
       });
-      setMessage({ type: 'success', text: 'تم رفض الوثيقة وإشعار المستخدم بالسبب.' });
-      setRejectingDocId(null);
+      setMessage({
+        type: 'success',
+        text: `تم رفض وثيقة المستخدم (${rejectingItem.fullName}) وإرسال إشعار فوري بالسبب.`
+      });
+      setRejectingItem(null);
       setRejectReason('');
+      setRejectError(null);
       fetchPending();
     } catch (err: any) {
       setMessage({
@@ -301,8 +323,8 @@ export default function AdminIdentityReviewPage() {
                     variant="primary"
                     size="sm"
                     disabled={actionLoadingId === item.id}
-                    onClick={() => handleVerify(item.id)}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={() => handleVerifyClick(item)}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     اعتماد وتوثيق
@@ -310,13 +332,10 @@ export default function AdminIdentityReviewPage() {
 
                   <Button
                     type="button"
-                    variant="destructive"
+                    variant="danger"
                     size="sm"
                     disabled={actionLoadingId === item.id}
-                    onClick={() => {
-                      setRejectingDocId(item.id);
-                      setRejectReason('');
-                    }}
+                    onClick={() => handleRejectClick(item)}
                     className="px-3"
                   >
                     <XCircle className="w-3.5 h-3.5" />
@@ -329,39 +348,186 @@ export default function AdminIdentityReviewPage() {
         </div>
       )}
 
-      {/* Reject Modal */}
-      {rejectingDocId && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="bg-surface dark:bg-dark-surface-raised rounded-2xl max-w-md w-full p-6 space-y-4 border border-surface-border dark:border-dark-surface-border shadow-2xl">
-            <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary flex items-center gap-2">
-              <XCircle className="w-5 h-5 text-status-danger" />
-              سبب رفض وثيقة الهوية
-            </h3>
-            <p className="text-xs text-ink-secondary">
-              يرجى توضيح سبب الرفض بدقة ليصل إلى المستخدم ويتمكن من تصحيحه وإعادة الرفع:
-            </p>
-            <textarea
-              rows={3}
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="مثال: الصورة غير واضحة أو البيانات لا تطابق الاسم المسجل..."
-              className="w-full p-3 rounded-xl bg-surface-sunken dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border text-xs text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-            <div className="flex justify-end gap-2 pt-2">
+      {/* Verify Confirmation Modal */}
+      {verifyingItem && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-surface dark:bg-dark-surface-raised rounded-2xl max-w-md w-full p-6 space-y-5 border border-surface-border dark:border-dark-surface-border shadow-2xl relative">
+            <button
+              type="button"
+              disabled={Boolean(actionLoadingId)}
+              onClick={() => setVerifyingItem(null)}
+              className="absolute top-4 start-4 text-ink-muted hover:text-ink-primary p-1 rounded-lg hover:bg-surface-sunken dark:hover:bg-dark-surface-sunken transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-center space-y-2 pt-2">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-inner ring-8 ring-emerald-500/5">
+                <ShieldCheck className="w-7 h-7" />
+              </div>
+              <h3 className="text-lg font-bold text-ink-primary dark:text-dark-ink-primary">
+                اعتماد وتوثيق الهوية الوطنية
+              </h3>
+              <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary leading-relaxed">
+                هل أنت متأكد من مطابقة بيانات الهوية وترقية حساب المستخدم إلى موثق رسمياً؟
+              </p>
+            </div>
+
+            {/* User Identity Details Card */}
+            <div className="p-3.5 rounded-xl bg-surface-sunken dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border space-y-2.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-ink-muted flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5" />
+                  اسم المستخدم:
+                </span>
+                <span className="font-semibold text-ink-primary dark:text-dark-ink-primary">
+                  {verifyingItem.fullName}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-ink-muted flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5" />
+                  رقم الهوية الوطنية:
+                </span>
+                <span className="font-mono font-semibold text-ink-primary dark:text-dark-ink-primary" dir="ltr">
+                  {verifyingItem.idNumber || 'غير مسجل'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-ink-muted flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5" />
+                  رقم الجوال:
+                </span>
+                <span className="font-mono text-ink-secondary" dir="ltr">
+                  {verifyingItem.mobileNumber}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-700 dark:text-emerald-300 flex items-start gap-2">
+              <Sparkles className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" />
+              <span>
+                سيتم تحويل حالة الحساب فوراً إلى <strong>موثق بالهوية الوطنية</strong> وإتاحة كامل ميزات وتراخيص النشر وإرسال إشعار فوري للمستخدم.
+              </span>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
               <Button
+                type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setRejectingDocId(null)}
+                disabled={Boolean(actionLoadingId)}
+                onClick={() => setVerifyingItem(null)}
+                className="flex-1"
               >
                 إلغاء
               </Button>
               <Button
-                variant="destructive"
+                type="button"
+                variant="primary"
                 size="sm"
-                disabled={actionLoadingId === rejectingDocId}
-                onClick={handleRejectSubmit}
+                disabled={Boolean(actionLoadingId)}
+                onClick={executeVerify}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm"
               >
-                تأكيد الرفض
+                {actionLoadingId === verifyingItem.id ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    جاري التوثيق...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    تأكيد الاعتماد والتوثيق
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Modal */}
+      {rejectingItem && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-surface dark:bg-dark-surface-raised rounded-2xl max-w-md w-full p-6 space-y-4 border border-surface-border dark:border-dark-surface-border shadow-2xl relative">
+            <button
+              type="button"
+              disabled={Boolean(actionLoadingId)}
+              onClick={() => setRejectingItem(null)}
+              className="absolute top-4 start-4 text-ink-muted hover:text-ink-primary p-1 rounded-lg hover:bg-surface-sunken dark:hover:bg-dark-surface-sunken transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-center space-y-2 pt-2">
+              <div className="w-14 h-14 rounded-2xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto shadow-inner ring-8 ring-rose-500/5">
+                <XCircle className="w-7 h-7" />
+              </div>
+              <h3 className="text-lg font-bold text-ink-primary dark:text-dark-ink-primary">
+                رفض وثيقة الهوية الوطنية
+              </h3>
+              <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary">
+                المستخدم: <strong>{rejectingItem.fullName}</strong> ({rejectingItem.mobileNumber})
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-ink-primary dark:text-dark-ink-primary block">
+                سبب الرفض الموجه للمستخدم <span className="text-rose-500">*</span>:
+              </label>
+              <textarea
+                rows={3}
+                value={rejectReason}
+                onChange={(e) => {
+                  setRejectReason(e.target.value);
+                  if (rejectError) setRejectError(null);
+                }}
+                placeholder="مثال: الصورة غير واضحة، أو البيانات لا تطابق الاسم المسجل ورقم الهوية..."
+                className={`w-full p-3 rounded-xl bg-surface-sunken dark:bg-dark-surface-sunken border text-xs text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 ${
+                  rejectError
+                    ? 'border-rose-500 focus:ring-rose-500/30'
+                    : 'border-surface-border dark:border-dark-surface-border focus:ring-primary/30'
+                }`}
+              />
+              {rejectError && (
+                <p className="text-[11px] text-rose-500 flex items-center gap-1 font-medium">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  {rejectError}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={Boolean(actionLoadingId)}
+                onClick={() => setRejectingItem(null)}
+                className="flex-1"
+              >
+                إلغاء
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                disabled={Boolean(actionLoadingId)}
+                onClick={handleRejectSubmit}
+                className="flex-1 font-semibold"
+              >
+                {actionLoadingId === rejectingItem.id ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    جاري المعالجة...
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-3.5 h-3.5" />
+                    تأكيد الرفض
+                  </>
+                )}
               </Button>
             </div>
           </div>
