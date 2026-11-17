@@ -341,7 +341,21 @@ export default function AdminDashboardPage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+          <Link
+            href="/admin/identity"
+            className="p-4 rounded-xl border border-surface-border dark:border-dark-surface-border hover:border-accent transition-colors text-center space-y-1.5 group"
+          >
+            <div className="w-9 h-9 mx-auto rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div className="text-xs font-bold text-ink-primary dark:text-dark-ink-primary">
+              توثيق الهويات
+            </div>
+            <span className="inline-block px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 text-[10px] font-bold">
+              مراجعة وتدقيق
+            </span>
+          </Link>
           <Link
             href="/admin/payments"
             className="p-4 rounded-xl border border-surface-border dark:border-dark-surface-border hover:border-accent transition-colors text-center space-y-1.5 group"
