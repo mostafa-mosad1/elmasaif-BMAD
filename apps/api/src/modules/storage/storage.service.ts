@@ -393,17 +393,6 @@ export class StorageService {
       }
     }
 
-    if (this.prisma) {
-      try {
-        await this.prisma.fileObject.updateMany({
-          where: { key: key.trim() },
-          data: { data: null },
-        });
-      } catch {
-        // ignore
-      }
-    }
-
     if (this.storageDriver === 'local') {
       return;
     }
@@ -440,35 +429,6 @@ export class StorageService {
         fs.copyFileSync(sourceLocal, destLocal);
       } catch (err: any) {
         this.logger.warn(`Local copy failed from '${sourceLocal}' to '${destLocal}': ${err.message}`);
-      }
-    }
-
-    if (this.prisma) {
-      try {
-        const sourceFo = await this.prisma.fileObject.findUnique({
-          where: { key: sourceKey.trim() },
-        });
-        if (sourceFo?.data) {
-          await this.prisma.fileObject.upsert({
-            where: { key: destinationKey.trim() },
-            create: {
-              bucket: this.bucketName,
-              key: destinationKey.trim(),
-              mimeType: sourceFo.mimeType,
-              fileSize: sourceFo.fileSize,
-              data: sourceFo.data,
-              scanStatus: ScanStatus.CLEAN,
-              scannedAt: new Date(),
-            },
-            update: {
-              data: sourceFo.data,
-              scanStatus: ScanStatus.CLEAN,
-              scannedAt: new Date(),
-            },
-          });
-        }
-      } catch (dbErr: any) {
-        this.logger.warn(`Failed copying file data in database: ${dbErr.message}`);
       }
     }
 

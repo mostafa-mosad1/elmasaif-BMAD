@@ -87,14 +87,21 @@ export class QuarantineService {
       uploadUrl = presigned.uploadUrl;
     }
 
-    const fileObject = await this.prisma.fileObject.create({
-      data: {
+    const fileObject = await this.prisma.fileObject.upsert({
+      where: { key: quarantineKey },
+      create: {
         bucket: (this.storageService as any).bucketName || 'elmasaif-private-documents',
         key: quarantineKey,
         mimeType,
         fileSize,
         scanStatus: ScanStatus.PENDING,
         scannedAt: null,
+        data: buffer || null,
+      },
+      update: {
+        mimeType,
+        fileSize,
+        scanStatus: ScanStatus.PENDING,
         data: buffer || null,
       },
     });
