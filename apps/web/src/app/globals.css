@@ -262,6 +262,23 @@ body {
   -webkit-backdrop-filter: blur(12px);
 }
 
+/* Nav Line RTL Fill Animation */
+@keyframes fillLineRtl {
+  0% {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+.animate-fill-rtl {
+  transform-origin: right;
+  animation: fillLineRtl 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 /* Sovereign Luxury Card Elevation Hover */
 .luxury-card {
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;

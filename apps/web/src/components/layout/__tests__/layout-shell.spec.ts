@@ -7,7 +7,7 @@ import { Footer } from '../footer';
 import { AppProviders } from '../../providers';
 
 describe('Layout Shell & Navigation Components', () => {
-  it('should render Header with brand logo, REGA badge and action buttons', () => {
+  it('should render Header with brand logo, navigation links and action buttons', () => {
     const html = renderToString(
       React.createElement(
         AppProviders,
@@ -17,7 +17,7 @@ describe('Layout Shell & Navigation Components', () => {
     );
 
     expect(html).toContain('المصايف');
-    expect(html).toContain('مرخص من فال');
+    expect(html).toContain('تصفح العقارات');
     expect(html).toContain('تسجيل الدخول');
   });
 

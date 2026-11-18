@@ -11,7 +11,14 @@ export const metadata: Metadata = {
     description: 'الوساطة العقارية المؤسسية الموثوقة بالمملكة العربية السعودية.',
     locale: 'ar_SA',
     type: 'website',
-  }
+  },
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 export default function RootLayout({

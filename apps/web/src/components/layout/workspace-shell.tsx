@@ -43,7 +43,6 @@ import {
   Sliders,
   ScrollText
 } from 'lucide-react';
-import { NotificationBell } from '../notifications/notification-bell';
 import { SupportTicketModal } from '../support/support-ticket-modal';
 
 interface WorkspaceShellProps {
@@ -54,24 +53,13 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const pathname = usePathname();
   const { user, activeRole, logout } = useAuth();
   const { admin, logoutAdmin } = useAdminAuth();
-  const { locale, toggleLocale } = useDirection();
+  const { locale } = useDirection();
   const { resolvedTheme, toggleTheme } = useTheme();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [supportModalOpen, setSupportModalOpen] = useState(false);
 
   const isArabic = locale === SupportedLocale.AR;
   const isAdminRoute = Boolean(pathname?.startsWith('/admin'));
-
-  const handleQuickToggleLocale = () => {
-    const nextLocale = isArabic ? SupportedLocale.EN : SupportedLocale.AR;
-    toggleLocale();
-    if (user) {
-      apiClient('/users/preferences', {
-        method: 'PATCH',
-        body: JSON.stringify({ preferredLanguage: nextLocale })
-      }).catch(() => {});
-    }
-  };
 
   const handleQuickToggleTheme = () => {
     const nextTheme = resolvedTheme === 'dark' ? ThemeMode.LIGHT : ThemeMode.DARK;
@@ -333,19 +321,19 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         </div>
 
         {/* Navigation List */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-3">
+        <nav className="flex-1 overflow-y-auto px-3.5 py-4 space-y-4">
           {navSections.map((section, sIdx) => {
             if (section.items.length === 0) return null;
             return (
-              <div key={section.title || sIdx} className="space-y-1">
+              <div key={section.title || sIdx} className="space-y-1.5">
                 {section.title && (
-                  <div className="px-2.5 py-1">
-                    <span className="text-[11px] font-bold tracking-wider text-ink-muted dark:text-dark-ink-muted uppercase">
+                  <div className="px-3 py-1">
+                    <span className="text-xs font-bold tracking-wider text-ink-muted dark:text-dark-ink-muted uppercase">
                       {section.title}
                     </span>
                   </div>
                 )}
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                   {section.items.map((item) => {
                     const Icon = item.icon;
                     const isActive = pathname === item.href;
@@ -354,15 +342,15 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
                         key={item.href}
                         href={item.href}
                         onClick={() => setMobileSidebarOpen(false)}
-                        className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                        className={`flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 ${
                           isActive
-                            ? 'bg-primary text-white dark:bg-primary dark:text-white font-semibold shadow-xs'
+                            ? 'bg-primary text-white dark:bg-primary dark:text-white shadow-xs'
                             : 'text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-raised hover:text-ink-primary dark:hover:text-dark-ink-primary'
                         }`}
                       >
-                        <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="flex items-center gap-3 min-w-0">
                           <Icon
-                            className={`w-4 h-4 shrink-0 ${
+                            className={`w-[18px] h-[18px] shrink-0 ${
                               isActive ? 'text-white' : 'text-ink-muted dark:text-dark-ink-muted'
                             }`}
                           />
@@ -370,7 +358,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
                         </div>
                         {item.badge && (
                           <span
-                            className={`shrink-0 ms-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full tabular-nums ${
+                            className={`shrink-0 ms-1.5 text-xs font-bold px-2 py-0.5 rounded-full tabular-nums ${
                               isActive
                                 ? 'bg-white/20 text-white'
                                 : item.badge.variant === 'danger'
@@ -492,20 +480,6 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
 
           {/* Right Action Utilities */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Notifications Bell (Customer workspaces only) */}
-            {!isAdminRoute && <NotificationBell />}
-
-            {/* Language Switcher */}
-            <button
-              onClick={handleQuickToggleLocale}
-              type="button"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border transition-colors"
-              aria-label={isArabic ? 'Switch to English' : 'التبديل إلى العربية'}
-            >
-              <Globe className="w-3.5 h-3.5 text-primary dark:text-primary-light" />
-              <span className="hidden sm:inline">{isArabic ? 'English' : 'العربية'}</span>
-            </button>
-
             {/* Dark Mode Toggle */}
             <button
               onClick={handleQuickToggleTheme}
