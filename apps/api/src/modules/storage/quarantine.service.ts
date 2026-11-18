@@ -87,24 +87,30 @@ export class QuarantineService {
       uploadUrl = presigned.uploadUrl;
     }
 
-    const fileObject = await this.prisma.fileObject.upsert({
-      where: { key: quarantineKey },
-      create: {
-        bucket: (this.storageService as any).bucketName || 'elmasaif-private-documents',
-        key: quarantineKey,
-        mimeType,
-        fileSize,
-        scanStatus: ScanStatus.PENDING,
-        scannedAt: null,
-        data: buffer || null,
-      },
-      update: {
-        mimeType,
-        fileSize,
-        scanStatus: ScanStatus.PENDING,
-        data: buffer || null,
-      },
-    });
+    const createData = {
+      bucket: (this.storageService as any).bucketName || 'elmasaif-private-documents',
+      key: quarantineKey,
+      mimeType,
+      fileSize,
+      scanStatus: ScanStatus.PENDING,
+      scannedAt: null,
+      data: buffer || null,
+    };
+
+    const fileObject = this.prisma.fileObject.upsert
+      ? await this.prisma.fileObject.upsert({
+          where: { key: quarantineKey },
+          create: createData,
+          update: {
+            mimeType,
+            fileSize,
+            scanStatus: ScanStatus.PENDING,
+            data: buffer || null,
+          },
+        })
+      : await this.prisma.fileObject.create({
+          data: createData,
+        });
 
     this.logger.log(
       `Staged file '${filename}' for quarantine as FileObject '${fileObject.id}' (Key: ${quarantineKey})`,

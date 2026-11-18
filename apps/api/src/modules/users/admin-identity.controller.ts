@@ -112,6 +112,43 @@ export class AdminIdentityController {
     private readonly identityService: IdentityService
   ) {}
 
+  @Get('list')
+  @ApiOperation({ summary: 'List identity documents filtered by status with statistics' })
+  @ApiQuery({ name: 'status', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @RequireIdentityAdminPermissions('Users.Review', 'Compliance.Review', 'Users.View')
+  async getList(
+    @Req() req: any,
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+  ) {
+    return {
+      code: 'SUCCESS',
+      data: await this.identityService.getIdentityDocumentsList({
+        status,
+        page: this.parsePositiveInteger(page, 1, 'page'),
+        limit: this.parsePositiveInteger(limit, 20, 'limit', 100),
+        search: search?.trim(),
+      }),
+      requestId: req.headers?.['x-request-id']
+    };
+  }
+
+  @Get('stats')
+  @ApiOperation({ summary: 'Get summary statistics of identity documents and user statuses' })
+  @RequireIdentityAdminPermissions('Users.Review', 'Compliance.Review', 'Users.View')
+  async getStats(@Req() req: any) {
+    return {
+      code: 'SUCCESS',
+      data: await this.identityService.getIdentityReviewStats(),
+      requestId: req.headers?.['x-request-id']
+    };
+  }
+
   @Get('pending')
   @ApiOperation({ summary: 'List clean identity documents awaiting administrative review' })
   @ApiQuery({ name: 'page', required: false, type: Number })

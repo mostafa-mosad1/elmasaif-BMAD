@@ -133,6 +133,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         title: 'الرئيسية والعقارات',
         items: [
           { href: '/app/owner', label: 'لوحة تحكم المالك', icon: LayoutDashboard },
+          { href: '/app/owner/listings', label: 'إدارة العقارات', icon: Building },
           { href: '/app/owner/listings/new', label: 'طلب عرض عقار مباشر', icon: PlusCircle },
           { href: '/app/owner/contracts', label: 'عقود الوساطة الإلكترونية', icon: FileText }
         ]

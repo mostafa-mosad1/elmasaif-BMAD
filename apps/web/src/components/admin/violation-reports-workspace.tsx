@@ -89,6 +89,8 @@ export function ViolationReportsWorkspace({
     setError(null);
     try {
       const params = new URLSearchParams();
+      params.set('page', '1');
+      params.set('limit', '20');
       if (statusTab !== 'ALL') params.set('status', statusTab);
       if (categoryFilter !== 'ALL') params.set('category', categoryFilter);
       if (searchTerm.trim()) params.set('search', searchTerm.trim());
@@ -97,7 +99,11 @@ export function ViolationReportsWorkspace({
         `/admin/reports?${params.toString()}`,
       );
       const data = res?.data || res;
-      setQueueData(data);
+      if (data && Array.isArray(data.items)) {
+        setQueueData(data);
+      } else if (data && Array.isArray(data.data?.items)) {
+        setQueueData(data.data);
+      }
     } catch (err: any) {
       setError(describeApiError(err).message || 'تعذر تحميل بلاغات المخالفات');
     } finally {

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function MobileSettingsPage() {
   return (
-    <div dir="rtl" className="space-y-6 max-w-2xl mx-auto py-4">
+    <div dir="rtl" className="space-y-6 max-w-2xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       {/* Breadcrumbs */}
       <nav
         aria-label="Breadcrumb"
@@ -39,13 +39,13 @@ export default function MobileSettingsPage() {
       </header>
 
       {/* Main Wizard Card */}
-      <Card className="border-surface-border dark:border-dark-surface-border shadow-level1">
-        <CardHeader>
+      <Card className="p-6 sm:p-8 rounded-2xl border border-surface-border dark:border-dark-surface-border shadow-xs bg-surface-base dark:bg-dark-surface-base">
+        <CardHeader className="p-0 mb-6 pb-4 border-b border-surface-border dark:border-dark-surface-border">
           <CardTitle className="text-lg font-bold text-ink-primary dark:text-dark-ink-primary">
             تحديث رقم الجوال عبر التحقق الثنائي
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <PhoneChangeWizard />
         </CardContent>
       </Card>

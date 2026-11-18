@@ -268,14 +268,14 @@ export function AccountDeletionWizard({
 
       {/* Pre-Flight Blocking Alert */}
       {isBlocked && (
-        <Card className="border-rose-500/30 bg-rose-500/10 dark:bg-rose-950/20">
-          <CardHeader className="pb-3">
+        <Card className="p-6 sm:p-8 rounded-2xl border-rose-500/30 bg-rose-500/10 dark:bg-rose-950/20 shadow-xs">
+          <CardHeader className="p-0 pb-4 mb-4 border-b border-rose-200/50 dark:border-rose-900/40">
             <CardTitle className="flex items-center gap-2 text-rose-700 dark:text-rose-300 text-base font-bold">
               <AlertTriangle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0" aria-hidden="true" />
               طلب حذف أو تعطيل الحساب معلق نظامياً
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-rose-800 dark:text-rose-200">
+          <CardContent className="p-0 space-y-3 text-sm text-rose-800 dark:text-rose-200">
             <p>
               {blockingReason ||
                 'لا يمكن حذف أو تعطيل الحساب لوجود صفقات عقارية جارية غير مكتملة، أو نزاعات قيد التحقيق، أو عقود وساطة معلقة الرسوم.'}
@@ -301,20 +301,20 @@ export function AccountDeletionWizard({
 
       {/* Main Wizard Card */}
       {!isBlocked && step !== 'completed' && (
-        <Card className="border-rose-200 dark:border-rose-900/50 shadow-sm">
-          <CardHeader>
+        <Card className="p-6 sm:p-8 rounded-2xl border border-rose-200 dark:border-rose-900/50 shadow-xs bg-surface-base dark:bg-dark-surface-base">
+          <CardHeader className="p-0 mb-6 pb-4 border-b border-rose-100 dark:border-rose-950">
             <CardTitle className="text-lg font-bold text-ink-primary dark:text-dark-ink-primary flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-rose-600 dark:text-rose-400" />
               منطقة الحذف والأمان (Danger Zone)
             </CardTitle>
-            <p className="text-sm text-ink-secondary dark:text-dark-ink-secondary">
+            <p className="text-sm text-ink-secondary dark:text-dark-ink-secondary mt-1">
               {step === 'password'
                 ? 'الخطوة 1 من 2: تأكيد كلمة المرور الحالية لتوليد رمز التحقق الأمني.'
                 : 'الخطوة 2 من 2: إدخال رمز التحقق (OTP) المرسل إلى جوالك لتأكيد الحذف.'}
             </p>
           </CardHeader>
 
-          <CardContent className="space-y-4">
+          <CardContent className="p-0 space-y-4">
             {errorMessage && (
               <div
                 className="p-3 text-sm rounded-lg bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800 flex items-center gap-2"
@@ -427,8 +427,8 @@ export function AccountDeletionWizard({
       {step === 'completed' && (
         <div className="space-y-6">
           {completedMode === 'COOLING_OFF' ? (
-            <Card className="border-amber-500/40 bg-amber-500/5">
-              <CardHeader className="text-center pb-2">
+            <Card className="p-6 sm:p-8 rounded-2xl border border-amber-500/40 bg-amber-500/5 shadow-xs">
+              <CardHeader className="p-0 text-center pb-4 border-b border-amber-200/50 mb-4">
                 <div className="mx-auto w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950 flex items-center justify-center text-amber-600 dark:text-amber-400 mb-2">
                   <Calendar className="h-6 w-6" />
                 </div>
@@ -436,7 +436,7 @@ export function AccountDeletionWizard({
                   تمت جدولة حذف الحساب بنجاح
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 text-center text-sm text-ink-secondary dark:text-dark-ink-secondary">
+              <CardContent className="p-0 space-y-4 text-center text-sm text-ink-secondary dark:text-dark-ink-secondary">
                 <p>
                   دخل حسابك في فترة مهلة نظامية مدتها <strong className="text-ink-primary font-bold">14 يوماً</strong>{' '}
                   {deletionDueAt && (
@@ -453,15 +453,15 @@ export function AccountDeletionWizard({
                   💡 <strong>ملاحظة هامة:</strong> يمكنك إلغاء طلب الحذف في أي وقت وبكل سهولة بمجرد تسجيل الدخول مجدداً إلى حسابك خلال هذه المهلة.
                 </div>
               </CardContent>
-              <CardFooter className="justify-center">
+              <CardFooter className="p-0 pt-6 justify-center">
                 <Link href="/auth/login" className="w-full sm:w-auto">
                   <Button className="w-full">تسجيل الدخول / العودة للرئيسية</Button>
                 </Link>
               </CardFooter>
             </Card>
           ) : (
-            <Card className="border-emerald-500/40 bg-emerald-500/5">
-              <CardHeader className="text-center pb-2">
+            <Card className="p-6 sm:p-8 rounded-2xl border border-emerald-500/40 bg-emerald-500/5 shadow-xs">
+              <CardHeader className="p-0 text-center pb-4 border-b border-emerald-200/50 mb-4">
                 <div className="mx-auto w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-2">
                   <CheckCircle2 className="h-6 w-6" />
                 </div>
@@ -469,7 +469,7 @@ export function AccountDeletionWizard({
                   تم تعطيل الحساب والامتثال النظامي
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 text-center text-sm text-ink-secondary dark:text-dark-ink-secondary">
+              <CardContent className="p-0 space-y-4 text-center text-sm text-ink-secondary dark:text-dark-ink-secondary">
                 <p>
                   تم تعطيل حسابك وإخفاء ملفك الشخصي من البحث العام بنجاح.
                 </p>
@@ -483,7 +483,7 @@ export function AccountDeletionWizard({
                   </p>
                 </div>
               </CardContent>
-              <CardFooter className="justify-center">
+              <CardFooter className="p-0 pt-6 justify-center">
                 <Link href="/auth/login" className="w-full sm:w-auto">
                   <Button className="w-full">العودة لصفحة تسجيل الدخول</Button>
                 </Link>

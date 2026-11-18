@@ -84,7 +84,7 @@ export default function PayoutSettingsPage() {
 
   return (
     <WorkspaceShell>
-      <div dir="rtl" className="max-w-6xl mx-auto space-y-6">
+      <div dir="rtl" className="max-w-6xl mx-auto space-y-6 py-6 px-4 sm:px-6 lg:px-8">
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-surface-border pb-5 dark:border-dark-surface-border">
           <div>

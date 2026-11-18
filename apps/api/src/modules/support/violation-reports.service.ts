@@ -103,27 +103,29 @@ export class ViolationReportsService {
    * Retrieves paginated admin queue of violation reports with KPI counts
    */
   async getQueue(
-    query: AdminViolationQueueQueryInput,
+    query?: Partial<AdminViolationQueueQueryInput>,
   ): Promise<ViolationReportsQueueResponseDto> {
-    const { status, category, targetType, search, page, limit } = query;
+    const safeQuery = query || {};
+    const page = Math.max(1, Number(safeQuery.page) || 1);
+    const limit = Math.max(1, Math.min(100, Number(safeQuery.limit) || 20));
     const skip = (page - 1) * limit;
 
     const where: Prisma.ViolationReportWhereInput = {};
 
-    if (status && status !== 'ALL') {
-      where.status = status;
+    if (safeQuery.status && safeQuery.status !== 'ALL') {
+      where.status = safeQuery.status as any;
     }
 
-    if (category && category !== 'ALL') {
-      where.category = category;
+    if (safeQuery.category && safeQuery.category !== 'ALL') {
+      where.category = safeQuery.category as any;
     }
 
-    if (targetType && targetType !== 'ALL') {
-      where.targetType = targetType;
+    if (safeQuery.targetType && safeQuery.targetType !== 'ALL') {
+      where.targetType = safeQuery.targetType as any;
     }
 
-    if (search && search.trim().length > 0) {
-      const term = search.trim();
+    if (safeQuery.search && safeQuery.search.trim().length > 0) {
+      const term = safeQuery.search.trim();
       where.OR = [
         { reportNumber: { contains: term, mode: 'insensitive' } },
         { reporterName: { contains: term, mode: 'insensitive' } },
@@ -133,94 +135,112 @@ export class ViolationReportsService {
       ];
     }
 
-    const [items, total, pending, underReview, resolved, dismissed] =
-      await Promise.all([
-        this.prisma.violationReport.findMany({
-          where,
-          skip,
-          take: limit,
-          orderBy: { createdAt: 'desc' },
-          include: {
-            assignedAdmin: { select: { id: true, fullName: true, email: true } },
-            resolvedByAdmin: { select: { id: true, fullName: true, email: true } },
-            targetListing: {
-              select: {
-                id: true,
-                title: true,
-                askPrice: true,
-                sellerProfile: {
-                  select: {
-                    user: { select: { fullName: true } },
-                    falLicense: { select: { licenseNumber: true } },
+    try {
+      const [items, total, pending, underReview, resolved, dismissed] =
+        await Promise.all([
+          this.prisma.violationReport.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy: { createdAt: 'desc' },
+            include: {
+              assignedAdmin: { select: { id: true, fullName: true, email: true } },
+              resolvedByAdmin: { select: { id: true, fullName: true, email: true } },
+              targetListing: {
+                select: {
+                  id: true,
+                  title: true,
+                  askPrice: true,
+                  sellerProfile: {
+                    select: {
+                      user: { select: { fullName: true } },
+                      falLicense: { select: { licenseNumber: true } },
+                    },
                   },
                 },
               },
             },
-          },
-        }),
-        this.prisma.violationReport.count({ where }),
-        this.prisma.violationReport.count({ where: { status: 'PENDING' } }),
-        this.prisma.violationReport.count({ where: { status: 'UNDER_REVIEW' } }),
-        this.prisma.violationReport.count({ where: { status: 'RESOLVED' } }),
-        this.prisma.violationReport.count({ where: { status: 'DISMISSED' } }),
-      ]);
+          }),
+          this.prisma.violationReport.count({ where }),
+          this.prisma.violationReport.count({ where: { status: 'PENDING' } }),
+          this.prisma.violationReport.count({ where: { status: 'UNDER_REVIEW' } }),
+          this.prisma.violationReport.count({ where: { status: 'RESOLVED' } }),
+          this.prisma.violationReport.count({ where: { status: 'DISMISSED' } }),
+        ]);
 
-    const mappedItems: ViolationReportItemDto[] = items.map((r) => {
-      let targetPreview: ViolationReportItemDto['targetPreview'] = null;
-      if (r.targetListing) {
-        targetPreview = {
-          title: r.targetListing.title,
-          price: r.targetListing.askPrice ? Number(r.targetListing.askPrice) : null,
-          brokerName: r.targetListing.sellerProfile?.user?.fullName || null,
-          licenseNumber:
-            r.targetListing.sellerProfile?.falLicense?.licenseNumber || null,
+      const mappedItems: ViolationReportItemDto[] = (items || []).map((r) => {
+        let targetPreview: ViolationReportItemDto['targetPreview'] = null;
+        if (r.targetListing) {
+          targetPreview = {
+            title: r.targetListing.title || '',
+            price: r.targetListing.askPrice ? Number(r.targetListing.askPrice) : null,
+            brokerName: r.targetListing.sellerProfile?.user?.fullName || null,
+            licenseNumber:
+              r.targetListing.sellerProfile?.falLicense?.licenseNumber || null,
+          };
+        }
+
+        return {
+          id: r.id,
+          reportNumber: r.reportNumber,
+          reporterUserId: r.reporterUserId || null,
+          reporterName: r.reporterName || null,
+          reporterEmail: r.reporterEmail || null,
+          reporterPhone: r.reporterPhone || null,
+          targetType: r.targetType,
+          targetListingId: r.targetListingId || null,
+          targetUserId: r.targetUserId || null,
+          category: r.category,
+          description: r.description || '',
+          attachments: Array.isArray(r.attachments) ? r.attachments : [],
+          status: r.status,
+          resolutionAction: r.resolutionAction || null,
+          resolutionNotes: r.resolutionNotes || null,
+          assignedAdminId: r.assignedAdminId || null,
+          assignedAdminName: r.assignedAdmin?.fullName || null,
+          assignedAt: r.assignedAt ? new Date(r.assignedAt).toISOString() : null,
+          resolvedByAdminId: r.resolvedByAdminId || null,
+          resolvedByAdminName: r.resolvedByAdmin?.fullName || null,
+          resolvedAt: r.resolvedAt ? new Date(r.resolvedAt).toISOString() : null,
+          createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString(),
+          updatedAt: r.updatedAt ? new Date(r.updatedAt).toISOString() : new Date().toISOString(),
+          targetPreview,
         };
-      }
+      });
+
+      const totalAll = (pending || 0) + (underReview || 0) + (resolved || 0) + (dismissed || 0);
 
       return {
-        id: r.id,
-        reportNumber: r.reportNumber,
-        reporterUserId: r.reporterUserId,
-        reporterName: r.reporterName,
-        reporterEmail: r.reporterEmail,
-        reporterPhone: r.reporterPhone,
-        targetType: r.targetType,
-        targetListingId: r.targetListingId,
-        targetUserId: r.targetUserId,
-        category: r.category,
-        description: r.description,
-        attachments: r.attachments,
-        status: r.status,
-        resolutionAction: r.resolutionAction,
-        resolutionNotes: r.resolutionNotes,
-        assignedAdminId: r.assignedAdminId,
-        assignedAdminName: r.assignedAdmin?.fullName || null,
-        assignedAt: r.assignedAt ? r.assignedAt.toISOString() : null,
-        resolvedByAdminId: r.resolvedByAdminId,
-        resolvedByAdminName: r.resolvedByAdmin?.fullName || null,
-        resolvedAt: r.resolvedAt ? r.resolvedAt.toISOString() : null,
-        createdAt: r.createdAt.toISOString(),
-        updatedAt: r.updatedAt.toISOString(),
-        targetPreview,
+        items: mappedItems,
+        total: total || 0,
+        page,
+        limit,
+        totalPages: Math.max(1, Math.ceil((total || 0) / limit)),
+        counts: {
+          total: totalAll,
+          pending: pending || 0,
+          underReview: underReview || 0,
+          resolved: resolved || 0,
+          dismissed: dismissed || 0,
+        },
       };
-    });
-
-    const totalAll = pending + underReview + resolved + dismissed;
-
-    return {
-      items: mappedItems,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit) || 1,
-      counts: {
-        total: totalAll,
-        pending,
-        underReview,
-        resolved,
-        dismissed,
-      },
-    };
+    } catch (err: any) {
+      this.logger.error(`Error loading violation reports queue: ${err.message}`, err.stack);
+      return {
+        items: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 1,
+        counts: {
+          total: 0,
+          pending: 0,
+          underReview: 0,
+          resolved: 0,
+          dismissed: 0,
+        },
+      };
+    }
   }
 
   /**
@@ -291,14 +311,14 @@ export class ViolationReportsService {
       id: log.id,
       action: log.action,
       actorAdminName: adminMap.get(log.actorId) || 'النظام الإداري',
-      timestamp: log.createdAt.toISOString(),
+      timestamp: log.createdAt ? new Date(log.createdAt).toISOString() : new Date().toISOString(),
       details: (log.payload as Record<string, unknown>) || null,
     }));
 
     let targetPreview: ViolationReportDetailDto['targetPreview'] = null;
     if (report.targetListing) {
       targetPreview = {
-        title: report.targetListing.title,
+        title: report.targetListing.title || '',
         price: report.targetListing.askPrice ? Number(report.targetListing.askPrice) : null,
         brokerName: report.targetListing.sellerProfile?.user?.fullName || null,
         licenseNumber:
@@ -318,18 +338,18 @@ export class ViolationReportsService {
       targetUserId: report.targetUserId,
       category: report.category,
       description: report.description,
-      attachments: report.attachments,
+      attachments: Array.isArray(report.attachments) ? report.attachments : [],
       status: report.status,
       resolutionAction: report.resolutionAction,
       resolutionNotes: report.resolutionNotes,
       assignedAdminId: report.assignedAdminId,
       assignedAdminName: report.assignedAdmin?.fullName || null,
-      assignedAt: report.assignedAt ? report.assignedAt.toISOString() : null,
+      assignedAt: report.assignedAt ? new Date(report.assignedAt).toISOString() : null,
       resolvedByAdminId: report.resolvedByAdminId,
       resolvedByAdminName: report.resolvedByAdmin?.fullName || null,
-      resolvedAt: report.resolvedAt ? report.resolvedAt.toISOString() : null,
-      createdAt: report.createdAt.toISOString(),
-      updatedAt: report.updatedAt.toISOString(),
+      resolvedAt: report.resolvedAt ? new Date(report.resolvedAt).toISOString() : null,
+      createdAt: report.createdAt ? new Date(report.createdAt).toISOString() : new Date().toISOString(),
+      updatedAt: report.updatedAt ? new Date(report.updatedAt).toISOString() : new Date().toISOString(),
       targetPreview,
       signedAttachments,
       auditTrail,

@@ -215,8 +215,8 @@ export function PreferencesEditor({ initialPreferences }: PreferencesEditorProps
       )}
 
       {/* Card 1: Language & Direction Selection */}
-      <Card>
-        <CardHeader>
+      <Card className="p-6 sm:p-8 rounded-2xl border border-surface-border dark:border-dark-surface-border shadow-xs bg-surface-base dark:bg-dark-surface-base">
+        <CardHeader className="p-0 mb-6 pb-4 border-b border-surface-border dark:border-dark-surface-border">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base font-bold text-ink-primary dark:text-dark-ink-primary">
               <Globe className="w-5 h-5 text-primary" aria-hidden="true" />
@@ -230,7 +230,7 @@ export function PreferencesEditor({ initialPreferences }: PreferencesEditorProps
             اختر لغة العرض الأساسية للمنصة. يتم تكييف الاتجاه والخطوط فورياً وبشكل هندسي متكامل.
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Arabic Tile */}
             <button
@@ -292,8 +292,8 @@ export function PreferencesEditor({ initialPreferences }: PreferencesEditorProps
       </Card>
 
       {/* Card 2: Theme Mode Selection */}
-      <Card>
-        <CardHeader>
+      <Card className="p-6 sm:p-8 rounded-2xl border border-surface-border dark:border-dark-surface-border shadow-xs bg-surface-base dark:bg-dark-surface-base">
+        <CardHeader className="p-0 mb-6 pb-4 border-b border-surface-border dark:border-dark-surface-border">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base font-bold text-ink-primary dark:text-dark-ink-primary">
               <Sun className="w-5 h-5 text-amber-500" aria-hidden="true" />
@@ -311,7 +311,7 @@ export function PreferencesEditor({ initialPreferences }: PreferencesEditorProps
             اختر نمط الألوان المفضل لديك؛ تتوافق جميع الخيارات مع معايير الوصول والتباين القياسية (WCAG AAA).
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Light Mode Tile */}
             <button
@@ -395,8 +395,8 @@ export function PreferencesEditor({ initialPreferences }: PreferencesEditorProps
       </Card>
 
       {/* Card 3: Optional Notification Channels & Topics */}
-      <Card>
-        <CardHeader>
+      <Card className="p-6 sm:p-8 rounded-2xl border border-surface-border dark:border-dark-surface-border shadow-xs bg-surface-base dark:bg-dark-surface-base">
+        <CardHeader className="p-0 mb-6 pb-4 border-b border-surface-border dark:border-dark-surface-border">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base font-bold text-ink-primary dark:text-dark-ink-primary">
               <Bell className="w-5 h-5 text-primary" aria-hidden="true" />
@@ -410,7 +410,7 @@ export function PreferencesEditor({ initialPreferences }: PreferencesEditorProps
             خصص القنوات والموضوعات التسويقية والتشغيلية الاختيارية التي ترغب في استلام تحديثاتها.
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <form onSubmit={handleSaveNotifications} className="space-y-5">
             <div className="divide-y divide-surface-border dark:divide-dark-surface-border">
               {/* Channel 1: Email */}
@@ -533,8 +533,8 @@ export function PreferencesEditor({ initialPreferences }: PreferencesEditorProps
       </Card>
 
       {/* Card 4: Mandatory Regulatory & Security Alerts (Locked Guardrail A-09, FR-60) */}
-      <Card className="border-amber-200 dark:border-amber-900/50 bg-amber-50/20 dark:bg-amber-950/10">
-        <CardHeader>
+      <Card className="p-6 sm:p-8 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/20 dark:bg-amber-950/10 shadow-xs">
+        <CardHeader className="p-0 mb-6 pb-4 border-b border-amber-200/60 dark:border-amber-900/40">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle className="flex items-center gap-2 text-base font-bold text-amber-900 dark:text-amber-400">
               <ShieldCheck className="w-5 h-5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
@@ -551,7 +551,7 @@ export function PreferencesEditor({ initialPreferences }: PreferencesEditorProps
             (A-09, FR-60).
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Mandatory Group 1: Deal Milestones */}
             <div className="p-3.5 rounded-xl border border-amber-200/60 dark:border-amber-900/40 bg-white/60 dark:bg-dark-surface/60 flex items-start justify-between gap-3">

@@ -323,6 +323,155 @@ export class IdentityService {
     };
   }
 
+  async getIdentityReviewStats() {
+    const [
+      pendingReview,
+      verified,
+      rejected,
+      complianceRestricted,
+      suspended
+    ] = await Promise.all([
+      this.prisma.identityDocument.count({
+        where: {
+          status: VerificationStatus.PENDING_REVIEW,
+          fileObject: { scanStatus: ScanStatus.CLEAN }
+        }
+      }),
+      this.prisma.identityDocument.count({
+        where: { status: VerificationStatus.VERIFIED }
+      }),
+      this.prisma.identityDocument.count({
+        where: { status: VerificationStatus.REJECTED }
+      }),
+      this.prisma.user.count({
+        where: {
+          OR: [
+            { status: 'COMPLIANCE_RESTRICTED' as any },
+            { profiles: { some: { status: 'COMPLIANCE_RESTRICTED' as any } } }
+          ]
+        }
+      }),
+      this.prisma.user.count({
+        where: {
+          OR: [
+            { status: 'SUSPENDED' as any },
+            { isActive: false },
+            { profiles: { some: { status: 'SUSPENDED' as any } } }
+          ]
+        }
+      })
+    ]);
+
+    return {
+      pendingReview,
+      verified,
+      rejected,
+      complianceRestricted,
+      suspended
+    };
+  }
+
+  async getIdentityDocumentsList(filter: {
+    status?: string;
+    page?: number;
+    limit?: number;
+    search?: string;
+  }) {
+    const page = filter.page || 1;
+    const limit = filter.limit || 20;
+    const status = filter.status?.toUpperCase() || 'PENDING_REVIEW';
+    const search = filter.search?.trim();
+
+    const searchCondition = search
+      ? {
+          OR: [
+            { idNumber: { contains: search, mode: 'insensitive' as const } },
+            { user: { fullName: { contains: search, mode: 'insensitive' as const } } },
+            { user: { mobileNumber: { contains: search } } }
+          ]
+        }
+      : undefined;
+
+    let baseWhere: any = {};
+
+    if (status === 'VERIFIED') {
+      baseWhere = { status: VerificationStatus.VERIFIED };
+    } else if (status === 'REJECTED') {
+      baseWhere = { status: VerificationStatus.REJECTED };
+    } else if (status === 'COMPLIANCE_RESTRICTED' || status === 'COMPLIANCE') {
+      baseWhere = {
+        OR: [
+          { user: { status: 'COMPLIANCE_RESTRICTED' as any } },
+          { user: { profiles: { some: { status: 'COMPLIANCE_RESTRICTED' as any } } } }
+        ]
+      };
+    } else if (status === 'SUSPENDED' || status === 'BLOCKED') {
+      baseWhere = {
+        OR: [
+          { user: { status: 'SUSPENDED' as any } },
+          { user: { isActive: false } },
+          { user: { profiles: { some: { status: 'SUSPENDED' as any } } } }
+        ]
+      };
+    } else {
+      // PENDING_REVIEW
+      baseWhere = {
+        status: VerificationStatus.PENDING_REVIEW,
+        fileObject: { scanStatus: ScanStatus.CLEAN }
+      };
+    }
+
+    const where = searchCondition
+      ? { AND: [baseWhere, searchCondition] }
+      : baseWhere;
+
+    const [documents, total, stats] = await Promise.all([
+      this.prisma.identityDocument.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              fullName: true,
+              mobileNumber: true,
+              status: true,
+              isActive: true,
+              createdAt: true
+            }
+          }
+        },
+        orderBy: status === 'PENDING_REVIEW' ? { createdAt: 'asc' } : { updatedAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit
+      }),
+      this.prisma.identityDocument.count({ where }),
+      this.getIdentityReviewStats()
+    ]);
+
+    return {
+      data: documents.map((document) => ({
+        id: document.id,
+        userId: document.userId,
+        fullName: document.user.fullName,
+        mobileNumber: document.user.mobileNumber,
+        idNumber: document.idNumber,
+        documentType: document.documentType,
+        status: document.status,
+        submittedAt: document.createdAt,
+        verifiedAt: document.verifiedAt,
+        rejectionReason: document.rejectionReason,
+        userStatus: document.user.status,
+        userIsActive: document.user.isActive
+      })),
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      },
+      stats
+    };
+  }
+
   async verifyIdentityDocument(documentId: string, adminId: string) {
     const document = await this.getReviewableDocument(documentId);
     const verifiedAt = this.clockService.now();

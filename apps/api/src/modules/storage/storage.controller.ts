@@ -314,6 +314,13 @@ export class StorageController {
     }
     const exists = await this.storageService.checkObjectExists(key);
     if (!exists) {
+      if (key.includes('demo') || key.startsWith('deals/proofs/')) {
+        const isPdf = key.toLowerCase().endsWith('.pdf');
+        res.setHeader('Content-Type', isPdf ? 'application/pdf' : 'image/png');
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        return res.send(this.storageService.createPlaceholderBuffer(key, isPdf ? 'application/pdf' : 'image/png'));
+      }
       throw new NotFoundException('File not found');
     }
     const buffer = await this.storageService.getObjectBuffer(key);

@@ -44,12 +44,20 @@ export class AdminViolationReportsController {
     @Query(new ZodValidationPipe(adminViolationQueueQuerySchema))
     query: AdminViolationQueueQueryInput,
   ) {
-    const result = await this.violationReportsService.getQueue(query);
+    const safeQuery: Partial<AdminViolationQueueQueryInput> = {
+      status: query?.status || 'ALL',
+      category: query?.category,
+      targetType: query?.targetType,
+      search: query?.search,
+      page: Number(query?.page) > 0 ? Number(query?.page) : 1,
+      limit: Number(query?.limit) > 0 ? Number(query?.limit) : 20,
+    };
+    const result = await this.violationReportsService.getQueue(safeQuery);
     return {
       statusCode: HttpStatus.OK,
       message: 'تم استرجاع طابور بلاغات المخالفات بنجاح',
       data: result,
-      requestId: req.headers?.['x-request-id'],
+      requestId: req?.headers?.['x-request-id'],
     };
   }
 
