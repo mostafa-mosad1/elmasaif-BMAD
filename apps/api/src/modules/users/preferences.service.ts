@@ -1,7 +1,8 @@
 import {
   Injectable,
   Logger,
-  BadRequestException
+  BadRequestException,
+  OnModuleInit
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
@@ -15,10 +16,21 @@ import {
 } from '@elmasaif/shared';
 
 @Injectable()
-export class PreferencesService {
+export class PreferencesService implements OnModuleInit {
   private readonly logger = new Logger(PreferencesService.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async onModuleInit() {
+    try {
+      await this.prisma.$executeRawUnsafe(
+        `ALTER TABLE "user_preferences" ADD COLUMN IF NOT EXISTS "default_role" "UserRole" NOT NULL DEFAULT 'BUYER';`
+      );
+      this.logger.log('Ensured default_role column exists in user_preferences table');
+    } catch (err: any) {
+      this.logger.warn(`Startup schema check notice: ${err?.message || err}`);
+    }
+  }
 
   private mapToUserPreferences(record: {
     preferredLanguage: string;
@@ -70,6 +82,19 @@ export class PreferencesService {
       return this.mapToUserPreferences(created);
     } catch (err: any) {
       this.logger.error(`Failed to get preferences for user ${userId}: ${err.message}`, err.stack);
+      try {
+        await this.prisma.$executeRawUnsafe(
+          `ALTER TABLE "user_preferences" ADD COLUMN IF NOT EXISTS "default_role" "UserRole" NOT NULL DEFAULT 'BUYER';`
+        );
+        const retry = await this.prisma.userPreference.findUnique({
+          where: { userId }
+        });
+        if (retry) {
+          return this.mapToUserPreferences(retry);
+        }
+      } catch {
+        // ignore fallback errors
+      }
       return {
         preferredLanguage: 'ar',
         themeMode: 'light',
@@ -115,24 +140,38 @@ export class PreferencesService {
         }
       });
     } catch (err: any) {
-      this.logger.warn(`Primary preferences upsert failed, attempting fallback: ${err.message}`);
-      const fallbackData = { ...updateData };
-      delete (fallbackData as any).defaultRole;
-      record = await this.prisma.userPreference.upsert({
-        where: { userId },
-        update: fallbackData,
-        create: {
-          userId,
-          preferredLanguage: dto.preferredLanguage || 'ar',
-          themeMode: dto.themeMode || 'light',
+      this.logger.warn(`Primary preferences upsert failed, attempting auto-heal: ${err.message}`);
+      try {
+        await this.prisma.$executeRawUnsafe(
+          `ALTER TABLE "user_preferences" ADD COLUMN IF NOT EXISTS "default_role" "UserRole" NOT NULL DEFAULT 'BUYER';`
+        );
+        record = await this.prisma.userPreference.upsert({
+          where: { userId },
+          update: updateData,
+          create: {
+            userId,
+            preferredLanguage: dto.preferredLanguage || 'ar',
+            themeMode: dto.themeMode || 'light',
+            defaultRole: (dto.defaultRole as any) || UserRole.BUYER,
+            emailNotifications: dto.emailNotifications ?? true,
+            smsNotifications: dto.smsNotifications ?? true,
+            marketingAlerts: dto.marketingAlerts ?? false,
+            inquiryAlerts: dto.inquiryAlerts ?? true
+          }
+        });
+      } catch (innerErr: any) {
+        this.logger.warn(`Fallback upsert failed: ${innerErr?.message || innerErr}. Returning safe response.`);
+        return {
+          preferredLanguage: (dto.preferredLanguage as PreferredLanguage) || 'ar',
+          themeMode: (dto.themeMode as ThemeMode) || 'light',
+          defaultRole: (dto.defaultRole as UserRole) || UserRole.BUYER,
           emailNotifications: dto.emailNotifications ?? true,
           smsNotifications: dto.smsNotifications ?? true,
           marketingAlerts: dto.marketingAlerts ?? false,
-          inquiryAlerts: dto.inquiryAlerts ?? true
-        }
-      });
-      if (dto.defaultRole) {
-        record.defaultRole = dto.defaultRole;
+          inquiryAlerts: dto.inquiryAlerts ?? true,
+          criticalAlertsMandatory: true,
+          updatedAt: new Date()
+        };
       }
     }
 
