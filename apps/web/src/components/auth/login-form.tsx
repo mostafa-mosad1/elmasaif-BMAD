@@ -44,29 +44,45 @@ export interface LoginFormProps {
   onSuccessRedirect?: string;
 }
 
-export function LoginForm({ onSuccessRedirect = '/app/buyer' }: LoginFormProps) {
+export function LoginForm({ onSuccessRedirect }: LoginFormProps) {
   const router = useRouter();
   const { user: authUser, isLoading: isAuthLoading, setSessionUser, refreshSession } = useAuth();
 
-  const getEffectiveRedirect = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        const redir = params.get('redirect');
-        if (redir && redir.startsWith('/') && !redir.startsWith('/auth')) {
-          return redir;
+  const getEffectiveRedirect = useCallback(
+    (targetUser?: SessionUser | null) => {
+      if (typeof window !== 'undefined') {
+        try {
+          const params = new URLSearchParams(window.location.search);
+          const redir = params.get('redirect');
+          if (redir && redir.startsWith('/') && !redir.startsWith('/auth')) {
+            return redir;
+          }
+        } catch {
+          // ignore
         }
-      } catch {
-        // ignore
       }
-    }
-    return onSuccessRedirect;
-  }, [onSuccessRedirect]);
+      if (onSuccessRedirect) {
+        return onSuccessRedirect;
+      }
+      // Determine landing space strictly from this specific authenticated user
+      const active = targetUser || authUser;
+      let role = (active?.activeRole as string) || (active?.role as string);
+      if (!role && active?.id && typeof window !== 'undefined') {
+        const stored = localStorage.getItem(`elmasaif_default_role_${active.id}`);
+        if (stored && ['BUYER', 'OWNER', 'MARKETER'].includes(stored)) {
+          role = stored;
+        }
+      }
+      const roleSlug = (role || 'buyer').toLowerCase();
+      return `/app/${roleSlug}`;
+    },
+    [onSuccessRedirect, authUser]
+  );
 
   // Auto-redirect if user is already authenticated
   useEffect(() => {
     if (!isAuthLoading && authUser) {
-      const target = getEffectiveRedirect();
+      const target = getEffectiveRedirect(authUser);
       router.replace(target);
     }
   }, [authUser, isAuthLoading, router, getEffectiveRedirect]);
@@ -178,7 +194,7 @@ export function LoginForm({ onSuccessRedirect = '/app/buyer' }: LoginFormProps) 
         } catch {
           // ignore session hydration error if cookie already active
         }
-        const target = getEffectiveRedirect();
+        const target = getEffectiveRedirect(res.data?.user);
         router.push(target);
         router.refresh();
       }
@@ -240,7 +256,7 @@ export function LoginForm({ onSuccessRedirect = '/app/buyer' }: LoginFormProps) 
       } catch {
         // ignore
       }
-      const target = getEffectiveRedirect();
+      const target = getEffectiveRedirect(res.data?.user);
       router.push(target);
       router.refresh();
     } catch (err: unknown) {

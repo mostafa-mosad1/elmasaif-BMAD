@@ -55,6 +55,22 @@ describe('PreferencesEditor Component (Story 1.10) (AC: 1, 2, 3, 4, 6)', () => {
     expect(html).toContain('حسب إعدادات النظام');
   });
 
+  it('renders default landing workspace selection tiles for buyer, owner, and marketer', () => {
+    const html = renderToString(
+      <DirectionProvider>
+        <ThemeProvider>
+          <PreferencesEditor initialPreferences={{ ...mockInitialPreferences, defaultRole: 'MARKETER' }} />
+        </ThemeProvider>
+      </DirectionProvider>
+    );
+
+    expect(html).toContain('المساحة الافتراضية عند تسجيل الدخول');
+    expect(html).toContain('مساحة المشتري');
+    expect(html).toContain('مساحة المالك');
+    expect(html).toContain('مساحة المسوق (الوسيط)');
+    expect(html).toContain('مسوق معتمد (الوسيط)');
+  });
+
   it('renders optional notification channel toggles with save button', () => {
     const html = renderToString(
       <DirectionProvider>

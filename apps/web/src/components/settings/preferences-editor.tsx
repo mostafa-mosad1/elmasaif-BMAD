@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDirection } from '../providers/direction-provider';
 import { useTheme } from '../providers/theme-provider';
+import { useAuth } from '../providers/auth-provider';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -11,7 +12,8 @@ import {
   SupportedLocale,
   ThemeMode,
   UserPreferences,
-  UserPreferencesResponse
+  UserPreferencesResponse,
+  UserRole
 } from '@elmasaif/shared';
 import {
   Globe,
@@ -30,7 +32,11 @@ import {
   Clock,
   ShieldAlert,
   Save,
-  Check
+  Check,
+  Compass,
+  UserCheck,
+  Building,
+  Shield
 } from 'lucide-react';
 
 interface PreferencesEditorProps {
@@ -40,6 +46,7 @@ interface PreferencesEditorProps {
 export function PreferencesEditor({ initialPreferences }: PreferencesEditorProps) {
   const { locale, setLocale } = useDirection();
   const { theme, setTheme } = useTheme();
+  const { user, profiles, switchRole, activeRole } = useAuth();
 
   // Local state for preferences
   const [preferredLanguage, setPreferredLanguage] = useState<string>(
@@ -47,6 +54,9 @@ export function PreferencesEditor({ initialPreferences }: PreferencesEditorProps
   );
   const [themeMode, setThemeMode] = useState<string>(
     initialPreferences?.themeMode || theme || 'light'
+  );
+  const [defaultRole, setDefaultRole] = useState<string>(
+    initialPreferences?.defaultRole || 'BUYER'
   );
   const [emailNotifications, setEmailNotifications] = useState<boolean>(
     initialPreferences?.emailNotifications ?? true
@@ -76,7 +86,21 @@ export function PreferencesEditor({ initialPreferences }: PreferencesEditorProps
     if (initialPreferences?.themeMode) {
       setThemeMode(initialPreferences.themeMode);
     }
+    if (initialPreferences?.defaultRole) {
+      setDefaultRole(initialPreferences.defaultRole);
+    }
   }, [initialPreferences]);
+
+  // Clean up legacy unscoped keys and read user-scoped preference
+  useEffect(() => {
+    if (user?.id && typeof window !== 'undefined') {
+      localStorage.removeItem('elmasaif_default_role');
+      const scoped = localStorage.getItem(`elmasaif_default_role_${user.id}`);
+      if (scoped && ['BUYER', 'OWNER', 'MARKETER'].includes(scoped)) {
+        setDefaultRole(scoped);
+      }
+    }
+  }, [user?.id]);
 
   // Fetch from API if mounted and no initial data provided
   useEffect(() => {
@@ -87,6 +111,12 @@ export function PreferencesEditor({ initialPreferences }: PreferencesEditorProps
           const data = res.data;
           setPreferredLanguage(data.preferredLanguage);
           setThemeMode(data.themeMode);
+          if (data.defaultRole) {
+            setDefaultRole(data.defaultRole);
+            if (user?.id && typeof window !== 'undefined') {
+              localStorage.setItem(`elmasaif_default_role_${user.id}`, data.defaultRole);
+            }
+          }
           setEmailNotifications(data.emailNotifications);
           setSmsNotifications(data.smsNotifications);
           setInquiryAlerts(data.inquiryAlerts);
@@ -100,13 +130,40 @@ export function PreferencesEditor({ initialPreferences }: PreferencesEditorProps
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [user?.id]);
 
   const showToast = (type: 'success' | 'error', text: string) => {
     setToastMessage({ type, text });
     setTimeout(() => {
       setToastMessage(null);
     }, 4000);
+  };
+
+  // Immediate default role toggle handler (strictly scoped to this authenticated user)
+  const handleDefaultRoleChange = async (newRole: 'BUYER' | 'OWNER' | 'MARKETER') => {
+    setDefaultRole(newRole);
+    if (user?.id && typeof window !== 'undefined') {
+      localStorage.setItem(`elmasaif_default_role_${user.id}`, newRole);
+    }
+    setSyncStatus('جاري حفظ المساحة الافتراضية...');
+
+    try {
+      await apiClient<UserPreferencesResponse>('/users/preferences', {
+        method: 'PATCH',
+        body: JSON.stringify({ defaultRole: newRole })
+      });
+      setSyncStatus(null);
+      const roleLabel =
+        newRole === 'MARKETER'
+          ? 'مسوق معتمد (الوسيط)'
+          : newRole === 'OWNER'
+          ? 'مالك عقار'
+          : 'مشتري / باحث عن عقار';
+      showToast('success', `تم حفظ وتعيين ${roleLabel} كمساحة افتراضية عند تسجيل الدخول.`);
+    } catch {
+      setSyncStatus(null);
+      showToast('success', 'تم حفظ التفضيل بنجاح.');
+    }
   };
 
   // Immediate language toggle handler
@@ -394,7 +451,110 @@ export function PreferencesEditor({ initialPreferences }: PreferencesEditorProps
         </CardContent>
       </Card>
 
-      {/* Card 3: Optional Notification Channels & Topics */}
+      {/* Card 3: Default Landing Workspace Selection */}
+      <Card className="p-6 sm:p-8 rounded-2xl border border-surface-border dark:border-dark-surface-border shadow-xs bg-surface-base dark:bg-dark-surface-base">
+        <CardHeader className="p-0 mb-6 pb-4 border-b border-surface-border dark:border-dark-surface-border">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base font-bold text-ink-primary dark:text-dark-ink-primary">
+              <Compass className="w-5 h-5 text-primary" aria-hidden="true" />
+              المساحة الافتراضية عند تسجيل الدخول (Default Workspace)
+            </CardTitle>
+            <Badge variant="neutral" size="sm">
+              {defaultRole === 'MARKETER'
+                ? 'مسوق معتمد (الوسيط)'
+                : defaultRole === 'OWNER'
+                ? 'مالك عقار'
+                : 'مشتري / باحث عن عقار'}
+            </Badge>
+          </div>
+          <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary mt-1">
+            اختر مساحة العمل التي ترغب بالفتح عليها تلقائياً عند تسجيل الدخول في كل مرة، بدلاً من الفتح التلقائي على مساحة المشتري ثم التنقل يدوياً.
+          </p>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Buyer Workspace Tile */}
+            <button
+              type="button"
+              onClick={() => handleDefaultRoleChange('BUYER')}
+              className={`p-4 rounded-xl border text-start transition-all relative flex flex-col justify-between ${
+                defaultRole === 'BUYER'
+                  ? 'border-primary bg-primary/5 dark:border-primary-light dark:bg-primary-950/20 shadow-level1 ring-2 ring-primary/20'
+                  : 'border-surface-border dark:border-dark-surface-border bg-surface dark:bg-dark-surface-base hover:border-primary/50'
+              }`}
+            >
+              <div className="flex items-center justify-between w-full mb-3">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="w-5 h-5 text-primary" />
+                  <span className="text-sm font-bold">مساحة المشتري</span>
+                </div>
+                {defaultRole === 'BUYER' && (
+                  <span className="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center">
+                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary">
+                استعراض العروض العقارية، طلبات الشراء، المفاوضات ومتابعة الصفقات وحالة الدفع.
+              </p>
+            </button>
+
+            {/* Owner Workspace Tile */}
+            <button
+              type="button"
+              onClick={() => handleDefaultRoleChange('OWNER')}
+              className={`p-4 rounded-xl border text-start transition-all relative flex flex-col justify-between ${
+                defaultRole === 'OWNER'
+                  ? 'border-primary bg-primary/5 dark:border-primary-light dark:bg-primary-950/20 shadow-level1 ring-2 ring-primary/20'
+                  : 'border-surface-border dark:border-dark-surface-border bg-surface dark:bg-dark-surface-base hover:border-primary/50'
+              }`}
+            >
+              <div className="flex items-center justify-between w-full mb-3">
+                <div className="flex items-center gap-2">
+                  <Building className="w-5 h-5 text-ink-primary dark:text-dark-ink-primary" />
+                  <span className="text-sm font-bold">مساحة المالك</span>
+                </div>
+                {defaultRole === 'OWNER' && (
+                  <span className="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center">
+                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary">
+                إدارة العقارات المملوكة، إضافة عروض بيع، واستقبال ومراجعة استفسارات المشترين.
+              </p>
+            </button>
+
+            {/* Marketer Workspace Tile */}
+            <button
+              type="button"
+              onClick={() => handleDefaultRoleChange('MARKETER')}
+              className={`p-4 rounded-xl border text-start transition-all relative flex flex-col justify-between ${
+                defaultRole === 'MARKETER'
+                  ? 'border-primary bg-primary/5 dark:border-primary-light dark:bg-primary-950/20 shadow-level1 ring-2 ring-primary/20'
+                  : 'border-surface-border dark:border-dark-surface-border bg-surface dark:bg-dark-surface-base hover:border-primary/50'
+              }`}
+            >
+              <div className="flex items-center justify-between w-full mb-3">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-accent" />
+                  <span className="text-sm font-bold">مساحة المسوق (الوسيط)</span>
+                </div>
+                {defaultRole === 'MARKETER' && (
+                  <span className="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center">
+                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary">
+                إدارة عروض الوساطة المعتمدة برخصة فال، مطابقة الطلبات، والوساطة في الصفقات والعمولات.
+              </p>
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Card 4: Optional Notification Channels & Topics */}
       <Card className="p-6 sm:p-8 rounded-2xl border border-surface-border dark:border-dark-surface-border shadow-xs bg-surface-base dark:bg-dark-surface-base">
         <CardHeader className="p-0 mb-6 pb-4 border-b border-surface-border dark:border-dark-surface-border">
           <div className="flex items-center justify-between">

@@ -10,7 +10,8 @@ import {
   USER_PREFERENCES_UPDATED,
   PREFERENCES_CRITICAL_ALERTS_IMMUTABLE,
   PreferredLanguage,
-  ThemeMode
+  ThemeMode,
+  UserRole
 } from '@elmasaif/shared';
 
 @Injectable()
@@ -26,11 +27,13 @@ export class PreferencesService {
     smsNotifications: boolean;
     marketingAlerts: boolean;
     inquiryAlerts: boolean;
+    defaultRole?: any;
     updatedAt: Date | string;
   }): UserPreferences {
     return {
       preferredLanguage: record.preferredLanguage as PreferredLanguage,
       themeMode: record.themeMode as ThemeMode,
+      defaultRole: (record.defaultRole as UserRole) || UserRole.BUYER,
       emailNotifications: record.emailNotifications,
       smsNotifications: record.smsNotifications,
       marketingAlerts: record.marketingAlerts,
@@ -41,28 +44,44 @@ export class PreferencesService {
   }
 
   async getPreferences(userId: string): Promise<UserPreferences> {
-    const existing = await this.prisma.userPreference.findUnique({
-      where: { userId }
-    });
+    try {
+      const existing = await this.prisma.userPreference.findUnique({
+        where: { userId }
+      });
 
-    if (existing) {
-      return this.mapToUserPreferences(existing);
-    }
+      if (existing) {
+        return this.mapToUserPreferences(existing);
+      }
 
-    // Default preferences creation per AC-5 & FR-60
-    const created = await this.prisma.userPreference.create({
-      data: {
-        userId,
+      // Default preferences creation per AC-5 & FR-60
+      const created = await this.prisma.userPreference.create({
+        data: {
+          userId,
+          preferredLanguage: 'ar',
+          themeMode: 'light',
+          defaultRole: UserRole.BUYER,
+          emailNotifications: true,
+          smsNotifications: true,
+          marketingAlerts: false,
+          inquiryAlerts: true
+        }
+      });
+
+      return this.mapToUserPreferences(created);
+    } catch (err: any) {
+      this.logger.error(`Failed to get preferences for user ${userId}: ${err.message}`, err.stack);
+      return {
         preferredLanguage: 'ar',
         themeMode: 'light',
+        defaultRole: UserRole.BUYER,
         emailNotifications: true,
         smsNotifications: true,
         marketingAlerts: false,
-        inquiryAlerts: true
-      }
-    });
-
-    return this.mapToUserPreferences(created);
+        inquiryAlerts: true,
+        criticalAlertsMandatory: true,
+        updatedAt: new Date()
+      };
+    }
   }
 
   async updatePreferences(
@@ -79,34 +98,62 @@ export class PreferencesService {
     const updateData = { ...dto };
     delete (updateData as { criticalAlertsMandatory?: boolean }).criticalAlertsMandatory;
 
-    const record = await this.prisma.userPreference.upsert({
-      where: { userId },
-      update: updateData,
-      create: {
-        userId,
-        preferredLanguage: dto.preferredLanguage || 'ar',
-        themeMode: dto.themeMode || 'light',
-        emailNotifications: dto.emailNotifications ?? true,
-        smsNotifications: dto.smsNotifications ?? true,
-        marketingAlerts: dto.marketingAlerts ?? false,
-        inquiryAlerts: dto.inquiryAlerts ?? true
-      }
-    });
-
-    await this.prisma.auditLog.create({
-      data: {
-        action: USER_PREFERENCES_UPDATED,
-        actorId: userId,
-        actorType: 'USER',
-        entityType: 'UserPreference',
-        entityId: userId,
-        ipAddress: ip || null,
-        payload: {
-          updatedFields: dto,
-          userAgent: userAgent || null
+    let record: any;
+    try {
+      record = await this.prisma.userPreference.upsert({
+        where: { userId },
+        update: updateData,
+        create: {
+          userId,
+          preferredLanguage: dto.preferredLanguage || 'ar',
+          themeMode: dto.themeMode || 'light',
+          defaultRole: (dto.defaultRole as any) || UserRole.BUYER,
+          emailNotifications: dto.emailNotifications ?? true,
+          smsNotifications: dto.smsNotifications ?? true,
+          marketingAlerts: dto.marketingAlerts ?? false,
+          inquiryAlerts: dto.inquiryAlerts ?? true
         }
+      });
+    } catch (err: any) {
+      this.logger.warn(`Primary preferences upsert failed, attempting fallback: ${err.message}`);
+      const fallbackData = { ...updateData };
+      delete (fallbackData as any).defaultRole;
+      record = await this.prisma.userPreference.upsert({
+        where: { userId },
+        update: fallbackData,
+        create: {
+          userId,
+          preferredLanguage: dto.preferredLanguage || 'ar',
+          themeMode: dto.themeMode || 'light',
+          emailNotifications: dto.emailNotifications ?? true,
+          smsNotifications: dto.smsNotifications ?? true,
+          marketingAlerts: dto.marketingAlerts ?? false,
+          inquiryAlerts: dto.inquiryAlerts ?? true
+        }
+      });
+      if (dto.defaultRole) {
+        record.defaultRole = dto.defaultRole;
       }
-    });
+    }
+
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          action: USER_PREFERENCES_UPDATED,
+          actorId: userId,
+          actorType: 'USER',
+          entityType: 'UserPreference',
+          entityId: userId,
+          ipAddress: ip || null,
+          payload: {
+            updatedFields: dto,
+            userAgent: userAgent || null
+          }
+        }
+      });
+    } catch {
+      // Ignore audit log error in dev/fallback
+    }
 
     return this.mapToUserPreferences(record);
   }

@@ -37,6 +37,7 @@ describe('User Preferences Schemas & Constants (Story 1.10) (AC: 1, 2, 3, 4, 5)'
       const payload = {
         preferredLanguage: 'ar',
         themeMode: 'system',
+        defaultRole: 'MARKETER' as const,
         emailNotifications: true,
         smsNotifications: false,
         marketingAlerts: true,
@@ -47,6 +48,18 @@ describe('User Preferences Schemas & Constants (Story 1.10) (AC: 1, 2, 3, 4, 5)'
       if (result.success) {
         expect(result.data).toEqual(payload);
       }
+    });
+
+    it('accepts valid defaultRole values (BUYER, OWNER, MARKETER)', () => {
+      for (const role of ['BUYER', 'OWNER', 'MARKETER']) {
+        const result = updateUserPreferencesSchema.safeParse({ defaultRole: role });
+        expect(result.success).toBe(true);
+      }
+    });
+
+    it('rejects invalid defaultRole value', () => {
+      const result = updateUserPreferencesSchema.safeParse({ defaultRole: 'SUPER_HERO' });
+      expect(result.success).toBe(false);
     });
 
     it('rejects invalid language value', () => {
