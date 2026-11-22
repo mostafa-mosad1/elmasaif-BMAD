@@ -4,7 +4,8 @@ import { PreferencesService } from '../preferences.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import {
   USER_PREFERENCES_UPDATED,
-  PREFERENCES_CRITICAL_ALERTS_IMMUTABLE
+  PREFERENCES_CRITICAL_ALERTS_IMMUTABLE,
+  UserRole
 } from '@elmasaif/shared';
 
 describe('PreferencesService (Story 1.10) (AC: 1, 2, 3, 4, 5)', () => {
@@ -63,6 +64,7 @@ describe('PreferencesService (Story 1.10) (AC: 1, 2, 3, 4, 5)', () => {
       expect(result).toEqual({
         preferredLanguage: 'en',
         themeMode: 'dark',
+        defaultRole: UserRole.BUYER,
         emailNotifications: false,
         smsNotifications: true,
         marketingAlerts: false,
@@ -100,6 +102,7 @@ describe('PreferencesService (Story 1.10) (AC: 1, 2, 3, 4, 5)', () => {
           userId: 'usr-456',
           preferredLanguage: 'ar',
           themeMode: 'light',
+          defaultRole: UserRole.BUYER,
           emailNotifications: true,
           smsNotifications: true,
           marketingAlerts: false,
@@ -109,6 +112,7 @@ describe('PreferencesService (Story 1.10) (AC: 1, 2, 3, 4, 5)', () => {
       expect(result).toEqual({
         preferredLanguage: 'ar',
         themeMode: 'light',
+        defaultRole: UserRole.BUYER,
         emailNotifications: true,
         smsNotifications: true,
         marketingAlerts: false,
@@ -152,6 +156,7 @@ describe('PreferencesService (Story 1.10) (AC: 1, 2, 3, 4, 5)', () => {
           userId: 'usr-123',
           preferredLanguage: 'en',
           themeMode: 'dark',
+          defaultRole: UserRole.BUYER,
           smsNotifications: false,
           emailNotifications: true,
           marketingAlerts: false,
@@ -177,6 +182,7 @@ describe('PreferencesService (Story 1.10) (AC: 1, 2, 3, 4, 5)', () => {
       expect(result).toEqual({
         preferredLanguage: 'en',
         themeMode: 'dark',
+        defaultRole: UserRole.BUYER,
         emailNotifications: true,
         smsNotifications: false,
         marketingAlerts: false,
@@ -184,6 +190,33 @@ describe('PreferencesService (Story 1.10) (AC: 1, 2, 3, 4, 5)', () => {
         criticalAlertsMandatory: true,
         updatedAt: mockDate
       });
+    });
+
+    it('updates defaultRole preference successfully', async () => {
+      const updatedRecord = {
+        id: 'pref-1',
+        userId: 'usr-123',
+        preferredLanguage: 'ar',
+        themeMode: 'light',
+        defaultRole: UserRole.MARKETER,
+        emailNotifications: true,
+        smsNotifications: true,
+        marketingAlerts: false,
+        inquiryAlerts: true,
+        createdAt: mockDate,
+        updatedAt: mockDate
+      };
+
+      prisma.userPreference.upsert.mockResolvedValue(updatedRecord);
+      prisma.auditLog.create.mockResolvedValue({ id: 'log-2' });
+
+      const dto = {
+        defaultRole: UserRole.MARKETER
+      };
+
+      const result = await service.updatePreferences('usr-123', dto, '127.0.0.1');
+
+      expect(result.defaultRole).toBe(UserRole.MARKETER);
     });
 
     it('rejects any attempt to set criticalAlertsMandatory to false', async () => {

@@ -74,7 +74,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response?.data?.user) {
         const u = response.data.user;
         setUser(u);
-        const resolvedRole = (u.activeRole as UserRole) || (u.role as UserRole) || UserRole.BUYER;
+        let resolvedRole = (u.activeRole as UserRole) || (u.role as UserRole);
+        if ((!resolvedRole || resolvedRole === UserRole.BUYER) && typeof window !== 'undefined' && u.id) {
+          const stored = localStorage.getItem(`elmasaif_default_role_${u.id}`) as UserRole;
+          if (stored && ['BUYER', 'OWNER', 'MARKETER'].includes(stored)) {
+            const hasProfile = stored === UserRole.BUYER || u.profiles?.some((p) => p.role === stored);
+            if (hasProfile) {
+              resolvedRole = stored;
+            }
+          }
+        }
+        resolvedRole = resolvedRole || UserRole.BUYER;
         setActiveRole(resolvedRole);
         setProfiles(u.profiles || []);
       } else {
@@ -99,7 +109,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const setSessionUser = useCallback((newUser: SessionUser) => {
     setUser(newUser);
-    const resolvedRole = (newUser.activeRole as UserRole) || (newUser.role as UserRole) || UserRole.BUYER;
+    let resolvedRole = (newUser.activeRole as UserRole) || (newUser.role as UserRole);
+    if ((!resolvedRole || resolvedRole === UserRole.BUYER) && typeof window !== 'undefined' && newUser.id) {
+      const stored = localStorage.getItem(`elmasaif_default_role_${newUser.id}`) as UserRole;
+      if (stored && ['BUYER', 'OWNER', 'MARKETER'].includes(stored)) {
+        const hasProfile = stored === UserRole.BUYER || newUser.profiles?.some((p) => p.role === stored);
+        if (hasProfile) {
+          resolvedRole = stored;
+        }
+      }
+    }
+    resolvedRole = resolvedRole || UserRole.BUYER;
     setActiveRole(resolvedRole);
     setProfiles(newUser.profiles || []);
     setIsLoading(false);

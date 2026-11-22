@@ -373,6 +373,7 @@ model UserPreference {
   smsNotifications   Boolean  @default(true) @map("sms_notifications")
   marketingAlerts    Boolean  @default(false) @map("marketing_alerts")
   inquiryAlerts      Boolean  @default(true) @map("inquiry_alerts")
+  defaultRole        UserRole @default(BUYER) @map("default_role")
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 

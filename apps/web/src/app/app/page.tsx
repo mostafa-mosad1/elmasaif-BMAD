@@ -5,15 +5,22 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../components/providers/auth-provider';
 
 export default function WorkspaceIndexPage() {
-  const { activeRole, isLoading } = useAuth();
+  const { user, activeRole, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!isLoading) {
-      const target = activeRole ? activeRole.toLowerCase() : 'buyer';
+      let resolved = activeRole ? activeRole.toLowerCase() : '';
+      if (!resolved && user?.id && typeof window !== 'undefined') {
+        const stored = localStorage.getItem(`elmasaif_default_role_${user.id}`);
+        if (stored && ['BUYER', 'OWNER', 'MARKETER'].includes(stored)) {
+          resolved = stored.toLowerCase();
+        }
+      }
+      const target = resolved || 'buyer';
       router.replace(`/app/${target}`);
     }
-  }, [activeRole, isLoading, router]);
+  }, [user, activeRole, isLoading, router]);
 
   return (
     <div className="flex items-center justify-center p-12">

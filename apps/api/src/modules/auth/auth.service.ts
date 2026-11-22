@@ -610,10 +610,13 @@ export class AuthService {
     );
     const sessionToken = crypto.randomBytes(32).toString('hex');
 
+    const initialRole = await this.resolveDefaultLandingRole(user.id, user.profiles || []);
+
     await this.prisma.session.create({
       data: {
         userId: user.id,
         token: sessionToken,
+        activeRole: initialRole,
         ipAddress: ip || '127.0.0.1',
         userAgent: userAgent || 'unknown',
         expiresAt: sessionExpiresAt
@@ -622,7 +625,7 @@ export class AuthService {
 
     return {
       stepUpRequired: false,
-      user: this.formatSessionUser(user, UserRole.BUYER),
+      user: this.formatSessionUser(user, initialRole),
       sessionToken,
       sessionExpiresAt,
       deviceId: effectiveDeviceId,
@@ -708,10 +711,13 @@ export class AuthService {
     );
     const sessionToken = crypto.randomBytes(32).toString('hex');
 
+    const initialRole = await this.resolveDefaultLandingRole(user.id, user.profiles || []);
+
     await this.prisma.session.create({
       data: {
         userId: user.id,
         token: sessionToken,
+        activeRole: initialRole,
         ipAddress: ip || '127.0.0.1',
         userAgent: userAgent || 'unknown',
         expiresAt: sessionExpiresAt
@@ -719,11 +725,34 @@ export class AuthService {
     });
 
     return {
-      user: this.formatSessionUser(user, UserRole.BUYER),
+      user: this.formatSessionUser(user, initialRole),
       sessionToken,
       sessionExpiresAt,
       deviceId: effectiveDeviceId
     };
+  }
+
+  private async resolveDefaultLandingRole(userId: string, profiles: any[]): Promise<UserRole> {
+    try {
+      const pref = await this.prisma.userPreference?.findUnique?.({
+        where: { userId }
+      });
+      if (pref?.defaultRole) {
+        const defaultRole = pref.defaultRole as UserRole;
+        if (defaultRole === UserRole.BUYER) {
+          return UserRole.BUYER;
+        }
+        const hasProfile = profiles?.some(
+          (p: any) => p.role === defaultRole && p.status === ProfileStatus.ACTIVE
+        );
+        if (hasProfile) {
+          return defaultRole;
+        }
+      }
+    } catch {
+      // Fallback gracefully if preference table or column unavailable
+    }
+    return UserRole.BUYER;
   }
 
   private formatSessionUser(user: any, activeRole?: UserRole): SessionUser {
