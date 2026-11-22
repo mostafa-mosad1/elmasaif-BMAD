@@ -176,20 +176,20 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         title: 'العمليات والقيادة',
         items: [
           { href: '/admin', label: 'لوحة تحكم المشرف', icon: LayoutDashboard },
-          { href: '/admin/queues', label: 'طوابير المهام والأقفال التشغيلية', icon: Layers, badge: { count: '2', variant: 'accent' } }
+          { href: '/admin/queues', label: 'طوابير المهام والأقفال التشغيلية', icon: Layers }
         ]
       },
       {
         title: 'العقارات والتراخيص',
         items: [
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Listings.Review')
-            ? [{ href: '/admin/listings/moderation', label: 'طابور مراجعة الإعلانات العقارية', icon: Building, badge: { count: '3', variant: 'accent' } }]
+            ? [{ href: '/admin/listings/moderation', label: 'طابور مراجعة الإعلانات العقارية', icon: Building }]
             : []),
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Contracts.Review') || admin.permissions?.includes('Contracts.Manage')
             ? [{ href: '/admin/owner-requests', label: 'طلبات الملاك والعقود', icon: FileText }]
             : []),
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Licenses.Review')
-            ? [{ href: '/admin/licenses', label: 'طابور اعتماد رخص فال', icon: FileCheck, badge: { count: '1', variant: 'accent' } }]
+            ? [{ href: '/admin/licenses', label: 'طابور اعتماد رخص فال', icon: FileCheck }]
             : []),
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Users.Review') || admin.permissions?.includes('Users.Verify') || admin.permissions?.includes('Licenses.Review') || admin.permissions?.includes('Compliance.Manage')
             ? [{ href: '/admin/identity', label: 'توثيق الهويات الوطنية', icon: ShieldCheck }]
@@ -203,7 +203,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         title: 'الصفقات والوساطة المالية',
         items: [
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Offers.Review')
-            ? [{ href: '/admin/negotiations', label: 'طابور وساطة عروض الشراء', icon: HandCoins, badge: { count: '4', variant: 'accent' } }]
+            ? [{ href: '/admin/negotiations', label: 'طابور وساطة عروض الشراء', icon: HandCoins }]
             : []),
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Offers.Review')
             ? [{ href: '/admin/proposals', label: 'طابور مراجعة عروض المزودين', icon: Sparkles }]
@@ -223,10 +223,10 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         title: 'الدعم والنزاعات والرقابة',
         items: [
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Tickets.Handle')
-            ? [{ href: '/admin/tickets', label: 'تذاكر الدعم الفني', icon: LifeBuoy, badge: { count: '5', variant: 'neutral' } }]
+            ? [{ href: '/admin/tickets', label: 'تذاكر الدعم الفني', icon: LifeBuoy }]
             : []),
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Deals.DisputeResolve')
-            ? [{ href: '/admin/disputes', label: 'فض النزاعات', icon: Scale, badge: { count: '1', variant: 'danger' } }]
+            ? [{ href: '/admin/disputes', label: 'فض النزاعات', icon: Scale }]
             : []),
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Conversations.Handle')
             ? [{ href: '/admin/conversations', label: 'طابور المحادثات', icon: MessagesSquare }]
@@ -235,7 +235,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
             ? [{ href: '/admin/reviews', label: 'مراجعة وتدقيق التقييمات', icon: Star }]
             : []),
           ...(!admin || admin.role === 'SUPER_ADMIN' || admin.permissions?.includes('Reports.Handle')
-            ? [{ href: '/admin/reports', label: 'بلاغات المخالفات والامتثال', icon: ShieldAlert, badge: { count: '2', variant: 'danger' } }]
+            ? [{ href: '/admin/reports', label: 'بلاغات المخالفات والامتثال', icon: ShieldAlert }]
             : [])
         ]
       },
@@ -382,12 +382,9 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
               return (
                 <div key={section.title || sIdx} className="space-y-1.5">
                   {section.title && (
-                    <div className="px-3 py-1 flex items-center justify-between">
+                    <div className="px-3 py-1">
                       <span className="text-[11px] font-bold tracking-wider text-ink-muted dark:text-dark-ink-muted uppercase">
                         {section.title}
-                      </span>
-                      <span className="text-[10px] text-ink-muted opacity-60 font-mono">
-                        {section.items.length}
                       </span>
                     </div>
                   )}
