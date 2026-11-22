@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -12,6 +12,9 @@ import {
   Maximize2,
   ShieldAlert,
   Star,
+  Share2,
+  Check,
+  Calculator,
 } from 'lucide-react';
 import {
   ListingDetailItem,
@@ -104,6 +107,19 @@ export function ListingDetailView({
   headerAction = null,
 }: ListingDetailViewProps) {
   const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const handleShare = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        navigator.clipboard?.writeText(window.location.href);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2500);
+      } catch {
+        // clipboard unavailable
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -141,13 +157,25 @@ export function ListingDetailView({
   const propertyTypeLabel = PROPERTY_TYPE_LABELS_AR[detail.propertyType] || 'عقار';
   const falVerified = isSellerFalVerified(detail);
   const cta = resolveCta(detail.status);
+  const pricePerMeter =
+    detail.askPrice && detail.areaSquareMeters > 0
+      ? Math.round(detail.askPrice / detail.areaSquareMeters)
+      : null;
   const locationText = [
     detail.districtName ? `حي ${detail.districtName}` : '',
     detail.cityName || '',
   ]
     .filter(Boolean)
     .join('، ');
-  const photos = (detail.photos || []).map((photo) => photo.fileUrl);
+  const rawPhotos = (detail.photos || []).map((photo) => photo.fileUrl).filter(Boolean);
+  const photos =
+    rawPhotos.length > 0
+      ? rawPhotos
+      : [
+          'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80',
+        ];
 
   return (
     <div className="py-6 sm:py-8" dir="rtl">
@@ -159,7 +187,27 @@ export function ListingDetailView({
           <ArrowRight className="w-4 h-4" />
           <span>العودة إلى نتائج البحث</span>
         </Link>
-        {headerAction}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleShare}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold py-1.5 px-3 rounded-xl bg-surface-base dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border hover:bg-surface-sunken dark:hover:bg-dark-surface-raised text-ink-secondary dark:text-dark-ink-secondary hover:text-ink-primary dark:hover:text-white transition-all shadow-2xs cursor-pointer active:scale-95"
+            aria-label="مشاركة رابط العقار"
+          >
+            {copiedLink ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">تم نسخ الرابط!</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="w-3.5 h-3.5 text-accent" />
+                <span>مشاركة</span>
+              </>
+            )}
+          </button>
+          {headerAction}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -197,86 +245,136 @@ export function ListingDetailView({
             />
           </Card>
 
-          <Card className="p-5 sm:p-6 space-y-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-pill text-[11px] font-semibold bg-surface-sunken dark:bg-dark-surface-sunken text-ink-secondary dark:text-dark-ink-secondary border border-surface-border dark:border-dark-surface-border">
+          <Card className="p-6 sm:p-8 space-y-7 rounded-3xl border border-surface-border dark:border-dark-surface-border bg-surface-base dark:bg-dark-surface-base shadow-level1">
+            {/* Header: Type Badge, Title, Location, and Favorite */}
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-accent/10 dark:bg-accent/15 text-accent border border-accent/20">
                     {propertyTypeLabel}
                   </span>
                 </div>
-                <h1 className="text-xl sm:text-2xl font-bold text-ink-primary dark:text-dark-ink-primary leading-snug">
+                <h1 className="text-2xl sm:text-3xl font-black text-ink-primary dark:text-dark-ink-primary leading-tight tracking-tight">
                   {detail.title}
                 </h1>
-                <div className="mt-2 flex items-center gap-1.5 text-sm text-ink-secondary dark:text-dark-ink-secondary">
-                  <MapPin className="w-4 h-4 text-primary dark:text-primary-light shrink-0" />
+                <div className="flex items-center gap-2 text-sm sm:text-base text-ink-secondary dark:text-dark-ink-secondary font-medium">
+                  <MapPin className="w-4 h-4 text-accent shrink-0" />
                   <span>{locationText || 'المملكة العربية السعودية'}</span>
                   {detail.streetName ? (
-                    <span className="text-ink-secondary dark:text-dark-ink-secondary">
+                    <span className="text-ink-muted dark:text-dark-ink-muted">
                       — {detail.streetName}
                     </span>
                   ) : null}
                 </div>
               </div>
 
-              <ListingFavoriteButton
-                listingId={detail.id}
-                initialFavorited={detail.isFavorited}
-                initialTotalFavorites={detail.totalFavorites}
-              />
+              <div className="shrink-0 pt-1">
+                <ListingFavoriteButton
+                  listingId={detail.id}
+                  initialFavorited={detail.isFavorited}
+                  initialTotalFavorites={detail.totalFavorites}
+                />
+              </div>
             </div>
 
-            {/* Strict specs strip — the schema has no bathrooms or amenities, so none are rendered */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-surface-border dark:border-dark-surface-border text-xs text-ink-secondary dark:text-dark-ink-secondary">
-              <div className="flex items-center gap-2">
-                <Maximize2 className="w-4 h-4 text-primary dark:text-primary-light shrink-0" />
+            {/* Specifications Cards Grid (Spacious, prominent numbers & distinct labels) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 pt-6 border-t border-surface-border dark:border-dark-surface-border">
+              {/* Area Card */}
+              <div className="p-4 rounded-2xl bg-surface-sunken/60 dark:bg-dark-surface-raised border border-surface-border/70 dark:border-dark-surface-border flex flex-col justify-between gap-3 hover:border-accent/40 transition-colors shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-ink-secondary dark:text-dark-ink-secondary">
+                    المساحة
+                  </span>
+                  <div className="w-8 h-8 rounded-xl bg-accent/10 dark:bg-accent/15 text-accent flex items-center justify-center">
+                    <Maximize2 className="w-4 h-4" />
+                  </div>
+                </div>
                 <div>
                   <span
                     dir="ltr"
-                    className="block font-mono-numbers text-sm font-bold text-ink-primary dark:text-dark-ink-primary"
+                    className="block font-mono-numbers text-xl sm:text-2xl font-black text-ink-primary dark:text-dark-ink-primary"
                   >
                     {`${formatDetailNumber(detail.areaSquareMeters)} م²`}
                   </span>
-                  <span>المساحة</span>
                 </div>
               </div>
 
-              {detail.bedrooms != null ? (
-                <div className="flex items-center gap-2">
-                  <BedDouble className="w-4 h-4 text-primary dark:text-primary-light shrink-0" />
+              {/* Price Per Square Meter Card */}
+              {pricePerMeter ? (
+                <div className="p-4 rounded-2xl bg-surface-sunken/60 dark:bg-dark-surface-raised border border-surface-border/70 dark:border-dark-surface-border flex flex-col justify-between gap-3 hover:border-accent/40 transition-colors shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-ink-secondary dark:text-dark-ink-secondary">
+                      سعر المتر المربع
+                    </span>
+                    <div className="w-8 h-8 rounded-xl bg-accent/10 dark:bg-accent/15 text-accent flex items-center justify-center">
+                      <Calculator className="w-4 h-4" />
+                    </div>
+                  </div>
                   <div>
                     <span
                       dir="ltr"
-                      className="block font-mono-numbers text-sm font-bold text-ink-primary dark:text-dark-ink-primary"
+                      className="block font-mono-numbers text-xl sm:text-2xl font-black text-accent"
                     >
-                      {formatDetailNumber(detail.bedrooms)}
+                      {`${formatDetailNumber(pricePerMeter)} ر.س`}
                     </span>
-                    <span>غرف النوم</span>
                   </div>
                 </div>
               ) : null}
 
-              {detail.yearBuilt != null ? (
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="w-4 h-4 text-primary dark:text-primary-light shrink-0" />
+              {/* Bedrooms Card */}
+              {detail.bedrooms != null ? (
+                <div className="p-4 rounded-2xl bg-surface-sunken/60 dark:bg-dark-surface-raised border border-surface-border/70 dark:border-dark-surface-border flex flex-col justify-between gap-3 hover:border-accent/40 transition-colors shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-ink-secondary dark:text-dark-ink-secondary">
+                      غرف النوم
+                    </span>
+                    <div className="w-8 h-8 rounded-xl bg-primary/10 dark:bg-primary-light/10 text-primary dark:text-primary-light flex items-center justify-center">
+                      <BedDouble className="w-4 h-4" />
+                    </div>
+                  </div>
                   <div>
                     <span
                       dir="ltr"
-                      className="block font-mono-numbers text-sm font-bold text-ink-primary dark:text-dark-ink-primary"
+                      className="block font-mono-numbers text-xl sm:text-2xl font-black text-ink-primary dark:text-dark-ink-primary"
+                    >
+                      {formatDetailNumber(detail.bedrooms)}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Year Built Card */}
+              {detail.yearBuilt != null ? (
+                <div className="p-4 rounded-2xl bg-surface-sunken/60 dark:bg-dark-surface-raised border border-surface-border/70 dark:border-dark-surface-border flex flex-col justify-between gap-3 hover:border-accent/40 transition-colors shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-ink-secondary dark:text-dark-ink-secondary">
+                      سنة البناء
+                    </span>
+                    <div className="w-8 h-8 rounded-xl bg-primary/10 dark:bg-primary-light/10 text-primary dark:text-primary-light flex items-center justify-center">
+                      <CalendarDays className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div>
+                    <span
+                      dir="ltr"
+                      className="block font-mono-numbers text-xl sm:text-2xl font-black text-ink-primary dark:text-dark-ink-primary"
                     >
                       {detail.yearBuilt}
                     </span>
-                    <span>سنة البناء</span>
                   </div>
                 </div>
               ) : null}
             </div>
 
-            <div className="pt-4 border-t border-surface-border dark:border-dark-surface-border">
-              <h2 className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary mb-2">
-                وصف العقار
-              </h2>
-              <p className="text-sm leading-relaxed text-ink-secondary dark:text-dark-ink-secondary whitespace-pre-line">
+            {/* Property Description */}
+            <div className="pt-6 border-t border-surface-border dark:border-dark-surface-border space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-4 rounded-full bg-accent" />
+                <h2 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
+                  وصف العقار
+                </h2>
+              </div>
+              <p className="text-sm sm:text-base leading-relaxed sm:leading-loose text-ink-secondary dark:text-dark-ink-secondary whitespace-pre-line font-normal">
                 {detail.description}
               </p>
             </div>
@@ -287,52 +385,59 @@ export function ListingDetailView({
 
         {/* Sticky rail — price, commission, seller identity, shielding, intent */}
         <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-          <Card className="p-5 space-y-4">
-            <div>
-              <span className="text-xs font-semibold text-ink-secondary dark:text-dark-ink-secondary">
-                سعر الطلب
-              </span>
+          <Card className="p-6 space-y-5 rounded-3xl shadow-level2 border-surface-border/90 dark:border-dark-surface-border/90">
+            {/* Price section - High contrast prominent card */}
+            <div className="p-4 rounded-2xl bg-surface-sunken/80 dark:bg-dark-surface-sunken/70 border border-surface-border dark:border-dark-surface-border flex items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+                <span className="text-sm font-extrabold text-ink-primary dark:text-dark-ink-primary">
+                  سعر الطلب
+                </span>
+              </div>
               <div
                 dir="ltr"
-                className="font-mono-numbers text-2xl font-bold text-ink-primary dark:text-dark-ink-primary flex items-baseline gap-1.5"
+                className="font-mono-numbers text-2xl sm:text-3xl font-black text-ink-primary dark:text-dark-ink-primary flex items-baseline gap-1.5"
               >
                 <span>{formatDetailNumber(detail.askPrice)}</span>
-                <span className="text-xs font-sans font-semibold">ر.س</span>
+                <span className="text-sm font-sans font-bold text-accent dark:text-accent-light">ر.س</span>
               </div>
             </div>
 
-            <CommissionCalculator askPrice={detail.askPrice} className="p-4" />
+            {/* Total Cost Calculator */}
+            <CommissionCalculator askPrice={detail.askPrice} />
 
-            <div className="pt-3 border-t border-surface-border dark:border-dark-surface-border">
-              <div className="flex items-center justify-between gap-2 mb-3">
+            {/* Seller profile & Action buttons */}
+            <div className="pt-2 space-y-4">
+              <div className="p-3 rounded-2xl bg-surface-sunken/40 dark:bg-dark-surface-sunken/30 border border-surface-border/60 dark:border-dark-surface-border/60 flex items-center justify-between gap-3">
                 {detail.sellerProfile?.id && (detail.sellerProfile?.role === 'MARKETER' || falVerified) ? (
                   <Link
                     href={`/brokers/${detail.sellerProfile.id}`}
-                    className="flex items-center gap-2 min-w-0 group hover:opacity-90 transition-opacity"
+                    className="flex items-center gap-2.5 min-w-0 group hover:opacity-95 transition-opacity"
                     data-testid="broker-profile-link"
                   >
-                    <span className="shrink-0 w-8 h-8 rounded-pill bg-surface-sunken dark:bg-dark-surface-sunken text-ink-secondary dark:text-dark-ink-secondary flex items-center justify-center text-xs font-bold group-hover:bg-brand-surface dark:group-hover:bg-brand-surfaceDark group-hover:text-brand-primary transition-colors">
+                    <span className="shrink-0 w-9 h-9 rounded-xl bg-primary/10 text-primary dark:text-primary-light flex items-center justify-center text-sm font-bold group-hover:bg-primary group-hover:text-white transition-colors border border-primary/20">
                       {(detail.sellerProfile?.user?.fullName || 'ب').charAt(0)}
                     </span>
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary truncate group-hover:text-brand-primary transition-colors">
+                      <p className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary truncate group-hover:text-primary transition-colors">
                         {detail.sellerProfile?.user?.fullName || 'بائع العقار'}
                       </p>
-                      <p className="text-[11px] text-ink-secondary dark:text-dark-ink-secondary">
-                        {falVerified ? 'معلن مرخص (فال)' : 'وسيط عقاري'}
+                      <p className="text-[11px] text-ink-secondary dark:text-dark-ink-secondary flex items-center gap-1 font-medium">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                        <span>{falVerified ? 'معلن مرخص (فال)' : 'وسيط عقاري'}</span>
                       </p>
                     </div>
                   </Link>
                 ) : (
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="shrink-0 w-8 h-8 rounded-pill bg-surface-sunken dark:bg-dark-surface-sunken text-ink-secondary dark:text-dark-ink-secondary flex items-center justify-center text-xs font-bold">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="shrink-0 w-9 h-9 rounded-xl bg-surface-sunken dark:bg-dark-surface-sunken text-ink-secondary dark:text-dark-ink-secondary flex items-center justify-center text-sm font-bold border border-surface-border">
                       {(detail.sellerProfile?.user?.fullName || 'ب').charAt(0)}
                     </span>
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary truncate">
                         {detail.sellerProfile?.user?.fullName || 'بائع العقار'}
                       </p>
-                      <p className="text-[11px] text-ink-secondary dark:text-dark-ink-secondary">
+                      <p className="text-[11px] text-ink-secondary dark:text-dark-ink-secondary font-medium">
                         {falVerified ? 'معلن مرخص (فال)' : 'مالك مباشر'}
                       </p>
                     </div>
@@ -340,10 +445,10 @@ export function ListingDetailView({
                 )}
                 {/* Broker ratings ship with Epic 6 — never fabricated here */}
                 <span
-                  className="inline-flex items-center gap-1 text-[11px] text-ink-secondary dark:text-dark-ink-secondary shrink-0"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] font-medium shrink-0 border border-amber-500/20"
                   data-testid="seller-rating-placeholder"
                 >
-                  <Star className="w-3.5 h-3.5" />
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                   <span>التقييم قريباً</span>
                 </span>
               </div>
@@ -351,7 +456,11 @@ export function ListingDetailView({
               <Button
                 variant={cta.variant}
                 size="lg"
-                className="w-full"
+                className={
+                  cta.variant === 'primary'
+                    ? 'w-full h-12 text-base font-bold rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-[0.99] bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-500'
+                    : 'w-full h-12 text-base font-bold rounded-2xl shadow-sm hover:shadow transition-all'
+                }
                 onClick={onCtaClick}
                 data-testid="listing-cta"
               >
@@ -360,7 +469,7 @@ export function ListingDetailView({
 
               {ctaNotice ? (
                 <p
-                  className="mt-2.5 text-[11px] leading-relaxed text-ink-secondary dark:text-dark-ink-secondary"
+                  className="text-center text-[11px] leading-relaxed text-ink-secondary dark:text-dark-ink-secondary px-1"
                   data-testid="listing-cta-notice"
                 >
                   {ctaNotice}
@@ -374,10 +483,10 @@ export function ListingDetailView({
           <button
             type="button"
             onClick={() => setIsReportModalOpen(true)}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs text-ink-muted hover:text-red-600 transition-colors border border-dashed border-surface-border dark:border-dark-surface-border rounded-lg"
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 text-xs font-bold text-red-600 dark:text-red-400 bg-red-50/80 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 hover:bg-red-100 dark:hover:bg-red-950/70 transition-all rounded-xl shadow-xs"
             data-testid="report-listing-button"
           >
-            <ShieldAlert className="w-3.5 h-3.5 text-red-500" />
+            <ShieldAlert className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
             <span>إبلاغ عن مخالفة في هذا الإعلان</span>
           </button>
         </div>

@@ -83,22 +83,25 @@ export function CommissionCalculator({
   ];
 
   return (
-    <Card
-      sunken
-      className={twMerge(clsx('p-5', className))}
+    <div
+      className={twMerge(
+        clsx(
+          'p-4 sm:p-5 rounded-2xl bg-surface-sunken/60 dark:bg-dark-surface-sunken/60 border border-surface-border dark:border-dark-surface-border space-y-3.5',
+          className,
+        ),
+      )}
       data-testid="commission-calculator"
     >
-      <div className="flex items-center gap-2 mb-4">
-        <Calculator className="w-4 h-4 text-primary dark:text-primary-light shrink-0" />
+      <div className="flex items-center gap-2">
+        <div className="w-7 h-7 rounded-lg bg-accent/10 text-accent flex items-center justify-center shrink-0">
+          <Calculator className="w-4 h-4" />
+        </div>
         <h3 className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
           حاسبة التكلفة الإجمالية
         </h3>
-        <span className="ms-auto text-[11px] text-ink-secondary dark:text-dark-ink-secondary">
-          تقديرية — تُحتسب على سعر الطلب
-        </span>
       </div>
 
-      <dl className="space-y-2.5 text-sm">
+      <dl className="space-y-2 text-sm pt-1">
         {rows.map((row) => (
           <div
             key={row.label}
@@ -106,16 +109,16 @@ export function CommissionCalculator({
               clsx(
                 'flex items-center justify-between gap-3',
                 row.emphasis &&
-                  'pt-2.5 mt-2.5 border-t border-surface-border dark:border-dark-surface-border',
+                  'pt-3 mt-2 border-t border-surface-border dark:border-dark-surface-border font-bold text-base',
               ),
             )}
           >
             <dt
               className={twMerge(
                 clsx(
-                  'text-ink-secondary dark:text-dark-ink-secondary',
+                  'text-ink-secondary dark:text-dark-ink-secondary text-xs sm:text-sm font-medium',
                   row.emphasis &&
-                    'font-bold text-ink-primary dark:text-dark-ink-primary',
+                    'font-bold text-ink-primary dark:text-dark-ink-primary text-sm sm:text-base',
                 ),
               )}
             >
@@ -125,10 +128,9 @@ export function CommissionCalculator({
               dir="ltr"
               className={twMerge(
                 clsx(
-                  'font-mono-numbers whitespace-nowrap',
-                  row.emphasis
-                    ? 'text-base font-bold text-primary dark:text-primary-light'
-                    : 'font-semibold text-ink-primary dark:text-dark-ink-primary',
+                  'font-mono-numbers whitespace-nowrap text-sm font-bold text-ink-primary dark:text-dark-ink-primary',
+                  row.emphasis &&
+                    'text-base sm:text-lg font-black text-accent dark:text-accent-dark',
                 ),
               )}
             >
@@ -137,6 +139,6 @@ export function CommissionCalculator({
           </div>
         ))}
       </dl>
-    </Card>
+    </div>
   );
 }
