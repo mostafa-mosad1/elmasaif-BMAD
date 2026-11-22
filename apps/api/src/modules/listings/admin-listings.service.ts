@@ -36,6 +36,7 @@ import {
   ListingModerationQueueQuery,
   ListingStatus,
   OfferStatus,
+  OwnerContractStatus,
   MAX_LISTING_PRICE_SAR,
   AdminGlobalEngagementAnalytics,
   MIN_LISTING_PRICE_SAR,
@@ -730,6 +731,10 @@ export class AdminListingsService {
   ): Promise<any> {
     const listing = await this.prisma.listing.findUnique({
       where: { id: listingId },
+      include: {
+        ownerContract: true,
+        ownerListingRequest: true,
+      },
     });
 
     if (!listing) {
@@ -742,6 +747,17 @@ export class AdminListingsService {
     const now = this.clockService.now();
     this.assertActiveLockAndVersion(listing, admin, dto.version, now);
 
+    // If listing belongs to an owner request/contract whose publishing fee is not confirmed active,
+    // transition to PENDING_FEE rather than ACTIVE so it is NEVER published before fee verification.
+    const hasPendingOwnerContract = Boolean(
+      listing.ownerListingRequest ||
+        (listing.ownerContract &&
+          (listing.ownerContract as any).status !== OwnerContractStatus.ACTIVE),
+    );
+    const targetStatus = hasPendingOwnerContract
+      ? ListingStatus.PENDING_FEE
+      : ListingStatus.ACTIVE;
+
     return this.prisma.$transaction(async (tx) => {
       const updateResult = await tx.listing.updateMany({
         where: {
@@ -750,7 +766,7 @@ export class AdminListingsService {
           status: ListingStatus.PENDING_REVIEW,
         },
         data: {
-          status: ListingStatus.ACTIVE,
+          status: targetStatus,
           version: { increment: 1 },
           lockedByAdminId: null,
           lockedAt: null,
@@ -781,7 +797,7 @@ export class AdminListingsService {
           entityId: listingId,
           payload: {
             previousStatus: ListingStatus.PENDING_REVIEW,
-            newStatus: ListingStatus.ACTIVE,
+            newStatus: targetStatus,
             previousVersion: dto.version,
             newVersion: dto.version + 1,
             reviewedByAdminId: admin.id,
@@ -793,7 +809,7 @@ export class AdminListingsService {
       });
 
       this.logger.log(
-        `Listing '${listingId}' approved by admin '${admin.id}' (version ${dto.version} -> ${dto.version + 1})`,
+        `Listing '${listingId}' approved by admin '${admin.id}' (status -> ${targetStatus}, version ${dto.version} -> ${dto.version + 1})`,
       );
 
       return {

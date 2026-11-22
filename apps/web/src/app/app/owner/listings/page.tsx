@@ -115,7 +115,8 @@ export default function OwnerListingsPage() {
       (l) =>
         !l.status ||
         (l.status as string) === 'PENDING' ||
-        (l.status as string) === 'PENDING_REVIEW',
+        (l.status as string) === 'PENDING_REVIEW' ||
+        (l.status as string) === 'PENDING_FEE',
     ).length +
     listingRequests.filter(
       (r) =>
@@ -152,7 +153,8 @@ export default function OwnerListingsPage() {
         activeTab === 'pending' &&
         item.status &&
         (item.status as string) !== 'PENDING' &&
-        (item.status as string) !== 'PENDING_REVIEW'
+        (item.status as string) !== 'PENDING_REVIEW' &&
+        (item.status as string) !== 'PENDING_FEE'
       ) {
         return false;
       }
@@ -663,6 +665,16 @@ export default function OwnerListingsPage() {
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
                               <span>مشاهدة في السوق</span>
+                            </Link>
+                          )}
+
+                          {item.status === ListingStatus.PENDING_FEE && (
+                            <Link
+                              href="/app/owner/contracts"
+                              className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 dark:text-amber-400 hover:underline"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>سداد الرسوم لنشر العقار</span>
                             </Link>
                           )}
                         </div>

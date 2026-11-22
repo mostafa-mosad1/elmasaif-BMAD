@@ -546,6 +546,15 @@ export class AdminOwnerRequestsService {
         },
       });
 
+      if (request.listingId) {
+        await tx.listing.update({
+          where: { id: request.listingId },
+          data: {
+            status: ListingStatus.PENDING_FEE,
+          },
+        });
+      }
+
       await tx.auditLog.create({
         data: {
           actorId: admin.id,

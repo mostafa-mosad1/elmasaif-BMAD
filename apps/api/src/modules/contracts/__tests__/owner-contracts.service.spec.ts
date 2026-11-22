@@ -14,6 +14,7 @@ import { QuarantineService } from '../../storage/quarantine.service';
 import { StorageService } from '../../storage/storage.service';
 import {
   UserRole,
+  ListingStatus,
   OwnerContractStatus,
   PropertyType,
   AUTH_NOT_AUTHORIZED,
@@ -124,6 +125,9 @@ describe('OwnerContractsService (Story 7.2 & 7.3)', () => {
       },
       auditLog: {
         create: jest.fn().mockResolvedValue({ id: 'audit-log-1' }),
+      },
+      listing: {
+        update: jest.fn().mockResolvedValue({ id: listingId, status: ListingStatus.PENDING_FEE }),
       },
       contractFeePayment: {
         findFirst: jest.fn().mockResolvedValue(null),

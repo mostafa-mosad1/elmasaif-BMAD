@@ -88,6 +88,38 @@ export default function OwnerContractsPage({ initialRequests }: OwnerContractsPa
         </Button>
       </div>
 
+      {/* Workflow Guidance Strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-card border text-xs shadow-sm">
+        <div className="flex items-center gap-2.5 p-2 rounded-lg bg-surface-sunken">
+          <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center shrink-0">1</span>
+          <div>
+            <span className="font-bold block text-foreground">تقديم الطلب</span>
+            <span className="text-[11px] text-muted-foreground">صك الملكية والبيانات</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 p-2 rounded-lg bg-surface-sunken">
+          <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center shrink-0">2</span>
+          <div>
+            <span className="font-bold block text-foreground">تدقيق وإصدار العقد</span>
+            <span className="text-[11px] text-muted-foreground">إصدار عقد وساطة معتمد</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 p-2 rounded-lg bg-amber-50 border border-amber-200">
+          <span className="w-6 h-6 rounded-full bg-amber-500 text-white font-bold flex items-center justify-center shrink-0">3</span>
+          <div>
+            <span className="font-bold block text-amber-900">التوقيع وسداد الرسوم</span>
+            <span className="text-[11px] text-amber-800 font-medium">توقيع OTP وإشعار التحويل</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 p-2 rounded-lg bg-surface-sunken">
+          <span className="w-6 h-6 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center shrink-0">4</span>
+          <div>
+            <span className="font-bold block text-foreground">النشر في السوق</span>
+            <span className="text-[11px] text-muted-foreground">نشر آلي فور اعتماد السداد</span>
+          </div>
+        </div>
+      </div>
+
       {errorBanner && (
         <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 flex-shrink-0" />
@@ -172,9 +204,47 @@ export default function OwnerContractsPage({ initialRequests }: OwnerContractsPa
                             </Button>
                           </Link>
                         </div>
+                      ) : item.contractStatus === OwnerContractStatus.PENDING_FEE ? (
+                        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+                          <div className="text-left sm:text-right">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-200 text-xs font-bold">
+                              <CreditCard className="w-3.5 h-3.5 text-blue-600" />
+                              <span>تم التوقيع • بانتظار سداد الرسوم</span>
+                            </span>
+                            <span className="block text-[11px] text-amber-700 dark:text-amber-400 font-semibold mt-1">
+                              * لن يُنشر العقار في السوق حتى تأكيد سداد الرسوم
+                            </span>
+                          </div>
+                          <Link href={`/app/owner/contracts/${item.contractId || item.id}`}>
+                            <Button
+                              size="sm"
+                              className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold gap-1.5 shadow-sm"
+                            >
+                              <span>سداد الرسوم ورفع الإشعار</span>
+                              <ArrowLeft className="w-3.5 h-3.5" />
+                            </Button>
+                          </Link>
+                        </div>
+                      ) : item.contractStatus === OwnerContractStatus.ACTIVE ? (
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>عقد نشط • الإعلان منشور في السوق</span>
+                          </span>
+                          <Link href={`/app/owner/contracts/${item.contractId || item.id}`}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs font-bold gap-1.5"
+                            >
+                              <span>استعراض العقد</span>
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </Button>
+                          </Link>
+                        </div>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-sunken text-muted-foreground border text-xs font-bold">
+                          <Clock className="w-3.5 h-3.5" />
                           <span>{item.contractStatus || 'عقد معتمد'}</span>
                         </span>
                       )}

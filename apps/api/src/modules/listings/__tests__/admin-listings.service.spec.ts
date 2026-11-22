@@ -12,6 +12,7 @@ import { EmailTransportService } from '../../auth/email/email-transport.service'
 import {
   AdminRole,
   ListingStatus,
+  OwnerContractStatus,
   PriceSuggestionStatus,
   PropertyType,
   UserRole,
@@ -514,6 +515,42 @@ describe('AdminListingsService (Story 2.4)', () => {
       });
       expect(res.status).toBe(ListingStatus.ACTIVE);
       expect(res.version).toBe(2);
+    });
+
+    it('transitions owner listing with pending contract/request to PENDING_FEE rather than ACTIVE', async () => {
+      const lockedOwnerListing = makeMockListing({
+        version: 1,
+        lockedByAdminId: adminA.id,
+        lockedAt: baseNow,
+        lockExpiresAt: new Date(baseNow.getTime() + 15 * 60 * 1000),
+        ownerListingRequest: { id: 'req-1', status: 'PENDING' },
+        ownerContract: { id: 'contract-1', status: OwnerContractStatus.PENDING_SIGNATURE },
+      });
+      prisma.listing.findUnique
+        .mockResolvedValueOnce(lockedOwnerListing)
+        .mockResolvedValueOnce({
+          ...lockedOwnerListing,
+          status: ListingStatus.PENDING_FEE,
+          version: 2,
+        });
+      prisma.listing.updateMany.mockResolvedValue({ count: 1 });
+
+      const res = await service.approveListing(mockListingId, adminA, {
+        version: 1,
+        notes: 'موافقة أولية وبانتظار سداد رسوم العقد',
+      });
+
+      expect(prisma.listing.updateMany).toHaveBeenCalledWith({
+        where: {
+          id: mockListingId,
+          version: 1,
+          status: ListingStatus.PENDING_REVIEW,
+        },
+        data: expect.objectContaining({
+          status: ListingStatus.PENDING_FEE,
+        }),
+      });
+      expect(res.status).toBe(ListingStatus.PENDING_FEE);
     });
 
     it('rejects approval with 409 LISTING_LOCK_REQUIRED when caller does not hold active lock', async () => {

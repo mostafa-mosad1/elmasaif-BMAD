@@ -359,6 +359,12 @@ describe('AdminOwnerRequestsService (Story 7.1 / FR-69, FR-61, FR-51)', () => {
           }),
         }),
       );
+      expect(prisma.listing.update).toHaveBeenCalledWith({
+        where: { id: listingId },
+        data: {
+          status: ListingStatus.PENDING_FEE,
+        },
+      });
       expect(prisma.auditLog.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({

@@ -15,6 +15,7 @@ import { StorageService } from '../storage/storage.service';
 import {
   UserRole,
   PropertyType,
+  ListingStatus,
   OwnerContractStatus,
   AUTH_NOT_AUTHORIZED,
   OWNER_CONTRACT_NOT_FOUND,
@@ -305,6 +306,15 @@ export class OwnerContractsService {
           expiresAt: feeExpiresAt,
         },
       });
+
+      if (contract.listingId && (tx as any).listing?.update) {
+        await tx.listing.update({
+          where: { id: contract.listingId },
+          data: {
+            status: ListingStatus.PENDING_FEE,
+          },
+        });
+      }
 
       await tx.auditLog.create({
         data: {

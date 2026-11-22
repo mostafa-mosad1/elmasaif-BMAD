@@ -318,14 +318,17 @@ export function ListingModerationReview({
       if (res?.data) {
         setDetail((prev: any) => ({
           ...prev,
-          status: ListingStatus.ACTIVE,
+          status: res.data.status ?? ListingStatus.ACTIVE,
           version: res.data.version ?? prev.version + 1,
           lockInfo: res.data.lockInfo,
         }));
       }
       setFeedback({
         type: 'success',
-        message: 'تم اعتماد الإعلان العقاري ونشره بنجاح في المنصة',
+        message:
+          res?.data?.status === ListingStatus.PENDING_FEE
+            ? 'تم اعتماد بيانات الإعلان بنجاح. العقار مرتبط بعقد مالك وهو الآن بانتظار سداد الرسوم وتأكيد النشر عبر طابور رسوم العقود.'
+            : 'تم اعتماد الإعلان العقاري ونشره بنجاح في المنصة',
       });
     } catch (err: any) {
       setFeedback({

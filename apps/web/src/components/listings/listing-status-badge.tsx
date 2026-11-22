@@ -28,6 +28,17 @@ export function ListingStatusBadge({ status, className = '' }: ListingStatusBadg
         </span>
       );
 
+    case ListingStatus.PENDING_FEE:
+      return (
+        <span
+          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold ${className}`}
+          data-testid="status-badge-pending-fee"
+        >
+          <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+          <span>بانتظار سداد رسوم العقد</span>
+        </span>
+      );
+
     case ListingStatus.ARCHIVED:
       return (
         <span
