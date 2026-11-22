@@ -171,6 +171,7 @@ export function ListingDetailView({
               photoCount={photos.length}
               alt={detail.title}
               propertyType={detail.propertyType}
+              showThumbnails={true}
               topRightSlot={
                 <>
                   {falVerified ? (
@@ -285,7 +286,7 @@ export function ListingDetailView({
         </div>
 
         {/* Sticky rail — price, commission, seller identity, shielding, intent */}
-        <div className="space-y-4">
+        <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
           <Card className="p-5 space-y-4">
             <div>
               <span className="text-xs font-semibold text-ink-secondary dark:text-dark-ink-secondary">

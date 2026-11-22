@@ -16,6 +16,7 @@ export interface PropertyMediaCarouselProps {
   topRightSlot?: React.ReactNode;
   bottomRightSlot?: React.ReactNode;
   className?: string;
+  showThumbnails?: boolean;
 }
 
 function getPlaceholderIcon(propertyType?: PropertyType) {
@@ -45,6 +46,7 @@ export function PropertyMediaCarousel({
   topRightSlot,
   bottomRightSlot,
   className,
+  showThumbnails = false,
 }: PropertyMediaCarouselProps) {
   const safePhotos = Array.isArray(photos) ? photos.filter(Boolean) : [];
   const totalPhotos = safePhotos.length;
@@ -56,6 +58,38 @@ export function PropertyMediaCarousel({
   const [failedIndices, setFailedIndices] = useState<Record<number, boolean>>({});
   const touchStartXRef = useRef<number | null>(null);
   const touchCurrentXRef = useRef<number | null>(null);
+  const thumbnailContainerRef = useRef<HTMLDivElement | null>(null);
+  const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  React.useEffect(() => {
+    if (!showThumbnails) return;
+    const container = thumbnailContainerRef.current;
+    const activeThumb = thumbnailRefs.current[currentIndex];
+    if (container && activeThumb) {
+      const isVertical = typeof window !== 'undefined' && window.innerWidth >= 640;
+      if (isVertical) {
+        const thumbTop = activeThumb.offsetTop;
+        const thumbHeight = activeThumb.offsetHeight;
+        const containerHeight = container.clientHeight;
+        const targetScrollTop = thumbTop - (containerHeight / 2) + (thumbHeight / 2);
+        if (typeof container.scrollTo === 'function') {
+          container.scrollTo({ top: Math.max(0, targetScrollTop), behavior: 'smooth' });
+        } else {
+          container.scrollTop = Math.max(0, targetScrollTop);
+        }
+      } else {
+        const thumbLeft = activeThumb.offsetLeft;
+        const thumbWidth = activeThumb.offsetWidth;
+        const containerWidth = container.clientWidth;
+        const targetScrollLeft = thumbLeft - (containerWidth / 2) + (thumbWidth / 2);
+        if (typeof container.scrollTo === 'function') {
+          container.scrollTo({ left: Math.max(0, targetScrollLeft), behavior: 'smooth' });
+        } else {
+          container.scrollLeft = Math.max(0, targetScrollLeft);
+        }
+      }
+    }
+  }, [currentIndex, showThumbnails]);
 
   const goToIndex = useCallback(
     (nextIdx: number) => {
@@ -139,11 +173,12 @@ export function PropertyMediaCarousel({
   const activePhotoUrl = safePhotos[currentIndex];
   const showImage = Boolean(activePhotoUrl) && !failedIndices[currentIndex];
 
-  return (
+  const carouselNode = (
     <div
       className={twMerge(
         clsx(
-          'relative aspect-video w-full rounded-t-card bg-surface-sunken dark:bg-dark-surface-sunken overflow-hidden select-none group/carousel',
+          'relative aspect-video w-full bg-surface-sunken dark:bg-dark-surface-sunken overflow-hidden select-none group/carousel',
+          showThumbnails && safePhotos.length > 1 ? 'rounded-xl' : 'rounded-t-card',
           className,
         ),
       )}
@@ -219,6 +254,61 @@ export function PropertyMediaCarousel({
       {bottomRightSlot && (
         <div className="absolute bottom-3 right-3 z-20">{bottomRightSlot}</div>
       )}
+    </div>
+  );
+
+  if (!showThumbnails || safePhotos.length <= 1) {
+    return carouselNode;
+  }
+
+  return (
+    <div className="flex flex-col-reverse sm:flex-row gap-3 p-3 sm:p-4 bg-surface-base dark:bg-dark-surface-base w-full min-w-0">
+      {/* Right column in RTL: Thumbnails list */}
+      <div
+        ref={thumbnailContainerRef}
+        className="relative sm:w-24 md:w-28 shrink-0 flex sm:flex-col gap-2 overflow-x-auto sm:overflow-x-hidden sm:overflow-y-auto scrollbar-thin py-1 sm:py-0 min-h-0 max-h-[280px] sm:max-h-[380px] md:max-h-[440px]"
+        data-testid="carousel-thumbnails"
+      >
+        {safePhotos.map((photoUrl, idx) => {
+          const isActive = idx === currentIndex;
+          return (
+            <button
+              key={idx}
+              ref={(el) => {
+                thumbnailRefs.current[idx] = el;
+              }}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                goToIndex(idx);
+              }}
+              className={clsx(
+                'relative shrink-0 w-20 h-14 sm:w-full sm:h-20 rounded-lg overflow-hidden border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary',
+                isActive
+                  ? 'border-primary ring-2 ring-primary/30 opacity-100 scale-[1.02] shadow-sm'
+                  : 'border-transparent opacity-60 hover:opacity-100 hover:border-surface-border',
+              )}
+              aria-label={`عرض الصورة ${idx + 1}`}
+              aria-current={isActive ? 'true' : undefined}
+            >
+              <img
+                src={photoUrl}
+                alt={`${alt} - مصغرة ${idx + 1}`}
+                loading="lazy"
+                className="w-full h-full object-cover"
+              />
+              {isActive && (
+                <div className="absolute inset-0 bg-primary/10 pointer-events-none" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Left side in RTL: Main Carousel */}
+      <div className="flex-1 min-w-0">
+        {carouselNode}
+      </div>
     </div>
   );
 }

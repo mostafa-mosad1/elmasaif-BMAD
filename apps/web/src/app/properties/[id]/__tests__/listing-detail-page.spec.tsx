@@ -249,4 +249,10 @@ describe('ListingDetailView rendering (Story 3.3)', () => {
     expect(html).toContain('href="/brokers/profile-marketer-99"');
     expect(html).toContain('عبدالله الشمري');
   });
+
+  it('renders thumbnail strip and desktop sticky rail for pricing and CTA', () => {
+    const html = renderView();
+    expect(html).toContain('data-testid="carousel-thumbnails"');
+    expect(html).toContain('lg:sticky');
+  });
 });

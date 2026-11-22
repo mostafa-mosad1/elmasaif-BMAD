@@ -24,11 +24,14 @@ import {
   XCircle,
   Eye,
   HandCoins,
+  TrendingUp,
+  CreditCard,
 } from 'lucide-react';
 import {
   ListingStatus,
   PropertyType,
   OwnerListingRequestStatus,
+  OwnerContractStatus,
   type OwnerListingRequestItem,
 } from '@elmasaif/shared';
 import { apiClient } from '../../../../lib/api-client';
@@ -57,8 +60,12 @@ interface ListingItem {
   cityName?: string | null;
   districtName?: string | null;
   areaSquareMeters?: number;
+  bedrooms?: number | null;
+  yearBuilt?: number | null;
   askPrice?: number;
   status: ListingStatus;
+  primaryPhotoUrl?: string | null;
+  photos?: string[];
   archiveReason?: string | null;
   rejectionReason?: string | null;
   complianceReason?: string | null;
@@ -104,11 +111,26 @@ export default function OwnerListingsPage() {
   }, []);
 
   const pendingSignatureRequest = listingRequests.find(
-    (r) => r.status === OwnerListingRequestStatus.APPROVED_PENDING_SIGNATURE,
+    (r) =>
+      r.status === OwnerListingRequestStatus.APPROVED_PENDING_SIGNATURE ||
+      r.contractStatus === OwnerContractStatus.PENDING_SIGNATURE,
+  );
+
+  const pendingFeeRequest = listingRequests.find(
+    (r) => r.contractStatus === OwnerContractStatus.PENDING_FEE,
   );
 
   // Counters
-  const activeCount = myListings.filter((l) => l.status === ListingStatus.ACTIVE).length;
+  const activeCount =
+    myListings.filter((l) => l.status === ListingStatus.ACTIVE).length +
+    listingRequests.filter(
+      (r) =>
+        (r.status === OwnerListingRequestStatus.COMPLETED ||
+          (r.status as string) === 'COMPLETED' ||
+          r.contractStatus === OwnerContractStatus.ACTIVE) &&
+        !myListings.some((l) => l.id === r.listingId),
+    ).length;
+
   const requestsCount = listingRequests.length;
   const pendingCount =
     myListings.filter(
@@ -120,8 +142,14 @@ export default function OwnerListingsPage() {
     ).length +
     listingRequests.filter(
       (r) =>
-        r.status === OwnerListingRequestStatus.PENDING ||
-        r.status === OwnerListingRequestStatus.APPROVED_PENDING_SIGNATURE,
+        (r.status === OwnerListingRequestStatus.PENDING ||
+          r.status === OwnerListingRequestStatus.APPROVED_PENDING_SIGNATURE ||
+          r.contractStatus === OwnerContractStatus.PENDING_SIGNATURE ||
+          r.contractStatus === OwnerContractStatus.PENDING_FEE) &&
+        r.status !== OwnerListingRequestStatus.COMPLETED &&
+        (r.status as string) !== 'COMPLETED' &&
+        r.contractStatus !== OwnerContractStatus.ACTIVE &&
+        !myListings.some((l) => l.id === r.listingId),
     ).length;
 
   const alertsCount =
@@ -189,11 +217,22 @@ export default function OwnerListingsPage() {
   // Filter direct requests
   const filteredRequests = useMemo(() => {
     return listingRequests.filter((item) => {
-      if (activeTab === 'active' || activeTab === 'archived') return false;
+      const isCompleted =
+        item.status === OwnerListingRequestStatus.COMPLETED ||
+        (item.status as string) === 'COMPLETED' ||
+        item.contractStatus === OwnerContractStatus.ACTIVE;
+
+      if (activeTab === 'archived') return false;
+      if (activeTab === 'active') {
+        return isCompleted && !myListings.some((l) => l.id === item.listingId);
+      }
       if (
         activeTab === 'pending' &&
-        item.status !== OwnerListingRequestStatus.PENDING &&
-        item.status !== OwnerListingRequestStatus.APPROVED_PENDING_SIGNATURE
+        (isCompleted ||
+          (item.status !== OwnerListingRequestStatus.PENDING &&
+            item.status !== OwnerListingRequestStatus.APPROVED_PENDING_SIGNATURE &&
+            item.contractStatus !== OwnerContractStatus.PENDING_SIGNATURE &&
+            item.contractStatus !== OwnerContractStatus.PENDING_FEE))
       ) {
         return false;
       }
@@ -218,7 +257,7 @@ export default function OwnerListingsPage() {
 
       return true;
     });
-  }, [listingRequests, activeTab, searchQuery]);
+  }, [listingRequests, myListings, activeTab, searchQuery]);
 
   const hasAnyItems = filteredListings.length > 0 || filteredRequests.length > 0;
 
@@ -296,46 +335,91 @@ export default function OwnerListingsPage() {
         </div>
       )}
 
+      {/* Prominent Pending Fee Banner */}
+      {!pendingSignatureRequest && pendingFeeRequest && (
+        <div className="p-5 sm:p-6 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0">
+              <CreditCard className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-blue-900 dark:text-blue-100">
+                تم توقيع العقد بنجاح — بانتظار سداد رسوم النشر
+              </h3>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+                تم توقيع عقد الوساطة للعقار ({pendingFeeRequest.propertyTitle}). يرجى إرفاق إيصال سداد الرسوم لنشر العقار مباشرة في المعرض.
+              </p>
+            </div>
+          </div>
+          <Link href={`/app/owner/contracts/${pendingFeeRequest.contractId || pendingFeeRequest.id}`}>
+            <Button size="sm" className="bg-primary hover:bg-primary-hover text-white text-xs font-bold gap-2 whitespace-nowrap shadow-sm">
+              <span>سداد رسوم النشر</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </Button>
+          </Link>
+        </div>
+      )}
+
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="p-4 sm:p-5 rounded-2xl bg-surface-base dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border shadow-xs space-y-1">
-          <span className="text-xs text-ink-muted">إجمالي العقارات والطلبات</span>
-          <p className="text-2xl sm:text-3xl font-extrabold text-ink-primary dark:text-dark-ink-primary font-mono">
-            {totalPortfolioItems}
-          </p>
-          <span className="text-[11px] text-ink-secondary dark:text-dark-ink-secondary block">
-            في محفظتك العقارية
-          </span>
+        <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border shadow-xs hover:border-primary/30 transition-all flex items-start justify-between">
+          <div className="space-y-1">
+            <span className="text-xs text-muted-foreground font-medium">إجمالي العقارات والطلبات</span>
+            <p className="text-2xl sm:text-3xl font-extrabold text-foreground font-mono">
+              {totalPortfolioItems}
+            </p>
+            <span className="text-[11px] text-muted-foreground block">
+              في محفظتك العقارية
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Building className="w-5 h-5" />
+          </div>
         </div>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-surface-base dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border shadow-xs space-y-1">
-          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">معتمد ومنشور</span>
-          <p className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">
-            {activeCount}
-          </p>
-          <span className="text-[11px] text-ink-muted block">
-            متاح للجمهور والمشترين
-          </span>
+        <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border shadow-xs hover:border-emerald-500/30 transition-all flex items-start justify-between">
+          <div className="space-y-1">
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">معتمد ومنشور</span>
+            <p className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">
+              {activeCount}
+            </p>
+            <span className="text-[11px] text-muted-foreground block">
+              متاح للجمهور والمشترين
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
         </div>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-surface-base dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border shadow-xs space-y-1">
-          <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">قيد المراجعة والعقود</span>
-          <p className="text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-400 font-mono">
-            {pendingCount}
-          </p>
-          <span className="text-[11px] text-ink-muted block">
-            بانتظار التدقيق أو التوقيع
-          </span>
+        <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border shadow-xs hover:border-amber-500/30 transition-all flex items-start justify-between">
+          <div className="space-y-1">
+            <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold">قيد المراجعة والعقود</span>
+            <p className="text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-400 font-mono">
+              {pendingCount}
+            </p>
+            <span className="text-[11px] text-muted-foreground block">
+              بانتظار التدقيق أو التوقيع
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 flex items-center justify-center shrink-0">
+            <Clock className="w-5 h-5" />
+          </div>
         </div>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-surface-base dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border shadow-xs space-y-1">
-          <span className="text-xs text-sky-600 dark:text-sky-400 font-medium">المشاهدات الكلية</span>
-          <p className="text-2xl sm:text-3xl font-extrabold text-sky-600 dark:text-sky-400 font-mono">
-            {totalViews.toLocaleString('en-US')}
-          </p>
-          <span className="text-[11px] text-ink-muted block">
-            {totalOffers > 0 ? `${totalOffers} عروض شراء مستلمة` : 'تفاعل وإقبال المشترين'}
-          </span>
+        <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border shadow-xs hover:border-blue-500/30 transition-all flex items-start justify-between">
+          <div className="space-y-1">
+            <span className="text-xs text-blue-600 dark:text-blue-400 font-semibold">المشاهدات الكلية</span>
+            <p className="text-2xl sm:text-3xl font-extrabold text-blue-600 dark:text-blue-400 font-mono">
+              {totalViews.toLocaleString('en-US')}
+            </p>
+            <span className="text-[11px] text-muted-foreground block">
+              {totalOffers > 0 ? `${totalOffers} عروض شراء مستلمة` : 'تفاعل وإقبال المشترين'}
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 flex items-center justify-center shrink-0">
+            <TrendingUp className="w-5 h-5" />
+          </div>
         </div>
       </div>
 
@@ -501,82 +585,123 @@ export default function OwnerListingsPage() {
           <div className="space-y-4">
             {/* Direct Listing Requests Section */}
             {filteredRequests.length > 0 && (
-              <Card className="rounded-2xl border border-surface-border dark:border-dark-surface-border overflow-hidden">
-                <CardHeader className="border-b border-surface-border dark:border-dark-surface-border p-5 sm:p-6 bg-surface-sunken/40 dark:bg-dark-surface-sunken/40">
-                  <CardTitle className="text-base sm:text-lg font-bold flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-primary" />
+              <Card className="rounded-xl border overflow-hidden">
+                <CardHeader className="p-4 border-b bg-surface-sunken/40">
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-primary" />
                     <span>طلبات الإدراج المباشر ومتابعة العقود ({filteredRequests.length})</span>
                   </CardTitle>
-                  <CardDescription className="text-xs mt-0.5">
-                    الطلبات المقدمة مباشرة للإدارة لتوثيق صكوك الملكية وتوقيع عقود الوساطة المعتمدة.
-                  </CardDescription>
                 </CardHeader>
-                <CardContent className="divide-y divide-surface-border dark:divide-dark-surface-border p-0">
+                <CardContent className="divide-y p-0">
                   {filteredRequests.map((req) => {
-                    const isApproved = req.status === OwnerListingRequestStatus.APPROVED_PENDING_SIGNATURE;
+                    const isCompleted =
+                      req.status === OwnerListingRequestStatus.COMPLETED ||
+                      (req.status as string) === 'COMPLETED' ||
+                      req.contractStatus === OwnerContractStatus.ACTIVE;
+                    const isPendingFee =
+                      req.contractStatus === OwnerContractStatus.PENDING_FEE;
+                    const isApproved =
+                      req.status === OwnerListingRequestStatus.APPROVED_PENDING_SIGNATURE ||
+                      req.contractStatus === OwnerContractStatus.PENDING_SIGNATURE;
                     const isRejected = req.status === OwnerListingRequestStatus.REJECTED;
                     const isModification = req.status === OwnerListingRequestStatus.MODIFICATION_REQUESTED;
 
                     return (
-                      <div key={req.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-surface-sunken/20 transition-colors">
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-bold">
+                      <div key={req.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-surface-sunken/20 transition-colors">
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-[11px] font-bold">
                               {PROPERTY_TYPE_LABELS[req.propertyType] || req.propertyType}
                             </span>
-                            <span className="px-2 py-0.5 rounded bg-accent/10 text-accent text-xs font-semibold">
+                            <span className="px-2 py-0.5 rounded bg-accent/10 text-accent text-[11px] font-semibold">
                               طلب مباشر
                             </span>
-                            <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
+                            <h4 className="text-sm font-bold text-foreground">
                               {req.propertyTitle}
-                            </h3>
+                            </h4>
                           </div>
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-ink-secondary dark:text-dark-ink-secondary">
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                             <span>{req.cityName} — حي {req.districtName}</span>
                             <span>•</span>
-                            <span className="font-mono font-semibold text-primary dark:text-accent-light">
-                              السعر المطلوب: {req.askPrice.toLocaleString('en-US')} ر.س
+                            <span className="font-mono font-semibold text-primary">
+                              {Number(req.askPrice).toLocaleString('en-US')} ر.س
                             </span>
                             <span>•</span>
-                            <span>تاريخ الطلب: {new Date(req.createdAt).toLocaleDateString('ar-SA')}</span>
+                            <span>{new Date(req.createdAt).toLocaleDateString('ar-SA')}</span>
                           </div>
 
                           {isRejected && req.rejectionReason && (
-                            <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 text-xs border border-rose-200 dark:border-rose-800 mt-2">
+                            <div className="p-2 rounded-lg bg-rose-50 text-rose-800 text-xs border border-rose-200 mt-1">
                               <span className="font-bold">سبب الرفض: </span>
                               <span>{req.rejectionReason}</span>
                             </div>
                           )}
 
                           {isModification && req.modificationNotes && (
-                            <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-200 text-xs border border-blue-200 dark:border-blue-800 mt-2">
+                            <div className="p-2 rounded-lg bg-blue-50 text-blue-800 text-xs border border-blue-200 mt-1">
                               <span className="font-bold">الملاحظات المطلوبة: </span>
                               <span>{req.modificationNotes}</span>
                             </div>
                           )}
                         </div>
 
-                        <div className="flex items-center gap-3 shrink-0">
-                          {isApproved ? (
+                        <div className="flex items-center gap-2 shrink-0">
+                          {isCompleted ? (
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                <span>معتمد ومنشور في السوق</span>
+                              </span>
+                              {req.listingId && (
+                                <Link href={`/properties/${req.listingId}`} target="_blank">
+                                  <Button size="sm" variant="outline" className="text-xs font-semibold gap-1.5 h-8">
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    <span>معاينة في السوق</span>
+                                  </Button>
+                                </Link>
+                              )}
+                              {(req.contractId || req.id) && (
+                                <Link href={`/app/owner/contracts/${req.contractId || req.id}`}>
+                                  <Button size="sm" variant="ghost" className="text-xs font-medium gap-1 h-8">
+                                    <FileText className="w-3.5 h-3.5" />
+                                    <span>العقد</span>
+                                  </Button>
+                                </Link>
+                              )}
+                            </div>
+                          ) : isPendingFee ? (
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 text-xs font-semibold">
+                                <CreditCard className="w-3 h-3 text-blue-600" />
+                                <span>بانتظار سداد الرسوم</span>
+                              </span>
+                              <Link href={`/app/owner/contracts/${req.contractId || req.id}`}>
+                                <Button size="sm" className="bg-primary hover:bg-primary-hover text-white text-xs font-bold gap-1.5 h-8">
+                                  <span>سداد رسوم النشر</span>
+                                  <ArrowLeft className="w-3.5 h-3.5" />
+                                </Button>
+                              </Link>
+                            </div>
+                          ) : isApproved ? (
                             <Link href={`/app/owner/contracts/${req.contractId || req.id}`}>
-                              <Button size="sm" className="bg-primary hover:bg-primary-hover text-white text-xs font-bold gap-1.5 shadow-sm">
+                              <Button size="sm" className="bg-primary hover:bg-primary-hover text-white text-xs font-bold gap-1.5 h-8">
                                 <span>مراجعة وتوقيع العقد</span>
                                 <ArrowLeft className="w-3.5 h-3.5" />
                               </Button>
                             </Link>
                           ) : isRejected ? (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 text-rose-800 border border-rose-200 text-xs font-bold">
-                              <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-semibold">
+                              <XCircle className="w-3 h-3 text-rose-600" />
                               <span>طلب مرفوض</span>
                             </span>
                           ) : isModification ? (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-200 text-xs font-bold">
-                              <AlertTriangle className="w-3.5 h-3.5 text-blue-600" />
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold">
+                              <AlertTriangle className="w-3 h-3 text-blue-600" />
                               <span>مطلوب تعديلات</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold">
-                              <Clock className="w-3.5 h-3.5 text-amber-600" />
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold">
+                              <Clock className="w-3 h-3 text-amber-600" />
                               <span>قيد المراجعة الإدارية</span>
                             </span>
                           )}
@@ -590,97 +715,137 @@ export default function OwnerListingsPage() {
 
             {/* Published & Moderated Listings Section */}
             {filteredListings.length > 0 && (
-              <Card className="rounded-2xl border border-surface-border dark:border-dark-surface-border overflow-hidden">
-                <CardHeader className="border-b border-surface-border dark:border-dark-surface-border p-5 sm:p-6 bg-surface-sunken/40 dark:bg-dark-surface-sunken/40">
+              <Card className="rounded-xl border overflow-hidden">
+                <CardHeader className="p-4 border-b bg-surface-sunken/40">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-base sm:text-lg font-bold flex items-center gap-2">
-                        <Building className="w-5 h-5 text-primary" />
-                        <span>العقارات المسجلة والمعتمدة ({filteredListings.length})</span>
-                      </CardTitle>
-                      <CardDescription className="text-xs mt-0.5">
-                        العقارات المعروضة في المنصة، نسب المشاهدات والتفاعل، وتحديث الأسعار وحالة النشر.
-                      </CardDescription>
-                    </div>
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                      <Building className="w-4 h-4 text-primary" />
+                      <span>العقارات المسجلة بالمحفظة ({filteredListings.length})</span>
+                    </CardTitle>
+                    <span className="text-xs text-muted-foreground">
+                      متابعة الأسعار والتفاعل وحالة النشر
+                    </span>
                   </div>
                 </CardHeader>
-                <CardContent className="divide-y divide-surface-border dark:divide-dark-surface-border p-0">
+                <CardContent className="divide-y p-0">
                   {filteredListings.map((item) => (
-                    <div key={item.id} className="p-5 flex flex-col gap-3.5 hover:bg-surface-sunken/20 transition-colors">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="space-y-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-bold">
-                              {PROPERTY_TYPE_LABELS[item.propertyType] || item.propertyType}
-                            </span>
-                            <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
-                              {item.title}
-                            </h3>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-ink-secondary dark:text-dark-ink-secondary">
-                            <MapPin className="w-3.5 h-3.5 text-primary" />
-                            <span>{`${item.cityName || 'غير محدد'} — حي ${item.districtName || 'غير محدد'}`}</span>
-                            {item.areaSquareMeters && (
-                              <>
-                                <span>•</span>
-                                <span className="font-mono">{`${item.areaSquareMeters} م²`}</span>
-                              </>
+                    <div key={item.id} className="p-4 flex flex-col gap-3 hover:bg-surface-sunken/20 transition-colors">
+                      {/* Main Compact Row */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        {/* Info with Small Thumbnail */}
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-12 h-12 rounded-xl shrink-0 overflow-hidden bg-primary/10 border border-primary/20 flex items-center justify-center">
+                            {item.primaryPhotoUrl ? (
+                              <img
+                                src={item.primaryPhotoUrl}
+                                alt={item.title}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <Building className="w-5 h-5 text-primary" />
                             )}
+                          </div>
+
+                          <div className="space-y-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-[11px] font-bold">
+                                {PROPERTY_TYPE_LABELS[item.propertyType] || item.propertyType}
+                              </span>
+                              <h4 className="text-sm font-bold text-foreground truncate max-w-md" title={item.title}>
+                                {item.title}
+                              </h4>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-primary shrink-0" />
+                                <span>{item.cityName || 'غير محدد'} — حي {item.districtName || 'غير محدد'}</span>
+                              </span>
+                              {item.areaSquareMeters && (
+                                <>
+                                  <span>•</span>
+                                  <span className="font-mono">{item.areaSquareMeters} م²</span>
+                                </>
+                              )}
+                              {item.bedrooms && (
+                                <>
+                                  <span>•</span>
+                                  <span>{item.bedrooms} غرف</span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-3">
-                          <div dir="ltr" className="font-mono font-bold text-sm text-primary dark:text-accent-light">
+                        {/* Price, Status Badge & Actions */}
+                        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 shrink-0">
+                          <div dir="ltr" className="font-mono font-bold text-sm sm:text-base text-primary">
                             {`${Number(item.askPrice || 0).toLocaleString('en-US')} SAR`}
                           </div>
 
-                          <ListingStatusBadge status={item.status} />
+                          <ListingStatusBadge status={item.status} className="!text-[11px] !py-0.5 !px-2.5" />
 
-                          {(item.status === ListingStatus.ACTIVE ||
-                            item.status === ListingStatus.ARCHIVED) && (
-                            <SellerListingArchiveActions
-                              listingId={item.id}
-                              status={item.status}
-                              archiveReason={item.archiveReason}
-                              onStatusChanged={(newStatus, updatedData) => {
-                                setMyListings((prev) =>
-                                  prev.map((l) =>
-                                    l.id === item.id
-                                      ? {
-                                          ...l,
-                                          status: newStatus,
-                                          ...(updatedData || {}),
-                                        }
-                                      : l,
-                                  ),
-                                );
-                              }}
-                            />
-                          )}
+                          <div className="flex items-center gap-1.5">
+                            {(item.status === ListingStatus.ACTIVE ||
+                              item.status === ListingStatus.ARCHIVED) && (
+                              <SellerListingArchiveActions
+                                listingId={item.id}
+                                status={item.status}
+                                archiveReason={item.archiveReason}
+                                onStatusChanged={(newStatus, updatedData) => {
+                                  setMyListings((prev) =>
+                                    prev.map((l) =>
+                                      l.id === item.id
+                                        ? {
+                                            ...l,
+                                            status: newStatus,
+                                            ...(updatedData || {}),
+                                          }
+                                        : l,
+                                    ),
+                                  );
+                                }}
+                              />
+                            )}
 
-                          {item.status === ListingStatus.ACTIVE && (
-                            <Link
-                              href="/#listings"
-                              className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                              <span>مشاهدة في السوق</span>
-                            </Link>
-                          )}
+                            {item.status === ListingStatus.ACTIVE && (
+                              <Link
+                                href={`/properties/${item.id}`}
+                                target="_blank"
+                                className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline px-2 py-1 rounded-md hover:bg-primary/5"
+                              >
+                                <span>معاينة في السوق</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </Link>
+                            )}
 
-                          {item.status === ListingStatus.PENDING_FEE && (
-                            <Link
-                              href="/app/owner/contracts"
-                              className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 dark:text-amber-400 hover:underline"
-                            >
-                              <FileText className="w-3.5 h-3.5" />
-                              <span>سداد الرسوم لنشر العقار</span>
-                            </Link>
-                          )}
+                            {item.status === ListingStatus.PENDING_FEE && (
+                              <Link href="/app/owner/contracts">
+                                <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold gap-1 h-8 px-3">
+                                  <FileText className="w-3 h-3" />
+                                  <span>سداد الرسوم</span>
+                                </Button>
+                              </Link>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      {/* Listing Engagement & Conversion Analytics */}
+                      {/* Pending Fee Compact Note */}
+                      {item.status === ListingStatus.PENDING_FEE && (
+                        <div className="px-3 py-2 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 text-xs flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                            <span>العقد بانتظار سداد الرسوم • لن يظهر العقار في السوق حتى تأكيد التحويل من الإدارة المالية.</span>
+                          </div>
+                          <Link href="/app/owner/contracts" className="text-amber-900 font-bold underline whitespace-nowrap text-xs">
+                            إكمال السداد الآن
+                          </Link>
+                        </div>
+                      )}
+
+                      {/* Interactive Engagement Analytics */}
                       <SellerListingEngagement
                         listingId={item.id}
                         totalViews={item.totalViews}
@@ -689,52 +854,37 @@ export default function OwnerListingsPage() {
                         offersCount={item.offersCount}
                       />
 
+                      {/* Compliance & Moderation Notes */}
                       {item.status === ListingStatus.SUSPENDED && item.complianceReason && (
-                        <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2.5">
-                          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                          <div className="space-y-1">
-                            <div>
-                              <span className="font-bold">إعلان موقوف مؤقتاً للامتثال والرقابة: </span>
-                              <span>{item.complianceReason}</span>
-                            </div>
-                            <p className="text-ink-secondary dark:text-dark-ink-secondary text-[11px]">
-                              تم إخفاء هذا الإعلان مؤقتاً من نتائج البحث العام لحين استيفاء المتطلبات النظامية وتعديل الملاحظات.
-                            </p>
-                          </div>
+                        <div className="p-2.5 rounded-lg bg-amber-50 text-amber-900 text-xs border border-amber-200">
+                          <span className="font-bold">إعلان موقوف مؤقتاً: </span>
+                          <span>{item.complianceReason}</span>
                         </div>
                       )}
 
                       {item.status === ListingStatus.BLOCKED && item.complianceReason && (
-                        <div className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 text-red-900 dark:text-red-200 text-xs flex items-start gap-2.5">
-                          <Ban className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
-                          <div className="space-y-1">
-                            <div>
-                              <span className="font-bold">إعلان محظور نهائياً بموجب قرار الامتثال: </span>
-                              <span>{item.complianceReason}</span>
-                            </div>
-                            <p className="text-red-700 dark:text-red-300 text-[11px]">
-                              تم فرض حظر نهائي على هذا العقار لمخالفته لوائح الهيئة العامة للعقار وضوابط المنصة، ولا يمكن تعديله أو إعادة نشره.
-                            </p>
-                          </div>
+                        <div className="p-2.5 rounded-lg bg-red-50 text-red-900 text-xs border border-red-200">
+                          <span className="font-bold">إعلان محظور: </span>
+                          <span>{item.complianceReason}</span>
                         </div>
                       )}
 
                       {item.status === ListingStatus.ARCHIVED && item.archiveReason && (
-                        <div className="p-3 rounded-xl bg-surface-sunken dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border text-ink-primary dark:text-dark-ink-primary text-xs">
+                        <div className="p-2.5 rounded-lg bg-surface-sunken border text-xs">
                           <span className="font-bold">سبب الأرشفة: </span>
                           <span>{item.archiveReason}</span>
                         </div>
                       )}
 
                       {item.status === ListingStatus.REJECTED && item.rejectionReason && (
-                        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 text-red-900 dark:text-red-200 text-xs">
-                          <span className="font-bold">سبب الرفض من الإدارة: </span>
+                        <div className="p-2.5 rounded-lg bg-red-50 text-red-900 text-xs border border-red-200">
+                          <span className="font-bold">سبب الرفض: </span>
                           <span>{item.rejectionReason}</span>
                         </div>
                       )}
 
                       {item.activePriceSuggestion && (
-                        <div className="mt-2">
+                        <div className="mt-1">
                           <SellerPriceSuggestionCard
                             listingId={item.id}
                             suggestion={item.activePriceSuggestion}

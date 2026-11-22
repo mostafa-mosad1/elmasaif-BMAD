@@ -35,6 +35,12 @@ export const OWNER_REQUEST_STATUS_MAP: Record<
     text: 'text-blue-700 dark:text-blue-300',
     border: 'border-blue-200 dark:border-blue-800',
   },
+  [OwnerListingRequestStatus.COMPLETED]: {
+    label: 'مكتمل ومعتمد في السوق',
+    bg: 'bg-emerald-50 dark:bg-emerald-950/40',
+    text: 'text-emerald-700 dark:text-emerald-300',
+    border: 'border-emerald-200 dark:border-emerald-800',
+  },
 };
 
 export const PROPERTY_TYPE_MAP: Record<PropertyType, string> = {

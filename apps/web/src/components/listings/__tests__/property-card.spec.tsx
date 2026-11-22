@@ -185,4 +185,19 @@ describe('PropertyMediaCarousel & PropertyCard (Story 2.3)', () => {
     expect(html).toContain('href="/listings/listing-card-1"');
     expect(html).toContain('aria-label="إزالة من المفضلة"');
   });
+
+  it('renders thumbnail strip when showThumbnails is true and multiple photos exist', () => {
+    const html = renderToString(
+      React.createElement(PropertyMediaCarousel, {
+        photos: ['https://s3.local/p1.jpg', 'https://s3.local/p2.jpg', 'https://s3.local/p3.jpg'],
+        alt: 'فيلا النرجس',
+        showThumbnails: true,
+      }),
+    );
+
+    expect(html).toContain('data-testid="carousel-thumbnails"');
+    expect(html).toContain('aria-label="عرض الصورة 1"');
+    expect(html).toContain('aria-label="عرض الصورة 2"');
+    expect(html).toContain('aria-label="عرض الصورة 3"');
+  });
 });

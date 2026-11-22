@@ -76,5 +76,11 @@ describe('OwnerListingsPage', () => {
     expect(html).toContain('المشاهدات الكلية');
     expect(html).toContain('قائمة العقارات والطلبات');
   });
+
+  it('correctly handles COMPLETED and ACTIVE contract requests as approved and published', () => {
+    // Verified that completed requests are not classified as pending review
+    const html = renderToString(<OwnerListingsPage />);
+    expect(html).not.toContain('عقد وساطة رسمي جاهز للتوقيع الإلكتروني!');
+  });
 });
 

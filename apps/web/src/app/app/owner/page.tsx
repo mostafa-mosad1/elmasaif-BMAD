@@ -21,7 +21,7 @@ import {
   Ban,
   Archive,
 } from 'lucide-react';
-import { ListingStatus, PropertyType, OwnerListingRequestStatus, type OwnerListingRequestItem } from '@elmasaif/shared';
+import { ListingStatus, PropertyType, OwnerListingRequestStatus, OwnerContractStatus, type OwnerListingRequestItem } from '@elmasaif/shared';
 import { apiClient } from '../../../lib/api-client';
 import { SellerPriceSuggestionCard } from '../../../components/listings/seller-price-suggestion-card';
 import {
@@ -212,7 +212,15 @@ export default function OwnerDashboardPage() {
           </CardHeader>
           <CardContent className="divide-y divide-surface-border dark:divide-dark-surface-border p-0">
             {listingRequests.map((req) => {
-              const isApproved = req.status === OwnerListingRequestStatus.APPROVED_PENDING_SIGNATURE;
+              const isCompleted =
+                req.status === OwnerListingRequestStatus.COMPLETED ||
+                (req.status as string) === 'COMPLETED' ||
+                req.contractStatus === OwnerContractStatus.ACTIVE;
+              const isPendingFee =
+                req.contractStatus === OwnerContractStatus.PENDING_FEE;
+              const isApproved =
+                req.status === OwnerListingRequestStatus.APPROVED_PENDING_SIGNATURE ||
+                req.contractStatus === OwnerContractStatus.PENDING_SIGNATURE;
               const isRejected = req.status === OwnerListingRequestStatus.REJECTED;
               const isModification = req.status === OwnerListingRequestStatus.MODIFICATION_REQUESTED;
 
@@ -251,7 +259,43 @@ export default function OwnerDashboardPage() {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    {isApproved ? (
+                    {isCompleted ? (
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>معتمد ومنشور في السوق</span>
+                        </span>
+                        {req.listingId && (
+                          <Link href={`/properties/${req.listingId}`} target="_blank">
+                            <Button size="sm" variant="outline" className="text-xs font-semibold gap-1.5 shadow-sm">
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              <span>معاينة في السوق</span>
+                            </Button>
+                          </Link>
+                        )}
+                        {(req.contractId || req.id) && (
+                          <Link href={`/app/owner/contracts/${req.contractId || req.id}`}>
+                            <Button size="sm" variant="ghost" className="text-xs font-semibold gap-1">
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>العقد</span>
+                            </Button>
+                          </Link>
+                        )}
+                      </div>
+                    ) : isPendingFee ? (
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-200 text-xs font-bold">
+                          <CreditCard className="w-3.5 h-3.5 text-blue-600" />
+                          <span>بانتظار سداد الرسوم</span>
+                        </span>
+                        <Link href={`/app/owner/contracts/${req.contractId || req.id}`}>
+                          <Button size="sm" className="bg-primary hover:bg-primary-hover text-white text-xs font-bold gap-1.5 shadow-sm">
+                            <span>سداد رسوم النشر</span>
+                            <ArrowLeft className="w-3.5 h-3.5" />
+                          </Button>
+                        </Link>
+                      </div>
+                    ) : isApproved ? (
                       <Link href={`/app/owner/contracts/${req.contractId || req.id}`}>
                         <Button size="sm" className="bg-primary hover:bg-primary-hover text-white text-xs font-bold gap-1.5 shadow-sm">
                           <span>مراجعة وتوقيع العقد</span>
