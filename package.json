@@ -24,7 +24,7 @@
     "test": "npm run test --workspaces --if-present",
     "test:shared": "npm run test --workspace=packages/shared",
     "lint": "npm run lint --workspaces --if-present",
-    "prisma:generate": "npm run prisma:generate --workspace=apps/api",
+    "prisma:generate": "npx prisma generate --schema=apps/api/prisma/schema.prisma",
     "prisma:migrate": "npm run prisma:migrate --workspace=apps/api",
     "prisma:seed": "npm run prisma:seed --workspace=apps/api",
     "prisma:studio": "npm run prisma:studio --workspace=apps/api",
