@@ -11,7 +11,9 @@ import {
   Clock,
   ShieldAlert,
   ArrowRight,
-  RefreshCw
+  RefreshCw,
+  User,
+  Lock,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -350,36 +352,47 @@ export function LoginForm({ onSuccessRedirect }: LoginFormProps) {
 
       {/* State 1: Credential Login Form */}
       {step === 1 && (
-        <form onSubmit={handleLoginSubmit} className="space-y-5">
+        <form onSubmit={handleLoginSubmit} className="space-y-4">
           {/* Identifier Input (Mobile or Username) */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <label
               htmlFor="identifier"
-              className="block text-sm font-semibold text-ink-primary dark:text-dark-ink-primary"
+              className="block text-xs font-bold text-ink-primary dark:text-dark-ink-primary"
             >
               اسم المستخدم أو رقم الجوال
             </label>
-            <input
-              id="identifier"
-              type="text"
-              autoComplete="username"
-              required
-              disabled={isLoading || lockoutSeconds > 0}
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="05XXXXXXXX أو اسم المستخدم"
-              className="w-full px-4 py-2.5 rounded-lg border border-surface-border dark:border-dark-surface-border bg-surface dark:bg-dark-surface text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all text-sm font-sans"
-            />
+            <div className="relative">
+              <input
+                id="identifier"
+                type="text"
+                autoComplete="username"
+                required
+                disabled={isLoading || lockoutSeconds > 0}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="05XXXXXXXX أو اسم المستخدم"
+                className="w-full ps-10 pe-4 py-2.5 rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40 focus:bg-surface dark:focus:bg-dark-surface text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm font-sans"
+              />
+              <User className="w-4 h-4 absolute start-3.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
+            </div>
           </div>
 
           {/* Password Input */}
-          <div className="space-y-2">
-            <label
-              htmlFor="password"
-              className="block text-sm font-semibold text-ink-primary dark:text-dark-ink-primary"
-            >
-              كلمة المرور
-            </label>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="password"
+                className="block text-xs font-bold text-ink-primary dark:text-dark-ink-primary"
+              >
+                كلمة المرور
+              </label>
+              <Link
+                href="/auth/forgot-password"
+                className="text-xs font-medium text-accent hover:underline transition-colors"
+              >
+                نسيت كلمة المرور؟
+              </Link>
+            </div>
             <div className="relative">
               <input
                 id="password"
@@ -390,39 +403,33 @@ export function LoginForm({ onSuccessRedirect }: LoginFormProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-4 py-2.5 pl-11 rounded-lg border border-surface-border dark:border-dark-surface-border bg-surface dark:bg-dark-surface text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all text-sm font-sans"
+                className="w-full ps-10 pe-11 py-2.5 rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40 focus:bg-surface dark:focus:bg-dark-surface text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm font-sans"
               />
+              <Lock className="w-4 h-4 absolute start-3.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}
                 aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-secondary hover:text-ink-primary dark:hover:text-dark-ink-primary focus:outline-none p-1 rounded transition-colors"
+                className="absolute end-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink-primary p-1 rounded-md transition-colors"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
-          {/* Remember Device Checkbox & Forgot Password Link */}
-          <div className="flex items-center justify-between pt-1">
-            <label className="flex items-center gap-2 cursor-pointer select-none text-xs sm:text-sm text-ink-secondary dark:text-dark-ink-secondary">
+          {/* Remember Device Checkbox */}
+          <div className="flex items-center justify-between pt-0.5">
+            <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-ink-secondary dark:text-dark-ink-secondary">
               <input
                 type="checkbox"
                 checked={rememberDevice}
                 onChange={(e) => setRememberDevice(e.target.checked)}
                 disabled={isLoading || lockoutSeconds > 0}
-                className="rounded border-surface-border text-primary focus:ring-primary/30 w-4 h-4 accent-primary"
+                className="rounded border-surface-border text-primary focus:ring-primary/30 w-4 h-4 accent-primary cursor-pointer"
               />
               <span>تذكر هذا الجهاز</span>
             </label>
-
-            <Link
-              href="/auth/forgot-password"
-              className="text-xs sm:text-sm font-semibold text-primary hover:text-primary-hover underline underline-offset-4 transition-colors"
-            >
-              نسيت كلمة المرور؟
-            </Link>
           </div>
 
           {/* Submit Button */}
@@ -432,7 +439,7 @@ export function LoginForm({ onSuccessRedirect }: LoginFormProps) {
             size="lg"
             isLoading={isLoading}
             disabled={isLoading || lockoutSeconds > 0 || !identifier || password.length < 8}
-            className="w-full mt-2 font-bold shadow-md"
+            className="w-full py-3 rounded-xl font-bold shadow-sm hover:shadow-md transition-all mt-2"
           >
             تسجيل الدخول
           </Button>

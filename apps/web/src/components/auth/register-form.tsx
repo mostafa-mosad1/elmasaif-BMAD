@@ -2,7 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, AlertCircle, CheckCircle2, ArrowRight, RefreshCw, Clock } from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  AlertCircle,
+  CheckCircle2,
+  ArrowRight,
+  RefreshCw,
+  Clock,
+  User,
+  CreditCard,
+  Lock,
+} from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { OtpInput } from './otp-input';
@@ -260,32 +271,36 @@ export function RegisterForm({ onSuccessRedirect = '/app/buyer' }: RegisterFormP
 
       {step === 1 ? (
         /* STEP 1: Registration Form */
-        <form onSubmit={handleStep1Submit} className="space-y-5" noValidate>
+        <form onSubmit={handleStep1Submit} className="space-y-4" noValidate>
           {/* Full Name */}
           <div className="space-y-1.5">
-            <label htmlFor="fullName" className="block text-sm font-semibold text-ink-primary dark:text-dark-ink-primary">
+            <label htmlFor="fullName" className="block text-xs font-bold text-ink-primary dark:text-dark-ink-primary">
               الاسم الكامل <span className="text-status-danger">*</span>
             </label>
-            <input
-              id="fullName"
-              type="text"
-              required
-              autoFocus
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="الاسم الثلاثي أو الرباعي كما في الهوية"
-              className="w-full px-4 py-2.5 rounded-DEFAULT border border-surface-border dark:border-dark-surface-border bg-surface-base dark:bg-dark-surface-base text-ink-primary dark:text-dark-ink-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-            />
+            <div className="relative">
+              <input
+                id="fullName"
+                type="text"
+                required
+                autoFocus
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="الاسم الثلاثي أو الرباعي كما في الهوية"
+                className="w-full ps-10 pe-4 py-2.5 rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40 focus:bg-surface dark:focus:bg-dark-surface text-ink-primary dark:text-dark-ink-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
+              <User className="w-4 h-4 absolute start-3.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
+            </div>
           </div>
 
           {/* Saudi Mobile Number */}
           <div className="space-y-1.5">
-            <label htmlFor="mobileNumber" className="block text-sm font-semibold text-ink-primary dark:text-dark-ink-primary">
+            <label htmlFor="mobileNumber" className="block text-xs font-bold text-ink-primary dark:text-dark-ink-primary">
               رقم الجوال السعودي <span className="text-status-danger">*</span>
             </label>
-            <div className="relative flex rounded-DEFAULT shadow-sm" dir="ltr">
-              <span className="inline-flex items-center px-3.5 rounded-s-DEFAULT border border-e-0 border-surface-border dark:border-dark-surface-border bg-surface-sunken dark:bg-dark-surface-raised text-ink-secondary dark:text-dark-ink-secondary font-mono text-sm font-semibold select-none">
-                +966
+            <div className="relative flex rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary focus-within:bg-surface dark:focus-within:bg-dark-surface transition-all overflow-hidden" dir="ltr">
+              <span className="inline-flex items-center gap-1 px-3.5 border-e border-surface-border dark:border-dark-surface-border bg-surface-sunken/80 dark:bg-dark-surface-sunken/80 text-ink-secondary dark:text-dark-ink-secondary font-mono text-xs font-bold select-none">
+                <span>🇸🇦</span>
+                <span>+966</span>
               </span>
               <input
                 id="mobileNumber"
@@ -294,39 +309,42 @@ export function RegisterForm({ onSuccessRedirect = '/app/buyer' }: RegisterFormP
                 value={mobileNumber}
                 onChange={(e) => setMobileNumber(e.target.value)}
                 placeholder="5XXXXXXXX"
-                className="flex-1 block w-full px-3.5 py-2.5 rounded-none rounded-e-DEFAULT border border-surface-border dark:border-dark-surface-border bg-surface-base dark:bg-dark-surface-base text-ink-primary dark:text-dark-ink-primary font-mono text-sm tracking-wider focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-left"
+                className="flex-1 block w-full px-3.5 py-2.5 bg-transparent text-ink-primary dark:text-dark-ink-primary font-mono text-sm tracking-wider focus:outline-none text-left"
               />
             </div>
-            <p className="text-xs text-ink-muted dark:text-dark-ink-muted">
+            <p className="text-[11px] text-ink-muted">
               يبدأ بـ 05 أو 5 ويتكون من 9 إلى 10 أرقام
             </p>
           </div>
 
           {/* National ID / Resident Iqama */}
           <div className="space-y-1.5">
-            <label htmlFor="nationalId" className="block text-sm font-semibold text-ink-primary dark:text-dark-ink-primary">
+            <label htmlFor="nationalId" className="block text-xs font-bold text-ink-primary dark:text-dark-ink-primary">
               رقم الهوية الوطنية أو الإقامة <span className="text-status-danger">*</span>
             </label>
-            <input
-              id="nationalId"
-              type="text"
-              inputMode="numeric"
-              required
-              maxLength={10}
-              value={nationalId}
-              onChange={(e) => setNationalId(e.target.value.replace(/\D/g, ''))}
-              placeholder="1XXXXXXXXX أو 2XXXXXXXXX"
-              className="w-full px-4 py-2.5 rounded-DEFAULT border border-surface-border dark:border-dark-surface-border bg-surface-base dark:bg-dark-surface-base text-ink-primary dark:text-dark-ink-primary font-mono text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-left"
-              dir="ltr"
-            />
-            <p className="text-xs text-ink-muted dark:text-dark-ink-muted">
+            <div className="relative">
+              <input
+                id="nationalId"
+                type="text"
+                inputMode="numeric"
+                required
+                maxLength={10}
+                value={nationalId}
+                onChange={(e) => setNationalId(e.target.value.replace(/\D/g, ''))}
+                placeholder="1XXXXXXXXX أو 2XXXXXXXXX"
+                className="w-full ps-10 pe-4 py-2.5 rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40 focus:bg-surface dark:focus:bg-dark-surface text-ink-primary dark:text-dark-ink-primary font-mono text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left"
+                dir="ltr"
+              />
+              <CreditCard className="w-4 h-4 absolute start-3.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
+            </div>
+            <p className="text-[11px] text-ink-muted">
               10 أرقام تبدأ بـ 1 (للمواطن السعودي) أو 2 (للمقيم)
             </p>
           </div>
 
           {/* Password with Strength Indicators */}
           <div className="space-y-1.5">
-            <label htmlFor="password" className="block text-sm font-semibold text-ink-primary dark:text-dark-ink-primary">
+            <label htmlFor="password" className="block text-xs font-bold text-ink-primary dark:text-dark-ink-primary">
               كلمة المرور <span className="text-status-danger">*</span>
             </label>
             <div className="relative">
@@ -337,8 +355,9 @@ export function RegisterForm({ onSuccessRedirect = '/app/buyer' }: RegisterFormP
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="أدخل كلمة مرور قوية"
-                className="w-full px-4 py-2.5 pe-11 rounded-DEFAULT border border-surface-border dark:border-dark-surface-border bg-surface-base dark:bg-dark-surface-base text-ink-primary dark:text-dark-ink-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                className="w-full ps-10 pe-11 py-2.5 rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40 focus:bg-surface dark:focus:bg-dark-surface text-ink-primary dark:text-dark-ink-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
+              <Lock className="w-4 h-4 absolute start-3.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -349,35 +368,47 @@ export function RegisterForm({ onSuccessRedirect = '/app/buyer' }: RegisterFormP
               </button>
             </div>
 
-            {/* Checklist */}
-            <div className="pt-2 grid grid-cols-3 gap-2 text-xs">
-              <div className={`flex items-center gap-1.5 font-medium ${hasMinLength ? 'text-accent-dark dark:text-accent font-semibold' : 'text-ink-muted'}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${hasMinLength ? 'bg-accent' : 'bg-surface-border'}`} />
-                8 خانات كحد أدنى
+            {/* Checklist with clean platform indicators */}
+            <div className="pt-2 grid grid-cols-3 gap-2 text-[11px]">
+              <div className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-all ${
+                hasMinLength
+                  ? 'bg-accent/10 border-accent/30 text-accent font-bold'
+                  : 'bg-surface-sunken dark:bg-dark-surface-sunken border-surface-border dark:border-dark-surface-border text-ink-muted'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${hasMinLength ? 'bg-accent' : 'bg-surface-border dark:bg-dark-surface-border'}`} />
+                <span>8 خانات كحد أدنى</span>
               </div>
-              <div className={`flex items-center gap-1.5 font-medium ${hasLetter ? 'text-accent-dark dark:text-accent font-semibold' : 'text-ink-muted'}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${hasLetter ? 'bg-accent' : 'bg-surface-border'}`} />
-                حرف هجائي واحد
+              <div className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-all ${
+                hasLetter
+                  ? 'bg-accent/10 border-accent/30 text-accent font-bold'
+                  : 'bg-surface-sunken dark:bg-dark-surface-sunken border-surface-border dark:border-dark-surface-border text-ink-muted'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${hasLetter ? 'bg-accent' : 'bg-surface-border dark:bg-dark-surface-border'}`} />
+                <span>حرف هجائي واحد</span>
               </div>
-              <div className={`flex items-center gap-1.5 font-medium ${hasNumber ? 'text-accent-dark dark:text-accent font-semibold' : 'text-ink-muted'}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${hasNumber ? 'bg-accent' : 'bg-surface-border'}`} />
-                رقم واحد على الأقل
+              <div className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-all ${
+                hasNumber
+                  ? 'bg-accent/10 border-accent/30 text-accent font-bold'
+                  : 'bg-surface-sunken dark:bg-dark-surface-sunken border-surface-border dark:border-dark-surface-border text-ink-muted'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${hasNumber ? 'bg-accent' : 'bg-surface-border dark:bg-dark-surface-border'}`} />
+                <span>رقم واحد على الأقل</span>
               </div>
             </div>
           </div>
 
           {/* Legal Consents (PDPL Compliant) */}
-          <div className="pt-2 space-y-3 border-t border-surface-border dark:border-dark-surface-border">
-            <div className="flex items-start gap-3">
+          <div className="pt-2 space-y-2.5 border-t border-surface-border dark:border-dark-surface-border">
+            <div className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-sunken/50 transition-colors">
               <input
                 id="termsAccepted"
                 type="checkbox"
                 required
                 checked={termsAccepted}
                 onChange={(e) => setTermsAccepted(e.target.checked)}
-                className="mt-1 w-4 h-4 rounded text-primary focus:ring-primary/20 border-surface-border cursor-pointer"
+                className="mt-0.5 w-4 h-4 rounded text-primary focus:ring-primary/20 border-surface-border cursor-pointer accent-primary"
               />
-              <label htmlFor="termsAccepted" className="text-xs text-ink-secondary dark:text-dark-ink-secondary leading-relaxed cursor-pointer">
+              <label htmlFor="termsAccepted" className="text-xs text-ink-secondary dark:text-dark-ink-secondary leading-relaxed cursor-pointer select-none">
                 أوافق على{' '}
                 <button
                   type="button"
@@ -389,16 +420,16 @@ export function RegisterForm({ onSuccessRedirect = '/app/buyer' }: RegisterFormP
               </label>
             </div>
 
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-sunken/50 transition-colors">
               <input
                 id="privacyAccepted"
                 type="checkbox"
                 required
                 checked={privacyAccepted}
                 onChange={(e) => setPrivacyAccepted(e.target.checked)}
-                className="mt-1 w-4 h-4 rounded text-primary focus:ring-primary/20 border-surface-border cursor-pointer"
+                className="mt-0.5 w-4 h-4 rounded text-primary focus:ring-primary/20 border-surface-border cursor-pointer accent-primary"
               />
-              <label htmlFor="privacyAccepted" className="text-xs text-ink-secondary dark:text-dark-ink-secondary leading-relaxed cursor-pointer">
+              <label htmlFor="privacyAccepted" className="text-xs text-ink-secondary dark:text-dark-ink-secondary leading-relaxed cursor-pointer select-none">
                 أوافق على{' '}
                 <button
                   type="button"
@@ -412,16 +443,16 @@ export function RegisterForm({ onSuccessRedirect = '/app/buyer' }: RegisterFormP
           </div>
 
           {/* Action Button */}
-          <div className="pt-3">
+          <div className="pt-2">
             <Button
               type="submit"
               variant="primary"
               size="lg"
               isLoading={isLoading}
-              className="w-full text-base font-bold shadow-sm"
+              className="w-full py-3 rounded-xl text-sm font-bold shadow-sm hover:shadow-md transition-all"
             >
-              المتابعة والتحقق من الجوال
-              <ArrowRight className="w-5 h-5 ms-2 rtl:rotate-180" />
+              <span>المتابعة والتحقق من الجوال</span>
+              <ArrowRight className="w-4 h-4 ms-2 rtl:rotate-180" />
             </Button>
           </div>
         </form>

@@ -29,6 +29,7 @@ import {
 import { LayoutShell } from '../components/layout';
 import { Button, Badge, Card, EmptyState } from '../components/ui';
 import { PropertyCard } from '../components/listings';
+import { MarketplaceAppHero } from '../components/home/marketplace-app-hero';
 import {
   UserRole,
   PropertyType,
@@ -158,33 +159,29 @@ export default function HomePage() {
 
   return (
     <LayoutShell>
-      {/* Hero Section with Ambient Glow */}
-      <section className="relative pt-6 pb-12 sm:pt-12 sm:pb-16 text-center">
+      {/* Dynamic Interactive App Hero (الهيرو التفاعلي الجديد في البداية) */}
+      <MarketplaceAppHero />
+
+      {/* Search & Property Explorer Section (محرك البحث واستعراض المعروض) */}
+      <section id="search-explore-section" className="relative pt-6 pb-12 sm:pt-8 sm:pb-16 text-center border-t border-surface-border/60 dark:border-dark-surface-border/60 mt-4 sm:mt-6">
         {/* Ambient Radial Background Glow */}
         <div className="absolute inset-0 -top-24 -z-10 bg-ambient-radial opacity-70 pointer-events-none" />
 
-        <div className="max-w-4xl mx-auto px-4">
-          {/* Institutional Trust Live Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent-light dark:bg-accent/15 border border-accent/30 text-accent-dark dark:text-accent text-xs sm:text-sm font-semibold shadow-sm mb-6">
-            <span className="w-2 h-2 rounded-full bg-accent animate-ping" />
-            <ShieldCheck className="w-4 h-4 shrink-0 text-accent" />
-            <span>نظام وساطة رقمي متكامل وفق أنظمة الهيئة العامة للعقار (REGA)</span>
+        <div className="max-w-4xl mx-auto px-4 mb-4 sm:mb-6 text-center space-y-1.5">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-sunken dark:bg-dark-surface-sunken text-ink-secondary dark:text-dark-ink-secondary text-xs font-semibold border border-surface-border dark:border-dark-surface-border">
+            <Search className="w-3.5 h-3.5 text-accent" />
+            <span>محرك البحث والفلترة المباشرة</span>
           </div>
-
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-ink-primary dark:text-dark-ink-primary leading-[1.2] sm:leading-[1.15] tracking-tight">
-            السوق العقاري المؤسسي الأوثق <br className="hidden sm:inline" />
-            <span className="bg-gradient-to-l from-primary via-primary-dark to-accent bg-clip-text text-transparent">
-              لصفقات البيع والاستثمار الكبرى
-            </span>
-          </h1>
-
-          <p className="mt-5 text-sm sm:text-lg text-ink-secondary dark:text-dark-ink-secondary leading-relaxed max-w-2xl mx-auto">
-            منظومة بيع وتفاوض محكومة تحمي حقوق المشتري والمالك والمسوّق المرخص. عقود وساطة نظامية، تدقيق صكوك فوري، وتحويلات بنكية مباشرة بدون احتجاز أموال.
+          <h2 className="text-xl sm:text-2xl font-black text-ink-primary dark:text-dark-ink-primary tracking-tight">
+            ابحث في معروض الصفقات والعقارات المعتمدة
+          </h2>
+          <p className="text-xs sm:text-sm text-ink-muted max-w-xl mx-auto">
+            فلترة فورية ومخصصة حسب المدينة، تصنيف العقار، ونطاق السعر المستهدف.
           </p>
         </div>
 
         {/* Main Search Panel with Glassmorphism */}
-        <div className="mt-8 sm:mt-12 max-w-4xl mx-auto glass-panel rounded-2xl shadow-level3 p-4 sm:p-6 text-start luxury-card">
+        <div className="max-w-4xl mx-auto glass-panel rounded-2xl shadow-level3 p-4 sm:p-6 text-start luxury-card">
           {/* Category Tabs */}
           <div className="flex items-center gap-2 border-b border-surface-border dark:border-dark-surface-border pb-4 mb-5 overflow-x-auto scrollbar-none">
             {categories.map((cat, idx) => (
