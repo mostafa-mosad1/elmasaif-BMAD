@@ -20,6 +20,7 @@ import {
   Calculator,
   ShieldCheck,
   Home,
+  HelpCircle,
 } from 'lucide-react';
 
 export function Header() {
@@ -36,6 +37,7 @@ export function Header() {
     { href: '/properties', label: isArabic ? 'تصفح العقارات' : 'Browse Properties', icon: Compass },
     { href: '/pages/calculator', label: isArabic ? 'حاسبة السعي' : 'Commission Calculator', icon: Calculator },
     { href: '/pages/rega-licenses', label: isArabic ? 'الامتثال والتراخيص' : 'Compliance', icon: ShieldCheck },
+    { href: '/pages/faq', label: isArabic ? 'الأسئلة الشائعة' : 'FAQs', icon: HelpCircle },
   ];
 
   // Hash anchors never match the pathname, so only real routes get highlighted.
@@ -50,28 +52,16 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full nav-blur border-b border-surface-border/80 dark:border-dark-surface-border/80 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-4 h-[72px]">
-          {/* Brand Logo & Name */}
+          {/* Brand Logo */}
           <Link
             href="/"
-            className="flex items-center gap-3 shrink-0 group focus:outline-none focus:ring-2 focus:ring-accent/30 rounded-2xl p-1 -ms-1 transition-transform duration-200 hover:scale-[1.02]"
+            className="flex items-center shrink-0 group focus:outline-none focus:ring-2 focus:ring-accent/30 rounded-xl p-1 -ms-1 transition-transform duration-200 hover:scale-[1.02]"
           >
-            <div className="relative w-10 h-10 rounded-2xl bg-gradient-to-br from-primary via-slate-900 to-primary-hover dark:from-slate-800 dark:to-slate-900 border border-surface-border dark:border-dark-surface-border flex items-center justify-center text-primary-foreground shadow-xs group-hover:shadow-sm transition-all">
-              <Building2 className="w-5 h-5 text-accent" />
-              <span className="absolute -top-0.5 -end-0.5 w-2.5 h-2.5 rounded-full bg-accent ring-2 ring-white dark:ring-slate-900" />
-            </div>
-            <div className="flex flex-col leading-tight text-start">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xl font-black text-ink-primary dark:text-dark-ink-primary tracking-tight">
-                  {isArabic ? 'المصايف' : 'Elmasaif'}
-                </span>
-                <span className="text-[10px] font-bold text-accent px-1.5 py-0.2 rounded-md bg-accent/10 border border-accent/20 font-mono">
-                  REGA
-                </span>
-              </div>
-              <span className="hidden sm:block text-[11px] text-ink-muted dark:text-dark-ink-secondary font-medium">
-                {isArabic ? 'منصة الصفقات العقارية المعتمدة' : 'Verified Real Estate Platform'}
-              </span>
-            </div>
+            <img
+              src="/images/logo-header.png"
+              alt={isArabic ? 'المصايف - منصة الصفقات العقارية المعتمدة' : 'Elmasaif Real Estate Platform'}
+              className="h-10 sm:h-11 w-auto object-contain transition-transform group-hover:scale-[1.02]"
+            />
           </Link>
 
           {/* Primary Navigation Island (Desktop) */}

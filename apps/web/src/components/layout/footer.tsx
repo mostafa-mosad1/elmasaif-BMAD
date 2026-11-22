@@ -64,15 +64,14 @@ export function Footer() {
       {/* Main Footer Links */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 lg:gap-12">
-          {/* Brand Col */}
+          {/* Brand Col with Official Logo */}
           <div className="md:col-span-1 space-y-4">
-            <Link href="/" className="inline-flex items-center gap-3 group">
-              <div className="w-9 h-9 rounded-DEFAULT bg-primary flex items-center justify-center text-primary-foreground group-hover:bg-primary-hover transition-colors">
-                <Building2 className="w-5 h-5" />
-              </div>
-              <span className="text-xl font-bold tracking-tight text-ink-primary dark:text-dark-ink-primary">
-                {isArabic ? 'المصايف' : 'Elmasaif'}
-              </span>
+            <Link href="/" className="inline-block group focus:outline-none">
+              <img
+                src="/images/logo.png"
+                alt={isArabic ? 'المصايف - عقارات بكل ثقة' : 'El Masaif Real Estate'}
+                className="h-14 sm:h-16 w-auto object-contain transition-transform group-hover:scale-[1.02]"
+              />
             </Link>
             <p className="text-xs text-ink-secondary dark:text-dark-ink-secondary leading-relaxed">
               {isArabic

@@ -29,18 +29,12 @@ export function AuthPageLayout({
     >
       {/* Top Simple Bar: Logo & Return Home */}
       <header className="w-full max-w-md mx-auto flex items-center justify-between mb-4 sm:mb-6">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
-            <Building2 className="w-5 h-5 text-accent" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-lg font-black tracking-tight text-ink-primary dark:text-dark-ink-primary">
-              المصايف
-            </span>
-            <span className="text-[10px] text-ink-muted -mt-0.5 font-medium">
-              منصة الصفقات العقارية
-            </span>
-          </div>
+        <Link href="/" className="inline-flex items-center group focus:outline-none">
+          <img
+            src="/images/logo-header.png"
+            alt="المصايف"
+            className="h-10 w-auto object-contain transition-transform group-hover:scale-105"
+          />
         </Link>
 
         <Link
