@@ -1,36 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Building2,
   TrendingUp,
   Gavel,
   ShieldCheck,
   MapPin,
   ArrowLeft,
-  Sparkles,
-  Search,
   CheckCircle2,
-  BedDouble,
-  Maximize2,
-  Star,
   FileCheck,
 } from 'lucide-react';
 
 export function MarketplaceAppHero() {
   const router = useRouter();
-  const [searchCity, setSearchCity] = useState('');
-  const [searchType, setSearchType] = useState('');
-
-  const handleQuickSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const params = new URLSearchParams();
-    if (searchCity) params.set('cityId', searchCity);
-    if (searchType) params.set('propertyType', searchType);
-    router.push(`/properties?${params.toString()}`);
-  };
 
   return (
     <section className="relative pt-6 pb-12 sm:pt-10 sm:pb-16 overflow-hidden">
@@ -75,10 +59,10 @@ export function MarketplaceAppHero() {
             <span>منصة وساطة معتمدة برخص فال العقارية (REGA)</span>
           </div>
 
-          {/* Heading */}
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-ink-primary dark:text-dark-ink-primary leading-[1.25] tracking-tight">
+          {/* Heading with Elegant Gold Gradient */}
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-ink-primary dark:text-dark-ink-primary leading-[1.28] tracking-tight">
             <span>اكتشف عقارك المثالي</span>{' '}
-            <span className="text-accent block sm:inline">
+            <span className="bg-gradient-to-l from-amber-600 via-amber-500 to-amber-400 dark:from-amber-400 dark:via-amber-300 dark:to-amber-500 bg-clip-text text-transparent block sm:inline font-black drop-shadow-xs">
               مع منصة المصايف
             </span>
           </h1>
@@ -88,67 +72,18 @@ export function MarketplaceAppHero() {
             وجهتك الموثوقة لصفقات البيع والاستثمار في أرقى الفلل والمصايف والفرص العقارية بالمملكة. تدقيق فوري للصكوك، عقود وساطة نظامية، وتجربة سلسة تحمي حقوقك بالكامل.
           </p>
 
-          {/* Quick Search Bar Inside Hero */}
-          <form
-            onSubmit={handleQuickSearch}
-            className="p-2 sm:p-2.5 rounded-2xl bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center gap-2 max-w-xl"
-          >
-            {/* City Selector */}
-            <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface-sunken dark:bg-dark-surface-sunken border border-surface-border/60 dark:border-dark-surface-border/60 text-xs">
-              <MapPin className="w-4 h-4 text-accent shrink-0" />
-              <select
-                value={searchCity}
-                onChange={(e) => setSearchCity(e.target.value)}
-                className="w-full bg-transparent text-ink-primary dark:text-dark-ink-primary focus:outline-none cursor-pointer font-medium"
-              >
-                <option value="">كافة مدن المملكة</option>
-                <option value="city-riyadh">الرياض</option>
-                <option value="city-jeddah">جدة</option>
-                <option value="city-khobar">الخبر والدمام</option>
-                <option value="city-taif">الطائف</option>
-                <option value="city-makkah">مكة المكرمة</option>
-              </select>
-            </div>
-
-            {/* Type Selector */}
-            <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface-sunken dark:bg-dark-surface-sunken border border-surface-border/60 dark:border-dark-surface-border/60 text-xs">
-              <Building2 className="w-4 h-4 text-accent shrink-0" />
-              <select
-                value={searchType}
-                onChange={(e) => setSearchType(e.target.value)}
-                className="w-full bg-transparent text-ink-primary dark:text-dark-ink-primary focus:outline-none cursor-pointer font-medium"
-              >
-                <option value="">كافة أنواع العقارات</option>
-                <option value="VILLA">فلل وقصور</option>
-                <option value="LAND">أراضي استثمارية</option>
-                <option value="APARTMENT">شقق تمليك</option>
-                <option value="BUILDING">عمائر سكنية</option>
-                <option value="COMMERCIAL">عقارات تجارية</option>
-              </select>
-            </div>
-
-            {/* Search Submit */}
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-xs hover:shadow-sm transition-all cursor-pointer shrink-0"
-            >
-              <Search className="w-3.5 h-3.5" />
-              <span>بحث فوري</span>
-            </button>
-          </form>
-
-          {/* Action Links & Stats */}
-          <div className="flex flex-wrap items-center gap-3 pt-1">
+          {/* Action Links & CTAs */}
+          <div className="flex flex-wrap items-center gap-3 pt-2">
             <Link
               href="/properties"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-white text-xs font-bold shadow-xs hover:shadow-sm transition-all"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary hover:bg-primary-hover dark:bg-accent dark:hover:bg-accent-hover text-white dark:text-slate-950 text-xs sm:text-sm font-bold shadow-xs hover:shadow-sm transition-all hover:-translate-y-0.5"
             >
               <span>تصفح كافة العقارات والصفقات</span>
-              <ArrowLeft className="w-3.5 h-3.5" />
+              <ArrowLeft className="w-4 h-4" />
             </Link>
             <Link
               href="/auth/register"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border hover:bg-surface-sunken text-ink-secondary dark:text-dark-ink-secondary hover:text-ink-primary text-xs font-semibold transition-all"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border hover:bg-surface-sunken dark:hover:bg-dark-surface-sunken text-ink-secondary dark:text-dark-ink-secondary hover:text-ink-primary dark:hover:text-white text-xs sm:text-sm font-semibold transition-all hover:-translate-y-0.5"
             >
               <span>تسجيل وسيط أو مالك عقار</span>
             </Link>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -14,10 +14,7 @@ import {
   Lock,
   Sparkles,
   ChevronLeft,
-  RotateCcw,
-  SlidersHorizontal,
   ArrowRight,
-  Calculator,
   Award,
   Zap,
   TrendingUp,
@@ -27,7 +24,7 @@ import {
   Check,
 } from 'lucide-react';
 import { LayoutShell } from '../components/layout';
-import { Button, Badge, Card, EmptyState } from '../components/ui';
+import { Button, Badge, Card } from '../components/ui';
 import { PropertyCard } from '../components/listings';
 import { MarketplaceAppHero } from '../components/home/marketplace-app-hero';
 import {
@@ -107,26 +104,10 @@ const FEATURED_SHOWCASE_LISTINGS: ListingSummaryItem[] = [
 export default function HomePage() {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState(0);
-  const [showEmptyStateDemo, setShowEmptyStateDemo] = useState(false);
   const [liveListings, setLiveListings] = useState<ListingSummaryItem[]>([]);
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [selectedPropertyType, setSelectedPropertyType] = useState<string>('');
   const [selectedPriceMax, setSelectedPriceMax] = useState<string>('');
-
-  // Quick commission calculator mini-state
-  const [calcAmount, setCalcAmount] = useState<number>(2000000);
-
-  const calcResults = useMemo(() => {
-    const commission = calcAmount * 0.025;
-    const vat = commission * 0.15;
-    const totalBuyerCost = calcAmount + commission + vat;
-    return {
-      commission,
-      vat,
-      totalCommissionWithVat: commission + vat,
-      totalBuyerCost,
-    };
-  }, [calcAmount]);
 
   useEffect(() => {
     apiClient
@@ -557,176 +538,133 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Quick Interactive Commission Calculator Teaser */}
+      {/* High-Converting Institutional CTA Banner (تصميم فخم، مقسم لعمودين مع بطاقة استعراض وبصمة ذهبية) */}
       <section className="py-12 border-t border-surface-border dark:border-dark-surface-border">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center bg-gradient-to-br from-surface-base via-surface-sunken to-surface-base dark:from-dark-surface-base dark:via-dark-surface-sunken dark:to-dark-surface-base p-6 sm:p-10 rounded-3xl border border-surface-border dark:border-dark-surface-border shadow-level1">
-          <div className="lg:col-span-1 space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-light border border-accent/20 text-accent-dark text-xs font-bold">
-              <Calculator className="w-3.5 h-3.5" />
-              <span>حاسبة السعي والضريبة السريعة</span>
-            </div>
-            <h3 className="text-2xl font-extrabold text-ink-primary dark:text-dark-ink-primary">
-              احسب سعي وساطة الصفقة بدقة نظامية
-            </h3>
-            <p className="text-xs sm:text-sm text-ink-secondary dark:text-dark-ink-secondary leading-relaxed">
-              وفقاً لنظام الوساطة العقارية ولائحته التنفيذية، تبلغ نسبة السعي 2.5% بحد أقصى، وتخضع لضريبة القيمة المضافة 15%.
-            </p>
-            <div className="pt-2">
-              <Link
-                href="/pages/calculator"
-                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-primary dark:text-primary-light hover:underline"
-              >
-                <span>الانتقال للحاسبة التفاعلية الشاملة</span>
-                <ChevronLeft className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0B0F19] via-[#111827] to-[#07090E] text-white p-8 sm:p-12 lg:p-14 shadow-2xl border border-white/10">
+          {/* Subtle Grid Pattern Overlay */}
+          <div className="absolute inset-0 bg-[radial-gradient(#d97706_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none" />
 
-          <div className="lg:col-span-2 bg-surface-base dark:bg-dark-surface-base p-5 sm:p-6 rounded-2xl border border-surface-border dark:border-dark-surface-border shadow-sm">
-            <div className="mb-4">
-              <label className="text-xs font-bold text-ink-secondary dark:text-dark-ink-secondary block mb-1.5">
-                قيمة العقار المتوقعة (ر.س)
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="100000"
-                  step="50000"
-                  value={calcAmount}
-                  onChange={(e) => setCalcAmount(Math.max(0, Number(e.target.value)))}
-                  className="w-full bg-surface-sunken dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-xl px-4 py-3 text-base sm:text-lg font-bold font-mono-numbers text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
-                />
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-ink-muted dark:text-dark-ink-muted">
-                  ريال سعودي
-                </span>
-              </div>
-            </div>
+          {/* Decorative ambient glowing orbs */}
+          <div className="absolute -left-20 -bottom-20 w-96 h-96 rounded-full bg-amber-500/20 blur-3xl pointer-events-none" />
+          <div className="absolute right-0 -top-20 w-96 h-96 rounded-full bg-amber-600/15 blur-3xl pointer-events-none" />
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-              <div className="p-3.5 rounded-xl bg-surface-sunken dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border">
-                <span className="text-[11px] font-semibold text-ink-secondary dark:text-dark-ink-secondary block">
-                  عمولة الوساطة (2.5%)
-                </span>
-                <div className="flex items-baseline gap-1 text-base sm:text-lg font-extrabold text-primary dark:text-primary-light mt-1" dir="ltr">
-                  <span>{calcResults.commission.toLocaleString('en-US')}</span>
-                  <span className="text-xs font-sans font-semibold">ر.س</span>
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            {/* Right Column: High-Impact Typography & Action CTA */}
+            <div className="lg:col-span-7 space-y-6 text-start">
+              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-bold shadow-xs">
+                <Award className="w-4 h-4 text-amber-400" />
+                <span>انضم لمنظومة المصايف العقارية المعتمدة</span>
+              </span>
+
+              <h2 className="text-2xl sm:text-4xl lg:text-4xl font-black text-white leading-tight">
+                هل أنت مالك عقار أو{' '}
+                <span className="bg-gradient-to-l from-amber-400 via-amber-300 to-amber-200 bg-clip-text text-transparent">
+                  وسيط عقاري معتمد
+                </span>{' '}
+                بهيئة العقار؟
+              </h2>
+
+              <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">
+                ابدأ إدارة صفقاتك وعروضك العقارية عبر منصة موثوقة تحمي حقوق السعي كاملة، وتوفر لك مفاوضات رقمية ملزمة وإشرافاً إدارياً فورياً على كل صفقة.
+              </p>
+
+              {/* 3 Core Trust Badges / Value Props */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
+                  <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>حفظ السعي (2.5%)</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>عقود وساطة موثقة فورياً</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
+                  <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>تحويل بنكي مباشر للبائع</span>
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-surface-sunken dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border">
-                <span className="text-[11px] font-semibold text-ink-secondary dark:text-dark-ink-secondary block">
-                  ضريبة السعي (15%)
-                </span>
-                <div className="flex items-baseline gap-1 text-base sm:text-lg font-extrabold text-accent-dark mt-1" dir="ltr">
-                  <span>{calcResults.vat.toLocaleString('en-US')}</span>
-                  <span className="text-xs font-sans font-semibold">ر.س</span>
-                </div>
-              </div>
+              {/* Action Buttons */}
+              <div className="pt-2 flex flex-wrap items-center gap-3.5">
+                <Link
+                  href="/listings/new"
+                  className="px-7 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-sm shadow-lg shadow-amber-500/25 transition-all duration-200 flex items-center gap-2 group hover:scale-[1.02]"
+                >
+                  <span>إضافة عقار جديد للبيع</span>
+                  <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                </Link>
 
-              <div className="p-3.5 rounded-xl bg-primary-light/50 dark:bg-primary-dark/20 border border-primary/20">
-                <span className="text-[11px] font-semibold text-primary dark:text-primary-light block">
-                  إجمالي التكلفة على المشتري
-                </span>
-                <div className="flex items-baseline gap-1 text-base sm:text-lg font-extrabold text-ink-primary dark:text-dark-ink-primary mt-1" dir="ltr">
-                  <span>{calcResults.totalBuyerCost.toLocaleString('en-US')}</span>
-                  <span className="text-xs font-sans font-semibold">ر.س</span>
-                </div>
+                <Link
+                  href="/pages/marketer-guide"
+                  className="px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white font-bold text-sm transition-all duration-200 flex items-center gap-2 backdrop-blur-xs"
+                >
+                  <span>دليل المسوقين والوسطاء</span>
+                </Link>
+
+                <Link
+                  href="/pages/contact"
+                  className="px-4 py-3 text-slate-300 hover:text-white text-xs sm:text-sm font-semibold transition-colors flex items-center gap-2"
+                >
+                  <PhoneCall className="w-4 h-4 text-amber-400" />
+                  <span>مركز الدعم المباشر</span>
+                </Link>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Institutional Zero-Result State Preview */}
-      <section className="py-8 border-t border-surface-border dark:border-dark-surface-border">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <span className="text-xs font-bold text-ink-secondary dark:text-dark-ink-secondary flex items-center gap-1.5">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-accent" />
-              <span>محددات البحث والتصفية الموسعة</span>
-            </span>
-            <h4 className="text-sm sm:text-base font-bold text-ink-primary dark:text-dark-ink-primary mt-0.5">
-              معاينة حالات البحث الصفري وتصفير الفلاتر
-            </h4>
-          </div>
+            {/* Left Column: Premium Floating Mockup Showcase */}
+            <div className="lg:col-span-5 relative mt-6 lg:mt-0">
+              <div className="relative mx-auto max-w-sm rounded-2xl bg-gradient-to-b from-white/15 via-white/5 to-white/10 backdrop-blur-xl border border-white/20 p-5 sm:p-6 shadow-2xl space-y-4">
+                {/* Header of Mockup Card */}
+                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/30 to-amber-600/10 text-amber-400 flex items-center justify-center border border-amber-500/30 shadow-inner">
+                      <ShieldCheck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black text-white">منصة المصايف المعتمدة</div>
+                      <div className="text-[11px] text-slate-400">بوابة الملاك والوسطاء المرخصين</div>
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>فال نشطة ✓</span>
+                  </span>
+                </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowEmptyStateDemo(!showEmptyStateDemo)}
-            className="text-xs"
-          >
-            <RotateCcw className="w-3 h-3" />
-            <span>{showEmptyStateDemo ? 'إخفاء المعاينة' : 'عرض حالة البحث الصفري'}</span>
-          </Button>
-        </div>
+                {/* Micro Item 1 */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/30 transition-colors">
+                  <div className="flex items-center gap-2 text-xs text-slate-200 font-semibold">
+                    <Building2 className="w-4 h-4 text-amber-400" />
+                    <span>حماية سعي الوساطة</span>
+                  </div>
+                  <span className="text-xs font-black text-amber-300">2.5% بضمان بنكي</span>
+                </div>
 
-        {showEmptyStateDemo ? (
-          <EmptyState
-            title="لا توجد صفقات مطابقة للمحددات الحالية"
-            description="لم نتمكن من العثور على أي عقارات تطابق معايير التصفية المحددة. يرجى تجربة توسيع نطاق البحث أو إعادة تعيين الفلاتر."
-            actionLabel="إعادة ضبط الفلاتر"
-            onAction={() => {
-              setSelectedCategory(0);
-              setSelectedCity('');
-              setSelectedPropertyType('');
-              setSelectedPriceMax('');
-              setShowEmptyStateDemo(false);
-            }}
-            secondaryActionLabel="استعراض كافة العقارات"
-            secondaryActionHref="/properties"
-          />
-        ) : (
-          <div className="text-center py-4 px-4 rounded-xl border border-dashed border-surface-border dark:border-dark-surface-border text-xs text-ink-muted dark:text-dark-ink-muted">
-            انقر على «عرض حالة البحث الصفري» لمعاينة المكون المؤسسي عند عدم وجود نتائج متطابقة.
-          </div>
-        )}
-      </section>
+                {/* Micro Item 2 */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/30 transition-colors">
+                  <div className="flex items-center gap-2 text-xs text-slate-200 font-semibold">
+                    <FileCheck className="w-4 h-4 text-emerald-400" />
+                    <span>تدقيق الصكوك العقارية</span>
+                  </div>
+                  <span className="text-xs font-black text-emerald-400">فحص فوري 100%</span>
+                </div>
 
-      {/* High-Converting Institutional CTA Banner */}
-      <section className="py-12 border-t border-surface-border dark:border-dark-surface-border">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#07090C] text-white p-8 sm:p-14 shadow-level3 border border-surface-border dark:border-dark-surface-border">
-          {/* Subtle decorative warm bronze glow */}
-          <div className="absolute -left-20 -bottom-20 w-80 h-80 rounded-full bg-accent/20 blur-3xl pointer-events-none" />
-          <div className="absolute right-0 top-0 w-96 h-96 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
+                {/* Micro Item 3 */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/30 transition-colors">
+                  <div className="flex items-center gap-2 text-xs text-slate-200 font-semibold">
+                    <Lock className="w-4 h-4 text-sky-400" />
+                    <span>قناة تفاوض محمية</span>
+                  </div>
+                  <span className="text-xs font-black text-sky-300">عروض رسمية ملزمة</span>
+                </div>
 
-          <div className="relative z-10 max-w-3xl">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-accent text-xs font-bold mb-4">
-              <Award className="w-3.5 h-3.5" />
-              <span>انضم لمنظومة المصايف العقارية</span>
-            </span>
-
-            <h2 className="text-2xl sm:text-4xl font-extrabold text-white leading-tight">
-              هل أنت مالك عقار أو وسيط عقاري معتمد بهيئة العقار؟
-            </h2>
-
-            <p className="mt-3 text-sm sm:text-base text-white/80 leading-relaxed max-w-2xl">
-              ابدأ إدارة صفقاتك وعروضك العقارية عبر منصة موثوقة تحمي حقوق السعي كاملة، وتوفر لك مفاوضات رقمية ملزمة وإشرافاً إدارياً فورياً على كل صفقة.
-            </p>
-
-            <div className="mt-8 flex flex-wrap items-center gap-4">
-              <Link
-                href="/listings/new"
-                className="px-6 py-3 rounded-xl bg-accent hover:bg-accent-hover text-white font-bold text-sm shadow-lg transition-all sheen-effect flex items-center gap-2 glow-bronze"
-              >
-                <span>إضافة عقار جديد للبيع</span>
-                <ChevronLeft className="w-4 h-4" />
-              </Link>
-
-              <Link
-                href="/pages/marketer-guide"
-                className="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-sm transition-all flex items-center gap-2"
-              >
-                <span>دليل المسوقين والوسطاء</span>
-              </Link>
-
-              <Link
-                href="/pages/contact"
-                className="px-4 py-3 text-white/70 hover:text-white text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5"
-              >
-                <PhoneCall className="w-4 h-4" />
-                <span>مركز المساعدة والدعم المباشر</span>
-              </Link>
+                {/* Micro Footer Badge */}
+                <div className="pt-1 text-center">
+                  <span className="text-[11px] text-slate-400">
+                    مرخص من الهيئة العامة للعقار • رقم وساطة 1200028491
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
