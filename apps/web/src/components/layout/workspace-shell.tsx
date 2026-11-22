@@ -314,15 +314,15 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
       >
         {/* Institutional Crest Header */}
         <div className="h-20 shrink-0 flex items-center justify-between px-6 border-b border-surface-border dark:border-dark-surface-border bg-surface-sunken/20 dark:bg-dark-surface-sunken/20">
-          <Link href="/" className="flex items-center gap-3.5 group">
-            <div className="w-11 h-11 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-sm group-hover:scale-105 transition-transform">
-              <Building2 className="w-6 h-6 text-accent" />
-            </div>
+          <Link href="/" className="flex items-center gap-3 group focus:outline-none">
+            <img
+              src="/images/logo-header.png"
+              alt="المصايف"
+              className="h-10 w-auto object-contain transition-transform group-hover:scale-105"
+            />
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
-                <span className="text-xl font-black tracking-tight text-ink-primary dark:text-dark-ink-primary">
-                  المصايف
-                </span>
+                <span className="sr-only">المصايف</span>
                 {isAdminRoute && (
                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-accent/15 text-accent border border-accent/20">
                     الإدارة
