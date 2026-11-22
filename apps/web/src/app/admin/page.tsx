@@ -35,6 +35,7 @@ import {
 import { apiClient } from '../../lib/api-client';
 import { useAdminAuth } from '../../components/providers/admin-auth-provider';
 import { AdminPasswordResetModal } from '../../components/admin/admin-password-reset-modal';
+import { MarketplaceFlowchartAnalytics } from '../../components/admin/marketplace-flowchart-analytics';
 
 export default function AdminDashboardPage() {
   const { admin, hasPermission } = useAdminAuth();
@@ -322,6 +323,12 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Real Estate Store & Operational Lifecycle Pipeline Flowchart & Analytics */}
+      <MarketplaceFlowchartAnalytics
+        metrics={metrics}
+        onRefresh={loadDashboardData}
+      />
 
       {/* Operational Queues Navigation Hub */}
       <section className="rounded-2xl bg-surface dark:bg-dark-surface-raised border border-surface-border dark:border-dark-surface-border p-6 space-y-4">

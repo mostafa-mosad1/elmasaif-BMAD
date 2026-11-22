@@ -57,6 +57,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const { resolvedTheme, toggleTheme } = useTheme();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [supportModalOpen, setSupportModalOpen] = useState(false);
+  const [sidebarSearch, setSidebarSearch] = useState('');
 
   const isArabic = locale === SupportedLocale.AR;
   const isAdminRoute = Boolean(pathname?.startsWith('/admin'));
@@ -272,6 +273,22 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const navSections = (roleNavSections[effectiveRole] || roleNavSections[UserRole.BUYER]).filter(
     (section) => section.items.length > 0
   );
+
+  const filteredNavSections = React.useMemo(() => {
+    if (!sidebarSearch.trim()) return navSections;
+    const q = sidebarSearch.toLowerCase().trim();
+    return navSections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter(
+          (item) =>
+            item.label.toLowerCase().includes(q) ||
+            (section.title && section.title.toLowerCase().includes(q))
+        ),
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [navSections, sidebarSearch]);
+
   const workspaceTitle = roleTitleMap[effectiveRole] || 'مساحة العمل';
   const handleActiveLogout = isAdminRoute ? logoutAdmin : logout;
 
@@ -285,27 +302,34 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         />
       )}
 
-      {/* Institutional Responsive Sidebar (280px) */}
+      {/* Institutional Floating Island Sidebar (Detached Container) */}
       <aside
-        className={`fixed inset-y-0 start-0 z-50 w-[280px] bg-surface-base dark:bg-dark-surface-base border-e border-surface-border dark:border-dark-surface-border shadow-xl lg:shadow-none flex flex-col transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed z-50 w-[300px] lg:w-[320px] bg-surface-base dark:bg-dark-surface-base border border-surface-border dark:border-dark-surface-border shadow-xl lg:shadow-md flex flex-col min-h-0 overflow-hidden overscroll-contain transition-all duration-300 ${
           mobileSidebarOpen
-            ? 'translate-x-0'
+            ? 'inset-y-0 start-0 translate-x-0 h-full max-h-screen'
             : isArabic
-            ? 'translate-x-full'
-            : '-translate-x-full'
-        }`}
+            ? 'inset-y-0 start-0 translate-x-full lg:translate-x-0'
+            : 'inset-y-0 start-0 -translate-x-full lg:translate-x-0'
+        } lg:top-4 lg:start-4 lg:h-[calc(100vh-2rem)] lg:max-h-[calc(100vh-2rem)] lg:rounded-2xl`}
       >
         {/* Institutional Crest Header */}
-        <div className="h-20 flex items-center justify-between px-6 border-b border-surface-border dark:border-dark-surface-border">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-primary-foreground shadow-sm">
-              <Building2 className="w-6 h-6" />
+        <div className="h-20 shrink-0 flex items-center justify-between px-6 border-b border-surface-border dark:border-dark-surface-border bg-surface-sunken/20 dark:bg-dark-surface-sunken/20">
+          <Link href="/" className="flex items-center gap-3.5 group">
+            <div className="w-11 h-11 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-sm group-hover:scale-105 transition-transform">
+              <Building2 className="w-6 h-6 text-accent" />
             </div>
             <div className="flex flex-col">
-              <span className="text-xl font-bold tracking-tight text-ink-primary dark:text-dark-ink-primary">
-                المصايف
-              </span>
-              <span className="text-[10px] text-ink-muted dark:text-dark-ink-muted font-medium">
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-black tracking-tight text-ink-primary dark:text-dark-ink-primary">
+                  المصايف
+                </span>
+                {isAdminRoute && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-accent/15 text-accent border border-accent/20">
+                    الإدارة
+                  </span>
+                )}
+              </div>
+              <span className="text-[11px] text-ink-muted dark:text-dark-ink-muted font-medium">
                 {workspaceTitle}
               </span>
             </div>
@@ -320,69 +344,104 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
           </button>
         </div>
 
+        {/* Quick Navigation Filter for Admin */}
+        {isAdminRoute && (
+          <div className="shrink-0 px-4 pt-3 pb-2 border-b border-surface-border/50 dark:border-dark-surface-border/50">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute start-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
+              <input
+                type="text"
+                value={sidebarSearch}
+                onChange={(e) => setSidebarSearch(e.target.value)}
+                placeholder="البحث السريع في القوائم الإدارية..."
+                className="w-full ps-8 pe-7 py-2 text-xs rounded-xl bg-surface-sunken dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border text-ink-primary dark:text-dark-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+              {sidebarSearch && (
+                <button
+                  type="button"
+                  onClick={() => setSidebarSearch('')}
+                  className="absolute end-2.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink-primary p-0.5"
+                  aria-label="مسح البحث"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Navigation List */}
-        <nav className="flex-1 overflow-y-auto px-3.5 py-4 space-y-4">
-          {navSections.map((section, sIdx) => {
-            if (section.items.length === 0) return null;
-            return (
-              <div key={section.title || sIdx} className="space-y-1.5">
-                {section.title && (
-                  <div className="px-3 py-1">
-                    <span className="text-xs font-bold tracking-wider text-ink-muted dark:text-dark-ink-muted uppercase">
-                      {section.title}
-                    </span>
+        <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y px-4 py-4 space-y-4">
+          {filteredNavSections.length === 0 ? (
+            <div className="py-8 text-center text-xs text-ink-muted">
+              لا توجد عناصر مطابقة لـ &quot;{sidebarSearch}&quot;
+            </div>
+          ) : (
+            filteredNavSections.map((section, sIdx) => {
+              if (section.items.length === 0) return null;
+              return (
+                <div key={section.title || sIdx} className="space-y-1.5">
+                  {section.title && (
+                    <div className="px-3 py-1 flex items-center justify-between">
+                      <span className="text-[11px] font-bold tracking-wider text-ink-muted dark:text-dark-ink-muted uppercase">
+                        {section.title}
+                      </span>
+                      <span className="text-[10px] text-ink-muted opacity-60 font-mono">
+                        {section.items.length}
+                      </span>
+                    </div>
+                  )}
+                  <div className="space-y-1">
+                    {section.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = pathname === item.href;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setMobileSidebarOpen(false)}
+                          className={`flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group ${
+                            isActive
+                              ? 'bg-primary text-white dark:bg-primary dark:text-white shadow-xs ring-1 ring-primary/20'
+                              : 'text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-raised hover:text-ink-primary dark:hover:text-dark-ink-primary'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Icon
+                              className={`w-[19px] h-[19px] shrink-0 transition-transform group-hover:scale-105 ${
+                                isActive ? 'text-accent' : 'text-ink-muted dark:text-dark-ink-muted'
+                              }`}
+                            />
+                            <span className="truncate">{item.label}</span>
+                          </div>
+                          {item.badge && (
+                            <span
+                              className={`shrink-0 ms-1.5 text-xs font-bold px-2 py-0.5 rounded-full tabular-nums ${
+                                isActive
+                                  ? 'bg-white/20 text-white'
+                                  : item.badge.variant === 'danger'
+                                  ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                  : item.badge.variant === 'accent'
+                                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20'
+                                  : 'bg-surface-sunken dark:bg-dark-surface-raised text-ink-muted dark:text-dark-ink-muted'
+                              }`}
+                            >
+                              {item.badge.count}
+                            </span>
+                          )}
+                        </Link>
+                      );
+                    })}
                   </div>
-                )}
-                <div className="space-y-1">
-                  {section.items.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = pathname === item.href;
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setMobileSidebarOpen(false)}
-                        className={`flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 ${
-                          isActive
-                            ? 'bg-primary text-white dark:bg-primary dark:text-white shadow-xs'
-                            : 'text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-raised hover:text-ink-primary dark:hover:text-dark-ink-primary'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <Icon
-                            className={`w-[18px] h-[18px] shrink-0 ${
-                              isActive ? 'text-white' : 'text-ink-muted dark:text-dark-ink-muted'
-                            }`}
-                          />
-                          <span className="truncate">{item.label}</span>
-                        </div>
-                        {item.badge && (
-                          <span
-                            className={`shrink-0 ms-1.5 text-xs font-bold px-2 py-0.5 rounded-full tabular-nums ${
-                              isActive
-                                ? 'bg-white/20 text-white'
-                                : item.badge.variant === 'danger'
-                                ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                                : item.badge.variant === 'accent'
-                                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20'
-                                : 'bg-surface-sunken dark:bg-dark-surface-raised text-ink-muted dark:text-dark-ink-muted'
-                            }`}
-                          >
-                            {item.badge.count}
-                          </span>
-                        )}
-                      </Link>
-                    );
-                  })}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </nav>
 
         {/* User Help / Support Action */}
         {!isAdminRoute && (
-          <div className="px-3.5 py-2 border-t border-surface-border dark:border-dark-surface-border">
+          <div className="shrink-0 px-3.5 py-2 border-t border-surface-border dark:border-dark-surface-border">
             <button
               type="button"
               onClick={() => setSupportModalOpen(true)}
@@ -396,23 +455,32 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
 
         {/* User / Admin Profile Footer in Sidebar */}
         {isAdminRoute && admin ? (
-          <div className="p-4 border-t border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40">
+          <div className="shrink-0 p-4 border-t border-surface-border dark:border-dark-surface-border bg-surface-sunken/60 dark:bg-dark-surface-sunken/60">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5 overflow-hidden">
-                <div className="w-8 h-8 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-xs shrink-0">
-                  {admin.fullName ? admin.fullName.charAt(0) : 'A'}
+              <div className="flex items-center gap-3 overflow-hidden">
+                <div className="relative">
+                  <div className="w-9 h-9 rounded-xl bg-primary text-primary-foreground font-bold flex items-center justify-center text-xs shrink-0 shadow-xs border border-accent/20">
+                    {admin.fullName ? admin.fullName.charAt(0) : 'A'}
+                  </div>
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-dark-surface-base" />
                 </div>
                 <div className="flex flex-col overflow-hidden">
-                  <span className="text-xs font-semibold truncate">{admin.fullName}</span>
-                  <span className="text-[10px] text-ink-muted dark:text-dark-ink-muted truncate">
-                    {admin.role} • {admin.email}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold truncate text-ink-primary dark:text-dark-ink-primary">
+                      {admin.fullName}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[10px] text-ink-muted dark:text-dark-ink-muted truncate">
+                    <span className="font-semibold text-accent">{admin.role}</span>
+                    <span>•</span>
+                    <span className="truncate">{admin.email}</span>
+                  </div>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={logoutAdmin}
-                className="p-1.5 rounded-md text-ink-muted hover:text-status-rejected hover:bg-surface dark:hover:bg-dark-surface-raised transition-colors"
+                className="p-2 rounded-xl text-ink-muted hover:text-status-danger hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
                 title="تسجيل الخروج الإداري"
                 aria-label="Logout Admin"
               >
@@ -422,7 +490,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
           </div>
         ) : (
           user && (
-            <div className="p-4 border-t border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40">
+            <div className="shrink-0 p-4 border-t border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5 overflow-hidden">
                   <div className="w-8 h-8 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-xs shrink-0">
@@ -451,7 +519,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
       </aside>
 
       {/* Main Workspace Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 w-full lg:ps-[280px]">
+      <div className="flex-1 flex flex-col min-w-0 w-full lg:ps-[356px]">
         {/* Workspace Top Bar */}
         <header className="sticky top-0 z-30 h-20 w-full min-w-0 bg-surface-base/90 dark:bg-dark-surface-base/90 backdrop-blur-md border-b border-surface-border dark:border-dark-surface-border px-4 sm:px-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
