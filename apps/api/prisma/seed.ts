@@ -316,8 +316,12 @@ export async function seedDemoListings() {
     {
       id: '88888888-0000-4000-8000-000000000001',
       title: 'فيلا مودرن مع مسبح في النرجس',
-      description: 'فيلا سكنية بتصميم حديث في حي النرجس شمال الرياض، تشطيب سوبر ديلوكس.',
+      description: 'فيلا سكنية بتصميم حديث في حي النرجس شمال الرياض، تشطيب سوبر ديلوكس ومسبح خاص.',
       propertyType: 'VILLA',
+      cityId: '11111111-0000-4000-8000-000000000001', // الرياض
+      districtId: '22222222-0001-4000-8000-000000000002', // النرجس
+      latitude: 24.8133,
+      longitude: 46.6307,
       askPrice: 3200000,
       areaSquareMeters: 450,
       bedrooms: 5,
@@ -329,6 +333,10 @@ export async function seedDemoListings() {
       title: 'شقة فاخرة محجوزة قيد التقييم',
       description: 'شقة راقية في حي النرجس بإطلالة مفتوحة، حالتها محجوزة حالياً.',
       propertyType: 'APARTMENT',
+      cityId: '11111111-0000-4000-8000-000000000001', // الرياض
+      districtId: '22222222-0001-4000-8000-000000000002', // النرجس
+      latitude: 24.8133,
+      longitude: 46.6307,
       askPrice: 1450000,
       areaSquareMeters: 180,
       bedrooms: 3,
@@ -340,27 +348,179 @@ export async function seedDemoListings() {
       title: 'دوبلكس فاخر مكتمل الإفراغ في النرجس',
       description: 'دوبلكس راقي تم بيعه واكتمال صفقة الشراء بنجاح.',
       propertyType: 'VILLA',
+      cityId: '11111111-0000-4000-8000-000000000001', // الرياض
+      districtId: '22222222-0001-4000-8000-000000000002', // النرجس
+      latitude: 24.8133,
+      longitude: 46.6307,
       askPrice: 2000000,
       areaSquareMeters: 300,
       bedrooms: 4,
       yearBuilt: 2024,
       status: 'SOLD',
     },
+    {
+      id: '88888888-0000-4000-8000-000000000004',
+      title: 'أرض سكنية استثمارية في حي الملقا',
+      description: 'قطعة أرض مميزة على شارعين رئيسيين في حي الملقا، موقع استراتيجي وجاهزة للبناء.',
+      propertyType: 'LAND',
+      cityId: '11111111-0000-4000-8000-000000000001', // الرياض
+      districtId: '22222222-0001-4000-8000-000000000001', // الملقا
+      latitude: 24.805,
+      longitude: 46.61,
+      askPrice: 4500000,
+      areaSquareMeters: 625,
+      bedrooms: null,
+      yearBuilt: null,
+      status: 'ACTIVE',
+    },
+    {
+      id: '88888888-0000-4000-8000-000000000005',
+      title: 'أرض سكنية بموقع مميز في الفيصلية',
+      description: 'أرض مستوية قريبة من كافة الخدمات والمدارس والمحاور الحيوية في الطائف.',
+      propertyType: 'LAND',
+      cityId: '11111111-0000-4000-8000-000000000006', // الطائف
+      districtId: '22222222-0006-4000-8000-000000000005', // الفيصلية
+      latitude: 21.28,
+      longitude: 40.42,
+      askPrice: 1200000,
+      areaSquareMeters: 500,
+      bedrooms: null,
+      yearBuilt: null,
+      status: 'ACTIVE',
+    },
+    {
+      id: '88888888-0000-4000-8000-000000000006',
+      title: 'شقة تمليك مودرن في الروضة',
+      description: 'شقة حديثة بتشطيب راقٍ وموقف خاص وتكييف مركزي في أرقى أحياء جدة.',
+      propertyType: 'APARTMENT',
+      cityId: '11111111-0000-4000-8000-000000000002', // جدة
+      districtId: '22222222-0002-4000-8000-000000000004', // الروضة
+      latitude: 21.56,
+      longitude: 39.16,
+      askPrice: 950000,
+      areaSquareMeters: 165,
+      bedrooms: 3,
+      yearBuilt: 2024,
+      status: 'ACTIVE',
+    },
+    {
+      id: '88888888-0000-4000-8000-000000000007',
+      title: 'شقة فاخرة بإطلالة في الياسمين',
+      description: 'شقة ذكية مجهزة بالكامل مع بلكونة واسعة وغرفة خادمة في شمال الرياض.',
+      propertyType: 'APARTMENT',
+      cityId: '11111111-0000-4000-8000-000000000001', // الرياض
+      districtId: '22222222-0001-4000-8000-000000000003', // الياسمين
+      latitude: 24.82,
+      longitude: 46.64,
+      askPrice: 1350000,
+      areaSquareMeters: 190,
+      bedrooms: 4,
+      yearBuilt: 2024,
+      status: 'ACTIVE',
+    },
+    {
+      id: '88888888-0000-4000-8000-000000000008',
+      title: 'عمارة سكنية استثمارية بدخل ممتاز',
+      description: 'عمارة سكنية تضم 12 شقة مؤجرة بالكامل بعقود موثقة ودخل سنوي مجزٍ في الشاطئ الشرقي.',
+      propertyType: 'BUILDING',
+      cityId: '11111111-0000-4000-8000-000000000003', // الدمام
+      districtId: '22222222-0003-4000-8000-000000000001', // الشاطئ الشرقي
+      latitude: 26.45,
+      longitude: 50.12,
+      askPrice: 5800000,
+      areaSquareMeters: 900,
+      bedrooms: 24,
+      yearBuilt: 2022,
+      status: 'ACTIVE',
+    },
+    {
+      id: '88888888-0000-4000-8000-000000000009',
+      title: 'مكتب تجاري فاخر في برج أعمال',
+      description: 'مقر إداري وتجاري متكامل بإطلالة بحرية وخدمات استقبال ومواقف في الحزام الذهبي.',
+      propertyType: 'COMMERCIAL',
+      cityId: '11111111-0000-4000-8000-000000000007', // الخبر
+      districtId: '22222222-0007-4000-8000-000000000001', // الحزام الذهبي
+      latitude: 26.3,
+      longitude: 50.21,
+      askPrice: 2400000,
+      areaSquareMeters: 280,
+      bedrooms: null,
+      yearBuilt: 2023,
+      status: 'ACTIVE',
+    },
+    {
+      id: '88888888-0000-4000-8000-000000000010',
+      title: 'معرض ومكتب تجاري على شارع رئيسي',
+      description: 'موقع تجاري حيوي واستراتيجي مناسب للشركات والأنشطة الكبرى في حي العوالي بمكة.',
+      propertyType: 'COMMERCIAL',
+      cityId: '11111111-0000-4000-8000-000000000004', // مكة المكرمة
+      districtId: '22222222-0004-4000-8000-000000000001', // العوالي
+      latitude: 21.36,
+      longitude: 39.88,
+      askPrice: 7500000,
+      areaSquareMeters: 550,
+      bedrooms: null,
+      yearBuilt: 2021,
+      status: 'ACTIVE',
+    },
+    {
+      id: '88888888-0000-4000-8000-000000000011',
+      title: 'فيلا قصر مصغرة بتصميم كلاسيكي في الشاطئ',
+      description: 'فيلا راقية جداً في حي الشاطئ مع حديقة ومصعد وتشطيبات رخامية إيطالية.',
+      propertyType: 'VILLA',
+      cityId: '11111111-0000-4000-8000-000000000002', // جدة
+      districtId: '22222222-0002-4000-8000-000000000001', // الشاطئ
+      latitude: 21.61,
+      longitude: 39.11,
+      askPrice: 4800000,
+      areaSquareMeters: 600,
+      bedrooms: 6,
+      yearBuilt: 2023,
+      status: 'ACTIVE',
+    },
+    {
+      id: '88888888-0000-4000-8000-000000000012',
+      title: 'فيلا مستقلة مودرن في العزيزية',
+      description: 'فيلا عائلية راقية قريبة من الحرم النبوي مع مدخل سيارة وغرفة سائق وخادمة.',
+      propertyType: 'VILLA',
+      cityId: '11111111-0000-4000-8000-000000000005', // المدينة المنورة
+      districtId: '22222222-0005-4000-8000-000000000003', // العزيزية
+      latitude: 24.47,
+      longitude: 39.55,
+      askPrice: 2900000,
+      areaSquareMeters: 420,
+      bedrooms: 5,
+      yearBuilt: 2024,
+      status: 'ACTIVE',
+    },
   ];
 
   for (const listing of demoListings) {
     await prisma.listing.upsert({
       where: { id: listing.id },
-      update: { status: listing.status as any },
+      update: {
+        title: listing.title,
+        description: listing.description,
+        propertyType: listing.propertyType as any,
+        cityId: listing.cityId,
+        districtId: listing.districtId,
+        latitude: listing.latitude,
+        longitude: listing.longitude,
+        askPrice: listing.askPrice,
+        areaSquareMeters: listing.areaSquareMeters,
+        bedrooms: listing.bedrooms,
+        yearBuilt: listing.yearBuilt,
+        status: listing.status as any,
+      },
       create: {
         id: listing.id,
         title: listing.title,
         description: listing.description,
         propertyType: listing.propertyType as any,
-        cityId,
-        districtId,
-        latitude: 24.8133,
-        longitude: 46.6307,
+        cityId: listing.cityId,
+        districtId: listing.districtId,
+        latitude: listing.latitude,
+        longitude: listing.longitude,
         askPrice: listing.askPrice,
         areaSquareMeters: listing.areaSquareMeters,
         bedrooms: listing.bedrooms,
@@ -372,7 +532,7 @@ export async function seedDemoListings() {
     });
   }
 
-  console.log(`✅ Demo listings seeded: ${demoListings.length} (1 ACTIVE, 1 RESERVED).`);
+  console.log(`✅ Demo listings seeded: ${demoListings.length} total diverse listings.`);
 }
 
 // Story 5.2: one buyer, a verified identity and one `AWAITING_PAYMENT_PROOF` deal, so the dual

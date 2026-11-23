@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -22,6 +22,7 @@ import {
   HelpCircle,
   PhoneCall,
   Check,
+  RotateCcw,
 } from 'lucide-react';
 import { LayoutShell } from '../components/layout';
 import { Button, Badge, Card } from '../components/ui';
@@ -101,41 +102,118 @@ const FEATURED_SHOWCASE_LISTINGS: ListingSummaryItem[] = [
   },
 ];
 
+interface CityOption {
+  id: string;
+  nameAr: string;
+}
+
+const FALLBACK_CITIES: CityOption[] = [
+  { id: '11111111-0000-4000-8000-000000000001', nameAr: 'الرياض' },
+  { id: '11111111-0000-4000-8000-000000000002', nameAr: 'جدة' },
+  { id: '11111111-0000-4000-8000-000000000003', nameAr: 'الدمام' },
+  { id: '11111111-0000-4000-8000-000000000004', nameAr: 'مكة المكرمة' },
+  { id: '11111111-0000-4000-8000-000000000005', nameAr: 'المدينة المنورة' },
+  { id: '11111111-0000-4000-8000-000000000006', nameAr: 'الطائف' },
+  { id: '11111111-0000-4000-8000-000000000007', nameAr: 'الخبر' },
+];
+
 export default function HomePage() {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState(0);
   const [liveListings, setLiveListings] = useState<ListingSummaryItem[]>([]);
+  const [cities, setCities] = useState<CityOption[]>(FALLBACK_CITIES);
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [selectedPropertyType, setSelectedPropertyType] = useState<string>('');
   const [selectedPriceMax, setSelectedPriceMax] = useState<string>('');
 
   useEffect(() => {
+    // 1. Fetch live listings
     apiClient
-      .get<{ statusCode: number; data: { items: ListingSummaryItem[] } }>('/listings?limit=12')
+      .get<{ statusCode: number; data: { items: ListingSummaryItem[] } }>('/listings?limit=50')
       .then((res) => {
         if (res?.data?.items && res.data.items.length > 0) {
           setLiveListings(res.data.items);
         }
       })
       .catch(() => {});
+
+    // 2. Fetch real cities
+    apiClient
+      .get<CityOption[]>('/geo/cities')
+      .then((res: any) => {
+        const list = Array.isArray(res) ? res : res?.data;
+        if (Array.isArray(list) && list.length > 0) {
+          setCities(list);
+        }
+      })
+      .catch(() => {});
   }, []);
 
-  const categories = [
-    { label: 'كافة العقارات', type: '' },
-    { label: 'فلل وقصور', type: PropertyType.VILLA },
-    { label: 'أراضي استثمارية', type: PropertyType.LAND },
-    { label: 'شقق تمليك', type: PropertyType.APARTMENT },
-    { label: 'عمائر سكنية', type: PropertyType.BUILDING },
-    { label: 'عقارات تجارية', type: PropertyType.COMMERCIAL },
-  ];
+  const categories = useMemo(
+    () => [
+      { label: 'كافة العقارات', type: '' },
+      { label: 'فلل وقصور', type: PropertyType.VILLA },
+      { label: 'أراضي استثمارية', type: PropertyType.LAND },
+      { label: 'شقق تمليك', type: PropertyType.APARTMENT },
+      { label: 'عمائر سكنية', type: PropertyType.BUILDING },
+      { label: 'عقارات تجارية', type: PropertyType.COMMERCIAL },
+    ],
+    [],
+  );
 
-  const handleSearch = () => {
+  const handleCategorySelect = (idx: number, type: string) => {
+    setSelectedCategory(idx);
+    setSelectedPropertyType(type);
+  };
+
+  const handlePropertyTypeChange = (type: string) => {
+    setSelectedPropertyType(type);
+    const foundIdx = categories.findIndex((c) => c.type === type);
+    setSelectedCategory(foundIdx !== -1 ? foundIdx : 0);
+  };
+
+  const handleResetFilters = () => {
+    setSelectedCategory(0);
+    setSelectedPropertyType('');
+    setSelectedCity('');
+    setSelectedPriceMax('');
+  };
+
+  const activePropertyType = selectedPropertyType || categories[selectedCategory]?.type;
+  const hasActiveFilters = Boolean(activePropertyType || selectedCity || selectedPriceMax);
+
+  // Pool of all available showcase listings merged with live API listings
+  const allListingsPool = useMemo(() => {
+    const map = new Map<string, ListingSummaryItem>();
+    for (const item of FEATURED_SHOWCASE_LISTINGS) {
+      map.set(item.id, item);
+    }
+    for (const item of liveListings) {
+      map.set(item.id, item);
+    }
+    return Array.from(map.values());
+  }, [liveListings]);
+
+  // Live filtered listings for the homepage section
+  const filteredListings = useMemo(() => {
+    return allListingsPool.filter((item) => {
+      if (activePropertyType && item.propertyType !== activePropertyType) return false;
+      if (selectedCity && item.cityId !== selectedCity) return false;
+      if (selectedPriceMax && item.askPrice > Number(selectedPriceMax)) return false;
+      return true;
+    });
+  }, [allListingsPool, activePropertyType, selectedCity, selectedPriceMax]);
+
+  const searchParamsString = useMemo(() => {
     const params = new URLSearchParams();
     if (selectedCity) params.set('cityId', selectedCity);
-    const type = selectedPropertyType || categories[selectedCategory]?.type;
-    if (type) params.set('propertyType', type);
+    if (activePropertyType) params.set('propertyType', activePropertyType);
     if (selectedPriceMax) params.set('priceMax', selectedPriceMax);
-    router.push(`/properties?${params.toString()}`);
+    return params.toString();
+  }, [selectedCity, activePropertyType, selectedPriceMax]);
+
+  const handleSearch = () => {
+    router.push(searchParamsString ? `/properties?${searchParamsString}` : '/properties');
   };
 
   return (
@@ -164,24 +242,34 @@ export default function HomePage() {
         {/* Main Search Panel with Glassmorphism */}
         <div className="max-w-4xl mx-auto glass-panel rounded-2xl shadow-level3 p-4 sm:p-6 text-start luxury-card">
           {/* Category Tabs */}
-          <div className="flex items-center gap-2 border-b border-surface-border dark:border-dark-surface-border pb-4 mb-5 overflow-x-auto scrollbar-none">
-            {categories.map((cat, idx) => (
+          <div className="flex items-center justify-between border-b border-surface-border dark:border-dark-surface-border pb-4 mb-5 gap-2">
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1">
+              {categories.map((cat, idx) => (
+                <button
+                  key={cat.label}
+                  type="button"
+                  onClick={() => handleCategorySelect(idx, cat.type)}
+                  className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
+                    selectedCategory === idx
+                      ? 'bg-primary text-white shadow-md'
+                      : 'text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-raised'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+            {hasActiveFilters && (
               <button
-                key={cat.label}
                 type="button"
-                onClick={() => {
-                  setSelectedCategory(idx);
-                  setSelectedPropertyType(cat.type);
-                }}
-                className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
-                  selectedCategory === idx
-                    ? 'bg-primary text-white shadow-md'
-                    : 'text-ink-secondary dark:text-dark-ink-secondary hover:bg-surface-sunken dark:hover:bg-dark-surface-raised'
-                }`}
+                onClick={handleResetFilters}
+                className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1 shrink-0 px-2 py-1 rounded-md hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                title="إعادة تعيين الفلاتر"
               >
-                {cat.label}
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">إعادة ضبط</span>
               </button>
-            ))}
+            )}
           </div>
 
           {/* Search Inputs Grid */}
@@ -197,12 +285,11 @@ export default function HomePage() {
                 className="w-full bg-surface-sunken dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-lg px-3 py-2.5 text-sm text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-primary/25 font-medium"
               >
                 <option value="">كافة مدن المملكة</option>
-                <option value="city-riyadh">الرياض (العاصمة)</option>
-                <option value="city-jeddah">جدة (عروس البحر)</option>
-                <option value="city-khobar">الخبر والدمام</option>
-                <option value="city-makkah">مكة المكرمة</option>
-                <option value="city-madinah">المدينة المنورة</option>
-                <option value="city-taif">الطائف</option>
+                {cities.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nameAr}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -213,7 +300,7 @@ export default function HomePage() {
               </label>
               <select
                 value={selectedPropertyType}
-                onChange={(e) => setSelectedPropertyType(e.target.value)}
+                onChange={(e) => handlePropertyTypeChange(e.target.value)}
                 className="w-full bg-surface-sunken dark:bg-dark-surface-sunken border border-surface-border dark:border-dark-surface-border rounded-lg px-3 py-2.5 text-sm text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-primary/25 font-medium"
               >
                 <option value="">كافة أنواع العقارات</option>
@@ -364,31 +451,66 @@ export default function HomePage() {
               <span>عقارات مميزة ومدققة نظامياً</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-ink-primary dark:text-dark-ink-primary">
-              أحدث صفقات البيع المتاحة حالياً
+              {hasActiveFilters ? 'العقارات المطابقة للبحث' : 'أحدث صفقات البيع المتاحة حالياً'}
             </h2>
             <p className="text-xs sm:text-sm text-ink-secondary dark:text-dark-ink-secondary mt-1">
-              عقارات تم التحقق من صكوكها ورخص تسويقها بموجب عقود وساطة سارية
+              {hasActiveFilters
+                ? `تم العثور على (${filteredListings.length}) عقار مطابق لمعايير التصفية المحددة`
+                : 'عقارات تم التحقق من صكوكها ورخص تسويقها بموجب عقود وساطة سارية'}
             </p>
           </div>
-          <Link
-            href="/properties"
-            className="text-sm font-bold text-primary dark:text-primary-light hover:underline flex items-center gap-1.5 self-start sm:self-auto group"
-          >
-            <span>استعراض كافة العقارات ({liveListings.length > 0 ? liveListings.length : FEATURED_SHOWCASE_LISTINGS.length})</span>
-            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          </Link>
+          <div className="flex items-center gap-3 self-start sm:self-auto">
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>إلغاء الفلترة</span>
+              </button>
+            )}
+            <Link
+              href={searchParamsString ? `/properties?${searchParamsString}` : '/properties'}
+              className="text-sm font-bold text-primary dark:text-primary-light hover:underline flex items-center gap-1.5 group"
+            >
+              <span>استعراض كافة النتائج ({filteredListings.length})</span>
+              <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            </Link>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-          {(liveListings.length > 0 ? liveListings.slice(0, 6) : FEATURED_SHOWCASE_LISTINGS).map((item) => (
-            <PropertyCard
-              key={item.id}
-              listing={item}
-              href={`/properties/${item.id}`}
-              actionLabel="استعراض العقار والتفاصيل"
-            />
-          ))}
-        </div>
+        {filteredListings.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            {filteredListings.slice(0, 6).map((item) => (
+              <PropertyCard
+                key={item.id}
+                listing={item}
+                href={`/properties/${item.id}`}
+                actionLabel="استعراض العقار والتفاصيل"
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="py-12 px-4 text-center rounded-2xl border border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40 max-w-xl mx-auto space-y-3">
+            <Building2 className="w-10 h-10 text-ink-muted mx-auto opacity-50" />
+            <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
+              لا توجد عقارات تطابق هذه المعايير حالياً
+            </h3>
+            <p className="text-xs text-ink-muted">
+              جرّب تغيير تصنيف العقار أو المدينة أو توسيع الميزانية، أو تصفير الفلاتر لاستعراض باقي المعروض.
+            </p>
+            <div className="pt-2 flex items-center justify-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleResetFilters}>
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>إعادة تعيين الفلاتر</span>
+              </Button>
+              <Button variant="primary" size="sm" onClick={() => router.push('/properties')}>
+                <span>تصفح سوق العقارات بالكامل</span>
+              </Button>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Visual Pipeline: Dual Wire Transfer Architecture */}

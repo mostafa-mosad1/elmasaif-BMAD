@@ -7,6 +7,8 @@ import {
   ProposalStatus,
   PROPOSAL_NOT_FOUND,
   PROPOSAL_NOT_APPROVABLE,
+  ListingStatus,
+  DemandStatus,
 } from '@elmasaif/shared';
 
 describe('AdminProposalsService (Story 3.7 / FR-23, Offers.Review)', () => {
@@ -42,6 +44,23 @@ describe('AdminProposalsService (Story 3.7 / FR-23, Offers.Review)', () => {
         findUnique: jest.fn(),
         count: jest.fn(),
         update: jest.fn(),
+      },
+      listing: { update: jest.fn() },
+      demand: { update: jest.fn() },
+      deal: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue({ id: 'deal-1', dealNumber: 'D-2026-001' }),
+      },
+      offer: { create: jest.fn().mockResolvedValue({ id: 'offer-1' }) },
+      payoutAccount: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'payout-1',
+          accountHolderName: 'المالك',
+          bankName: 'مصرف الراجحي',
+          ibanEncrypted: 'mock-enc',
+          ibanMasked: 'SA03••••7519',
+        }),
+        create: jest.fn(),
       },
       auditLog: { create: jest.fn().mockResolvedValue({ id: 'audit-1' }) },
       $transaction: jest.fn((callback: any) => callback(prisma)),
@@ -158,6 +177,70 @@ describe('AdminProposalsService (Story 3.7 / FR-23, Offers.Review)', () => {
       );
 
       await expect(service.reject(adminId, proposalId, 'سبب الرفض')).rejects.toMatchObject({
+        response: expect.objectContaining({ code: PROPOSAL_NOT_APPROVABLE }),
+      });
+    });
+  });
+
+  describe('finalApprove (Proposal to Deal flow)', () => {
+    it('creates a Deal, an Offer, reserves the listing, closes the demand, and audits', async () => {
+      const selectedProposal = proposalRow({
+        status: ProposalStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL,
+        demand: { id: 'd-1', buyerProfileId: 'buyer-profile-1' },
+        listing: {
+          id: 'l-1',
+          status: ListingStatus.ACTIVE,
+          sellerProfileId: 'seller-profile-1',
+          sellerProfile: { user: { fullName: 'فهد البائع' } },
+        },
+      });
+
+      prisma.proposal.findUnique.mockResolvedValue(selectedProposal);
+
+      const res = await service.finalApprove(adminId, proposalId);
+
+      expect(res.dealNumber).toBe('D-2026-001');
+      expect(prisma.deal.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            listingId: 'l-1',
+            buyerProfileId: 'buyer-profile-1',
+            sellerProfileId: 'seller-profile-1',
+            approvedByAdminId: adminId,
+          }),
+        }),
+      );
+      expect(prisma.listing.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'l-1' },
+          data: expect.objectContaining({ status: ListingStatus.RESERVED }),
+        }),
+      );
+      expect(prisma.demand.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'd-1' },
+          data: expect.objectContaining({ status: DemandStatus.CLOSED }),
+        }),
+      );
+      expect(prisma.proposal.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: proposalId },
+          data: expect.objectContaining({ status: ProposalStatus.CLOSED }),
+        }),
+      );
+      expect(prisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ action: 'PROPOSAL_FINAL_APPROVED_DEAL_CREATED' }),
+        }),
+      );
+    });
+
+    it('refuses finalApprove when proposal is not SELECTED_PENDING_FINAL_ADMIN_APPROVAL', async () => {
+      prisma.proposal.findUnique.mockResolvedValue(
+        proposalRow({ status: ProposalStatus.PENDING_ADMIN_REVIEW }),
+      );
+
+      await expect(service.finalApprove(adminId, proposalId)).rejects.toMatchObject({
         response: expect.objectContaining({ code: PROPOSAL_NOT_APPROVABLE }),
       });
     });

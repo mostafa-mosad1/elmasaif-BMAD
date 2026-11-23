@@ -196,7 +196,7 @@ export function CityDistrictSelector({
     <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${className}`} dir="rtl">
       {/* City Dropdown */}
       <div className="relative" ref={cityDropdownRef}>
-        <label className="block text-sm font-medium text-ink-primary dark:text-dark-ink-primary mb-1.5">
+        <label className="block text-sm font-bold text-ink-primary dark:text-dark-ink-primary mb-2">
           {cityLabel} {required && <span className="text-red-500">*</span>}
         </label>
         <button
@@ -210,14 +210,14 @@ export function CityDistrictSelector({
           aria-haspopup="listbox"
           aria-controls="city-listbox"
           aria-label={cityLabel}
-          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm transition-all duration-150 border-[1.5px] bg-white dark:bg-dark-surface-base ${
+          className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm transition-all duration-150 border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40 hover:bg-white dark:hover:bg-dark-surface-base ${
             cityError
               ? 'border-red-500 dark:border-red-500'
               : 'border-surface-border dark:border-dark-surface-border'
           } ${
             disabled
               ? 'opacity-60 cursor-not-allowed bg-surface-sunken dark:bg-dark-surface-sunken'
-              : 'hover:border-primary/60 dark:hover:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary focus:shadow-[0_0_0_3px_rgba(27,67,50,0.15)]'
+              : 'hover:border-primary/60 dark:hover:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs'
           }`}
         >
           <div className="flex items-center gap-2 truncate">
@@ -314,7 +314,7 @@ export function CityDistrictSelector({
 
       {/* District Dropdown */}
       <div className="relative" ref={districtDropdownRef}>
-        <label className="block text-sm font-medium text-ink-primary dark:text-dark-ink-primary mb-1.5">
+        <label className="block text-sm font-bold text-ink-primary dark:text-dark-ink-primary mb-2">
           {districtLabel} {required && <span className="text-red-500">*</span>}
         </label>
         <button
@@ -328,14 +328,14 @@ export function CityDistrictSelector({
           aria-haspopup="listbox"
           aria-controls="district-listbox"
           aria-label={districtLabel}
-          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm transition-all duration-150 border-[1.5px] bg-white dark:bg-dark-surface-base ${
+          className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm transition-all duration-150 border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40 hover:bg-white dark:hover:bg-dark-surface-base ${
             districtError
               ? 'border-red-500 dark:border-red-500'
               : 'border-surface-border dark:border-dark-surface-border'
           } ${
             isDistrictDisabled
               ? 'opacity-60 cursor-not-allowed bg-surface-sunken dark:bg-dark-surface-sunken'
-              : 'hover:border-primary/60 dark:hover:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary focus:shadow-[0_0_0_3px_rgba(27,67,50,0.15)]'
+              : 'hover:border-primary/60 dark:hover:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs'
           }`}
         >
           <div className="flex items-center gap-2 truncate">

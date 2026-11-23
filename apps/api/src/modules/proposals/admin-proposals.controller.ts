@@ -99,4 +99,22 @@ export class AdminProposalsController {
       data,
     };
   }
+
+  @Post(':id/final-approve')
+  @HttpCode(HttpStatus.OK)
+  @RequireAdminPermission('Offers.Review')
+  @ApiOperation({
+    summary: 'Final approve a SELECTED_PENDING_FINAL_ADMIN_APPROVAL proposal → creates a Deal and reserves listing',
+  })
+  @ApiParam({ name: 'id', description: 'Proposal UUID' })
+  @ApiResponse({ status: 200, description: 'Proposal converted to Deal' })
+  @ApiResponse({ status: 409, description: 'Proposal is not in a final-approvable state' })
+  async finalApproveProposal(@Param('id') id: string, @Req() req: any) {
+    const data = await this.adminProposalsService.finalApprove(req.admin.id, id);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'تم اعتماد العرض نهائياً وإنشاء الصفقة بنجاح وحجز العقار',
+      data,
+    };
+  }
 }

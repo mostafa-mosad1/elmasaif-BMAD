@@ -68,6 +68,7 @@ export function ProposalReviewQueue() {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [reason, setReason] = useState('');
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
+  const [successBanner, setSuccessBanner] = useState<string | null>(null);
 
   const fetchQueue = useCallback(async (targetStatus: ProposalStatus) => {
     setLoading(true);
@@ -90,6 +91,32 @@ export function ProposalReviewQueue() {
   useEffect(() => {
     fetchQueue(statusFilter);
   }, [statusFilter, fetchQueue]);
+
+  const handleFinalApprove = async (id: string) => {
+    setBusyId(id);
+    setErrorBanner(null);
+    setSuccessBanner(null);
+    try {
+      const res = await apiClient.post<{
+        statusCode: number;
+        data: { dealId: string; dealNumber: string };
+        message: string;
+      }>(`/admin/proposals/${id}/final-approve`);
+      const dealNumber = res?.data?.dealNumber;
+      setSuccessBanner(
+        dealNumber
+          ? `تم اعتماد العرض نهائياً وإنشاء الصفقة رقم (${dealNumber}) بنجاح وتم حجز العقار!`
+          : 'تم اعتماد العرض نهائياً وإنشاء الصفقة بنجاح!',
+      );
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      setTotal((prev) => Math.max(0, prev - 1));
+    } catch (err: unknown) {
+      setErrorBanner((err as { message?: string })?.message || 'تعذر اعتماد العرض نهائياً وإنشاء الصفقة');
+      fetchQueue(statusFilter);
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   const handleApprove = async (id: string) => {
     setBusyId(id);
@@ -156,6 +183,21 @@ export function ProposalReviewQueue() {
             <span>{errorBanner}</span>
           </div>
           <button type="button" onClick={() => setErrorBanner(null)} className="text-red-700 underline">
+            إغلاق
+          </button>
+        </div>
+      )}
+
+      {successBanner && (
+        <div
+          role="status"
+          className="p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-900 flex items-center justify-between text-xs font-semibold"
+        >
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{successBanner}</span>
+          </div>
+          <button type="button" onClick={() => setSuccessBanner(null)} className="text-emerald-700 underline">
             إغلاق
           </button>
         </div>
@@ -262,7 +304,20 @@ export function ProposalReviewQueue() {
                       </td>
 
                       <td className="py-3.5 px-4 text-left">
-                        {!pending ? (
+                        {item.status === ProposalStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleFinalApprove(item.id)}
+                              disabled={busyId === item.id}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold disabled:opacity-50 transition-all shadow-sm"
+                              data-testid={`proposal-final-approve-${item.id}`}
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>{busyId === item.id ? 'جاري إنشاء الصفقة...' : 'اعتماد نهائي وإنشاء الصفقة'}</span>
+                            </button>
+                          </div>
+                        ) : !pending ? (
                           <span className="text-[11px] text-ink-muted">{PROPOSAL_STATUS_LABELS_AR[item.status]}</span>
                         ) : rejectingId === item.id ? (
                           <div className="flex items-center justify-end gap-2" data-testid={`proposal-reject-prompt-${item.id}`}>

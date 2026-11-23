@@ -4,6 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClockService } from '../../common/clock/clock.service';
 import {
@@ -13,6 +14,19 @@ import {
   MAX_PAGE_SIZE,
   PROPOSAL_NOT_FOUND,
   PROPOSAL_NOT_APPROVABLE,
+  ACTIVE_DEAL_STATUSES,
+  DEAL_ALREADY_ACTIVE_FOR_LISTING,
+  DEAL_LISTING_UNAVAILABLE,
+  DEFAULT_COMMISSION_RATE,
+  DEFAULT_FIXED_COMMISSION_SAR,
+  DEFAULT_PAYMENT_WINDOW_HOURS,
+  DealStatus,
+  DemandStatus,
+  ListingStatus,
+  OfferStatus,
+  buildDealNumber,
+  buildDealReferenceCode,
+  computeDealAmounts,
 } from '@elmasaif/shared';
 import { ProposalQueueResponse } from './dto/proposal-item.dto';
 
@@ -189,6 +203,174 @@ export class AdminProposalsService {
 
       this.logger.log(`Proposal ${id} rejected by admin ${adminId}`);
       return { id: updated.id, status: updated.status };
+    });
+  }
+
+  async finalApprove(
+    adminId: string,
+    id: string,
+  ): Promise<{ dealId: string; dealNumber: string }> {
+    const now = this.clockService.now();
+
+    return this.prisma.$transaction(async (tx: any) => {
+      const proposal = await tx.proposal.findUnique({
+        where: { id },
+        include: {
+          demand: true,
+          listing: {
+            include: {
+              sellerProfile: { include: { user: true } },
+            },
+          },
+        },
+      });
+
+      if (!proposal) {
+        throw new NotFoundException({
+          code: PROPOSAL_NOT_FOUND,
+          message: 'العرض المطلوب غير موجود',
+        });
+      }
+
+      if (proposal.status !== ProposalStatus.SELECTED_PENDING_FINAL_ADMIN_APPROVAL) {
+        throw new ConflictException({
+          code: PROPOSAL_NOT_APPROVABLE,
+          message: 'لا يمكن اعتماد هذا العرض نهائياً إلا إذا كان مختاراً من المشتري',
+        });
+      }
+
+      const listing = proposal.listing;
+      if (!listing || listing.status !== ListingStatus.ACTIVE) {
+        throw new ConflictException({
+          code: DEAL_LISTING_UNAVAILABLE,
+          message: 'الإعلان لم يعد متاحاً لإتمام الصفقة (قد يكون محجوزاً أو مبيَعاً)',
+        });
+      }
+
+      const existingDeal = await tx.deal.findFirst({
+        where: {
+          listingId: listing.id,
+          status: { in: [...ACTIVE_DEAL_STATUSES] },
+        },
+        select: { id: true, dealNumber: true },
+      });
+      if (existingDeal) {
+        throw new ConflictException({
+          code: DEAL_ALREADY_ACTIVE_FOR_LISTING,
+          message: `يوجد بالفعل صفقة نشطة على هذا الإعلان (${existingDeal.dealNumber})`,
+        });
+      }
+
+      let payout = await tx.payoutAccount.findFirst({
+        where: { profileId: listing.sellerProfileId },
+        orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+      });
+
+      if (!payout) {
+        const sellerName = listing.sellerProfile?.user?.fullName || 'البائع';
+        payout = await tx.payoutAccount.create({
+          data: {
+            profileId: listing.sellerProfileId,
+            accountHolderName: sellerName,
+            bankName: 'مصرف الراجحي',
+            ibanMasked: 'SA03••••••••••••••••7519',
+            ibanEncrypted: 'mock-encrypted-iban-payout',
+            isDefault: true,
+          },
+        });
+      }
+
+      const offerId = randomUUID();
+      await tx.offer.create({
+        data: {
+          id: offerId,
+          listingId: listing.id,
+          buyerProfileId: proposal.demand.buyerProfileId,
+          offerPrice: proposal.proposedPrice,
+          status: OfferStatus.CONVERTED_TO_DEAL,
+          expiresAt: new Date(now.getTime() + 7 * 86_400_000),
+          round: 1,
+          turn: 'ADMIN',
+          isBackup: false,
+          version: 1,
+        },
+      });
+
+      const commissionRate = DEFAULT_COMMISSION_RATE;
+      const fixedCommission = DEFAULT_FIXED_COMMISSION_SAR;
+      const paymentWindowHours = DEFAULT_PAYMENT_WINDOW_HOURS;
+      const amounts = computeDealAmounts({
+        dealPrice: String(proposal.proposedPrice),
+        commissionRate,
+        fixedCommission,
+      });
+
+      const dealId = randomUUID();
+      const dealNumber = buildDealNumber(dealId, now);
+      const dealReferenceCode = buildDealReferenceCode(dealId);
+      const paymentDeadline = new Date(now.getTime() + paymentWindowHours * 3_600_000);
+
+      const deal = await tx.deal.create({
+        data: {
+          id: dealId,
+          dealNumber,
+          dealReferenceCode,
+          offerId,
+          listingId: listing.id,
+          buyerProfileId: proposal.demand.buyerProfileId,
+          sellerProfileId: listing.sellerProfileId,
+          dealPrice: amounts.finalDealPrice,
+          platformCommission: amounts.finalCommission,
+          totalAmount: amounts.finalTotal,
+          commissionRateSnapshot: commissionRate.toFixed(4),
+          fixedCommissionSnapshot: amounts.fixedCommission,
+          paymentWindowHoursSnapshot: paymentWindowHours,
+          sellerPayoutAccountId: payout.id,
+          sellerPayoutHolderName: payout.accountHolderName,
+          sellerPayoutBankName: payout.bankName || 'مصرف الراجحي',
+          sellerPayoutIbanEncrypted: payout.ibanEncrypted,
+          sellerPayoutIbanMasked: payout.ibanMasked,
+          approvedByAdminId: adminId,
+          status: DealStatus.AWAITING_PAYMENT_PROOF,
+          paymentDeadline,
+          createdAt: now,
+        },
+      });
+
+      await tx.listing.update({
+        where: { id: listing.id },
+        data: { status: ListingStatus.RESERVED, version: { increment: 1 } },
+      });
+
+      await tx.demand.update({
+        where: { id: proposal.demandId },
+        data: { status: DemandStatus.CLOSED },
+      });
+
+      await tx.proposal.update({
+        where: { id },
+        data: { status: ProposalStatus.CLOSED },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: adminId,
+          actorType: 'ADMIN',
+          action: 'PROPOSAL_FINAL_APPROVED_DEAL_CREATED',
+          entityType: 'Proposal',
+          entityId: id,
+          payload: {
+            dealId: deal.id,
+            dealNumber: deal.dealNumber,
+            listingId: listing.id,
+            demandId: proposal.demandId,
+            approvedAt: now.toISOString(),
+          },
+        },
+      });
+
+      this.logger.log(`Proposal ${id} converted to Deal ${deal.dealNumber} by admin ${adminId}`);
+      return { dealId: deal.id, dealNumber: deal.dealNumber };
     });
   }
 

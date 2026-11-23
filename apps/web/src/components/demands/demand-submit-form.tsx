@@ -20,10 +20,10 @@ export interface DemandSubmitFormProps {
 type FieldErrors = Partial<Record<string, string>>;
 
 const inputClass =
-  'w-full px-3.5 py-2.5 rounded-lg border-[1.5px] border-surface-border dark:border-dark-surface-border bg-white dark:bg-dark-surface-base text-sm text-ink-primary dark:text-dark-ink-primary focus:outline-none focus:ring-2 focus:ring-primary';
+  'w-full px-4 py-3 rounded-xl border border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40 hover:bg-white dark:hover:bg-dark-surface-base text-sm font-medium text-ink-primary dark:text-dark-ink-primary transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs';
 
 const labelClass =
-  'block text-sm font-medium text-ink-primary dark:text-dark-ink-primary mb-1.5';
+  'block text-sm font-bold text-ink-primary dark:text-dark-ink-primary mb-2';
 
 /**
  * Structured demand submission (Story 3.6 / FR-21, AD-9). Geography comes only from the
@@ -100,19 +100,25 @@ export function DemandSubmitForm({ onSubmitted }: DemandSubmitFormProps) {
   };
 
   return (
-    <Card data-testid="demand-submit-form">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <FileQuestion className="w-4 h-4 text-primary" />
-          <span>إعلان طلب شراء عقار</span>
-        </CardTitle>
-        <p className="text-xs text-ink-muted dark:text-dark-ink-muted">
-          يُنشر الطلب فوراً لمدة {DEMAND_EXPIRY_DAYS} يوماً ويصل للمطابقين المؤهلين دون حاجة لموافقة الإدارة.
-        </p>
+    <Card className="p-6 sm:p-8 rounded-3xl shadow-level2 border-surface-border/90 dark:border-dark-surface-border/90" data-testid="demand-submit-form">
+      <CardHeader className="p-0 pb-6 mb-6 border-b border-surface-border/60 dark:border-dark-surface-border/60">
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-2xl bg-primary/10 text-primary dark:text-primary-light flex items-center justify-center shrink-0 border border-primary/15 shadow-2xs">
+            <FileQuestion className="w-5 h-5" />
+          </div>
+          <div>
+            <CardTitle className="text-lg sm:text-xl font-black text-ink-primary dark:text-dark-ink-primary">
+              إعلان طلب شراء عقار
+            </CardTitle>
+            <p className="text-xs sm:text-sm text-ink-secondary dark:text-dark-ink-secondary mt-1">
+              يُنشر الطلب فوراً لمدة {DEMAND_EXPIRY_DAYS} يوماً ويصل للمطابقين المؤهلين دون حاجة لموافقة الإدارة.
+            </p>
+          </div>
+        </div>
       </CardHeader>
 
-      <CardContent>
-        <form className="space-y-5" onSubmit={handleSubmit} dir="rtl">
+      <CardContent className="p-0">
+        <form className="space-y-6" onSubmit={handleSubmit} dir="rtl">
           <CityDistrictSelector
             selectedCityId={cityId}
             selectedDistrictId={districtId}
@@ -254,11 +260,12 @@ export function DemandSubmitForm({ onSubmitted }: DemandSubmitFormProps) {
             </div>
           ) : null}
 
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-surface-border/60 dark:border-dark-surface-border/60">
             <Button
               type="submit"
               variant="primary"
-              size="md"
+              size="lg"
+              className="h-12 px-8 text-base font-bold rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-[0.99] bg-primary hover:bg-primary-hover text-white dark:bg-emerald-600 dark:hover:bg-emerald-500"
               disabled={submitting}
               data-testid="demand-submit-btn"
             >
