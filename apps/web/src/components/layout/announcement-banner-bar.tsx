@@ -82,24 +82,23 @@ export function AnnouncementBannerBar() {
     switch (type) {
       case AnnouncementBannerType.ALERT:
         return {
-          container: 'bg-[#450A0A] text-rose-100 border-b border-rose-900/60',
-          icon: <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-400" />,
+          container: 'bg-[#1C1917] text-amber-200 border-b border-amber-800/40',
+          titleBadge: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+          btn: 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-100 border-amber-500/30',
         };
       case AnnouncementBannerType.WARNING:
         return {
-          container: 'bg-[#451A03] text-amber-100 border-b border-amber-900/60',
-          icon: <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-400" />,
+          container: 'bg-[#1C1917] text-amber-200 border-b border-amber-800/40',
+          titleBadge: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+          btn: 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-100 border-amber-500/30',
         };
       case AnnouncementBannerType.SUCCESS:
-        return {
-          container: 'bg-[#0B1510] text-emerald-100 border-b border-emerald-900/40',
-          icon: <CheckCircle className="w-3.5 h-3.5 shrink-0 text-emerald-400" />,
-        };
       case AnnouncementBannerType.INFO:
       default:
         return {
           container: 'bg-[#0F172A] text-slate-100 border-b border-slate-800',
-          icon: <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-400" />,
+          titleBadge: 'text-amber-300 dark:text-amber-400 bg-amber-500/10 border-amber-500/25',
+          btn: 'bg-white/10 hover:bg-white/20 text-white border-white/15',
         };
     }
   };
@@ -130,7 +129,7 @@ export function AnnouncementBannerBar() {
             {/* Chunk 1 */}
             {tickerItems.chunkA.map((b, idx) => (
               <div key={`a-${b.id}-${idx}`} className="inline-flex items-center gap-2">
-                <span className="font-extrabold text-amber-300 dark:text-amber-400 bg-white/10 px-2 py-0.5 rounded text-[11px] border border-white/15">
+                <span className={`font-extrabold px-2 py-0.5 rounded text-[11px] border ${style.titleBadge}`}>
                   {b.title}:
                 </span>
                 <span className="text-white/95 font-medium text-xs">
@@ -139,20 +138,20 @@ export function AnnouncementBannerBar() {
                 {b.actionUrl && (
                   <Link
                     href={b.actionUrl}
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-bold bg-white/15 hover:bg-white/25 text-white border border-white/20 transition-all duration-150"
+                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-bold border transition-all duration-150 ${style.btn}`}
                   >
                     <span>{b.actionText || 'عرض التفاصيل'}</span>
                     <ExternalLink className="w-2.5 h-2.5" />
                   </Link>
                 )}
-                <span className="text-white/30 text-xs px-2 select-none">✦</span>
+                <span className="text-amber-500/40 text-xs px-2 select-none">✦</span>
               </div>
             ))}
 
             {/* Chunk 2 (Seamless loop pair) */}
             {tickerItems.chunkB.map((b, idx) => (
               <div key={`b-${b.id}-${idx}`} className="inline-flex items-center gap-2">
-                <span className="font-extrabold text-amber-300 dark:text-amber-400 bg-white/10 px-2 py-0.5 rounded text-[11px] border border-white/15">
+                <span className={`font-extrabold px-2 py-0.5 rounded text-[11px] border ${style.titleBadge}`}>
                   {b.title}:
                 </span>
                 <span className="text-white/95 font-medium text-xs">
@@ -161,13 +160,13 @@ export function AnnouncementBannerBar() {
                 {b.actionUrl && (
                   <Link
                     href={b.actionUrl}
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-bold bg-white/15 hover:bg-white/25 text-white border border-white/20 transition-all duration-150"
+                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-bold border transition-all duration-150 ${style.btn}`}
                   >
                     <span>{b.actionText || 'عرض التفاصيل'}</span>
                     <ExternalLink className="w-2.5 h-2.5" />
                   </Link>
                 )}
-                <span className="text-white/30 text-xs px-2 select-none">✦</span>
+                <span className="text-amber-500/40 text-xs px-2 select-none">✦</span>
               </div>
             ))}
           </div>
