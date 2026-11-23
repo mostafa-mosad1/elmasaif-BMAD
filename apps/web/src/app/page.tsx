@@ -36,72 +36,6 @@ import {
 } from '@elmasaif/shared';
 import { apiClient } from '../lib/api-client';
 
-const FEATURED_SHOWCASE_LISTINGS: ListingSummaryItem[] = [
-  {
-    id: '88888888-0000-4000-8000-000000000001',
-    title: 'فيلا مودرن مع مسبح خاص في النرجس',
-    propertyType: PropertyType.VILLA,
-    cityId: '11111111-0000-4000-8000-000000000001',
-    districtId: '22222222-0001-4000-8000-000000000002',
-    cityName: 'الرياض',
-    districtName: 'النرجس',
-    askPrice: 3200000,
-    areaSquareMeters: 450,
-    bedrooms: 5,
-    yearBuilt: 2024,
-    status: ListingStatus.ACTIVE,
-    sellerRole: UserRole.MARKETER,
-    isFalVerified: true,
-    photoCount: 12,
-    photos: [],
-    createdAt: '2026-11-01T10:00:00.000Z',
-  },
-  {
-    id: '57206afe-e915-4c10-bd47-b033c892017a',
-    title: 'فيلا سكنية فاخرة في المدينة المنورة',
-    propertyType: PropertyType.VILLA,
-    cityId: '11111111-0000-4000-8000-000000000005',
-    districtId: '22222222-0005-4000-8000-000000000005',
-    cityName: 'المدينة المنورة',
-    districtName: 'الحرم',
-    askPrice: 3000000,
-    areaSquareMeters: 250,
-    bedrooms: 10,
-    yearBuilt: 2020,
-    status: ListingStatus.ACTIVE,
-    sellerRole: UserRole.OWNER,
-    isFalVerified: false,
-    photoCount: 4,
-    photos: [
-      'http://localhost:4000/api/v1/storage/raw?key=listings%2Fa3121057-21ca-4534-8599-89c004694850%2F00b1f5a7-890a-4f29-98cd-3c976a820b56-d40439a3-c226-4d9c-bab1-daa55de6ba67-1777546365210_j9xjc.png',
-    ],
-    primaryPhotoUrl: 'http://localhost:4000/api/v1/storage/raw?key=listings%2Fa3121057-21ca-4534-8599-89c004694850%2F00b1f5a7-890a-4f29-98cd-3c976a820b56-d40439a3-c226-4d9c-bab1-daa55de6ba67-1777546365210_j9xjc.png',
-    createdAt: '2026-11-01T10:00:00.000Z',
-  },
-  {
-    id: 'f814c417-ab37-4cdc-962d-b51f82b242cc',
-    title: 'فيلا تجارية واستثمارية في حي الزهور',
-    propertyType: PropertyType.VILLA,
-    cityId: '11111111-0000-4000-8000-000000000003',
-    districtId: '22222222-0003-4000-8000-000000000005',
-    cityName: 'الدمام',
-    districtName: 'الزهور',
-    askPrice: 2850000,
-    areaSquareMeters: 400,
-    bedrooms: 6,
-    yearBuilt: 2023,
-    status: ListingStatus.ACTIVE,
-    sellerRole: UserRole.MARKETER,
-    isFalVerified: true,
-    photoCount: 6,
-    photos: [
-      'http://localhost:4000/api/v1/storage/raw?key=listings%2Ffde2ed3f-ffc6-4b93-86db-45666e240682%2F34991582-386f-4102-a30c-9e225872a99b-dd1b925d-3775-4e28-a3ec-a80e06128a23-8065d83b935b20576cf696d618179f7e5a5bc333.jpg',
-    ],
-    primaryPhotoUrl: 'http://localhost:4000/api/v1/storage/raw?key=listings%2Ffde2ed3f-ffc6-4b93-86db-45666e240682%2F34991582-386f-4102-a30c-9e225872a99b-dd1b925d-3775-4e28-a3ec-a80e06128a23-8065d83b935b20576cf696d618179f7e5a5bc333.jpg',
-    createdAt: '2026-11-01T10:00:00.000Z',
-  },
-];
-
 interface CityOption {
   id: string;
   nameAr: string;
@@ -121,23 +55,30 @@ export default function HomePage() {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState(0);
   const [liveListings, setLiveListings] = useState<ListingSummaryItem[]>([]);
+  const [loadingListings, setLoadingListings] = useState(true);
   const [cities, setCities] = useState<CityOption[]>(FALLBACK_CITIES);
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [selectedPropertyType, setSelectedPropertyType] = useState<string>('');
   const [selectedPriceMax, setSelectedPriceMax] = useState<string>('');
 
   useEffect(() => {
-    // 1. Fetch live listings
+    // Fetch live listings exclusively from database API
+    setLoadingListings(true);
     apiClient
       .get<{ statusCode: number; data: { items: ListingSummaryItem[] } }>('/listings?limit=50')
       .then((res) => {
-        if (res?.data?.items && res.data.items.length > 0) {
+        if (res?.data?.items) {
           setLiveListings(res.data.items);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        setLiveListings([]);
+      })
+      .finally(() => {
+        setLoadingListings(false);
+      });
 
-    // 2. Fetch real cities
+    // Fetch real cities
     apiClient
       .get<CityOption[]>('/geo/cities')
       .then((res: any) => {
@@ -182,17 +123,8 @@ export default function HomePage() {
   const activePropertyType = selectedPropertyType || categories[selectedCategory]?.type;
   const hasActiveFilters = Boolean(activePropertyType || selectedCity || selectedPriceMax);
 
-  // Pool of all available showcase listings merged with live API listings
-  const allListingsPool = useMemo(() => {
-    const map = new Map<string, ListingSummaryItem>();
-    for (const item of FEATURED_SHOWCASE_LISTINGS) {
-      map.set(item.id, item);
-    }
-    for (const item of liveListings) {
-      map.set(item.id, item);
-    }
-    return Array.from(map.values());
-  }, [liveListings]);
+  // Live listings exclusively from the database
+  const allListingsPool = liveListings;
 
   // Live filtered listings for the homepage section
   const filteredListings = useMemo(() => {
@@ -480,7 +412,23 @@ export default function HomePage() {
           </div>
         </div>
 
-        {filteredListings.length > 0 ? (
+        {loadingListings ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            {Array.from({ length: 3 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="rounded-card border border-surface-border dark:border-dark-surface-border bg-surface-base dark:bg-dark-surface-base overflow-hidden"
+              >
+                <div className="aspect-video w-full animate-pulse bg-surface-sunken dark:bg-dark-surface-sunken" />
+                <div className="p-4 space-y-3">
+                  <div className="h-4 w-2/3 rounded animate-pulse bg-surface-sunken dark:bg-dark-surface-sunken" />
+                  <div className="h-3 w-1/2 rounded animate-pulse bg-surface-sunken dark:bg-dark-surface-sunken" />
+                  <div className="h-3 w-full rounded animate-pulse bg-surface-sunken dark:bg-dark-surface-sunken" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredListings.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             {filteredListings.slice(0, 6).map((item) => (
               <PropertyCard
@@ -495,16 +443,26 @@ export default function HomePage() {
           <div className="py-12 px-4 text-center rounded-2xl border border-surface-border dark:border-dark-surface-border bg-surface-sunken/40 dark:bg-dark-surface-sunken/40 max-w-xl mx-auto space-y-3">
             <Building2 className="w-10 h-10 text-ink-muted mx-auto opacity-50" />
             <h3 className="text-base font-bold text-ink-primary dark:text-dark-ink-primary">
-              لا توجد عقارات تطابق هذه المعايير حالياً
+              {hasActiveFilters
+                ? 'لا توجد عقارات تطابق هذه المعايير حالياً'
+                : 'لا توجد عقارات نشطة معروضة حالياً'}
             </h3>
             <p className="text-xs text-ink-muted">
-              جرّب تغيير تصنيف العقار أو المدينة أو توسيع الميزانية، أو تصفير الفلاتر لاستعراض باقي المعروض.
+              {hasActiveFilters
+                ? 'جرّب تغيير تصنيف العقار أو المدينة أو توسيع الميزانية، أو تصفير الفلاتر لاستعراض باقي المعروض.'
+                : 'يمكنك إضافة عقار جديد للبيع أو استعراض بوابة الصفقات.'}
             </p>
             <div className="pt-2 flex items-center justify-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleResetFilters}>
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>إعادة تعيين الفلاتر</span>
-              </Button>
+              {hasActiveFilters ? (
+                <Button variant="outline" size="sm" onClick={handleResetFilters}>
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>إعادة تعيين الفلاتر</span>
+                </Button>
+              ) : (
+                <Button variant="primary" size="sm" onClick={() => router.push('/listings/new')}>
+                  <span>إضافة عقار جديد للبيع</span>
+                </Button>
+              )}
               <Button variant="primary" size="sm" onClick={() => router.push('/properties')}>
                 <span>تصفح سوق العقارات بالكامل</span>
               </Button>
