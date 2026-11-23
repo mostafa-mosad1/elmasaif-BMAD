@@ -21,6 +21,9 @@ export function normalizeStorageUrl(url: string | null | undefined): string {
   if (url.includes('localhost:4000/api/v1')) {
     return url.replace(/http:\/\/localhost:4000\/api\/v1/, '/api/v1');
   }
+  if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) {
+    return `${getApiBaseUrl()}/storage/raw?key=${encodeURIComponent(url)}`;
+  }
   return url;
 }
 

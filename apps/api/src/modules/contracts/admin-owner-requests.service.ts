@@ -187,13 +187,27 @@ export class AdminOwnerRequestsService {
       (acc) => acc.ibanMasked.includes(last4) || acc.ibanLast4 === last4,
     );
 
-    const photos = (request.listing?.documents ?? [])
-      .filter((d) => d.documentType === 'PHOTO')
-      .map((d) => ({
-        id: d.id,
-        fileUrl: d.fileUrl,
-        isPrimary: false,
-      }));
+    const photos = await Promise.all(
+      (request.listing?.documents ?? [])
+        .filter((d) => d.documentType === 'PHOTO')
+        .map(async (d) => {
+          let fileUrl = d.fileUrl;
+          try {
+            fileUrl = await this.resolveDownloadUrl(d.id, 300);
+          } catch {
+            try {
+              fileUrl = await this.storageService.getPresignedDownloadUrl(d.fileUrl, 300);
+            } catch {
+              fileUrl = d.fileUrl;
+            }
+          }
+          return {
+            id: d.id,
+            fileUrl,
+            isPrimary: false,
+          };
+        }),
+    );
 
     const documents = (request.listing?.documents ?? [])
       .filter((d) => d.documentType !== 'PHOTO')

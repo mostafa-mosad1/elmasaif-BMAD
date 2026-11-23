@@ -28,7 +28,7 @@ import {
   ShieldCheck,
   FileCheck,
 } from 'lucide-react';
-import { apiClient } from '../../../../lib/api-client';
+import { apiClient, normalizeStorageUrl } from '../../../../lib/api-client';
 import {
   OwnerListingRequestDetailResponse,
   ContractTemplateItem,
@@ -486,7 +486,7 @@ export default function AdminOwnerRequestDetailPage(props?: AdminOwnerRequestDet
                     {detail.listing.photos.map((p, idx) => (
                       <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border bg-muted group">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={p.fileUrl} alt="صورة العقار" className="w-full h-full object-cover" />
+                        <img src={normalizeStorageUrl(p.fileUrl)} alt="صورة العقار" className="w-full h-full object-cover" />
                       </div>
                     ))}
                   </div>
