@@ -238,12 +238,13 @@ export function ListingsMapPanel({ filters, activeListingId, onMarkerClick }: Li
           setLoading={setLoading}
         />
         <MarkerClusterGroup
-          disableClusteringAtZoom={13}
+          disableClusteringAtZoom={11}
           chunkedLoading={true}
           showCoverageOnHover={false}
           spiderfyOnMaxZoom={true}
+          spiderfyDistanceMultiplier={2}
           zoomToBoundsOnClick={true}
-          maxClusterRadius={40}
+          maxClusterRadius={20}
           iconCreateFunction={createClusterIcon}
         >
           {mapItems.map((item) => (
