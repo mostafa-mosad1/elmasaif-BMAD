@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
-import { ChevronRight, ChevronLeft, Building2, Home, Landmark, Trees, Store } from 'lucide-react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { ChevronRight, ChevronLeft, Building2, Home, Landmark, Trees, Store, Maximize2, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { PropertyType } from '@elmasaif/shared';
@@ -56,10 +56,22 @@ export function PropertyMediaCarousel({
     totalPhotos > 0 ? Math.min(Math.max(0, initialIndex), totalPhotos - 1) : 0,
   );
   const [failedIndices, setFailedIndices] = useState<Record<number, boolean>>({});
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const touchStartXRef = useRef<number | null>(null);
   const touchCurrentXRef = useRef<number | null>(null);
   const thumbnailContainerRef = useRef<HTMLDivElement | null>(null);
   const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  useEffect(() => {
+    if (!isLightboxOpen) return;
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsLightboxOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [isLightboxOpen]);
 
   React.useEffect(() => {
     if (!showThumbnails) return;
@@ -253,6 +265,110 @@ export function PropertyMediaCarousel({
       {/* Bottom-Right Overlay Slot (Single Ask Price in RTL) */}
       {bottomRightSlot && (
         <div className="absolute bottom-3 right-3 z-20">{bottomRightSlot}</div>
+      )}
+
+      {/* Bottom-Left Maximize / Lightbox Trigger */}
+      {showImage && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsLightboxOpen(true);
+          }}
+          aria-label="تكبير الصورة بالحجم الكامل"
+          className="absolute bottom-3 left-3 z-20 w-8 h-8 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center backdrop-blur-sm transition-all active:scale-90"
+        >
+          <Maximize2 className="w-3.5 h-3.5" />
+        </button>
+      )}
+
+      {/* Lightbox Fullscreen Modal */}
+      {isLightboxOpen && showImage && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="عرض الصور بالحجم الكامل"
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col justify-between p-4 sm:p-6 text-white"
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          {/* Top Bar */}
+          <div
+            className="flex items-center justify-between z-10 w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <span dir="ltr" className="font-mono text-sm px-3 py-1 rounded-full bg-white/10 text-white border border-white/15">
+                {`${currentIndex + 1} / ${totalPhotos}`}
+              </span>
+              <span className="text-sm font-bold text-white/90 line-clamp-1 max-w-md hidden sm:inline">
+                {alt}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsLightboxOpen(false)}
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+              aria-label="إغلاق العرض الكامل"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Central Image View */}
+          <div
+            className="relative flex-1 flex items-center justify-center my-4 overflow-hidden w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={activePhotoUrl}
+              alt={alt}
+              className="max-h-[75vh] max-w-full object-contain rounded-xl shadow-2xl transition-transform duration-200"
+            />
+
+            {totalPhotos > 1 && (
+              <>
+                <button
+                  type="button"
+                  aria-label="الصورة السابقة"
+                  onClick={handlePrev}
+                  className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center backdrop-blur-md transition-all active:scale-95"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="الصورة التالية"
+                  onClick={handleNext}
+                  className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center backdrop-blur-md transition-all active:scale-95"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Bottom Thumbnails */}
+          {totalPhotos > 1 && (
+            <div
+              className="flex justify-center gap-2 overflow-x-auto py-2 z-10 w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {safePhotos.map((photo, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => goToIndex(i)}
+                  className={clsx(
+                    'w-14 h-10 rounded-lg overflow-hidden border-2 transition-all shrink-0',
+                    i === currentIndex ? 'border-accent scale-105 opacity-100 ring-2 ring-accent/40' : 'border-transparent opacity-50 hover:opacity-90'
+                  )}
+                >
+                  <img src={photo} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

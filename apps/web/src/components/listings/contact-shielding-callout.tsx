@@ -14,16 +14,15 @@ export function ContactShieldingCallout({
   className = '',
 }: ContactShieldingCalloutProps) {
   return (
-    <Card
-      sunken
-      className={`p-4 flex items-start gap-3 ${className}`}
+    <div
+      className={`p-4 rounded-2xl bg-gradient-to-br from-emerald-500/[0.06] via-transparent to-transparent dark:from-emerald-500/[0.08] dark:via-transparent dark:to-transparent border border-emerald-500/25 dark:border-emerald-500/30 flex items-start gap-3.5 transition-all shadow-sm ${className}`}
       data-testid="contact-shielding-callout"
     >
-      <span className="shrink-0 w-9 h-9 rounded-card bg-primary-light dark:bg-primary-dark/30 text-primary dark:text-primary-light flex items-center justify-center border border-primary/20">
+      <span className="shrink-0 w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
         <ShieldCheck className="w-5 h-5" />
       </span>
-      <div>
-        <h3 className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary mb-1">
+      <div className="space-y-1">
+        <h3 className="text-sm font-bold text-ink-primary dark:text-dark-ink-primary">
           حماية بيانات البائع
         </h3>
         <p className="text-xs leading-relaxed text-ink-secondary dark:text-dark-ink-secondary">
@@ -31,6 +30,6 @@ export function ContactShieldingCallout({
           تُكشف إلا بعد إتمام الصفقة.
         </p>
       </div>
-    </Card>
+    </div>
   );
 }
