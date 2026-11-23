@@ -82,23 +82,30 @@ export function AnnouncementBannerBar() {
     switch (type) {
       case AnnouncementBannerType.ALERT:
         return {
-          container: 'bg-[#1C1917] text-amber-200 border-b border-amber-800/40',
-          titleBadge: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-          btn: 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-100 border-amber-500/30',
+          container:
+            'bg-rose-950/90 text-rose-100 border-b border-rose-800/40 dark:bg-rose-950/80 dark:border-rose-900/60',
+          titleBadge: 'text-rose-300 bg-rose-500/15 border-rose-500/30 font-bold',
+          btn: 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-100 border-rose-500/30',
+          divider: 'text-rose-400/40',
         };
       case AnnouncementBannerType.WARNING:
         return {
-          container: 'bg-[#1C1917] text-amber-200 border-b border-amber-800/40',
-          titleBadge: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+          container:
+            'bg-amber-950/90 text-amber-100 border-b border-amber-800/40 dark:bg-amber-950/80 dark:border-amber-900/60',
+          titleBadge: 'text-amber-300 bg-amber-500/15 border-amber-500/30 font-bold',
           btn: 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-100 border-amber-500/30',
+          divider: 'text-amber-400/40',
         };
       case AnnouncementBannerType.SUCCESS:
       case AnnouncementBannerType.INFO:
       default:
         return {
-          container: 'bg-[#0F172A] text-slate-100 border-b border-slate-800',
-          titleBadge: 'text-amber-300 dark:text-amber-400 bg-amber-500/10 border-amber-500/25',
-          btn: 'bg-white/10 hover:bg-white/20 text-white border-white/15',
+          container:
+            'bg-surface-sunken/90 dark:bg-dark-surface-sunken/95 text-ink-primary dark:text-dark-ink-primary border-b border-surface-border dark:border-dark-surface-border backdrop-blur-md',
+          titleBadge:
+            'text-accent dark:text-accent bg-accent/10 dark:bg-accent/15 border-accent/25 dark:border-accent/30 font-bold',
+          btn: 'bg-surface dark:bg-dark-surface-base hover:bg-surface-sunken dark:hover:bg-dark-surface-raised text-ink-primary dark:text-white border-surface-border dark:border-dark-surface-border shadow-xs',
+          divider: 'text-accent/60',
         };
     }
   };
@@ -129,10 +136,10 @@ export function AnnouncementBannerBar() {
             {/* Chunk 1 */}
             {tickerItems.chunkA.map((b, idx) => (
               <div key={`a-${b.id}-${idx}`} className="inline-flex items-center gap-2">
-                <span className={`font-extrabold px-2 py-0.5 rounded text-[11px] border ${style.titleBadge}`}>
+                <span className={`px-2 py-0.5 rounded text-[11px] border ${style.titleBadge}`}>
                   {b.title}:
                 </span>
-                <span className="text-white/95 font-medium text-xs">
+                <span className="font-medium text-xs text-ink-primary dark:text-dark-ink-primary">
                   {b.content}
                 </span>
                 {b.actionUrl && (
@@ -144,17 +151,17 @@ export function AnnouncementBannerBar() {
                     <ExternalLink className="w-2.5 h-2.5" />
                   </Link>
                 )}
-                <span className="text-amber-500/40 text-xs px-2 select-none">✦</span>
+                <span className={`text-xs px-2 select-none ${style.divider}`}>✦</span>
               </div>
             ))}
 
             {/* Chunk 2 (Seamless loop pair) */}
             {tickerItems.chunkB.map((b, idx) => (
               <div key={`b-${b.id}-${idx}`} className="inline-flex items-center gap-2">
-                <span className={`font-extrabold px-2 py-0.5 rounded text-[11px] border ${style.titleBadge}`}>
+                <span className={`px-2 py-0.5 rounded text-[11px] border ${style.titleBadge}`}>
                   {b.title}:
                 </span>
-                <span className="text-white/95 font-medium text-xs">
+                <span className="font-medium text-xs text-ink-primary dark:text-dark-ink-primary">
                   {b.content}
                 </span>
                 {b.actionUrl && (
@@ -166,7 +173,7 @@ export function AnnouncementBannerBar() {
                     <ExternalLink className="w-2.5 h-2.5" />
                   </Link>
                 )}
-                <span className="text-amber-500/40 text-xs px-2 select-none">✦</span>
+                <span className={`text-xs px-2 select-none ${style.divider}`}>✦</span>
               </div>
             ))}
           </div>
@@ -176,7 +183,7 @@ export function AnnouncementBannerBar() {
         <div className="shrink-0 flex items-center z-10">
           <button
             onClick={handleDismiss}
-            className="p-1 rounded-md text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1 rounded-md text-ink-muted dark:text-dark-ink-muted hover:text-ink-primary dark:hover:text-white hover:bg-surface-sunken dark:hover:bg-dark-surface-raised transition-colors"
             title="إغلاق التنبيه"
             aria-label="إغلاق التنبيه"
           >

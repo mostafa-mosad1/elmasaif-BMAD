@@ -441,7 +441,7 @@ select:-webkit-autofill {
 .animate-marquee-track {
   display: flex;
   width: max-content;
-  animation: luxury-marquee-rtl 35s linear infinite;
+  animation: luxury-marquee-rtl 85s linear infinite;
   will-change: transform;
 }
 
