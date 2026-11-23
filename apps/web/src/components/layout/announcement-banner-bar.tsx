@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AnnouncementBannerDto, AnnouncementBannerType } from '@elmasaif/shared';
-import { AlertCircle, AlertTriangle, CheckCircle, Info, X, ExternalLink } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle, Info, X, ExternalLink, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '../../lib/api-client';
 
@@ -45,8 +45,9 @@ export function AnnouncementBannerBar() {
     };
   }, []);
 
-  const handleDismiss = (id: string) => {
-    const updated = [...dismissedBannerIds, id];
+  const handleDismiss = () => {
+    const idsToDismiss = activeVisibleBanners.map((b) => b.id);
+    const updated = Array.from(new Set([...dismissedBannerIds, ...idsToDismiss]));
     setDismissedBannerIds(updated);
     try {
       sessionStorage.setItem('elmasaif_dismissed_banners', JSON.stringify(updated));
@@ -55,75 +56,110 @@ export function AnnouncementBannerBar() {
     }
   };
 
-  const activeVisibleBanners = banners.filter((b) => !dismissedBannerIds.includes(b.id));
+  const activeVisibleBanners = useMemo(
+    () => banners.filter((b) => !dismissedBannerIds.includes(b.id)),
+    [banners, dismissedBannerIds],
+  );
+
+  // Prepare infinite smooth loop items (duplicated so -50% translation loops seamlessly)
+  const tickerItems = useMemo(() => {
+    if (activeVisibleBanners.length === 0) return [];
+    const multiplier = activeVisibleBanners.length === 1 ? 4 : activeVisibleBanners.length === 2 ? 3 : 2;
+    const chunk = Array.from({ length: multiplier }, () => activeVisibleBanners).flat();
+    return [...chunk, ...chunk];
+  }, [activeVisibleBanners]);
 
   if (isLoading || activeVisibleBanners.length === 0) {
     return null;
   }
 
-  // Render the first active visible banner
-  const banner = activeVisibleBanners[0];
-
   const getStyleForType = (type: AnnouncementBannerType) => {
     switch (type) {
       case AnnouncementBannerType.ALERT:
         return {
-          container: 'bg-rose-700 text-white border-b border-rose-800',
-          icon: <AlertCircle className="w-4 h-4 shrink-0 text-white" />,
-          btn: 'bg-white text-rose-800 hover:bg-rose-50',
+          container: 'bg-[#450A0A] text-rose-100 border-b border-rose-900/60',
+          icon: <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-400" />,
         };
       case AnnouncementBannerType.WARNING:
         return {
-          container: 'bg-amber-500 text-amber-950 border-b border-amber-600',
-          icon: <AlertTriangle className="w-4 h-4 shrink-0 text-amber-950" />,
-          btn: 'bg-amber-950 text-amber-100 hover:bg-amber-900',
+          container: 'bg-[#451A03] text-amber-100 border-b border-amber-900/60',
+          icon: <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-400" />,
         };
       case AnnouncementBannerType.SUCCESS:
         return {
-          container: 'bg-primary text-primary-foreground border-b border-surface-border',
-          icon: <CheckCircle className="w-4 h-4 shrink-0 text-accent" />,
-          btn: 'bg-accent text-white hover:bg-accent-hover',
+          container: 'bg-[#0B1510] text-emerald-100 border-b border-emerald-900/40',
+          icon: <CheckCircle className="w-3.5 h-3.5 shrink-0 text-emerald-400" />,
         };
       case AnnouncementBannerType.INFO:
       default:
         return {
-          container: 'bg-indigo-700 text-white border-b border-indigo-800',
-          icon: <Info className="w-4 h-4 shrink-0 text-white" />,
-          btn: 'bg-white text-indigo-800 hover:bg-indigo-50',
+          container: 'bg-[#0F172A] text-slate-100 border-b border-slate-800',
+          icon: <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-400" />,
         };
     }
   };
 
-  const style = getStyleForType(banner.bannerType);
+  // Determine dominant style from highest-priority banner
+  const priorityOrder = [
+    AnnouncementBannerType.ALERT,
+    AnnouncementBannerType.WARNING,
+    AnnouncementBannerType.SUCCESS,
+    AnnouncementBannerType.INFO,
+  ];
+  const dominantType =
+    priorityOrder.find((t) => activeVisibleBanners.some((b) => b.bannerType === t)) ||
+    activeVisibleBanners[0]?.bannerType ||
+    AnnouncementBannerType.INFO;
+
+  const style = getStyleForType(dominantType);
 
   return (
     <aside
       aria-label="تنبيهات المنصة"
-      className={`relative z-40 px-4 py-2 text-xs transition-all duration-200 ${style.container}`}
+      className={`relative z-40 text-xs transition-all duration-200 overflow-hidden select-none ${style.container}`}
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 flex items-center h-9 sm:h-10 gap-3">
+        {/* Pinned Category Pill */}
+        <div className="shrink-0 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-bold shadow-xs z-10 bg-black/25 backdrop-blur-md border-white/10">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-accent" />
+          </span>
           {style.icon}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-w-0">
-            <span className="font-bold underline decoration-white/40">{banner.title}:</span>
-            <span className="truncate max-w-xl text-white/95">{banner.content}</span>
+          <span className="hidden sm:inline">إعلانات المنصة</span>
+        </div>
+
+        {/* Marquee Ticker Track with Smooth Side Gradient Fade Masks */}
+        <div className="relative flex-1 overflow-hidden h-full flex items-center [mask-image:linear-gradient(to_right,transparent,black_32px,black_calc(100%-32px),transparent)] group">
+          <div className="animate-marquee-track items-center gap-8 whitespace-nowrap">
+            {tickerItems.map((b, idx) => (
+              <div key={`${b.id}-${idx}`} className="inline-flex items-center gap-2">
+                <span className="font-extrabold text-amber-300 dark:text-amber-400 bg-white/10 px-2 py-0.5 rounded text-[11px] border border-white/15">
+                  {b.title}:
+                </span>
+                <span className="text-white/95 font-medium text-xs">
+                  {b.content}
+                </span>
+                {b.actionUrl && (
+                  <Link
+                    href={b.actionUrl}
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-bold bg-white/15 hover:bg-white/25 text-white border border-white/20 transition-all duration-150"
+                  >
+                    <span>{b.actionText || 'عرض التفاصيل'}</span>
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </Link>
+                )}
+                <span className="text-white/30 text-xs px-2 select-none">✦</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
-          {banner.actionUrl && (
-            <Link
-              href={banner.actionUrl}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold shadow-xs transition-colors ${style.btn}`}
-            >
-              <span>{banner.actionText || 'عرض التفاصيل'}</span>
-              <ExternalLink className="w-3 h-3" />
-            </Link>
-          )}
-
+        {/* Pinned Dismiss Button */}
+        <div className="shrink-0 flex items-center z-10">
           <button
-            onClick={() => handleDismiss(banner.id)}
-            className="p-1 rounded-md hover:bg-black/15 transition-colors"
+            onClick={handleDismiss}
+            className="p-1 rounded-md text-white/70 hover:text-white hover:bg-white/10 transition-colors"
             title="إغلاق التنبيه"
             aria-label="إغلاق التنبيه"
           >
