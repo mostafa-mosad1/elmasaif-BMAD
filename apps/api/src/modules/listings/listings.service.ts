@@ -504,9 +504,8 @@ export class ListingsService {
   /**
    * Similar listings engine (Story 3.4 / FR-18).
    * Returns up to SIMILAR_LISTINGS_MAX ACTIVE listings matching the base listing's
-   * propertyType + cityId within ±SIMILAR_LISTINGS_PRICE_TOLERANCE of its askPrice,
-   * always excluding the base listing itself. District matches are preferred; any
-   * remaining capacity fills from city-wide ACTIVE candidates. The base listing must
+   * propertyType + cityId, always excluding the base listing itself. District
+   * matches are preferred; any remaining capacity fills from city-wide ACTIVE candidates. The base listing must
    * be ACTIVE or this throws LISTING_NOT_FOUND (same semantics as getListingById).
    */
   async getSimilarListings(
@@ -532,16 +531,11 @@ export class ListingsService {
       });
     }
 
-    const priceNumeric = Number(base.askPrice);
-    const priceFloor = priceNumeric * (1 - SIMILAR_LISTINGS_PRICE_TOLERANCE);
-    const priceCeil = priceNumeric * (1 + SIMILAR_LISTINGS_PRICE_TOLERANCE);
-
     const baseWhere: Prisma.ListingWhereInput = {
       status: ListingStatus.ACTIVE,
       propertyType: base.propertyType,
       cityId: base.cityId,
       id: { not: id },
-      askPrice: { gte: priceFloor, lte: priceCeil },
     };
 
     const orderBy: Prisma.ListingOrderByWithRelationInput[] = [

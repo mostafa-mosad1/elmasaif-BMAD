@@ -128,7 +128,7 @@ describe('ListingsService.getSimilarListings (Story 3.4 / FR-18)', () => {
     expect(prisma.listing.findMany).not.toHaveBeenCalled();
   });
 
-  it('AC#2: builds base where with status ACTIVE-only, same type + city, self-exclusion, and ±20% price band', async () => {
+  it('AC#2: builds base where with status ACTIVE-only, same type + city, self-exclusion, and no price restriction', async () => {
     prisma.listing.findUnique.mockResolvedValue(baseRow());
     prisma.listing.findMany
       .mockResolvedValueOnce(Array.from({ length: SIMILAR_LISTINGS_MAX }, (_, i) =>
@@ -139,12 +139,7 @@ describe('ListingsService.getSimilarListings (Story 3.4 / FR-18)', () => {
     await service.getSimilarListings(baseListingId);
 
     const districtCall = calls()[0];
-    // 3,000,000 → 2,400,000 .. 3,600,000
-    expect(districtCall.where.askPrice).toEqual({
-      gte: 3_000_000 * (1 - SIMILAR_LISTINGS_PRICE_TOLERANCE),
-      lte: 3_000_000 * (1 + SIMILAR_LISTINGS_PRICE_TOLERANCE),
-    });
-    expect(districtCall.where.askPrice).toEqual({ gte: 2_400_000, lte: 3_600_000 });
+    expect(districtCall.where.askPrice).toBeUndefined();
     expect(districtCall.where.status).toBe(ListingStatus.ACTIVE);
     // NOT `{ in: [...] }` — reserved/sold/archived never leak into the similar engine.
     expect(districtCall.where.status).not.toBeInstanceOf(Object);
