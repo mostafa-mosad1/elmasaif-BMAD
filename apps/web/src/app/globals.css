@@ -428,20 +428,20 @@ select:-webkit-autofill {
   caret-color: #F8FAFC;
 }
 
-/* Luxury Smooth Marquee Announcement Ticker */
-@keyframes luxury-marquee {
+/* Luxury Smooth Marquee Announcement Ticker (Left-to-Right in RTL: translateX(0) to translateX(50%)) */
+@keyframes luxury-marquee-rtl {
   0% {
-    transform: translateX(0%);
+    transform: translateX(0);
   }
   100% {
-    transform: translateX(-50%);
+    transform: translateX(50%);
   }
 }
 
 .animate-marquee-track {
   display: flex;
   width: max-content;
-  animation: luxury-marquee 38s linear infinite;
+  animation: luxury-marquee-rtl 35s linear infinite;
   will-change: transform;
 }
 
