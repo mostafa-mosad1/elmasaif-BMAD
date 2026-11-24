@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
 import { AnnouncementBannerBar } from '../announcement-banner-bar';
@@ -9,4 +9,3 @@ describe('AnnouncementBannerBar SSR (Story 8.9 / AC5)', () => {
     expect(html).toBe('');
   });
 });
-

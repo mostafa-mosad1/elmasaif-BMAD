@@ -107,17 +107,12 @@ export function Header() {
 
             {user ? (
               <div className="flex items-center gap-2">
-                <Link href={`/app/${(activeRole || 'BUYER').toLowerCase()}`}>
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-primary hover:bg-primary-hover dark:bg-slate-800 dark:hover:bg-slate-700 text-white text-xs font-bold shadow-xs hover:shadow-sm border border-transparent dark:border-accent/30 transition-all cursor-pointer"
-                  >
-                    <div className="w-5 h-5 rounded-full bg-accent/20 text-accent flex items-center justify-center text-[10px] font-mono">
-                      {(user.fullName || user.username || 'U')[0].toUpperCase()}
-                    </div>
-                    <LayoutDashboard className="w-3.5 h-3.5 text-accent" />
-                    <span>{isArabic ? 'لوحة التحكم' : 'Dashboard'}</span>
-                  </button>
+                <Link
+                  href={`/app/${(activeRole || 'BUYER').toLowerCase()}`}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-surface-sunken hover:bg-surface-border/70 dark:bg-dark-surface-raised dark:hover:bg-dark-surface-sunken text-ink-primary dark:text-dark-ink-primary border border-surface-border dark:border-dark-surface-border hover:border-accent/40 dark:hover:border-accent/40 transition-all duration-150 cursor-pointer shadow-2xs group"
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5 text-accent group-hover:scale-105 transition-transform" />
+                  <span>{isArabic ? 'لوحة التحكم' : 'Dashboard'}</span>
                 </Link>
 
                 <button
